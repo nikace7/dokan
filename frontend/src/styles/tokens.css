@@ -1,0 +1,12 @@
+/*
+ * Design tokens for the app (colors, spacing scale overrides, typography).
+ * Kept separate from the Tailwind config so runtime theming (e.g. per-tenant
+ * accent color) can swap CSS custom properties later.
+ *
+ * TODO(Phase 1): agree the initial palette with the billing-screen design
+ * (docs/SYSTEM_DESIGN.md §7.3) before any feature UI is built.
+ */
+:root {
+  --color-surface: #ffffff;
+  --color-ink: #0f172a;
+}
