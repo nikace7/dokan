@@ -1,0 +1,100 @@
+# Phase-1 single-VPS topology (docs/SYSTEM_DESIGN.md §8.8):
+# Caddy → Gunicorn (web) + Celery (worker/beat) + Postgres 16 + Redis 7.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-dokan}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      DOKAN_APP_PASSWORD: ${DOKAN_APP_PASSWORD:?Set DOKAN_APP_PASSWORD in .env}
+      DOKAN_MIGRATOR_PASSWORD: ${DOKAN_MIGRATOR_PASSWORD:?Set DOKAN_MIGRATOR_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Creates the app (non-superuser, non-owner) and migration roles.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - staticfiles:/app/staticfiles
+
+  celery:
+    build: .
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=info --concurrency=2
+    env_file: .env
+    environment:
+      DATABASE_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build: .
+    restart: unless-stopped
+    command: celery -A config beat --loglevel=info
+    env_file: .env
+    environment:
+      DATABASE_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  redisdata:
+  staticfiles:
+  caddydata:
+  caddyconfig:
