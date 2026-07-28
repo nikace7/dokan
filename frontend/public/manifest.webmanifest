@@ -1,0 +1,10 @@
+{
+  "name": "Dokan — Shop Management",
+  "short_name": "Dokan",
+  "description": "Multi-tenant shop management for clothing retail in Nepal.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": []
+}
