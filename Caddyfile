@@ -1,0 +1,28 @@
+# Reverse proxy for the single-VPS deployment (docs/SYSTEM_DESIGN.md §8.8).
+#
+# Production wildcard TLS for *.dokan.com.np requires the DNS-01 challenge —
+# build Caddy with the provider plugin for your DNS host (e.g. Cloudflare)
+# and set the API token via environment:
+#
+#   tls {
+#       dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+#   }
+#
+# Local dev: Caddy serves these hosts over HTTP on :80; add entries to your
+# hosts file (e.g. 127.0.0.1 shreeganesh.dokan.localhost) or use
+# dokan.localhost as ROOT_DOMAIN.
+
+# Tenant shops — the middleware resolves the tenant from this subdomain.
+*.{$ROOT_DOMAIN} {
+	reverse_proxy backend:8000
+}
+
+# Super-admin portal — separate auth realm, IP allowlist, mandatory 2FA.
+admin.{$ROOT_DOMAIN} {
+	reverse_proxy backend:8000
+}
+
+# Marketing site / tenant selector.
+www.{$ROOT_DOMAIN}, app.{$ROOT_DOMAIN} {
+	reverse_proxy backend:8000
+}
