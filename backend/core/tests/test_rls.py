@@ -6,6 +6,9 @@ from django.db import migrations
 from core.db.rls import (
     disable_rls_sql,
     enable_rls_sql,
+    grant_update_delete_sql,
+    revoke_update_delete_operation,
+    revoke_update_delete_sql,
     rls_migration_operations,
 )
 
@@ -51,3 +54,29 @@ def test_migration_operations_are_reversible_runsql() -> None:
     reverse_sql = operation.reverse_sql
     assert isinstance(sql, str) and "CREATE POLICY" in sql
     assert isinstance(reverse_sql, str) and "DROP POLICY" in reverse_sql
+
+
+def test_revoke_update_delete_sql_is_role_guarded() -> None:
+    """Append-only tables: REVOKE from the app role, skipped when absent.
+
+    The role guard lets the same migration run on production (role exists)
+    and on test/CI databases (role never created).
+    """
+    sql = revoke_update_delete_sql("stock_movement")
+    assert 'REVOKE UPDATE, DELETE ON "stock_movement" FROM dokan_app;' in sql
+    assert "pg_roles" in sql  # existence guard for test databases
+
+    reverse = grant_update_delete_sql("stock_movement")
+    assert 'GRANT UPDATE, DELETE ON "stock_movement" TO dokan_app;' in reverse
+
+
+def test_revoke_update_delete_rejects_bad_table() -> None:
+    with pytest.raises(ValueError, match="Invalid table name"):
+        revoke_update_delete_sql("evil; DROP TABLE users")
+
+
+def test_revoke_operation_is_reversible_runsql() -> None:
+    operation = revoke_update_delete_operation("stock_movement")
+    assert isinstance(operation, migrations.RunSQL)
+    assert isinstance(operation.sql, str) and "REVOKE" in operation.sql
+    assert isinstance(operation.reverse_sql, str) and "GRANT" in operation.reverse_sql

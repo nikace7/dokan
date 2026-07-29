@@ -24,7 +24,11 @@ binding), `apps/platformadmin` (PlatformUser model only, no portal yet),
 `apps/catalog` (Category tree, Brand, SizeChart, Item, ItemVariant with
 size×colour matrix bulk entry and the barcode/SKU POS lookup; barcode
 validation per ADR 0003; `avg_cost` hidden without `pricing.view_cost` at
-both serializer and selector layers). Shared API plumbing lives in
+both serializer and selector layers), `apps/inventory` (StockLevel projection +
+immutable StockMovement ledger with REVOKE UPDATE/DELETE from the app role;
+opening/adjustment/damage write paths with per-(branch,variant) row locking and
+moving weighted average; BS/fiscal-year denormalization at write time; cost
+columns hidden without `pricing.view_cost`). Shared API plumbing lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
 `apps/` packages are empty skeletons per §8.2. When implementation continues,
