@@ -23,6 +23,7 @@ from tests.factories.catalog import (
     ItemVariantFactory,
     SizeChartFactory,
 )
+from tests.factories.inventory import StockLevelFactory, StockMovementFactory
 from tests.factories.tenant import PlanFactory, TenantFactory
 
 __all__ = [
@@ -36,6 +37,8 @@ __all__ = [
     "RoleFactory",
     "RolePermissionFactory",
     "SizeChartFactory",
+    "StockLevelFactory",
+    "StockMovementFactory",
     "TenantFactory",
     "UserFactory",
     "UserRoleFactory",

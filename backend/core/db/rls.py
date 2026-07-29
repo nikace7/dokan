@@ -31,6 +31,12 @@ if TYPE_CHECKING:
 _POLICY_NAME = "tenant_isolation"
 _SETTING = "app.tenant_id"
 
+#: The application role (docker/postgres/init/01_roles.sh). Append-only
+#: tables (stock_movement now, audit_log later) are locked down with
+#: REVOKE UPDATE, DELETE from this role — immutability enforced by the DB,
+#: not by convention.
+APP_ROLE = "dokan_app"
+
 _IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 
 
@@ -82,6 +88,47 @@ def rls_migration_operations(table: str) -> list[migrations.RunSQL]:
         ]
     """
     return [migrations.RunSQL(sql=enable_rls_sql(table), reverse_sql=disable_rls_sql(table))]
+
+
+def revoke_update_delete_sql(table: str) -> str:
+    """SQL making an append-only table immutable for the app role.
+
+    Used for ledger/audit tables (stock_movement now, audit_log later):
+    wrong entries are reversed with counter-entries, never edited. Guarded
+    by a role-exists check so migrations also apply on databases where the
+    production role has not been created (test databases, CI).
+    """
+    _validate_table_name(table)
+    return (
+        "DO $$\n"
+        "BEGIN\n"
+        f"    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{APP_ROLE}') THEN\n"
+        f'        REVOKE UPDATE, DELETE ON "{table}" FROM {APP_ROLE};\n'
+        "    END IF;\n"
+        "END\n"
+        "$$;"
+    )
+
+
+def grant_update_delete_sql(table: str) -> str:
+    """Reverse of :func:`revoke_update_delete_sql` (migrations' reverse_sql)."""
+    _validate_table_name(table)
+    return (
+        "DO $$\n"
+        "BEGIN\n"
+        f"    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{APP_ROLE}') THEN\n"
+        f'        GRANT UPDATE, DELETE ON "{table}" TO {APP_ROLE};\n'
+        "    END IF;\n"
+        "END\n"
+        "$$;"
+    )
+
+
+def revoke_update_delete_operation(table: str) -> migrations.RunSQL:
+    """Reversible migration operation making ``table`` append-only."""
+    return migrations.RunSQL(
+        sql=revoke_update_delete_sql(table), reverse_sql=grant_update_delete_sql(table)
+    )
 
 
 def set_local_tenant(connection: BaseDatabaseWrapper, tenant_id: UUID | str) -> None:
