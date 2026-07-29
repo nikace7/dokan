@@ -16,14 +16,26 @@ from tests.factories.accounts import (
     UserRoleFactory,
 )
 from tests.factories.branch import BranchFactory
+from tests.factories.catalog import (
+    BrandFactory,
+    CategoryFactory,
+    ItemFactory,
+    ItemVariantFactory,
+    SizeChartFactory,
+)
 from tests.factories.tenant import PlanFactory, TenantFactory
 
 __all__ = [
     "DEFAULT_PASSWORD",
     "BranchFactory",
+    "BrandFactory",
+    "CategoryFactory",
+    "ItemFactory",
+    "ItemVariantFactory",
     "PlanFactory",
     "RoleFactory",
     "RolePermissionFactory",
+    "SizeChartFactory",
     "TenantFactory",
     "UserFactory",
     "UserRoleFactory",
