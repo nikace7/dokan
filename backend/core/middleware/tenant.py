@@ -63,6 +63,23 @@ def get_request_tenant(request: HttpRequest) -> Any | None:
     return getattr(request, _TENANT_ATTR, None)
 
 
+def require_request_tenant(request: HttpRequest) -> Any:
+    """Return the request tenant or raise 403 TENANT_REQUIRED.
+
+    Tenant-API endpoints must only run on a shop subdomain; on platform
+    hosts there is deliberately no tenant context to work with.
+    """
+    from rest_framework.exceptions import PermissionDenied
+
+    tenant = get_request_tenant(request)
+    if tenant is None:
+        raise PermissionDenied(
+            detail="This endpoint is only available on a shop subdomain.",
+            code="TENANT_REQUIRED",
+        )
+    return tenant
+
+
 def _error_response(status: int, code: str, message: str) -> JsonResponse:
     """Render the API error envelope (docs/SYSTEM_DESIGN.md §8.4)."""
     return JsonResponse(

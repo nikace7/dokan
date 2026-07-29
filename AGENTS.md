@@ -20,7 +20,12 @@ TenantFeatureOverride, TenantUsageSnapshot — platform scope; Branch — RLS-pr
 cached slug selector behind the tenant middleware), `apps/accounts` (tenant-scoped
 User with phone auth, Role, global Permission catalog, RolePermission, UserRole;
 JWT login/refresh/me per ADR 0001 with failed-login lockout and tenant-claim
-binding), `apps/platformadmin` (PlatformUser model only, no portal yet). The
+binding), `apps/platformadmin` (PlatformUser model only, no portal yet),
+`apps/catalog` (Category tree, Brand, SizeChart, Item, ItemVariant with
+size×colour matrix bulk entry and the barcode/SKU POS lookup; barcode
+validation per ADR 0003; `avg_cost` hidden without `pricing.view_cost` at
+both serializer and selector layers). Shared API plumbing lives in
+`core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
 `apps/` packages are empty skeletons per §8.2. When implementation continues,
 follow the structure and rules specified in `docs/SYSTEM_DESIGN.md` and keep this

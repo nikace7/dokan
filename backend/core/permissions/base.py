@@ -32,14 +32,22 @@ class HasPermission(BasePermission):
     """Require one permission codename, read from the view.
 
     Set ``required_permission = "sale.create"`` on the view (or subclass
-    with ``permission_codename``). Fails closed: a view that forgets the
-    codename raises ImproperlyConfigured instead of allowing access.
+    with ``permission_codename``). For different permissions per HTTP method,
+    set ``method_permissions = {"GET": "catalog.view", "POST": "catalog.manage"}``.
+    Fails closed: a view that forgets the codename raises
+    ImproperlyConfigured instead of allowing access.
     """
 
     permission_codename: ClassVar[str | None] = None
 
-    def _resolve_codename(self, view: APIView) -> str:
-        codename = getattr(view, "required_permission", None) or self.permission_codename
+    def _resolve_codename(self, view: APIView, request: HttpRequest) -> str:
+        per_method = getattr(view, "method_permissions", None)
+        codename = None
+        if isinstance(per_method, dict):
+            codename = per_method.get(request.method or "")
+        codename = (
+            codename or getattr(view, "required_permission", None) or self.permission_codename
+        )
         if not codename:
             msg = (
                 f"{type(view).__name__} uses HasPermission but sets no "
@@ -49,7 +57,7 @@ class HasPermission(BasePermission):
         return str(codename)
 
     def has_permission(self, request: HttpRequest, view: APIView) -> bool:
-        codename = self._resolve_codename(view)
+        codename = self._resolve_codename(view, request)
         user = request.user
         if user is None or not user.is_authenticated:
             return False

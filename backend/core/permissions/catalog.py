@@ -23,6 +23,9 @@ PERMISSIONS: Final[list[PermissionDef]] = [
     PermissionDef("sale.void", "Sales", "Cancel a bill", sensitive=True),
     PermissionDef("sale.return", "Sales", "Process returns"),
     PermissionDef("sale.discount", "Sales", "Apply discount"),
+    # Catalog
+    PermissionDef("catalog.view", "Catalog", "View items, categories, brands"),
+    PermissionDef("catalog.manage", "Catalog", "Create and edit catalog entries"),
     # Pricing
     PermissionDef("pricing.view_cost", "Pricing", "See cost price", sensitive=True),
     PermissionDef("pricing.edit", "Pricing", "Change selling prices"),
