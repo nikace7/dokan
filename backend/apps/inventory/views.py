@@ -85,7 +85,7 @@ class _InventoryAPIView(APIView):
 
     def _paginated(self, request: Request, queryset: Any, serializer_class: Any) -> Response:
         paginator = EnvelopePageNumberPagination()
-        page = paginator.paginate_queryset(queryset, request, view=self)
+        page: list[Any] | None = paginator.paginate_queryset(queryset, request, view=self)
         serializer = serializer_class(page, many=True, context=self._context(request))
         return paginator.get_paginated_response(serializer.data)
 
