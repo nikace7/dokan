@@ -24,13 +24,19 @@ from django.apps import apps
 from django.db import ProgrammingError, connection, transaction
 
 from apps.accounts.models import Role, RolePermission, User, UserRole
+from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.tenants.models import Branch
 from core.db.rls import set_local_tenant
 from core.models import TenantScopedModel
 from tests.factories import (
     BranchFactory,
+    BrandFactory,
+    CategoryFactory,
+    ItemFactory,
+    ItemVariantFactory,
     RoleFactory,
     RolePermissionFactory,
+    SizeChartFactory,
     TenantFactory,
     UserFactory,
     UserRoleFactory,
@@ -43,6 +49,11 @@ FACTORIES: dict[type[Any], Any] = {
     Role: RoleFactory,
     RolePermission: RolePermissionFactory,
     UserRole: UserRoleFactory,
+    Brand: BrandFactory,
+    Category: CategoryFactory,
+    SizeChart: SizeChartFactory,
+    Item: ItemFactory,
+    ItemVariant: ItemVariantFactory,
 }
 
 #: Plain role used to become RLS-subject inside the test transaction.

@@ -1,5 +1,35 @@
-"""URL routes for catalog — empty until the feature lands."""
+"""URL routes for catalog."""
 
-from typing import Any
+from django.urls import path
 
-urlpatterns: list[Any] = []
+from apps.catalog.views import (
+    BrandDetailView,
+    BrandListView,
+    CategoryDetailView,
+    CategoryListView,
+    ItemDetailView,
+    ItemListView,
+    SizeChartDetailView,
+    SizeChartListView,
+    VariantBulkView,
+    VariantDetailView,
+    VariantListView,
+    VariantLookupView,
+)
+
+app_name = "catalog"
+
+urlpatterns = [
+    path("catalog/categories", CategoryListView.as_view(), name="category-list"),
+    path("catalog/categories/<uuid:pk>", CategoryDetailView.as_view(), name="category-detail"),
+    path("catalog/brands", BrandListView.as_view(), name="brand-list"),
+    path("catalog/brands/<uuid:pk>", BrandDetailView.as_view(), name="brand-detail"),
+    path("catalog/size-charts", SizeChartListView.as_view(), name="size-chart-list"),
+    path("catalog/size-charts/<uuid:pk>", SizeChartDetailView.as_view(), name="size-chart-detail"),
+    path("catalog/items", ItemListView.as_view(), name="item-list"),
+    path("catalog/items/<uuid:pk>", ItemDetailView.as_view(), name="item-detail"),
+    path("catalog/items/<uuid:pk>/variants/bulk", VariantBulkView.as_view(), name="variant-bulk"),
+    path("catalog/variants", VariantListView.as_view(), name="variant-list"),
+    path("catalog/variants/lookup", VariantLookupView.as_view(), name="variant-lookup"),
+    path("catalog/variants/<uuid:pk>", VariantDetailView.as_view(), name="variant-detail"),
+]
