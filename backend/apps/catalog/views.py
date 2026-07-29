@@ -74,7 +74,7 @@ class _CatalogAPIView(APIView):
 
     def _paginated(self, request: Request, queryset: Any, serializer_class: Any) -> Response:
         paginator = EnvelopePageNumberPagination()
-        page = paginator.paginate_queryset(queryset, request, view=self)
+        page: list[Any] | None = paginator.paginate_queryset(queryset, request, view=self)
         serializer = serializer_class(page, many=True, context=self._context(request))
         return paginator.get_paginated_response(serializer.data)
 
@@ -262,9 +262,11 @@ class VariantListView(_CatalogAPIView):
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
-        raw_item = request.data.get("item")
+        payload = request.data
+        if not isinstance(payload, dict):
+            raise ServiceError("ITEM_REQUIRED", "Provide a valid item id.")
         try:
-            item_pk = UUID(str(raw_item))
+            item_pk = UUID(str(payload.get("item")))
         except ValueError:
             raise ServiceError("ITEM_REQUIRED", "Provide a valid item id.") from None
         item = _get_or_404(tenant, Item, item_pk, "Item")
