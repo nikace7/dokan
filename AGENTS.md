@@ -33,8 +33,14 @@ one-default-per-tenant and required_permission gating; effective-dated ItemPrice
 at VARIANT/ITEM/CATEGORY scope with exactly-one-FK CHECK; resolve_price chain
 VARIANT → ITEM → CATEGORY-tree → MRP → 409 PRICE_NOT_SET; min/max guardrails
 (variant → item → category pct-of-MRP) with pricing.override_min and always-block
-above-max; PriceChangeLog written in the same transaction as every price change).
-Shared API plumbing lives in
+above-max; PriceChangeLog written in the same transaction as every price change),
+`apps/customers` (Customer CRUD, partial-unique phone, nullable credit_limit),
+`apps/sales` (POS billing core: one-transaction create_sale with price
+resolution, documented 13% VAT rule, udharo + credit-limit enforcement, SALE
+ledger postings, gapless per-branch-per-fiscal-year numbering, cost_at_sale
+snapshots, mandatory Idempotency-Key with 200-replay; held-bill flow where HELD
+takes no stock and no invoice number; COMPLETED terminal). Shared API plumbing
+lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
 `apps/` packages are empty skeletons per §8.2. When implementation continues,
@@ -153,7 +159,11 @@ HTTP → urls → view (thin) → service (writes) / selector (reads) → model
 ## Git and development workflow
 
 - **Trunk-based**: `main` always deployable and protected; short branches
-  (`feat/…`, `fix/…`, `chore/…`) live ≤ 3 days. Squash merge; delete on merge.
+  (`feat/…`, `fix/…`, `chore/…`) live ≤ 3 days. **Small atomic commits per
+  logical unit on the branch** (e.g. `feat(sales): invoice models and
+  migration`, `feat(sales): gapless numbering service`); PRs are merged
+  **preserving those commits** (no squash — the unit history is the review
+  trail). Delete branch on merge.
 - **Conventional Commits**, scope = app name, e.g. `feat(sales): add split payment with
   esewa and cash`. Body answers *why*, not *what*.
 - **CI gate (all required)**: lint (ruff/eslint), format check, type check (mypy/tsc),

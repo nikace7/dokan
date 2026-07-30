@@ -1,5 +1,12 @@
-"""URL routes for customers — empty until the feature lands."""
+"""URL routes for customers."""
 
-from typing import Any
+from django.urls import path
 
-urlpatterns: list[Any] = []
+from apps.customers.views import CustomerDetailView, CustomerListView
+
+app_name = "customers"
+
+urlpatterns = [
+    path("customers", CustomerListView.as_view(), name="customer-list"),
+    path("customers/<uuid:pk>", CustomerDetailView.as_view(), name="customer-detail"),
+]
