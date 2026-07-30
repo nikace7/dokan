@@ -41,14 +41,14 @@ class CategorySerializer(TenantContextSerializer):
             "sort_order",
             "is_active",
         )
-        read_only_fields = ("id",)
+        read_only_fields = ("id", "is_active")
 
 
 class BrandSerializer(TenantContextSerializer):
     class Meta:
         model = Brand
         fields = ("id", "name", "is_active")
-        read_only_fields = ("id",)
+        read_only_fields = ("id", "is_active")
 
 
 class SizeChartSerializer(TenantContextSerializer):
@@ -57,7 +57,7 @@ class SizeChartSerializer(TenantContextSerializer):
     class Meta:
         model = SizeChart
         fields = ("id", "name", "values", "is_active")
-        read_only_fields = ("id",)
+        read_only_fields = ("id", "is_active")
 
 
 class ItemSerializer(TenantContextSerializer):
@@ -84,7 +84,7 @@ class ItemSerializer(TenantContextSerializer):
             "reorder_level",
             "is_active",
         )
-        read_only_fields = ("id",)
+        read_only_fields = ("id", "is_active")
 
 
 class ItemVariantSerializer(TenantContextSerializer):
@@ -104,7 +104,7 @@ class ItemVariantSerializer(TenantContextSerializer):
             "avg_cost",
             "is_active",
         )
-        read_only_fields = ("id", "avg_cost", "item")  # avg_cost: inventory writes it
+        read_only_fields = ("id", "avg_cost", "item", "is_active")  # avg_cost: inventory writes it
 
 
 class VariantBulkSerializer(serializers.Serializer):

@@ -37,3 +37,4 @@ Rules:
 | [0002](0002-api-contract-toolchain.md) | API contract toolchain (OpenAPI 3.1 → typed TS client) | Accepted |
 | [0003](0003-barcode-format.md) | Barcode format (Code 128 in-house, EAN-13 accepted) | Accepted |
 | [0004](0004-sms-gateway.md) | SMS gateway behind a provider interface | Accepted |
+| [0005](0005-pricing-never-derives-from-cost.md) | Price resolution and guardrails never derive from cost | Accepted |
