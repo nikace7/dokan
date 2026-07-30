@@ -73,9 +73,7 @@ class SalesInvoice(TenantScopedModel):
     customer = models.ForeignKey(
         "customers.Customer", on_delete=models.PROTECT, related_name="+", null=True, blank=True
     )
-    rate_type = models.ForeignKey(
-        "pricing.RateType", on_delete=models.PROTECT, related_name="+"
-    )
+    rate_type = models.ForeignKey("pricing.RateType", on_delete=models.PROTECT, related_name="+")
     salesperson = models.ForeignKey(
         "accounts.User", on_delete=models.SET_NULL, related_name="+", null=True, blank=True
     )
@@ -107,9 +105,7 @@ class SalesInvoice(TenantScopedModel):
     fiscal_year_bs = models.CharField(max_length=7)
     device_id = models.TextField(null=True, blank=True)
     idempotency_key = models.TextField()
-    created_by = models.ForeignKey(
-        "accounts.User", on_delete=models.PROTECT, related_name="+"
-    )
+    created_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
 
     class Meta:
         db_table = "sales_invoice"
@@ -150,13 +146,9 @@ class SalesInvoiceItem(TenantScopedModel):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice = models.ForeignKey(SalesInvoice, on_delete=models.PROTECT, related_name="items")
-    variant = models.ForeignKey(
-        "catalog.ItemVariant", on_delete=models.PROTECT, related_name="+"
-    )
+    variant = models.ForeignKey("catalog.ItemVariant", on_delete=models.PROTECT, related_name="+")
     qty = models.DecimalField(max_digits=12, decimal_places=3)
-    rate_type = models.ForeignKey(
-        "pricing.RateType", on_delete=models.PROTECT, related_name="+"
-    )
+    rate_type = models.ForeignKey("pricing.RateType", on_delete=models.PROTECT, related_name="+")
     unit_price = models.DecimalField(max_digits=14, decimal_places=2)
     discount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     line_total = models.DecimalField(max_digits=14, decimal_places=2)
