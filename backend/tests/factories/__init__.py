@@ -23,6 +23,7 @@ from tests.factories.catalog import (
     ItemVariantFactory,
     SizeChartFactory,
 )
+from tests.factories.customers import CustomerFactory
 from tests.factories.inventory import StockLevelFactory, StockMovementFactory
 from tests.factories.pricing import (
     ItemCategoryPriceFactory,
@@ -37,6 +38,7 @@ __all__ = [
     "BranchFactory",
     "BrandFactory",
     "CategoryFactory",
+    "CustomerFactory",
     "ItemCategoryPriceFactory",
     "ItemFactory",
     "ItemPriceFactory",
