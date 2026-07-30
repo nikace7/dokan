@@ -34,6 +34,35 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+### Try the demo shop (end-to-end)
+
+With Postgres running (any local instance; below uses port 5433 as an
+example) and from `backend/`:
+
+```bash
+export ROOT_DOMAIN=localhost           # tenants resolve as <slug>.localhost
+export DATABASE_PORT=5433 DATABASE_USER=postgres DATABASE_PASSWORD=testpw DATABASE_NAME=dokan_dev
+export DJANGO_SETTINGS_MODULE=config.settings.dev
+
+python manage.py migrate
+python manage.py seed_demo             # idempotent demo tenant + owner + catalog + stock
+python manage.py runserver
+```
+
+Then open **http://demo.localhost:8000/api/docs/** (browsers resolve
+`*.localhost` to loopback — no hosts-file edits) and log in via
+`POST /api/v1/auth/token` with phone `9800000000`, password `demo1234`.
+Every tenant endpoint must be called on the `demo.localhost` host — the
+tenant comes from the subdomain, never from a header. `seed_demo` creates
+a branch, an owner with all permissions, a default Retail rate type, three
+items with M/L variants, and 20 units of opening stock per variant, so
+`POST /api/v1/sales` works out of the box (remember the mandatory
+`Idempotency-Key` header).
+
+The frontend (`frontend/`) is a scaffold: `npm install && npm run dev`
+proxies `/api` to `localhost:8000`, but feature UI (login, billing screen)
+has not landed yet — use the API docs page above for now.
+
 Useful commands (from `backend/`):
 
 ```bash
