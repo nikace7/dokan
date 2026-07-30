@@ -19,6 +19,7 @@ class PermissionDef(NamedTuple):
 
 PERMISSIONS: Final[list[PermissionDef]] = [
     # Sales
+    PermissionDef("sale.view", "Sales", "View bills"),
     PermissionDef("sale.create", "Sales", "Create bills"),
     PermissionDef("sale.void", "Sales", "Cancel a bill", sensitive=True),
     PermissionDef("sale.return", "Sales", "Process returns"),
