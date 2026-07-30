@@ -37,6 +37,7 @@ PERMISSIONS: Final[list[PermissionDef]] = [
     PermissionDef("stock.adjust", "Stock", "Adjust stock", sensitive=True),
     PermissionDef("stock.purchase", "Stock", "Enter purchases"),
     # Customers
+    PermissionDef("customer.view", "Customers", "View customers and balances"),
     PermissionDef("customer.manage", "Customers", "Create and edit customers"),
     PermissionDef("customer.credit", "Customers", "Sell on udharo / adjust credit limit"),
     # Reports
