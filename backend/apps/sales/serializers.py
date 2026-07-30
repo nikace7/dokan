@@ -138,6 +138,4 @@ class SalesInvoiceDetailSerializer(SalesInvoiceSerializer):
         user = self.context.get("user")
         if not (user and user.has_perm("pricing.view_cost")):
             items_field = cast("ListSerializer", self.fields["items"])
-            cast("SalesInvoiceItemSerializer", items_field.child).fields.pop(
-                "cost_at_sale", None
-            )
+            cast("SalesInvoiceItemSerializer", items_field.child).fields.pop("cost_at_sale", None)
