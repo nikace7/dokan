@@ -1,9 +1,10 @@
 """DRF serializers for sales — shape validation only; rules live in services."""
 
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from rest_framework import serializers
+from rest_framework.serializers import ListSerializer
 
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
 from apps.sales.services import PAYMENT_METHODS
@@ -76,12 +77,6 @@ class SalesInvoiceItemSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        user = self.context.get("user")
-        if not (user and user.has_perm("pricing.view_cost")):
-            self.fields.pop("cost_at_sale", None)
-
 
 class SalesInvoiceSerializer(serializers.ModelSerializer):
     branch_code = serializers.CharField(source="branch.code", read_only=True)
@@ -133,3 +128,16 @@ class SalesInvoiceDetailSerializer(SalesInvoiceSerializer):
 
     class Meta(SalesInvoiceSerializer.Meta):
         fields = (*SalesInvoiceSerializer.Meta.fields, "items")  # type: ignore[assignment]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Cost drop MUST happen here, not in the child's __init__: declared
+        # nested fields are instantiated at class-definition time without
+        # request context (DRF binds context later), so the child never saw
+        # the user and always popped cost_at_sale.
+        user = self.context.get("user")
+        if not (user and user.has_perm("pricing.view_cost")):
+            items_field = cast("ListSerializer", self.fields["items"])
+            cast("SalesInvoiceItemSerializer", items_field.child).fields.pop(
+                "cost_at_sale", None
+            )
