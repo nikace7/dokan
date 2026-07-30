@@ -14,6 +14,7 @@ and ``fiscal_year_bs`` come only from core/calendar/bs.py.
 from datetime import date
 from decimal import Decimal
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -72,6 +73,8 @@ def _write_movement(
     created_by: "User",
     note: str,
     business_date: date | None,
+    ref_type: str = "",
+    ref_id: "UUID | None" = None,
 ) -> StockMovement:
     """Append one ledger row with its denormalized business dates."""
     date_ad, date_bs, fy_bs = _business_dates(business_date)
@@ -83,11 +86,61 @@ def _write_movement(
         qty_delta=qty_delta,
         unit_cost=unit_cost,
         balance_after=balance_after,
+        ref_type=ref_type or None,
+        ref_id=ref_id,
         note=note or None,
         business_date_ad=date_ad,
         business_date_bs=date_bs,
         fiscal_year_bs=fy_bs,
         created_by=created_by,
+    )
+
+
+def post_sale_movement(
+    tenant: "Tenant",
+    *,
+    branch: "Branch",
+    variant: "ItemVariant",
+    qty: Decimal,
+    created_by: "User",
+    ref_type: str,
+    ref_id: "UUID",
+    note: str = "",
+    business_date: date | None = None,
+) -> StockMovement:
+    """Decrement stock for a sale line (SALE movement).
+
+    MUST be called inside the caller's transaction — the sale service owns
+    it, so a failed sale rolls the movements back with everything else.
+    Stock must never go below zero; avg_cost is untouched by sales.
+    ``unit_cost`` snapshots the branch average cost at movement time.
+    """
+    qty = Decimal(qty)
+    if qty <= _ZERO:
+        raise ServiceError("QTY_INVALID", "Sale quantity must be greater than zero.")
+    level = _lock_level(tenant, branch, variant)
+    new_qty = level.qty_on_hand - qty
+    if new_qty < _ZERO:
+        raise ServiceError(
+            "STOCK_INSUFFICIENT",
+            f"Only {level.qty_on_hand} of {variant.sku} in stock.",
+        )
+    unit_cost = level.avg_cost
+    level.qty_on_hand = new_qty
+    level.save(update_fields=["qty_on_hand", "updated_at"])
+    return _write_movement(
+        tenant,
+        branch=branch,
+        variant=variant,
+        movement_type=StockMovement.MovementType.SALE,
+        qty_delta=-qty,
+        unit_cost=unit_cost,
+        balance_after=new_qty,
+        created_by=created_by,
+        note=note,
+        business_date=business_date,
+        ref_type=ref_type,
+        ref_id=ref_id,
     )
 
 
