@@ -28,7 +28,13 @@ both serializer and selector layers), `apps/inventory` (StockLevel projection +
 immutable StockMovement ledger with REVOKE UPDATE/DELETE from the app role;
 opening/adjustment/damage write paths with per-(branch,variant) row locking and
 moving weighted average; BS/fiscal-year denormalization at write time; cost
-columns hidden without `pricing.view_cost`). Shared API plumbing lives in
+columns hidden without `pricing.view_cost`), `apps/pricing` (RateType with
+one-default-per-tenant and required_permission gating; effective-dated ItemPrice
+at VARIANT/ITEM/CATEGORY scope with exactly-one-FK CHECK; resolve_price chain
+VARIANT → ITEM → CATEGORY-tree → MRP → 409 PRICE_NOT_SET; min/max guardrails
+(variant → item → category pct-of-MRP) with pricing.override_min and always-block
+above-max; PriceChangeLog written in the same transaction as every price change).
+Shared API plumbing lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
 `apps/` packages are empty skeletons per §8.2. When implementation continues,
