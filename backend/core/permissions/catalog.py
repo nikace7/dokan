@@ -27,6 +27,7 @@ PERMISSIONS: Final[list[PermissionDef]] = [
     PermissionDef("catalog.view", "Catalog", "View items, categories, brands"),
     PermissionDef("catalog.manage", "Catalog", "Create and edit catalog entries"),
     # Pricing
+    PermissionDef("pricing.view", "Pricing", "View rate types and prices"),
     PermissionDef("pricing.view_cost", "Pricing", "See cost price", sensitive=True),
     PermissionDef("pricing.edit", "Pricing", "Change selling prices"),
     PermissionDef("pricing.override_min", "Pricing", "Sell below minimum price", sensitive=True),
