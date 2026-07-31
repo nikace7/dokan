@@ -48,7 +48,11 @@ exchange_group_id, RETURN + SALE docs with net settlement), `apps/purchasing`
 (Supplier CRUD; PurchaseInvoice DRAFT→CONFIRMED pipeline posting PURCHASE
 movements at landed unit cost — exact-paisa largest-remainder allocation of
 other_charges — with StockBatch rows and a PURCHASE numbering series; VAT rule
-mirrors sales). Shared API plumbing
+mirrors sales), `apps/payments` (append-only Payment with mandatory
+Idempotency-Key + PaymentAllocation so receipts reduce dues WITHOUT touching
+completed invoices — outstanding is ledger-derived (dues − credit notes −
+receipts) in one canonical selector; party ledgers and receivables aging;
+CashSession day-close with expected/variance snapshot). Shared API plumbing
 lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
