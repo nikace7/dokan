@@ -59,9 +59,11 @@ items with M/L variants, and 20 units of opening stock per variant, so
 `POST /api/v1/sales` works out of the box (remember the mandatory
 `Idempotency-Key` header).
 
-The frontend (`frontend/`) is a scaffold: `npm install && npm run dev`
-proxies `/api` to `localhost:8000`, but feature UI (login, billing screen)
-has not landed yet — use the API docs page above for now.
+The frontend (`frontend/`) serves login and the POS billing screen:
+`npm install && npm run dev` proxies `/api` to `demo.localhost:8000` (the
+tenant host) — see `frontend/README.md` for the two `VITE_DEMO_*` env vars
+the billing screen needs until branch/rate-type list endpoints exist. Sign
+in at http://localhost:5173 with the seeded owner above.
 
 Useful commands (from `backend/`):
 
