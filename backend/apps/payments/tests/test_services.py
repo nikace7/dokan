@@ -459,3 +459,130 @@ class TestAppendOnly:
         with pytest.raises(ProgrammingError), transaction.atomic():
             payment.note = "edited"
             payment.save(update_fields=["note"])
+
+
+class TestPurchaseAllocationBranches:
+    def _confirmed_purchase(self, shop: dict, supplier: Any, key: str = "pi-1") -> Any:
+        from apps.purchasing import services as purchase_services
+
+        invoice = purchase_services.create_purchase_invoice(
+            shop["tenant"],
+            branch=shop["branch"],
+            supplier=supplier,
+            bill_date_ad=date(2026, 1, 15),
+            is_vat_bill=False,
+            other_charges=Decimal("0"),
+            paid_amount=Decimal("0"),
+            note="",
+            lines=[
+                {
+                    "variant": shop["variant"],
+                    "qty": Decimal("1"),
+                    "unit_cost": Decimal("1000.00"),
+                    "discount": Decimal("0"),
+                }
+            ],
+            created_by=shop["user"],
+        )
+        return purchase_services.confirm_purchase_invoice(
+            shop["tenant"], invoice=invoice, created_by=shop["user"]
+        )
+
+    def test_zero_purchase_allocation_rejected(self, shop: dict) -> None:
+        supplier = SupplierFactory(tenant=shop["tenant"])
+        invoice = self._confirmed_purchase(shop, supplier)
+        with pytest.raises(ServiceError) as exc:
+            services.record_payment(
+                shop["tenant"],
+                branch=shop["branch"],
+                supplier=supplier,
+                amount=Decimal("100.00"),
+                method="CASH",
+                allocations=[{"purchase_invoice": invoice, "amount": Decimal("0")}],
+                idempotency_key="pay-zero",
+                created_by=shop["user"],
+            )
+        assert exc.value.code == "ALLOCATION_AMOUNT_INVALID"
+
+    def test_wrong_supplier_invoice_rejected(self, shop: dict) -> None:
+        supplier = SupplierFactory(tenant=shop["tenant"])
+        other = SupplierFactory(tenant=shop["tenant"])
+        invoice = self._confirmed_purchase(shop, supplier)
+        with pytest.raises(ServiceError) as exc:
+            services.record_payment(
+                shop["tenant"],
+                branch=shop["branch"],
+                supplier=other,
+                amount=Decimal("100.00"),
+                method="CASH",
+                allocations=[{"purchase_invoice": invoice, "amount": Decimal("100.00")}],
+                idempotency_key="pay-wrong",
+                created_by=shop["user"],
+            )
+        assert exc.value.code == "ALLOCATION_INVOICE_INVALID"
+
+    def test_allocations_above_payment_rejected(self, shop: dict) -> None:
+        supplier = SupplierFactory(tenant=shop["tenant"])
+        invoice = self._confirmed_purchase(shop, supplier)
+        with pytest.raises(ServiceError) as exc:
+            services.record_payment(
+                shop["tenant"],
+                branch=shop["branch"],
+                supplier=supplier,
+                amount=Decimal("100.00"),
+                method="CASH",
+                allocations=[{"purchase_invoice": invoice, "amount": Decimal("200.00")}],
+                idempotency_key="pay-above",
+                created_by=shop["user"],
+            )
+        assert exc.value.code == "ALLOCATION_EXCEEDS_AMOUNT"
+
+    def test_supplier_payment_replay_returns_original(self, shop: dict) -> None:
+        supplier = SupplierFactory(tenant=shop["tenant"])
+        kwargs: dict[str, Any] = {
+            "branch": shop["branch"],
+            "supplier": supplier,
+            "amount": Decimal("100.00"),
+            "method": "CASH",
+            "idempotency_key": "pay-replay",
+            "created_by": shop["user"],
+        }
+        first = services.record_payment(shop["tenant"], **kwargs)
+        second = services.record_payment(shop["tenant"], **kwargs)
+        assert second.replayed is True
+        assert second.payment.pk == first.payment.pk
+        assert Payment.objects.filter(tenant=shop["tenant"]).count() == 1
+
+
+class TestIntegrityErrorReraise:
+    def test_receipt_non_idempotency_integrity_error_reraises(
+        self, shop: dict, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from django.db import IntegrityError
+
+        def broken_save(self: Any, **kwargs: Any) -> None:
+            raise IntegrityError("some unrelated database error")
+
+        monkeypatch.setattr(Payment, "save", broken_save)
+        with pytest.raises(IntegrityError, match="unrelated"):
+            _receipt(shop, "100.00", key="rcpt-reraise")
+
+    def test_supplier_payment_non_idempotency_integrity_error_reraises(
+        self, shop: dict, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from django.db import IntegrityError
+
+        def broken_save(self: Any, **kwargs: Any) -> None:
+            raise IntegrityError("some unrelated database error")
+
+        monkeypatch.setattr(Payment, "save", broken_save)
+        with pytest.raises(IntegrityError, match="unrelated"):
+            services.record_payment(
+                shop["tenant"],
+                branch=shop["branch"],
+                supplier=SupplierFactory(tenant=shop["tenant"]),
+                amount=Decimal("100.00"),
+                method="CASH",
+                idempotency_key="pay-reraise",
+                created_by=shop["user"],
+            )
