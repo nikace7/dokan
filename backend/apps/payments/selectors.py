@@ -302,7 +302,8 @@ def customer_aging(tenant: "Tenant") -> list[dict[str, Any]]:
         buckets = entry["buckets"]
         gross = sum(buckets.values())
         unallocated = _unallocated_money(tenant, customer)
-        for label, _range in _bucket_labels():  # oldest first
+        # Oldest bucket first: unallocated money settles the oldest dues.
+        for label, _range in reversed(_bucket_labels()):
             reduction = min(unallocated, buckets[label])
             buckets[label] -= reduction
             unallocated -= reduction
