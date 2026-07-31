@@ -31,7 +31,11 @@ export function LoginPage() {
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    void signIn(phone.trim(), password).then(() => navigate('/', { replace: true }));
+    void signIn(phone.trim(), password)
+      .then(() => navigate('/', { replace: true }))
+      .catch(() => {
+        // Failure is already surfaced via loginError from the mutation.
+      });
   };
 
   return (
