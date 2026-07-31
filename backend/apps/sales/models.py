@@ -117,9 +117,10 @@ class SalesInvoice(TenantScopedModel):
             models.UniqueConstraint(
                 fields=["tenant", "idempotency_key"], name="invoice_tenant_idempotency_uniq"
             ),
-            # Completed numbers are unique; HELD bills have no number yet.
+            # Completed numbers are unique per doc_type series; HELD bills
+            # have no number yet.
             models.UniqueConstraint(
-                fields=["tenant", "branch", "fiscal_year_bs", "invoice_no"],
+                fields=["tenant", "branch", "fiscal_year_bs", "doc_type", "invoice_no"],
                 condition=Q(invoice_no__isnull=False),
                 name="invoice_gapless_number_uniq",
             ),
