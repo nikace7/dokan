@@ -14,9 +14,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Django dev server (config/urls mounts the API under /api).
+      // Django dev server (config/urls mounts the API under /api). The
+      // tenant comes from the request HOST (invariant 4), so the proxy must
+      // forward to the seeded demo tenant's subdomain — plain
+      // `localhost:8000` has no tenant and every tenant endpoint fails.
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://demo.localhost:8000',
         changeOrigin: true,
       },
     },
