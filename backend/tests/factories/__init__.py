@@ -31,6 +31,7 @@ from tests.factories.pricing import (
     PriceChangeLogFactory,
     RateTypeFactory,
 )
+from tests.factories.purchasing import SupplierFactory
 from tests.factories.sales import (
     NumberSequenceFactory,
     SalesInvoiceFactory,
@@ -59,6 +60,7 @@ __all__ = [
     "SizeChartFactory",
     "StockLevelFactory",
     "StockMovementFactory",
+    "SupplierFactory",
     "TenantFactory",
     "UserFactory",
     "UserRoleFactory",

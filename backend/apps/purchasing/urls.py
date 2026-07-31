@@ -1,5 +1,12 @@
-"""URL routes for purchasing — empty until the feature lands."""
+"""URL routes for purchasing."""
 
-from typing import Any
+from django.urls import path
 
-urlpatterns: list[Any] = []
+from apps.purchasing.views import SupplierDetailView, SupplierListView
+
+app_name = "purchasing"
+
+urlpatterns = [
+    path("purchasing/suppliers", SupplierListView.as_view(), name="supplier-list"),
+    path("purchasing/suppliers/<uuid:pk>", SupplierDetailView.as_view(), name="supplier-detail"),
+]
