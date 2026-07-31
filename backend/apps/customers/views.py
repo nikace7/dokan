@@ -116,6 +116,7 @@ class CustomerOutstandingView(_CustomerAPIView):
                 "opening_balance": str(breakdown["opening_balance"]),
                 "due_amount": str(breakdown["due_amount"]),
                 "credit_notes": str(breakdown["credit_notes"]),
+                "receipts": str(breakdown["receipts"]),
                 "outstanding": str(breakdown["outstanding"]),
                 "credit_limit": (
                     str(customer.credit_limit) if customer.credit_limit is not None else None

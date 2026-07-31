@@ -7,6 +7,7 @@ from apps.customers.views import (
     CustomerListView,
     CustomerOutstandingView,
 )
+from apps.payments.views import CustomerLedgerView
 
 app_name = "customers"
 
@@ -18,4 +19,5 @@ urlpatterns = [
         CustomerOutstandingView.as_view(),
         name="customer-outstanding",
     ),
+    path("customers/<uuid:pk>/ledger", CustomerLedgerView.as_view(), name="customer-ledger"),
 ]

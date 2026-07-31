@@ -41,6 +41,11 @@ PERMISSIONS: Final[list[PermissionDef]] = [
     PermissionDef("customer.view", "Customers", "View customers and balances"),
     PermissionDef("customer.manage", "Customers", "Create and edit customers"),
     PermissionDef("customer.credit", "Customers", "Sell on udharo / adjust credit limit"),
+    # Payments
+    PermissionDef("payment.receive", "Payments", "Receive customer payments"),
+    PermissionDef("payment.pay", "Payments", "Pay suppliers"),
+    PermissionDef("payment.view", "Payments", "View payments and ledgers"),
+    PermissionDef("cash.manage", "Payments", "Open and close cash sessions"),
     # Reports
     PermissionDef("report.sales", "Reports", "View sales reports"),
     PermissionDef("report.staff", "Reports", "View staff performance reports"),
