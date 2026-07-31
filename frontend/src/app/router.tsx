@@ -3,6 +3,7 @@ import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 import { AppLayout } from '@/app/AppLayout';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { BillingPage } from '@/features/billing/BillingPage';
 
 /**
  * Route skeleton. Feature routes mount here as modules land; super-admin
@@ -43,7 +44,10 @@ const router = createBrowserRouter([
         <AppLayout />
       </RequireAuth>
     ),
-    children: [{ path: '/', element: <DashboardPlaceholder /> }],
+    children: [
+      { path: '/', element: <DashboardPlaceholder /> },
+      { path: '/billing', element: <BillingPage /> },
+    ],
   },
   { path: '*', element: <NotFound /> },
 ]);
