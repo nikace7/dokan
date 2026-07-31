@@ -2,6 +2,7 @@
 
 from django.urls import path
 
+from apps.payments.views import SupplierLedgerView
 from apps.purchasing.views import (
     InvoiceCancelView,
     InvoiceConfirmView,
@@ -27,5 +28,10 @@ urlpatterns = [
         "purchasing/invoices/<uuid:pk>/cancel",
         InvoiceCancelView.as_view(),
         name="invoice-cancel",
+    ),
+    path(
+        "purchasing/suppliers/<uuid:pk>/ledger",
+        SupplierLedgerView.as_view(),
+        name="supplier-ledger",
     ),
 ]
