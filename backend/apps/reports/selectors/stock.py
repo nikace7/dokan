@@ -90,13 +90,14 @@ def dead_stock(
     days: int = 90,
 ) -> list[dict[str, Any]]:
     """Variants with stock on hand but no SALE movement in the last N days
-    (ledger query, not a Python loop). Per branch when branch_id is given,
-    else tenant-wide."""
-    cutoff = timezone.now() - timedelta(days=days)
+    (ledger query, not a Python loop). Recency is measured on the
+    movement's business_date_ad (the shop's operating day), per branch
+    when branch_id is given, else tenant-wide."""
+    cutoff_date = timezone.localdate() - timedelta(days=days)
     movement_scope = StockMovement.objects.filter(
         tenant=tenant,
         type=StockMovement.MovementType.SALE,
-        created_at__gte=cutoff,
+        business_date_ad__gte=cutoff_date,
     )
     if branch_id:
         movement_scope = movement_scope.filter(branch_id=branch_id)
