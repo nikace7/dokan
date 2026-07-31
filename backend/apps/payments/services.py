@@ -15,9 +15,10 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from django.db import IntegrityError, transaction
+from django.db.models import Sum
 from django.utils import timezone
 
-from apps.payments.models import Payment, PaymentAllocation
+from apps.payments.models import CashSession, Payment, PaymentAllocation
 from apps.payments.selectors import invoice_outstanding
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from core.money import quantize_money
@@ -261,3 +262,117 @@ def record_payment(
             original = Payment.objects.get(tenant=tenant, idempotency_key=key)
             return PaymentResult(payment=original, replayed=True)
         raise
+
+
+# --- Cash sessions (day close, design §1.2) ------------------------------------
+
+
+def get_open_session(tenant: "Tenant", branch: "Branch") -> CashSession | None:
+    """The branch's currently open session, if any (POS guard helper).
+
+    TODO: requiring an open session before billing is a tenant setting and
+    lands with the day-close feature slice — create_sale is not wired yet.
+    """
+    return CashSession.objects.filter(tenant=tenant, branch=branch, closed_at__isnull=True).first()
+
+
+def open_session(
+    tenant: "Tenant",
+    *,
+    branch: "Branch",
+    opening_float: Decimal,
+    opened_by: "User",
+    note: str = "",
+) -> CashSession:
+    """Open the drawer for a branch. One OPEN session per branch."""
+    opening_float = quantize_money(opening_float)
+    if opening_float < _ZERO:
+        raise ServiceError("FLOAT_INVALID", "Opening float cannot be negative.")
+    if get_open_session(tenant, branch) is not None:
+        raise ServiceError(
+            "SESSION_ALREADY_OPEN",
+            "This branch already has an open cash session.",
+            http_status=409,
+        )
+    session = CashSession(
+        tenant=tenant,
+        branch=branch,
+        opened_by=opened_by,
+        opened_at=timezone.now(),
+        opening_float=opening_float,
+        note=note or None,
+    )
+    session.save()
+    return session
+
+
+def _expected_cash(tenant: "Tenant", session: CashSession) -> Decimal:
+    """Expected drawer total at close (documented approximation).
+
+    = opening float
+    + paid_amount of COMPLETED sales in the window (tender-agnostic until
+      sale tenders are recorded per-payment — see deferral note)
+    + CASH receipts in the window
+    − CASH refunds (returns' refunds list, method CASH) in the window.
+    """
+    from apps.sales.models import SalesInvoice
+
+    sales_paid = (
+        SalesInvoice.objects.filter(
+            tenant=tenant,
+            branch=session.branch,
+            doc_type=SalesInvoice.DocType.SALE,
+            status=SalesInvoice.Status.COMPLETED,
+            created_at__gte=session.opened_at,
+        ).aggregate(total=Sum("paid_amount"))["total"]
+        or _ZERO
+    )
+
+    cash_receipts = (
+        Payment.objects.filter(
+            tenant=tenant,
+            branch=session.branch,
+            direction=Payment.Direction.RECEIPT,
+            method=Payment.Method.CASH,
+            created_at__gte=session.opened_at,
+        ).aggregate(total=Sum("amount"))["total"]
+        or _ZERO
+    )
+
+    cash_refunds = _ZERO
+    returns = SalesInvoice.objects.filter(
+        tenant=tenant,
+        branch=session.branch,
+        doc_type=SalesInvoice.DocType.RETURN,
+        created_at__gte=session.opened_at,
+    ).values_list("refunds", flat=True)
+    for refunds in returns:
+        for refund in refunds:
+            if refund.get("method") == "CASH":
+                cash_refunds += Decimal(str(refund.get("amount", "0")))
+
+    return quantize_money(session.opening_float + sales_paid + cash_receipts - cash_refunds)
+
+
+def close_session(
+    tenant: "Tenant",
+    *,
+    session: CashSession,
+    counted_cash: Decimal,
+    closed_by: "User",
+) -> CashSession:
+    """Close the drawer: snapshot expected, counted, and variance."""
+    if session.closed_at is not None:
+        raise ServiceError(
+            "SESSION_ALREADY_CLOSED", "This cash session is already closed.", http_status=409
+        )
+    counted_cash = quantize_money(counted_cash)
+    if counted_cash < _ZERO:
+        raise ServiceError("COUNT_INVALID", "Counted cash cannot be negative.")
+    session.expected_cash = _expected_cash(tenant, session)
+    session.counted_cash = counted_cash
+    session.variance = quantize_money(counted_cash - session.expected_cash)
+    session.closed_by = closed_by
+    session.closed_at = timezone.now()
+    session.save()
+    return session
