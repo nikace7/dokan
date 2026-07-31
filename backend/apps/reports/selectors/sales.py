@@ -55,9 +55,9 @@ def daily_sales(
             subtotal=Sum("subtotal", filter=Q(doc_type=_SALE)),
             discount=Sum("discount_amount", filter=Q(doc_type=_SALE)),
             vat=Sum("vat_amount", filter=Q(doc_type=_SALE)),
-            total=Sum("total", filter=Q(doc_type=_SALE)),
-            paid=Sum("paid_amount", filter=Q(doc_type=_SALE)),
-            due=Sum("due_amount", filter=Q(doc_type=_SALE)),
+            sales_total=Sum("total", filter=Q(doc_type=_SALE)),
+            sales_paid=Sum("paid_amount", filter=Q(doc_type=_SALE)),
+            sales_due=Sum("due_amount", filter=Q(doc_type=_SALE)),
             returns_count=Count("id", filter=Q(doc_type=_RETURN)),
             returns_total=Sum("total", filter=Q(doc_type=_RETURN)),
         )
@@ -70,12 +70,12 @@ def daily_sales(
             "subtotal": str(row["subtotal"] or 0),
             "discount": str(row["discount"] or 0),
             "vat": str(row["vat"] or 0),
-            "total": str(row["total"] or 0),
-            "paid": str(row["paid"] or 0),
-            "due": str(row["due"] or 0),
+            "total": str(row["sales_total"] or 0),
+            "paid": str(row["sales_paid"] or 0),
+            "due": str(row["sales_due"] or 0),
             "returns_count": row["returns_count"],
             "returns_total": str(row["returns_total"] or 0),
-            "net_total": str((row["total"] or 0) - (row["returns_total"] or 0)),
+            "net_total": str((row["sales_total"] or 0) - (row["returns_total"] or 0)),
         }
         for row in qs
     ]
@@ -97,7 +97,7 @@ def monthly_sales(
         .values("bs_month")
         .annotate(
             bill_count=Count("id", filter=Q(doc_type=_SALE)),
-            total=Sum("total", filter=Q(doc_type=_SALE)),
+            sales_total=Sum("total", filter=Q(doc_type=_SALE)),
             discount=Sum("discount_amount", filter=Q(doc_type=_SALE)),
             vat=Sum("vat_amount", filter=Q(doc_type=_SALE)),
             returns_total=Sum("total", filter=Q(doc_type=_RETURN)),
@@ -108,11 +108,11 @@ def monthly_sales(
         {
             "bs_month": row["bs_month"],
             "bill_count": row["bill_count"],
-            "total": str(row["total"] or 0),
+            "total": str(row["sales_total"] or 0),
             "discount": str(row["discount"] or 0),
             "vat": str(row["vat"] or 0),
             "returns_total": str(row["returns_total"] or 0),
-            "net_total": str((row["total"] or 0) - (row["returns_total"] or 0)),
+            "net_total": str((row["sales_total"] or 0) - (row["returns_total"] or 0)),
         }
         for row in qs
     ]

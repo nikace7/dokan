@@ -5,6 +5,7 @@ Profit rule (invariants 2 + 10): COGS comes ONLY from the snapshotted
 and the whole report requires BOTH report.profit and pricing.view_cost.
 """
 
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from django.db.models import F, Sum
@@ -14,6 +15,7 @@ from apps.payments.selectors import customer_aging, supplier_payable
 from apps.purchasing.models import Supplier
 from apps.reports.selectors._shared import resolve_date_range
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
+from core.money import quantize_money
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -83,13 +85,13 @@ def profit_report(
         {row["bs_month"] for row in revenue_rows} | set(cogs_by_month) | set(returns_by_month)
     )
     rows: list[dict[str, Any]] = []
-    totals = {"revenue": 0, "cogs": 0, "gross_profit": 0}
+    totals = {"revenue": Decimal("0"), "cogs": Decimal("0"), "gross_profit": Decimal("0")}
     for month in months:
         sales_total = (
             next((r["sales_total"] for r in revenue_rows if r["bs_month"] == month), 0) or 0
         )
         returns_total = returns_by_month.get(month) or 0
-        cogs = cogs_by_month.get(month) or 0
+        cogs = quantize_money(cogs_by_month.get(month) or 0)
         revenue = sales_total - returns_total
         gross = revenue - cogs
         rows.append(

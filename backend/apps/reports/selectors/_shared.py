@@ -1,6 +1,6 @@
 """Shared helpers for report selectors."""
 
-from core.calendar.bs import today_bs
+from core.calendar.bs import bs_to_ad, today_bs
 from core.responses import ServiceError
 
 _BS_DATE_LEN = 10
@@ -16,6 +16,10 @@ def validate_bs_date(value: str, param: str) -> str:
             valid = False
     if not valid:
         raise ServiceError("DATE_INVALID", f"Parameter '{param}' must be a BS date 'YYYY-MM-DD'.")
+    try:
+        bs_to_ad(value)  # shape is not enough: 2082-13-99 must fail too
+    except ValueError as exc:
+        raise ServiceError("DATE_INVALID", f"Parameter '{param}' is not a real BS date.") from exc
     return value
 
 
