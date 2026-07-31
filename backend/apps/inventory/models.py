@@ -104,3 +104,36 @@ class StockMovement(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.type} {self.qty_delta} {self.variant.sku} @ {self.business_date_bs}"
+
+
+class StockBatch(TenantScopedModel):
+    """Receipt batch per purchase line — exists so FIFO could be revived
+    later (costing today is moving weighted average, docs/DATABASE_SCHEMA
+    §6.3). Written only by the purchase-confirm pipeline."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    branch = models.ForeignKey("tenants.Branch", on_delete=models.CASCADE, related_name="+")
+    variant = models.ForeignKey("catalog.ItemVariant", on_delete=models.CASCADE, related_name="+")
+    purchase_item = models.ForeignKey(
+        "purchasing.PurchaseInvoiceItem",
+        on_delete=models.CASCADE,
+        related_name="batches",
+        null=True,
+        blank=True,
+    )
+    qty_in = models.DecimalField(max_digits=12, decimal_places=3)
+    qty_remaining = models.DecimalField(max_digits=12, decimal_places=3)
+    unit_cost = models.DecimalField(max_digits=14, decimal_places=2)
+    landed_cost = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    received_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "stock_batch"
+        indexes: ClassVar = [
+            models.Index(
+                fields=["tenant", "variant", "received_at"], name="batch_tenant_variant_idx"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Batch {self.variant.sku} × {self.qty_in} @ {self.landed_cost or self.unit_cost}"
