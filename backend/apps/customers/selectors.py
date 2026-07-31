@@ -54,3 +54,29 @@ def get_customer_outstanding(tenant: "Tenant", customer: Customer) -> Decimal:
                 credit_notes += Decimal(str(refund.get("amount", "0")))
 
     return quantize_money(customer.opening_balance + dues - credit_notes)
+
+
+def get_customer_outstanding_breakdown(tenant: "Tenant", customer: Customer) -> dict[str, Decimal]:
+    """The components of outstanding, for the customer detail screen."""
+    dues = SalesInvoice.objects.filter(
+        tenant=tenant,
+        customer=customer,
+        doc_type=SalesInvoice.DocType.SALE,
+        status=SalesInvoice.Status.COMPLETED,
+    ).aggregate(total=Sum("due_amount"))["total"] or Decimal("0")
+
+    credit_notes = Decimal("0")
+    refunds_lists = SalesInvoice.objects.filter(
+        tenant=tenant, customer=customer, doc_type=SalesInvoice.DocType.RETURN
+    ).values_list("refunds", flat=True)
+    for refunds in refunds_lists:
+        for refund in refunds:
+            if refund.get("method") == "CREDIT_NOTE":
+                credit_notes += Decimal(str(refund.get("amount", "0")))
+
+    return {
+        "opening_balance": quantize_money(customer.opening_balance),
+        "due_amount": quantize_money(dues),
+        "credit_notes": quantize_money(credit_notes),
+        "outstanding": quantize_money(customer.opening_balance + dues - credit_notes),
+    }

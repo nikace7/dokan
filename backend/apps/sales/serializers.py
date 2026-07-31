@@ -139,3 +139,39 @@ class SalesInvoiceDetailSerializer(SalesInvoiceSerializer):
         if not (user and user.has_perm("pricing.view_cost")):
             items_field = cast("ListSerializer", self.fields["items"])
             cast("SalesInvoiceItemSerializer", items_field.child).fields.pop("cost_at_sale", None)
+
+
+class ReturnLineSerializer(serializers.Serializer):
+    """One returned line: variant + qty (price/cost come from the original)."""
+
+    variant = serializers.UUIDField()
+    qty = serializers.DecimalField(max_digits=12, decimal_places=3)
+
+
+class RefundSerializer(serializers.Serializer):
+    """One refund settlement entry for a return's refunds list."""
+
+    method = serializers.ChoiceField(
+        choices=["CASH", "ESEWA", "KHALTI", "FONEPAY", "CARD", "BANK", "CREDIT_NOTE"]
+    )
+    amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+
+
+class ReturnCreateSerializer(serializers.Serializer):
+    """POST /sales/returns payload."""
+
+    original_invoice = serializers.UUIDField()
+    lines = ReturnLineSerializer(many=True)
+    reason = serializers.CharField(max_length=500, trim_whitespace=False)
+    refunds = RefundSerializer(many=True, required=False, default=list)
+
+
+class ExchangeCreateSerializer(serializers.Serializer):
+    """POST /sales/exchanges payload."""
+
+    original_invoice = serializers.UUIDField()
+    returned_lines = ReturnLineSerializer(many=True)
+    new_lines = SaleLineSerializer(many=True)
+    payments = PaymentSerializer(many=True, required=False, default=list)
+    reason = serializers.CharField(max_length=500, trim_whitespace=False)
+    override_reason = serializers.CharField(required=False, allow_blank=True, default="")

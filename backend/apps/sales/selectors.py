@@ -5,12 +5,13 @@ users without ``pricing.view_cost``.
 """
 
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from django.db.models import Prefetch, QuerySet
 
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
+from core.responses import ServiceError
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -62,3 +63,40 @@ def get_invoice(tenant: "Tenant", user: "User", pk: UUID) -> SalesInvoice | None
         .prefetch_related(Prefetch("items", queryset=items_qs))
         .first()
     )
+
+
+def get_returnable_lines(
+    tenant: "Tenant", user: "User", invoice_pk: UUID
+) -> list[dict[str, Any]] | None:
+    """Per-line remaining-returnable quantities for the exchange screen.
+
+    None when the invoice doesn't exist (view maps to 404); empty list is
+    valid (fully returned bill). Only COMPLETED SALE docs are returnable.
+    """
+    invoice = (
+        SalesInvoice.objects.filter(tenant=tenant, pk=invoice_pk)
+        .prefetch_related("items__variant__item")
+        .first()
+    )
+    if invoice is None:
+        return None
+    if (
+        invoice.doc_type != SalesInvoice.DocType.SALE
+        or invoice.status != SalesInvoice.Status.COMPLETED
+    ):
+        raise ServiceError(
+            "RETURN_NOT_ALLOWED",
+            "Only completed sale bills have returnable lines.",
+            http_status=409,
+        )
+    return [
+        {
+            "variant": str(item.variant_id),
+            "sku": item.variant.sku,
+            "item_name": item.variant.item.name,
+            "qty": str(item.qty),
+            "returned_qty": str(item.returned_qty),
+            "remaining": str(item.qty - item.returned_qty),
+        }
+        for item in invoice.items.all()
+    ]
