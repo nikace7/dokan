@@ -1,10 +1,15 @@
 import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 
+import { AppLayout } from '@/app/AppLayout';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { RequireAuth } from '@/features/auth/RequireAuth';
+
 /**
  * Route skeleton. Feature routes mount here as modules land; super-admin
  * routes will live under /admin and only mount on the `admin.` host
- * (docs/SYSTEM_DESIGN.md §8.3). No guards yet — auth lands with the
- * accounts feature.
+ * (docs/SYSTEM_DESIGN.md §8.3). Everything except /login sits behind
+ * RequireAuth — the API rejects unauthenticated calls anyway, the guard
+ * just saves the round-trip.
  */
 function DashboardPlaceholder() {
   return (
@@ -13,17 +18,6 @@ function DashboardPlaceholder() {
       <p className="mt-2 text-slate-600">
         Scaffold only — the real dashboard (docs/SYSTEM_DESIGN.md §7.2) lands with the reports
         feature.
-      </p>
-    </main>
-  );
-}
-
-function LoginPlaceholder() {
-  return (
-    <main className="mx-auto max-w-sm p-6">
-      <h1 className="text-2xl font-semibold">Login</h1>
-      <p className="mt-2 text-slate-600">
-        Phone + password auth (SimpleJWT) is implemented with the accounts feature.
       </p>
     </main>
   );
@@ -42,8 +36,15 @@ function NotFound() {
 }
 
 const router = createBrowserRouter([
-  { path: '/', element: <DashboardPlaceholder /> },
-  { path: '/login', element: <LoginPlaceholder /> },
+  { path: '/login', element: <LoginPage /> },
+  {
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ path: '/', element: <DashboardPlaceholder /> }],
+  },
   { path: '*', element: <NotFound /> },
 ]);
 
