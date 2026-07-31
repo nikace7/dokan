@@ -52,7 +52,11 @@ mirrors sales), `apps/payments` (append-only Payment with mandatory
 Idempotency-Key + PaymentAllocation so receipts reduce dues WITHOUT touching
 completed invoices — outstanding is ledger-derived (dues − credit notes −
 receipts) in one canonical selector; party ledgers and receivables aging;
-CashSession day-close with expected/variance snapshot). Shared API plumbing
+CashSession day-close with expected/variance snapshot), `apps/reports`
+(read-only selectors, no models: daily/monthly/item sales, stock summary /
+low / dead stock, profit pinned to cost_at_sale and gated on report.profit +
+pricing.view_cost, dues reusing canonical outstanding, sales+purchase VAT
+registers — all plain GROUP BYs on the denormalized BS columns). Shared API plumbing
 lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
