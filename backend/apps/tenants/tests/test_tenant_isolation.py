@@ -27,6 +27,7 @@ from apps.accounts.models import Role, RolePermission, User, UserRole
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.customers.models import Customer
 from apps.inventory.models import StockBatch, StockLevel, StockMovement
+from apps.payments.models import CashSession, Payment, PaymentAllocation
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
 from apps.purchasing.models import PurchaseInvoice, PurchaseInvoiceItem, Supplier
 from apps.sales.models import NumberSequence, SalesInvoice, SalesInvoiceItem
@@ -36,12 +37,15 @@ from core.models import TenantScopedModel
 from tests.factories import (
     BranchFactory,
     BrandFactory,
+    CashSessionFactory,
     CategoryFactory,
     CustomerFactory,
     ItemFactory,
     ItemPriceFactory,
     ItemVariantFactory,
     NumberSequenceFactory,
+    PaymentAllocationFactory,
+    PaymentFactory,
     PriceChangeLogFactory,
     PurchaseInvoiceFactory,
     PurchaseInvoiceItemFactory,
@@ -81,6 +85,9 @@ FACTORIES: dict[type[Any], Any] = {
     PurchaseInvoice: PurchaseInvoiceFactory,
     PurchaseInvoiceItem: PurchaseInvoiceItemFactory,
     StockBatch: StockBatchFactory,
+    Payment: PaymentFactory,
+    PaymentAllocation: PaymentAllocationFactory,
+    CashSession: CashSessionFactory,
     Customer: CustomerFactory,
     NumberSequence: NumberSequenceFactory,
     SalesInvoice: SalesInvoiceFactory,

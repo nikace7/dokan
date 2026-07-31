@@ -29,6 +29,11 @@ from tests.factories.inventory import (
     StockLevelFactory,
     StockMovementFactory,
 )
+from tests.factories.payments import (
+    CashSessionFactory,
+    PaymentAllocationFactory,
+    PaymentFactory,
+)
 from tests.factories.pricing import (
     ItemCategoryPriceFactory,
     ItemPriceFactory,
@@ -51,6 +56,7 @@ __all__ = [
     "DEFAULT_PASSWORD",
     "BranchFactory",
     "BrandFactory",
+    "CashSessionFactory",
     "CategoryFactory",
     "CustomerFactory",
     "ItemCategoryPriceFactory",
@@ -58,6 +64,8 @@ __all__ = [
     "ItemPriceFactory",
     "ItemVariantFactory",
     "NumberSequenceFactory",
+    "PaymentAllocationFactory",
+    "PaymentFactory",
     "PlanFactory",
     "PriceChangeLogFactory",
     "PurchaseInvoiceFactory",
