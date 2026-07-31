@@ -51,8 +51,12 @@ def shop(tenant: Any, user: Any) -> dict[str, Any]:
     rate_type = RateTypeFactory(tenant=tenant, is_default=True)
     variant = ItemVariantFactory(tenant=tenant, mrp=Decimal("1000.00"))
     post_opening_stock(
-        tenant, branch=branch, variant=variant, qty=Decimal("100"),
-        unit_cost=Decimal("500.00"), created_by=user,
+        tenant,
+        branch=branch,
+        variant=variant,
+        qty=Decimal("100"),
+        unit_cost=Decimal("500.00"),
+        created_by=user,
     )
     customer = CustomerFactory(tenant=tenant, credit_limit=None)
     sale = sale_services.create_sale(
