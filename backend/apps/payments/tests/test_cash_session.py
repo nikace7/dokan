@@ -213,3 +213,63 @@ class TestExpectedCash:
             closed_by=shop["user"],
         )
         assert closed.expected_cash == Decimal("100.00")
+
+
+class TestCloseValidation:
+    def test_negative_count_rejected(self, shop: dict) -> None:
+        session = services.open_session(
+            shop["tenant"],
+            branch=shop["branch"],
+            opening_float=Decimal("100.00"),
+            opened_by=shop["user"],
+        )
+        with pytest.raises(ServiceError) as exc:
+            services.close_session(
+                shop["tenant"],
+                session=session,
+                counted_cash=Decimal("-1.00"),
+                closed_by=shop["user"],
+            )
+        assert exc.value.code == "COUNT_INVALID"
+
+    def test_non_cash_refund_not_subtracted(self, shop: dict) -> None:
+        """A CREDIT_NOTE refund in the window does not reduce expected cash."""
+        session = services.open_session(
+            shop["tenant"],
+            branch=shop["branch"],
+            opening_float=Decimal("100.00"),
+            opened_by=shop["user"],
+        )
+        original = sale_services.create_sale(
+            shop["tenant"],
+            branch=shop["branch"],
+            rate_type=shop["rate_type"],
+            customer=shop["customer"],
+            lines=[
+                SaleLineInput(
+                    variant=shop["variant"],
+                    qty=Decimal("1"),
+                    unit_price=None,
+                    discount=Decimal("0"),
+                )
+            ],
+            payments=[],  # full udharo — the credit note has dues to settle against
+            idempotency_key="s-1",
+            created_by=shop["user"],
+        ).invoice
+        sale_services.create_return(
+            shop["tenant"],
+            original_invoice=original,
+            lines=[sale_services.ReturnLineInput(variant=shop["variant"], qty=Decimal("1"))],
+            reason="Wrong size",
+            refunds=[{"method": "CREDIT_NOTE", "amount": Decimal("1000.00")}],
+            idempotency_key="ret-cn",
+            created_by=shop["user"],
+        )
+        closed = services.close_session(
+            shop["tenant"],
+            session=session,
+            counted_cash=Decimal("100.00"),
+            closed_by=shop["user"],
+        )
+        assert closed.expected_cash == Decimal("100.00")  # just the float
