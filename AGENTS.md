@@ -39,7 +39,12 @@ above-max; PriceChangeLog written in the same transaction as every price change)
 resolution, documented 13% VAT rule, udharo + credit-limit enforcement, SALE
 ledger postings, gapless per-branch-per-fiscal-year numbering, cost_at_sale
 snapshots, mandatory Idempotency-Key with 200-replay; held-bill flow where HELD
-takes no stock and no invoice number; COMPLETED terminal). Shared API plumbing
+takes no stock and no invoice number; COMPLETED terminal), returns & exchange
+(`apps/sales/services/returns.py` — credit notes with their own gapless RETURN
+numbering series, proportional discount/VAT math, SALE_RETURN at original
+cost_at_sale, refunds JSON settlement incl. CREDIT_NOTE against udharo with
+computed outstanding; `apps/sales/services/exchange.py` — one transaction, one
+exchange_group_id, RETURN + SALE docs with net settlement). Shared API plumbing
 lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
