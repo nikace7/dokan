@@ -3,11 +3,9 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from django.db.models import QuerySet, Sum
+from django.db.models import QuerySet
 
 from apps.customers.models import Customer
-from apps.sales.models import SalesInvoice
-from core.money import quantize_money
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -31,52 +29,16 @@ def list_customers(
 
 
 def get_customer_outstanding(tenant: "Tenant", customer: Customer) -> Decimal:
-    """Udharo outstanding = opening balance + sale dues − credit notes.
+    """Canonical outstanding — delegates to apps/payments/selectors.py
+    (single implementation: dues − credit notes − receipts)."""
+    from apps.payments.selectors import customer_outstanding
 
-    Credit notes are the CREDIT_NOTE entries in RETURN invoices' refunds
-    lists — the original invoice is never edited to apply a return credit
-    (invariant 3), so outstanding is a computed view.
-    """
-    dues = SalesInvoice.objects.filter(
-        tenant=tenant,
-        customer=customer,
-        doc_type=SalesInvoice.DocType.SALE,
-        status=SalesInvoice.Status.COMPLETED,
-    ).aggregate(total=Sum("due_amount"))["total"] or Decimal("0")
-
-    credit_notes = Decimal("0")
-    refunds_lists = SalesInvoice.objects.filter(
-        tenant=tenant, customer=customer, doc_type=SalesInvoice.DocType.RETURN
-    ).values_list("refunds", flat=True)
-    for refunds in refunds_lists:
-        for refund in refunds:
-            if refund.get("method") == "CREDIT_NOTE":
-                credit_notes += Decimal(str(refund.get("amount", "0")))
-
-    return quantize_money(customer.opening_balance + dues - credit_notes)
+    return customer_outstanding(tenant, customer)
 
 
 def get_customer_outstanding_breakdown(tenant: "Tenant", customer: Customer) -> dict[str, Decimal]:
-    """The components of outstanding, for the customer detail screen."""
-    dues = SalesInvoice.objects.filter(
-        tenant=tenant,
-        customer=customer,
-        doc_type=SalesInvoice.DocType.SALE,
-        status=SalesInvoice.Status.COMPLETED,
-    ).aggregate(total=Sum("due_amount"))["total"] or Decimal("0")
+    """The components of outstanding — delegates to the canonical
+    payments selector (adds the receipts component)."""
+    from apps.payments.selectors import customer_outstanding_breakdown
 
-    credit_notes = Decimal("0")
-    refunds_lists = SalesInvoice.objects.filter(
-        tenant=tenant, customer=customer, doc_type=SalesInvoice.DocType.RETURN
-    ).values_list("refunds", flat=True)
-    for refunds in refunds_lists:
-        for refund in refunds:
-            if refund.get("method") == "CREDIT_NOTE":
-                credit_notes += Decimal(str(refund.get("amount", "0")))
-
-    return {
-        "opening_balance": quantize_money(customer.opening_balance),
-        "due_amount": quantize_money(dues),
-        "credit_notes": quantize_money(credit_notes),
-        "outstanding": quantize_money(customer.opening_balance + dues - credit_notes),
-    }
+    return customer_outstanding_breakdown(tenant, customer)
