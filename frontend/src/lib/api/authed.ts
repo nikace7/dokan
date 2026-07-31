@@ -10,8 +10,8 @@
  * module only owns the token lifecycle.
  */
 
-import { ApiError, apiRequest } from '@/lib/api/client';
-import type { RequestOptions } from '@/lib/api/client';
+import { ApiError, apiRequest, apiRequestPage } from '@/lib/api/client';
+import type { Page, RequestOptions } from '@/lib/api/client';
 import {
   clearTokens,
   getAccessToken,
@@ -71,8 +71,26 @@ function refreshTokensOnce(): Promise<boolean> {
  * retry; a second 401 (or a failed refresh) clears the session.
  */
 export async function authedRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return withAuthRetry((opts) => apiRequest<T>(path, opts), options);
+}
+
+/**
+ * Authenticated variant of `apiRequestPage` for paginated list endpoints,
+ * with the same refresh-once-on-401 behaviour as `authedRequest`.
+ */
+export async function authedRequestPage<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<Page<T>> {
+  return withAuthRetry((opts) => apiRequestPage<T>(path, opts), options);
+}
+
+async function withAuthRetry<T>(
+  call: (options: RequestOptions) => Promise<T>,
+  options: RequestOptions,
+): Promise<T> {
   try {
-    return await apiRequest<T>(path, { ...options, accessToken: getAccessToken() ?? undefined });
+    return await call({ ...options, accessToken: getAccessToken() ?? undefined });
   } catch (err) {
     if (!(err instanceof ApiError) || err.status !== 401) {
       throw err;
@@ -84,7 +102,7 @@ export async function authedRequest<T>(path: string, options: RequestOptions = {
       throw err;
     }
     try {
-      return await apiRequest<T>(path, { ...options, accessToken: getAccessToken() ?? undefined });
+      return await call({ ...options, accessToken: getAccessToken() ?? undefined });
     } catch (retryErr) {
       if (retryErr instanceof ApiError && retryErr.status === 401) {
         clearTokens();

@@ -125,3 +125,70 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   // Non-envelope responses (e.g. file downloads) are passed through untouched.
   return parsed as T;
 }
+
+/** Pagination block carried in the envelope `meta` of list endpoints. */
+export interface PageMeta {
+  count: number;
+  page: number;
+  total_pages: number;
+  page_size: number;
+}
+
+export interface Page<T> {
+  data: T[];
+  meta: PageMeta | null;
+}
+
+/**
+ * Like `apiRequest`, but for paginated list endpoints: returns the page of
+ * rows together with the envelope `meta` (count/page/total_pages).
+ */
+export async function apiRequestPage<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<Page<T>> {
+  const { method = 'GET', body, idempotencyKey, accessToken, signal } = options;
+
+  const headers = new Headers({ Accept: 'application/json' });
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  let payload: BodyInit | undefined;
+  if (body !== undefined) {
+    headers.set('Content-Type', 'application/json');
+    payload = JSON.stringify(body);
+  }
+  if (method === 'POST' && idempotencyKey) {
+    headers.set('Idempotency-Key', idempotencyKey);
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers,
+    body: payload,
+    credentials: 'include',
+    signal,
+  });
+
+  const parsed: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const errorBody =
+      isEnvelope(parsed) && parsed.error
+        ? parsed.error
+        : ({ message: response.statusText } as ApiErrorBody);
+    throw new ApiError(response.status, errorBody);
+  }
+  if (!isEnvelope(parsed) || parsed.error) {
+    throw new ApiError(response.status, isEnvelope(parsed) ? parsed.error : null);
+  }
+
+  const meta = parsed.meta;
+  return {
+    data: (parsed.data ?? []) as T[],
+    meta:
+      meta && typeof meta.count === 'number'
+        ? (meta as unknown as PageMeta)
+        : null,
+  };
+}
