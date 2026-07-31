@@ -5,11 +5,19 @@ field layer for users without ``pricing.view_cost`` (the selectors already
 defer the columns, so the values never reach the serializer either).
 """
 
-from typing import Any
+from typing import Any, cast
 
 from rest_framework import serializers
+from rest_framework.serializers import ListSerializer
 
-from apps.inventory.models import StockLevel, StockMovement
+from apps.inventory.models import (
+    StockCount,
+    StockCountItem,
+    StockLevel,
+    StockMovement,
+    StockTransfer,
+    StockTransferItem,
+)
 
 
 class CostAwareSerializer(serializers.ModelSerializer):
@@ -110,3 +118,147 @@ class WriteOffSerializer(serializers.Serializer):
     variant = serializers.UUIDField()
     qty = serializers.DecimalField(max_digits=12, decimal_places=3)
     reason = serializers.CharField(max_length=500, trim_whitespace=False)
+
+
+class TransferLineInputSerializer(serializers.Serializer):
+    """One transfer line (create or receive)."""
+
+    variant = serializers.UUIDField()
+    qty = serializers.DecimalField(max_digits=12, decimal_places=3)
+
+
+class TransferCreateSerializer(serializers.Serializer):
+    """POST /inventory/transfers payload."""
+
+    from_branch = serializers.UUIDField()
+    to_branch = serializers.UUIDField()
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+    lines = TransferLineInputSerializer(many=True)
+
+
+class TransferReceiveSerializer(serializers.Serializer):
+    """POST /inventory/transfers/<id>/receive payload."""
+
+    lines = TransferLineInputSerializer(many=True)
+
+
+class StockTransferItemSerializer(serializers.ModelSerializer):
+    variant_sku = serializers.CharField(source="variant.sku", read_only=True)
+    item_name = serializers.CharField(source="variant.item.name", read_only=True)
+
+    class Meta:
+        model = StockTransferItem
+        fields = (
+            "id",
+            "variant",
+            "variant_sku",
+            "item_name",
+            "qty_sent",
+            "qty_received",
+            "unit_cost",
+        )
+        read_only_fields = fields
+
+
+class StockTransferSerializer(CostAwareSerializer):
+    """Drops line unit_cost for users without pricing.view_cost.
+
+    The drop happens HERE, not in the child's __init__: declared nested
+    fields are built at class-definition time without request context
+    (same trap as the sales detail serializer).
+    """
+
+    from_branch_code = serializers.CharField(source="from_branch.code", read_only=True)
+    to_branch_code = serializers.CharField(source="to_branch.code", read_only=True)
+    created_by_name = serializers.CharField(
+        source="created_by.full_name", read_only=True, allow_null=True
+    )
+    items = StockTransferItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = StockTransfer
+        fields = (
+            "id",
+            "from_branch",
+            "from_branch_code",
+            "to_branch",
+            "to_branch_code",
+            "status",
+            "sent_at",
+            "received_at",
+            "note",
+            "created_by",
+            "created_by_name",
+            "created_at",
+            "items",
+        )
+        read_only_fields = fields
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        user = self.context.get("user")
+        if not (user and user.has_perm("pricing.view_cost")):
+            items_field = cast("ListSerializer", self.fields["items"])
+            cast("StockTransferItemSerializer", items_field.child).fields.pop("unit_cost", None)
+
+
+class CountCreateSerializer(serializers.Serializer):
+    """POST /inventory/counts payload."""
+
+    branch = serializers.UUIDField()
+
+
+class CountRecordLineSerializer(serializers.Serializer):
+    """One counted line."""
+
+    variant = serializers.UUIDField()
+    counted_qty = serializers.DecimalField(max_digits=12, decimal_places=3)
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class CountRecordSerializer(serializers.Serializer):
+    """POST /inventory/counts/<id>/record payload."""
+
+    counts = CountRecordLineSerializer(many=True)
+
+
+class StockCountItemSerializer(serializers.ModelSerializer):
+    variant_sku = serializers.CharField(source="variant.sku", read_only=True)
+    item_name = serializers.CharField(source="variant.item.name", read_only=True)
+
+    class Meta:
+        model = StockCountItem
+        fields = (
+            "id",
+            "variant",
+            "variant_sku",
+            "item_name",
+            "system_qty",
+            "counted_qty",
+            "variance",
+            "note",
+        )
+        read_only_fields = fields
+
+
+class StockCountSerializer(serializers.ModelSerializer):
+    branch_code = serializers.CharField(source="branch.code", read_only=True)
+    created_by_name = serializers.CharField(
+        source="created_by.full_name", read_only=True, allow_null=True
+    )
+    items = StockCountItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = StockCount
+        fields = (
+            "id",
+            "branch",
+            "branch_code",
+            "status",
+            "started_at",
+            "finalized_at",
+            "created_by",
+            "created_by_name",
+            "items",
+        )
+        read_only_fields = fields

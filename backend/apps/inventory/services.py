@@ -331,11 +331,17 @@ def _apply_stock_in(
     variant: "ItemVariant",
     qty: Decimal,
     unit_cost: Decimal,
+    *,
+    update_variant_cost: bool = True,
 ) -> tuple[StockLevel, Decimal]:
     """Lock the level, add qty, fold cost into the moving weighted average.
 
     Shared by OPENING and PURCHASE postings. MUST run inside the caller's
     transaction. Returns (level, new_avg_cost).
+
+    ``update_variant_cost=False`` (transfers only): stock moving between
+    branches keeps the SAME cost basis, so the tenant-wide variant.avg_cost
+    must not be overwritten with the destination branch's average.
     """
     level = _lock_level(tenant, branch, variant)
     old_qty, old_avg = level.qty_on_hand, level.avg_cost
@@ -345,8 +351,9 @@ def _apply_stock_in(
     level.avg_cost = new_avg
     level.save(update_fields=["qty_on_hand", "avg_cost", "updated_at"])
 
-    variant.avg_cost = new_avg  # inventory owns this column
-    variant.save(update_fields=["avg_cost", "updated_at"])
+    if update_variant_cost:
+        variant.avg_cost = new_avg  # inventory owns this column
+        variant.save(update_fields=["avg_cost", "updated_at"])
     return level, new_avg
 
 
