@@ -8,6 +8,7 @@ import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
 import { ItemFormPage } from '@/features/catalog/ItemFormPage';
 import { ItemsPage } from '@/features/catalog/ItemsPage';
 import { StockPage } from '@/features/inventory/StockPage';
+import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
 
 /**
  * Route skeleton. Feature routes mount here as modules land; super-admin
@@ -56,6 +57,7 @@ const router = createBrowserRouter([
       { path: '/catalog/items/:id', element: <ItemDetailPage /> },
       { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
       { path: '/stock', element: <StockPage /> },
+      { path: '/purchasing', element: <PurchasingPage /> },
     ],
   },
   { path: '*', element: <NotFound /> },
