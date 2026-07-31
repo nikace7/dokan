@@ -6,12 +6,21 @@ columns never enter application memory for them.
 """
 
 from datetime import date
-from typing import TYPE_CHECKING
+from decimal import Decimal
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from django.db.models import QuerySet
+from django.db import models
+from django.db.models import F, QuerySet, Sum
+from django.db.models.functions import Coalesce
 
-from apps.inventory.models import StockLevel, StockMovement
+from apps.inventory.models import (
+    StockCount,
+    StockLevel,
+    StockMovement,
+    StockTransfer,
+    StockTransferItem,
+)
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -74,3 +83,75 @@ def list_movements(
     if not user.has_perm("pricing.view_cost"):
         qs = qs.defer("unit_cost")
     return qs.order_by("-created_at")
+
+
+def list_transfers(
+    tenant: "Tenant",
+    user: "User",
+    *,
+    status: str = "",
+    branch_id: "UUID | None" = None,
+) -> "QuerySet[StockTransfer]":
+    qs = StockTransfer.objects.filter(tenant=tenant).select_related(
+        "from_branch", "to_branch", "created_by"
+    )
+    if status:
+        qs = qs.filter(status=status)
+    if branch_id:
+        qs = qs.filter(models.Q(from_branch_id=branch_id) | models.Q(to_branch_id=branch_id))
+    return qs.order_by("-created_at")
+
+
+def get_transfer(tenant: "Tenant", user: "User", pk: "UUID") -> "StockTransfer | None":
+    return (
+        StockTransfer.objects.filter(tenant=tenant, pk=pk)
+        .select_related("from_branch", "to_branch", "created_by")
+        .prefetch_related("items__variant__item")
+        .first()
+    )
+
+
+def in_transit(tenant: "Tenant", *, branch_id: "UUID | None" = None) -> list[dict[str, Any]]:
+    """Stock between branches right now: Σ(qty_sent − qty_received) over
+    SENT transfers, per variant (see StockTransfer's in-transit model)."""
+    qs = StockTransferItem.objects.filter(tenant=tenant, transfer__status=StockTransfer.Status.SENT)
+    if branch_id:
+        qs = qs.filter(transfer__from_branch_id=branch_id)
+    rows = (
+        qs.values("variant_id", "variant__sku", "variant__item__name")
+        .annotate(in_transit=Sum(F("qty_sent") - Coalesce(F("qty_received"), Decimal("0"))))
+        .order_by("variant__sku")
+    )
+    return [
+        {
+            "variant_id": str(row["variant_id"]),
+            "sku": row["variant__sku"],
+            "item_name": row["variant__item__name"],
+            "qty_in_transit": str(row["in_transit"]),
+        }
+        for row in rows
+    ]
+
+
+def list_counts(
+    tenant: "Tenant",
+    user: "User",
+    *,
+    status: str = "",
+    branch_id: "UUID | None" = None,
+) -> "QuerySet[StockCount]":
+    qs = StockCount.objects.filter(tenant=tenant).select_related("branch", "created_by")
+    if status:
+        qs = qs.filter(status=status)
+    if branch_id:
+        qs = qs.filter(branch_id=branch_id)
+    return qs.order_by("-started_at")
+
+
+def get_count(tenant: "Tenant", user: "User", pk: "UUID") -> "StockCount | None":
+    return (
+        StockCount.objects.filter(tenant=tenant, pk=pk)
+        .select_related("branch", "created_by")
+        .prefetch_related("items__variant__item")
+        .first()
+    )
