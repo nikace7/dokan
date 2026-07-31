@@ -44,7 +44,11 @@ takes no stock and no invoice number; COMPLETED terminal), returns & exchange
 numbering series, proportional discount/VAT math, SALE_RETURN at original
 cost_at_sale, refunds JSON settlement incl. CREDIT_NOTE against udharo with
 computed outstanding; `apps/sales/services/exchange.py` — one transaction, one
-exchange_group_id, RETURN + SALE docs with net settlement). Shared API plumbing
+exchange_group_id, RETURN + SALE docs with net settlement), `apps/purchasing`
+(Supplier CRUD; PurchaseInvoice DRAFT→CONFIRMED pipeline posting PURCHASE
+movements at landed unit cost — exact-paisa largest-remainder allocation of
+other_charges — with StockBatch rows and a PURCHASE numbering series; VAT rule
+mirrors sales). Shared API plumbing
 lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining

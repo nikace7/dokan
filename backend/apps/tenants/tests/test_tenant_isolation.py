@@ -26,8 +26,9 @@ from django.db import ProgrammingError, connection, transaction
 from apps.accounts.models import Role, RolePermission, User, UserRole
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.customers.models import Customer
-from apps.inventory.models import StockLevel, StockMovement
+from apps.inventory.models import StockBatch, StockLevel, StockMovement
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
+from apps.purchasing.models import PurchaseInvoice, PurchaseInvoiceItem, Supplier
 from apps.sales.models import NumberSequence, SalesInvoice, SalesInvoiceItem
 from apps.tenants.models import Branch
 from core.db.rls import set_local_tenant
@@ -42,14 +43,18 @@ from tests.factories import (
     ItemVariantFactory,
     NumberSequenceFactory,
     PriceChangeLogFactory,
+    PurchaseInvoiceFactory,
+    PurchaseInvoiceItemFactory,
     RateTypeFactory,
     RoleFactory,
     RolePermissionFactory,
     SalesInvoiceFactory,
     SalesInvoiceItemFactory,
     SizeChartFactory,
+    StockBatchFactory,
     StockLevelFactory,
     StockMovementFactory,
+    SupplierFactory,
     TenantFactory,
     UserFactory,
     UserRoleFactory,
@@ -72,6 +77,10 @@ FACTORIES: dict[type[Any], Any] = {
     RateType: RateTypeFactory,
     ItemPrice: ItemPriceFactory,
     PriceChangeLog: PriceChangeLogFactory,
+    Supplier: SupplierFactory,
+    PurchaseInvoice: PurchaseInvoiceFactory,
+    PurchaseInvoiceItem: PurchaseInvoiceItemFactory,
+    StockBatch: StockBatchFactory,
     Customer: CustomerFactory,
     NumberSequence: NumberSequenceFactory,
     SalesInvoice: SalesInvoiceFactory,
