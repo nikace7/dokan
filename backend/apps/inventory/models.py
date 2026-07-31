@@ -137,3 +137,130 @@ class StockBatch(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"Batch {self.variant.sku} × {self.qty_in} @ {self.landed_cost or self.unit_cost}"
+
+
+class StockTransfer(TenantScopedModel):
+    """Move stock between branches with an in-transit state.
+
+    In-transit model (documented): qty leaves the source on SEND
+    (TRANSFER_OUT) and arrives at the destination on RECEIVE
+    (TRANSFER_IN). Between the two, the stock is in NEITHER branch's
+    qty_on_hand — in-transit quantity = Σ(qty_sent − qty_received) over
+    SENT transfers, exposed via selectors.in_transit. The monthly drift
+    job must add in-transit to the reconciliation.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT"
+        SENT = "SENT"
+        RECEIVED = "RECEIVED"
+        CANCELLED = "CANCELLED"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    from_branch = models.ForeignKey("tenants.Branch", on_delete=models.PROTECT, related_name="+")
+    to_branch = models.ForeignKey("tenants.Branch", on_delete=models.PROTECT, related_name="+")
+    status = models.TextField(choices=Status.choices, default=Status.DRAFT)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
+    note = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "stock_transfer"
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(from_branch=models.F("to_branch")),
+                name="transfer_branch_check",
+            )
+        ]
+        indexes: ClassVar = [
+            models.Index(fields=["tenant", "from_branch"], name="transfer_tenant_from_idx"),
+            models.Index(fields=["tenant", "to_branch"], name="transfer_tenant_to_idx"),
+            models.Index(fields=["tenant", "status"], name="transfer_tenant_status_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"Transfer {self.from_branch.code} → {self.to_branch.code} ({self.status})"
+
+
+class StockTransferItem(TenantScopedModel):
+    """One transfer line. unit_cost snapshots the source's avg_cost at
+    send time (documented addition to the schema sketch): the TRANSFER_IN
+    at destination folds in at exactly this basis, so the tenant-wide
+    average is undisturbed."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    transfer = models.ForeignKey(StockTransfer, on_delete=models.CASCADE, related_name="items")
+    variant = models.ForeignKey("catalog.ItemVariant", on_delete=models.PROTECT, related_name="+")
+    qty_sent = models.DecimalField(max_digits=12, decimal_places=3)
+    qty_received = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    unit_cost = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        db_table = "stock_transfer_item"
+        indexes: ClassVar = [
+            models.Index(fields=["transfer"], name="transfer_item_transfer_idx"),
+            models.Index(fields=["tenant", "variant"], name="transfer_item_variant_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.variant.sku} × {self.qty_sent}"
+
+
+class StockCount(TenantScopedModel):
+    """Physical count of a branch. One OPEN count per branch at a time."""
+
+    class Status(models.TextChoices):
+        OPEN = "OPEN"
+        FINALIZED = "FINALIZED"
+        CANCELLED = "CANCELLED"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    branch = models.ForeignKey("tenants.Branch", on_delete=models.PROTECT, related_name="+")
+    status = models.TextField(choices=Status.choices, default=Status.OPEN)
+    started_at = models.DateTimeField()
+    finalized_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
+
+    class Meta:
+        db_table = "stock_count"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["branch"],
+                condition=Q(status="OPEN"),
+                name="stock_count_one_open_per_branch",
+            )
+        ]
+        indexes: ClassVar = [
+            models.Index(fields=["tenant", "branch", "-started_at"], name="count_tenant_branch_idx")
+        ]
+
+    def __str__(self) -> str:
+        return f"Count {self.branch.code} ({self.status})"
+
+
+class StockCountItem(TenantScopedModel):
+    """One count line. system_qty is the snapshot at start and is never
+    rewritten; variance = counted_qty − system_qty at entry."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    count = models.ForeignKey(StockCount, on_delete=models.CASCADE, related_name="items")
+    variant = models.ForeignKey("catalog.ItemVariant", on_delete=models.PROTECT, related_name="+")
+    system_qty = models.DecimalField(max_digits=12, decimal_places=3)
+    counted_qty = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    variance = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    note = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "stock_count_item"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["count", "variant"], name="count_item_count_variant_uniq"
+            )
+        ]
+        indexes: ClassVar = [
+            models.Index(fields=["tenant", "variant"], name="count_item_variant_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.variant.sku}: {self.system_qty} → {self.counted_qty}"
