@@ -280,3 +280,46 @@ def write_off_damage(
             note=reason,
             business_date=business_date,
         )
+
+
+def post_sale_return_movement(
+    tenant: "Tenant",
+    *,
+    branch: "Branch",
+    variant: "ItemVariant",
+    qty: Decimal,
+    unit_cost: Decimal,
+    created_by: "User",
+    ref_type: str,
+    ref_id: "UUID",
+    note: str = "",
+    business_date: date | None = None,
+) -> StockMovement:
+    """Return stock from a sale (SALE_RETURN movement) at the ORIGINAL cost.
+
+    MUST be called inside the caller's transaction — the return/exchange
+    service owns it. Stock comes back in at the sale-time cost
+    (cost_at_sale), so the moving weighted average is mathematically
+    undisturbed: never recomputed here (invariant 2).
+    """
+    qty = Decimal(qty)
+    if qty <= _ZERO:
+        raise ServiceError("QTY_INVALID", "Return quantity must be greater than zero.")
+    level = _lock_level(tenant, branch, variant)
+    new_qty = level.qty_on_hand + qty
+    level.qty_on_hand = new_qty
+    level.save(update_fields=["qty_on_hand", "updated_at"])
+    return _write_movement(
+        tenant,
+        branch=branch,
+        variant=variant,
+        movement_type=StockMovement.MovementType.SALE_RETURN,
+        qty_delta=qty,
+        unit_cost=quantize_money(unit_cost),
+        balance_after=new_qty,
+        created_by=created_by,
+        note=note,
+        business_date=business_date,
+        ref_type=ref_type,
+        ref_id=ref_id,
+    )

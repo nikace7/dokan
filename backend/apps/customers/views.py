@@ -99,3 +99,26 @@ class CustomerDetailView(_CustomerAPIView):
         customer = _get_or_404(tenant, pk)
         services.deactivate_customer(customer)
         return ok({"id": str(pk), "is_active": False})
+
+
+class CustomerOutstandingView(_CustomerAPIView):
+    """GET /customers/<id>/outstanding — dues minus credit notes."""
+
+    method_permissions: ClassVar[dict[str, str]] = {"GET": "customer.view"}
+
+    def get(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        customer = _get_or_404(tenant, pk)
+        breakdown = selectors.get_customer_outstanding_breakdown(tenant, customer)
+        return ok(
+            {
+                "customer": str(customer.pk),
+                "opening_balance": str(breakdown["opening_balance"]),
+                "due_amount": str(breakdown["due_amount"]),
+                "credit_notes": str(breakdown["credit_notes"]),
+                "outstanding": str(breakdown["outstanding"]),
+                "credit_limit": (
+                    str(customer.credit_limit) if customer.credit_limit is not None else None
+                ),
+            }
+        )

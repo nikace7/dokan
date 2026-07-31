@@ -105,6 +105,10 @@ class SalesInvoice(TenantScopedModel):
     fiscal_year_bs = models.CharField(max_length=7)
     device_id = models.TextField(null=True, blank=True)
     idempotency_key = models.TextField()
+    # RETURN docs only: how the credit was settled — [{method, amount}],
+    # method CASH/ESEWA/… for money back, CREDIT_NOTE for udharo reduction,
+    # EXCHANGE_APPLIED for credit consumed by an exchange sale.
+    refunds = models.JSONField(default=list)
     created_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
 
     class Meta:
@@ -113,9 +117,10 @@ class SalesInvoice(TenantScopedModel):
             models.UniqueConstraint(
                 fields=["tenant", "idempotency_key"], name="invoice_tenant_idempotency_uniq"
             ),
-            # Completed numbers are unique; HELD bills have no number yet.
+            # Completed numbers are unique per doc_type series; HELD bills
+            # have no number yet.
             models.UniqueConstraint(
-                fields=["tenant", "branch", "fiscal_year_bs", "invoice_no"],
+                fields=["tenant", "branch", "fiscal_year_bs", "doc_type", "invoice_no"],
                 condition=Q(invoice_no__isnull=False),
                 name="invoice_gapless_number_uniq",
             ),
