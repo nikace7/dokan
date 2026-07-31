@@ -8,8 +8,17 @@ from factory import LazyAttribute, LazyFunction, SelfAttribute, SubFactory
 from factory.declarations import Sequence
 from factory.django import DjangoModelFactory
 
-from apps.inventory.models import StockBatch, StockLevel, StockMovement
+from apps.inventory.models import (
+    StockBatch,
+    StockCount,
+    StockCountItem,
+    StockLevel,
+    StockMovement,
+    StockTransfer,
+    StockTransferItem,
+)
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
+from tests.factories.accounts import UserFactory
 from tests.factories.branch import BranchFactory
 from tests.factories.catalog import ItemVariantFactory
 from tests.factories.tenant import TenantFactory
@@ -54,3 +63,43 @@ class StockBatchFactory(DjangoModelFactory):
     qty_remaining = Decimal("1")
     unit_cost = Decimal("100.00")
     received_at = LazyFunction(timezone.now)
+
+
+class StockTransferFactory(DjangoModelFactory):
+    class Meta:
+        model = StockTransfer
+
+    tenant = SubFactory(TenantFactory)
+    from_branch = SubFactory(BranchFactory, tenant=SelfAttribute("..tenant"))
+    to_branch = SubFactory(BranchFactory, tenant=SelfAttribute("..tenant"))
+    created_by = SubFactory(UserFactory, tenant=SelfAttribute("..tenant"))
+
+
+class StockTransferItemFactory(DjangoModelFactory):
+    class Meta:
+        model = StockTransferItem
+
+    tenant = SubFactory(TenantFactory)
+    transfer = SubFactory(StockTransferFactory, tenant=SelfAttribute("..tenant"))
+    variant = SubFactory(ItemVariantFactory, tenant=SelfAttribute("..tenant"))
+    qty_sent = Decimal("1")
+
+
+class StockCountFactory(DjangoModelFactory):
+    class Meta:
+        model = StockCount
+
+    tenant = SubFactory(TenantFactory)
+    branch = SubFactory(BranchFactory, tenant=SelfAttribute("..tenant"))
+    started_at = LazyFunction(timezone.now)
+    created_by = SubFactory(UserFactory, tenant=SelfAttribute("..tenant"))
+
+
+class StockCountItemFactory(DjangoModelFactory):
+    class Meta:
+        model = StockCountItem
+
+    tenant = SubFactory(TenantFactory)
+    count = SubFactory(StockCountFactory, tenant=SelfAttribute("..tenant"))
+    variant = SubFactory(ItemVariantFactory, tenant=SelfAttribute("..tenant"))
+    system_qty = Decimal("1")

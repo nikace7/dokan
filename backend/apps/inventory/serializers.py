@@ -5,9 +5,10 @@ field layer for users without ``pricing.view_cost`` (the selectors already
 defer the columns, so the values never reach the serializer either).
 """
 
-from typing import Any
+from typing import Any, cast
 
 from rest_framework import serializers
+from rest_framework.serializers import ListSerializer
 
 from apps.inventory.models import (
     StockCount,
@@ -141,7 +142,7 @@ class TransferReceiveSerializer(serializers.Serializer):
     lines = TransferLineInputSerializer(many=True)
 
 
-class StockTransferItemSerializer(CostAwareSerializer):
+class StockTransferItemSerializer(serializers.ModelSerializer):
     variant_sku = serializers.CharField(source="variant.sku", read_only=True)
     item_name = serializers.CharField(source="variant.item.name", read_only=True)
 
@@ -160,6 +161,13 @@ class StockTransferItemSerializer(CostAwareSerializer):
 
 
 class StockTransferSerializer(CostAwareSerializer):
+    """Drops line unit_cost for users without pricing.view_cost.
+
+    The drop happens HERE, not in the child's __init__: declared nested
+    fields are built at class-definition time without request context
+    (same trap as the sales detail serializer).
+    """
+
     from_branch_code = serializers.CharField(source="from_branch.code", read_only=True)
     to_branch_code = serializers.CharField(source="to_branch.code", read_only=True)
     created_by_name = serializers.CharField(
@@ -185,6 +193,13 @@ class StockTransferSerializer(CostAwareSerializer):
             "items",
         )
         read_only_fields = fields
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        user = self.context.get("user")
+        if not (user and user.has_perm("pricing.view_cost")):
+            items_field = cast("ListSerializer", self.fields["items"])
+            cast("StockTransferItemSerializer", items_field.child).fields.pop("unit_cost", None)
 
 
 class CountCreateSerializer(serializers.Serializer):

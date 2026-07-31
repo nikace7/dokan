@@ -26,7 +26,15 @@ from django.db import ProgrammingError, connection, transaction
 from apps.accounts.models import Role, RolePermission, User, UserRole
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.customers.models import Customer
-from apps.inventory.models import StockBatch, StockLevel, StockMovement
+from apps.inventory.models import (
+    StockBatch,
+    StockCount,
+    StockCountItem,
+    StockLevel,
+    StockMovement,
+    StockTransfer,
+    StockTransferItem,
+)
 from apps.payments.models import CashSession, Payment, PaymentAllocation
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
 from apps.purchasing.models import PurchaseInvoice, PurchaseInvoiceItem, Supplier
@@ -56,8 +64,12 @@ from tests.factories import (
     SalesInvoiceItemFactory,
     SizeChartFactory,
     StockBatchFactory,
+    StockCountFactory,
+    StockCountItemFactory,
     StockLevelFactory,
     StockMovementFactory,
+    StockTransferFactory,
+    StockTransferItemFactory,
     SupplierFactory,
     TenantFactory,
     UserFactory,
@@ -85,6 +97,10 @@ FACTORIES: dict[type[Any], Any] = {
     PurchaseInvoice: PurchaseInvoiceFactory,
     PurchaseInvoiceItem: PurchaseInvoiceItemFactory,
     StockBatch: StockBatchFactory,
+    StockTransfer: StockTransferFactory,
+    StockTransferItem: StockTransferItemFactory,
+    StockCount: StockCountFactory,
+    StockCountItem: StockCountItemFactory,
     Payment: PaymentFactory,
     PaymentAllocation: PaymentAllocationFactory,
     CashSession: CashSessionFactory,
