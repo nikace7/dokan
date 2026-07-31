@@ -22,6 +22,21 @@ file is the quickstart.
 4. `/billing` is the POS screen: scan a barcode (or type a SKU), tender,
    complete. Parked bills resume from the "Held bills" list.
 
+## Screens
+
+The demo workflow covers the full loop in the browser:
+
+- `/catalog` — items list (search, category/status filters) with create/edit
+  forms and inline quick-add for categories, brands, and size charts. Item
+  detail hosts the size × colour matrix entry (one bulk POST for the whole
+  grid) and the variant table.
+- `/stock` — the stock-level projection (read-only by design) plus the
+  "Add opening stock" dialog. The avg-cost column appears only for users
+  whose backend permissions expose it.
+- `/purchasing` — suppliers and purchase invoices: save a DRAFT, then
+  Confirm (guarded, irreversible) to post stock and update cost.
+- `/billing` — the POS screen.
+
 ## Scripts
 
 | Command | Purpose |
@@ -41,5 +56,11 @@ file is the quickstart.
   AD ISO strings.
 - Cart/UI state → Zustand (`src/stores/cartStore.ts`); server state →
   TanStack Query. The server is authoritative for every price and total.
+- Paginated list endpoints return envelope `meta` (count/page/total_pages)
+  via `apiRequestPage` / `authedRequestPage`; single-resource calls use
+  `apiRequest` / `authedRequest`.
+- Cost fields (`avg_cost`, `unit_cost`) render only when the backend
+  includes them in the response (`pricing.view_cost`) — UI checks presence,
+  never permission guesses.
 - `POST /sales` (and hold/complete) send one `Idempotency-Key` per bill
   attempt — never regenerated on retry of the same attempt.
