@@ -13,6 +13,7 @@ from django.db.models import F, QuerySet
 from django.utils import timezone
 
 from apps.inventory.models import StockLevel, StockMovement
+from core.money import quantize_money
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -47,14 +48,14 @@ def stock_summary(
             "qty_on_hand": str(level.qty_on_hand),
             "mrp": str(level.variant.mrp) if level.variant.mrp is not None else None,
             "mrp_valuation": (
-                str(level.qty_on_hand * level.variant.mrp)
+                str(quantize_money(level.qty_on_hand * level.variant.mrp))
                 if level.variant.mrp is not None
                 else None
             ),
         }
         if can_view_cost:
             row["avg_cost"] = str(level.avg_cost)
-            row["cost_valuation"] = str(level.qty_on_hand * level.avg_cost)
+            row["cost_valuation"] = str(quantize_money(level.qty_on_hand * level.avg_cost))
         rows.append(row)
     return rows
 
