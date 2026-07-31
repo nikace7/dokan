@@ -3,11 +3,12 @@
 from datetime import date
 from decimal import Decimal
 
+from django.utils import timezone
 from factory import LazyAttribute, LazyFunction, SelfAttribute, SubFactory
 from factory.declarations import Sequence
 from factory.django import DjangoModelFactory
 
-from apps.inventory.models import StockLevel, StockMovement
+from apps.inventory.models import StockBatch, StockLevel, StockMovement
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from tests.factories.branch import BranchFactory
 from tests.factories.catalog import ItemVariantFactory
@@ -40,3 +41,16 @@ class StockMovementFactory(DjangoModelFactory):
     business_date_ad = LazyFunction(date.today)
     business_date_bs = LazyAttribute(lambda o: ad_to_bs(o.business_date_ad))
     fiscal_year_bs = LazyAttribute(lambda o: fiscal_year_bs(o.business_date_ad))
+
+
+class StockBatchFactory(DjangoModelFactory):
+    class Meta:
+        model = StockBatch
+
+    tenant = SubFactory(TenantFactory)
+    branch = SubFactory(BranchFactory, tenant=SelfAttribute("..tenant"))
+    variant = SubFactory(ItemVariantFactory, tenant=SelfAttribute("..tenant"))
+    qty_in = Decimal("1")
+    qty_remaining = Decimal("1")
+    unit_cost = Decimal("100.00")
+    received_at = LazyFunction(timezone.now)
