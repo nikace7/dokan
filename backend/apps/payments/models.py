@@ -134,3 +134,44 @@ class PaymentAllocation(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.amount} of {self.payment_id}"
+
+
+class CashSession(TenantScopedModel):
+    """Drawer open/close with variance (design §1.2 day close).
+
+    One OPEN session per branch (partial unique WHERE closed_at IS NULL).
+    expected_cash/variance are snapshotted on the row at close time.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    branch = models.ForeignKey("tenants.Branch", on_delete=models.PROTECT, related_name="+")
+    opened_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
+    opened_at = models.DateTimeField()
+    opening_float = models.DecimalField(max_digits=14, decimal_places=2)
+    closed_by = models.ForeignKey(
+        "accounts.User", on_delete=models.PROTECT, related_name="+", null=True, blank=True
+    )
+    closed_at = models.DateTimeField(null=True, blank=True)
+    counted_cash = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    expected_cash = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    variance = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    note = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "cash_session"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["branch"],
+                condition=Q(closed_at__isnull=True),
+                name="cash_session_one_open_per_branch",
+            )
+        ]
+        indexes: ClassVar = [
+            models.Index(
+                fields=["tenant", "branch", "-opened_at"], name="cash_session_tenant_branch_idx"
+            )
+        ]
+
+    def __str__(self) -> str:
+        state = "OPEN" if self.closed_at is None else "CLOSED"
+        return f"Cash session {self.branch.code} ({state})"
