@@ -212,12 +212,18 @@ def finalize_invoice(
     created_by: "User",
     override_reason: str,
     business_date: date | None = None,
+    applied_credit: Decimal = _ZERO,
 ) -> list[_ResolvedLine]:
     """Run the completion pipeline for an invoice object (new or held).
 
     MUST be called inside transaction.atomic(). Fills totals, status,
     business dates, invoice number; posts stock; writes line rows (stored
     lines on a held bill are replaced first).
+
+    ``applied_credit`` (exchanges only): a return credit consumed by this
+    sale. It counts toward paid_amount BEFORE the tender split, so the
+    udharo check runs on the NET due, and paid_amount + due_amount still
+    equals total.
     """
     resolved = _resolve_lines(
         tenant,
@@ -233,7 +239,8 @@ def finalize_invoice(
         bill_discount=quantize_money(bill_discount),
         round_off=quantize_money(round_off),
     )
-    paid, due = _split_payments(total=totals["total"], payments=payments)
+    credit_applied = min(quantize_money(applied_credit), totals["total"])
+    paid, due = _split_payments(total=totals["total"] - credit_applied, payments=payments)
     _check_credit(tenant, customer=invoice.customer, due=due)
 
     # Stock (#1) — inside this transaction; failure rolls everything back.
@@ -270,7 +277,7 @@ def finalize_invoice(
     invoice.vat_amount = totals["vat_amount"]
     invoice.round_off = quantize_money(round_off)
     invoice.total = totals["total"]
-    invoice.paid_amount = paid
+    invoice.paid_amount = quantize_money(paid + credit_applied)
     invoice.due_amount = due
     invoice.status = SalesInvoice.Status.COMPLETED
     invoice.save()
