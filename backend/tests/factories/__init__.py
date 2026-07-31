@@ -24,14 +24,22 @@ from tests.factories.catalog import (
     SizeChartFactory,
 )
 from tests.factories.customers import CustomerFactory
-from tests.factories.inventory import StockLevelFactory, StockMovementFactory
+from tests.factories.inventory import (
+    StockBatchFactory,
+    StockLevelFactory,
+    StockMovementFactory,
+)
 from tests.factories.pricing import (
     ItemCategoryPriceFactory,
     ItemPriceFactory,
     PriceChangeLogFactory,
     RateTypeFactory,
 )
-from tests.factories.purchasing import SupplierFactory
+from tests.factories.purchasing import (
+    PurchaseInvoiceFactory,
+    PurchaseInvoiceItemFactory,
+    SupplierFactory,
+)
 from tests.factories.sales import (
     NumberSequenceFactory,
     SalesInvoiceFactory,
@@ -52,12 +60,15 @@ __all__ = [
     "NumberSequenceFactory",
     "PlanFactory",
     "PriceChangeLogFactory",
+    "PurchaseInvoiceFactory",
+    "PurchaseInvoiceItemFactory",
     "RateTypeFactory",
     "RoleFactory",
     "RolePermissionFactory",
     "SalesInvoiceFactory",
     "SalesInvoiceItemFactory",
     "SizeChartFactory",
+    "StockBatchFactory",
     "StockLevelFactory",
     "StockMovementFactory",
     "SupplierFactory",
