@@ -105,6 +105,10 @@ class SalesInvoice(TenantScopedModel):
     fiscal_year_bs = models.CharField(max_length=7)
     device_id = models.TextField(null=True, blank=True)
     idempotency_key = models.TextField()
+    # RETURN docs only: how the credit was settled — [{method, amount}],
+    # method CASH/ESEWA/… for money back, CREDIT_NOTE for udharo reduction,
+    # EXCHANGE_APPLIED for credit consumed by an exchange sale.
+    refunds = models.JSONField(default=list)
     created_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
 
     class Meta:
