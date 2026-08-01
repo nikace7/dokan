@@ -36,6 +36,12 @@ The demo workflow covers the full loop in the browser:
 - `/purchasing` — suppliers and purchase invoices: save a DRAFT, then
   Confirm (guarded, irreversible) to post stock and update cost.
 - `/billing` — the POS screen.
+- `/reports` — the owner's reports: sales (daily by BS date with totals,
+  monthly by fiscal year, top items), stock (summary/low/dead), profit
+  (owner-only; a friendly panel on 403), dues (udharo aging buckets +
+  supplier payables), and the IRD VAT registers (sales/purchase). Report
+  date ranges are BS strings and default to the current BS month via
+  `lib/bs`.
 
 ## Scripts
 
