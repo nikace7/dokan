@@ -63,7 +63,10 @@ pricing.view_cost, dues reusing canonical outstanding, sales+purchase VAT
 registers — all plain GROUP BYs on the denormalized BS columns; profit_report
 now also computes net = gross − expenses), `apps/expenses` (ExpenseCategory
 lookup + Expense CRUD with AD/BS filters, summary by category/BS month;
-ordinary CRUD records, no ledger). Shared API plumbing
+ordinary CRUD records, no ledger), `apps/audit` (append-only AuditLog with
+REVOKE UPDATE/DELETE — explicit audit() calls in services, never signals;
+wired: price.set, price.set_bounds, stock.adjust, stock.write_off,
+sale.cancel_held; GET /audit/ gated on settings.manage). Shared API plumbing
 lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
