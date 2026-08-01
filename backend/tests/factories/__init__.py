@@ -24,6 +24,7 @@ from tests.factories.catalog import (
     SizeChartFactory,
 )
 from tests.factories.customers import CustomerFactory
+from tests.factories.expenses import ExpenseCategoryFactory, ExpenseFactory
 from tests.factories.inventory import (
     StockBatchFactory,
     StockCountFactory,
@@ -63,6 +64,8 @@ __all__ = [
     "CashSessionFactory",
     "CategoryFactory",
     "CustomerFactory",
+    "ExpenseCategoryFactory",
+    "ExpenseFactory",
     "ItemCategoryPriceFactory",
     "ItemFactory",
     "ItemPriceFactory",
