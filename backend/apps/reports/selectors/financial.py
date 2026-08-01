@@ -33,7 +33,9 @@ def profit_report(
     date_from_bs: str | None = None,
     date_to_bs: str | None = None,
 ) -> dict[str, Any]:
-    """Gross profit per BS month + totals: revenue − COGS.
+    """Profit per BS month + totals: gross (revenue − COGS) and NET
+    (gross − expenses). Without expenses, "profit" is only gross margin
+    (design §1.2) — expenses are grouped by the same BS-month prefix.
 
     revenue = COMPLETED sale totals − return credit totals.
     COGS    = Σ cost_at_sale × (qty − returned_qty) over sale lines,
@@ -81,19 +83,34 @@ def profit_report(
     )
     returns_by_month = {row["bs_month"]: row["returns_total"] for row in returns_rows}
 
+    from apps.expenses.selectors import expenses_by_month
+
+    expense_by_month = expenses_by_month(tenant, from_bs=from_bs, to_bs=to_bs)
+
     months = sorted(
-        {row["bs_month"] for row in revenue_rows} | set(cogs_by_month) | set(returns_by_month)
+        {row["bs_month"] for row in revenue_rows}
+        | set(cogs_by_month)
+        | set(returns_by_month)
+        | set(expense_by_month)
     )
     rows: list[dict[str, Any]] = []
-    totals = {"revenue": Decimal("0"), "cogs": Decimal("0"), "gross_profit": Decimal("0")}
+    totals = {
+        "revenue": Decimal("0"),
+        "cogs": Decimal("0"),
+        "gross_profit": Decimal("0"),
+        "expenses": Decimal("0"),
+        "net_profit": Decimal("0"),
+    }
     for month in months:
         sales_total = (
             next((r["sales_total"] for r in revenue_rows if r["bs_month"] == month), 0) or 0
         )
         returns_total = returns_by_month.get(month) or 0
         cogs = quantize_money(cogs_by_month.get(month) or 0)
+        expenses = expense_by_month.get(month) or Decimal("0")
         revenue = sales_total - returns_total
         gross = revenue - cogs
+        net = gross - expenses
         rows.append(
             {
                 "bs_month": month,
@@ -102,11 +119,15 @@ def profit_report(
                 "revenue": str(revenue),
                 "cogs": str(cogs),
                 "gross_profit": str(gross),
+                "expenses": str(expenses),
+                "net_profit": str(net),
             }
         )
         totals["revenue"] += revenue
         totals["cogs"] += cogs
         totals["gross_profit"] += gross
+        totals["expenses"] += expenses
+        totals["net_profit"] += net
     return {
         "date_from_bs": from_bs,
         "date_to_bs": to_bs,
