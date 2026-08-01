@@ -15,6 +15,7 @@ from tests.factories.accounts import (
     UserFactory,
     UserRoleFactory,
 )
+from tests.factories.audit import AuditLogFactory
 from tests.factories.branch import BranchFactory
 from tests.factories.catalog import (
     BrandFactory,
@@ -59,6 +60,7 @@ from tests.factories.tenant import PlanFactory, TenantFactory
 
 __all__ = [
     "DEFAULT_PASSWORD",
+    "AuditLogFactory",
     "BranchFactory",
     "BrandFactory",
     "CashSessionFactory",

@@ -1,7 +1,5 @@
 """DRF serializers for audit — read-only shape."""
 
-from typing import Any
-
 from rest_framework import serializers
 
 from apps.audit.models import AuditLog

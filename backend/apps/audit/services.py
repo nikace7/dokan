@@ -14,9 +14,10 @@ from typing import TYPE_CHECKING, Any
 from apps.audit.models import AuditLog
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest
+
     from apps.accounts.models import User
     from apps.tenants.models import Tenant
-    from django.http import HttpRequest
 
 
 def _extract_ip(request: "HttpRequest | None") -> str | None:
