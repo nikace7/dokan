@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.audit.services import audit
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
 from apps.sales.services.create_sale import (
     SaleLineInput,
@@ -177,6 +178,16 @@ def complete_held_bill(
 def cancel_held_bill(tenant: "Tenant", *, invoice: SalesInvoice) -> SalesInvoice:
     """Void a held bill — a status change, never a DELETE."""
     _assert_held(invoice)
-    invoice.status = SalesInvoice.Status.CANCELLED
-    invoice.save(update_fields=["status", "updated_at"])
+    with transaction.atomic():
+        invoice.status = SalesInvoice.Status.CANCELLED
+        invoice.save(update_fields=["status", "updated_at"])
+        audit(
+            tenant,
+            actor=invoice.created_by,
+            action="sale.cancel_held",
+            target_type="sales_invoice",
+            target_id=invoice,
+            before={"status": SalesInvoice.Status.HELD},
+            after={"status": SalesInvoice.Status.CANCELLED},
+        )
     return invoice
