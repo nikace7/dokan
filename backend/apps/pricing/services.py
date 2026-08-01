@@ -28,6 +28,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 
+from apps.audit.services import audit
 from apps.catalog.models import Category, Item, ItemVariant
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
 from core.money import format_npr, quantize_money
@@ -191,9 +192,33 @@ def set_price_bounds(
             "PRICE_BOUNDS_INVALID",
             "Minimum selling price cannot be higher than maximum selling price.",
         )
+    before = {
+        "min_selling_price": (
+            str(target.min_selling_price) if target.min_selling_price is not None else None
+        ),
+        "max_selling_price": (
+            str(target.max_selling_price) if target.max_selling_price is not None else None
+        ),
+    }
     target.min_selling_price = min_selling_price
     target.max_selling_price = max_selling_price
     target.save(update_fields=["min_selling_price", "max_selling_price", "updated_at"])
+    audit(
+        target.tenant,
+        actor=user,
+        action="price.set_bounds",
+        target_type=type(target).__name__.lower(),
+        target_id=target,
+        before=before,
+        after={
+            "min_selling_price": (
+                str(min_selling_price) if min_selling_price is not None else None
+            ),
+            "max_selling_price": (
+                str(max_selling_price) if max_selling_price is not None else None
+            ),
+        },
+    )
 
 
 # --- Price writes -------------------------------------------------------------
@@ -277,6 +302,20 @@ def set_price(
             new_price=price,
             changed_by=created_by,
             reason=reason or None,
+        )
+        audit(
+            tenant,
+            actor=created_by,
+            action="price.set",
+            target_type="item_price",
+            target_id=item_price,
+            before={"price": str(old_price) if old_price is not None else None},
+            after={
+                "price": str(price),
+                "scope": scope,
+                "rate_type": rate_type.code,
+                "target_id": str(target.pk),
+            },
         )
     return item_price
 
