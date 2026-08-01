@@ -24,6 +24,7 @@ from django.apps import apps
 from django.db import ProgrammingError, connection, transaction
 
 from apps.accounts.models import Role, RolePermission, User, UserRole
+from apps.audit.models import AuditLog
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.customers.models import Customer
 from apps.expenses.models import Expense, ExpenseCategory
@@ -44,6 +45,7 @@ from apps.tenants.models import Branch
 from core.db.rls import set_local_tenant
 from core.models import TenantScopedModel
 from tests.factories import (
+    AuditLogFactory,
     BranchFactory,
     BrandFactory,
     CashSessionFactory,
@@ -82,6 +84,7 @@ from tests.factories import (
 #: model → factory that creates one row for a given tenant.
 FACTORIES: dict[type[Any], Any] = {
     Branch: BranchFactory,
+    AuditLog: AuditLogFactory,
     User: UserFactory,
     Role: RoleFactory,
     RolePermission: RolePermissionFactory,

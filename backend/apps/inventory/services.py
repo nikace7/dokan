@@ -19,6 +19,7 @@ from uuid import UUID
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.audit.services import audit
 from apps.inventory.models import StockLevel, StockMovement
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from core.money import quantize_money
@@ -217,7 +218,8 @@ def adjust_stock(
 
     with transaction.atomic():
         level = _lock_level(tenant, branch, variant)
-        new_qty = level.qty_on_hand + qty_delta
+        old_qty = level.qty_on_hand
+        new_qty = old_qty + qty_delta
         if new_qty < _ZERO:
             raise ServiceError(
                 "STOCK_INSUFFICIENT",
@@ -225,6 +227,15 @@ def adjust_stock(
             )
         level.qty_on_hand = new_qty
         level.save(update_fields=["qty_on_hand", "updated_at"])
+        audit(
+            tenant,
+            actor=created_by,
+            action="stock.adjust",
+            target_type="stock_level",
+            target_id=level,
+            before={"qty_on_hand": str(old_qty), "variant": variant.sku},
+            after={"qty_on_hand": str(new_qty), "reason": reason},
+        )
 
         return _write_movement(
             tenant,
@@ -259,7 +270,8 @@ def write_off_damage(
 
     with transaction.atomic():
         level = _lock_level(tenant, branch, variant)
-        new_qty = level.qty_on_hand - qty
+        old_qty = level.qty_on_hand
+        new_qty = old_qty - qty
         if new_qty < _ZERO:
             raise ServiceError(
                 "STOCK_INSUFFICIENT",
@@ -267,6 +279,15 @@ def write_off_damage(
             )
         level.qty_on_hand = new_qty
         level.save(update_fields=["qty_on_hand", "updated_at"])
+        audit(
+            tenant,
+            actor=created_by,
+            action="stock.write_off",
+            target_type="stock_level",
+            target_id=level,
+            before={"qty_on_hand": str(old_qty), "variant": variant.sku},
+            after={"qty_on_hand": str(new_qty), "reason": reason},
+        )
 
         return _write_movement(
             tenant,

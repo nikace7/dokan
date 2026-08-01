@@ -1,5 +1,11 @@
-"""URL routes for audit — empty until the feature lands."""
+"""URL routes for audit."""
 
-from typing import Any
+from django.urls import path
 
-urlpatterns: list[Any] = []
+from apps.audit.views import AuditLogListView
+
+app_name = "audit"
+
+urlpatterns = [
+    path("audit/", AuditLogListView.as_view(), name="audit-list"),
+]
