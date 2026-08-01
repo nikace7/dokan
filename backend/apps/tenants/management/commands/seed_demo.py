@@ -20,12 +20,16 @@ from django.db import transaction
 
 from apps.accounts.models import Permission, Role, RolePermission, User, UserRole
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
+from apps.expenses.models import ExpenseCategory
 from apps.inventory.services import post_opening_stock
 from apps.pricing.models import RateType
 from apps.tenants.models import Branch, Plan, Tenant
 
 DEMO_PHONE = "9800000000"
 DEMO_PASSWORD = "demo1234"  # demo credentials for local use only
+
+#: Starter expense buckets for the demo shop (design §1.2).
+DEMO_EXPENSE_CATEGORIES = ("Rent", "Salary", "Electricity", "Transport", "Other")
 
 
 class Command(BaseCommand):
@@ -88,6 +92,8 @@ class Command(BaseCommand):
         category, _ = Category.objects.get_or_create(
             tenant=tenant, name="Shirts", defaults={"size_chart": chart}
         )
+        for expense_category in DEMO_EXPENSE_CATEGORIES:
+            ExpenseCategory.objects.get_or_create(tenant=tenant, name=expense_category)
 
         catalog = [
             ("TEE-01", "Plain T-Shirt", Decimal("1500.00"), Decimal("600.00")),
