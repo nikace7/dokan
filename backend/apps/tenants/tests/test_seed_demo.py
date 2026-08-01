@@ -7,6 +7,7 @@ from django.core.management import call_command
 
 from apps.accounts.models import User
 from apps.catalog.models import Item, ItemVariant
+from apps.expenses.models import ExpenseCategory
 from apps.inventory.models import StockLevel
 from apps.tenants.models import Tenant
 
@@ -28,6 +29,9 @@ class TestSeedDemo:
         assert ItemVariant.objects.filter(tenant=tenant).count() == 6
         # Opening stock posted: every seeded variant holds 20 units.
         assert StockLevel.objects.filter(tenant=tenant, qty_on_hand=20).count() == 6
+        # Starter expense categories.
+        assert ExpenseCategory.objects.filter(tenant=tenant).count() == 5
+        assert ExpenseCategory.objects.filter(tenant=tenant, name="Rent").exists()
 
     def test_idempotent_rerun(self) -> None:
         _seed()
