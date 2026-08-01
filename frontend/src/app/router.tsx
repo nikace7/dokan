@@ -9,6 +9,12 @@ import { ItemFormPage } from '@/features/catalog/ItemFormPage';
 import { ItemsPage } from '@/features/catalog/ItemsPage';
 import { StockPage } from '@/features/inventory/StockPage';
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
+import { DuesReportPage } from '@/features/reports/DuesReportPage';
+import { ProfitReportPage } from '@/features/reports/ProfitReportPage';
+import { ReportsHomePage } from '@/features/reports/ReportsHomePage';
+import { SalesReportPage } from '@/features/reports/SalesReportPage';
+import { StockReportsPage } from '@/features/reports/StockReportsPage';
+import { VatRegisterPage } from '@/features/reports/VatRegisterPage';
 
 /**
  * Route skeleton. Feature routes mount here as modules land; super-admin
@@ -58,6 +64,12 @@ const router = createBrowserRouter([
       { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
       { path: '/stock', element: <StockPage /> },
       { path: '/purchasing', element: <PurchasingPage /> },
+      { path: '/reports', element: <ReportsHomePage /> },
+      { path: '/reports/sales', element: <SalesReportPage /> },
+      { path: '/reports/stock', element: <StockReportsPage /> },
+      { path: '/reports/profit', element: <ProfitReportPage /> },
+      { path: '/reports/dues', element: <DuesReportPage /> },
+      { path: '/reports/vat', element: <VatRegisterPage /> },
     ],
   },
   { path: '*', element: <NotFound /> },
