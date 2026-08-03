@@ -7,6 +7,7 @@ import { BillingPage } from '@/features/billing/BillingPage';
 import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
 import { ItemFormPage } from '@/features/catalog/ItemFormPage';
 import { ItemsPage } from '@/features/catalog/ItemsPage';
+import { ExpensesPage } from '@/features/expenses/ExpensesPage';
 import { StockPage } from '@/features/inventory/StockPage';
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
 import { DuesReportPage } from '@/features/reports/DuesReportPage';
@@ -64,6 +65,7 @@ const router = createBrowserRouter([
       { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
       { path: '/stock', element: <StockPage /> },
       { path: '/purchasing', element: <PurchasingPage /> },
+      { path: '/expenses', element: <ExpensesPage /> },
       { path: '/reports', element: <ReportsHomePage /> },
       { path: '/reports/sales', element: <SalesReportPage /> },
       { path: '/reports/stock', element: <StockReportsPage /> },
