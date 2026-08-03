@@ -44,6 +44,15 @@ export interface ReceiptPayload {
   note?: string;
 }
 
+export interface SupplierPaymentPayload {
+  branch: string;
+  supplier: string;
+  amount: string;
+  method: ReceiptMethod;
+  ref_no?: string;
+  note?: string;
+}
+
 export interface PaymentListFilters {
   direction?: PaymentDirection;
   method?: ReceiptMethod;
@@ -75,6 +84,13 @@ export function listPayments(filters: PaymentListFilters = {}): Promise<Page<Pay
 
 export function recordReceipt(payload: ReceiptPayload): Promise<Payment> {
   return authedRequest<Payment>('/v1/payments/receipts', { method: 'POST', body: payload });
+}
+
+export function recordSupplierPayment(payload: SupplierPaymentPayload): Promise<Payment> {
+  return authedRequest<Payment>('/v1/payments/supplier-payments', {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export function getCurrentCashSession(

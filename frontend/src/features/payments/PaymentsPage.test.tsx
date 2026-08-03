@@ -46,6 +46,17 @@ const customer = {
   is_active: true,
 };
 
+const supplier = {
+  id: 'supplier-1',
+  name: 'ABC Garments',
+  phone: '9811111111',
+  pan_no: null,
+  address: null,
+  opening_balance: '0.00',
+  credit_days: 30,
+  is_active: true,
+};
+
 const payment = {
   id: 'payment-1',
   branch: 'branch-1',
@@ -96,6 +107,8 @@ describe('PaymentsPage', () => {
         };
         return envelope(currentSession, 201);
       }
+      if (url.includes('/v1/purchasing/suppliers?')) return page([supplier]);
+      if (url.endsWith('/v1/payments/supplier-payments')) return envelope(payment, 201);
       if (url.includes('/v1/payments?')) return page([payment]);
       if (url.includes('/v1/customers?')) return envelope([customer]);
       if (url.endsWith('/v1/payments/receipts')) return envelope(payment, 201);
@@ -124,7 +137,7 @@ describe('PaymentsPage', () => {
       target: { value: 'Sita' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /Sita Rai 9800000000/i }));
-    fireEvent.change(screen.getByLabelText('Amount (NPR)'), { target: { value: '2500' } });
+    fireEvent.change(screen.getAllByLabelText('Amount (NPR)')[0], { target: { value: '2500' } });
     fireEvent.click(screen.getByRole('button', { name: 'Record receipt' }));
 
     await waitFor(() => {
@@ -146,5 +159,26 @@ describe('PaymentsPage', () => {
 
     expect(await screen.findByText('Cash session opened.')).toBeInTheDocument();
     expect(await screen.findByText('Owner')).toBeInTheDocument();
+  });
+
+  it('records a supplier payment', async () => {
+    renderPayments();
+
+    fireEvent.change(screen.getByLabelText('Search supplier for payment'), {
+      target: { value: 'ABC' },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: /ABC Garments 9811111111/i }));
+    fireEvent.change(screen.getAllByLabelText('Amount (NPR)')[1], {
+      target: { value: '3000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Record supplier payment' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/v1/payments/supplier-payments'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+    expect(await screen.findByText('Supplier payment recorded.')).toBeInTheDocument();
   });
 });
