@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir . gunicorn
 
 # Run as a non-root user.
-RUN groupadd --system dokan && useradd --system --gid dokan dokan \
+RUN groupadd --system dokan && useradd --system --create-home --home-dir /home/dokan --gid dokan dokan \
     && mkdir -p /app/staticfiles && chown -R dokan:dokan /app
 USER dokan
 

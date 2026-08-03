@@ -21,7 +21,9 @@ Prerequisites: Docker + Docker Compose, or Python 3.12 for a local venv.
 ```bash
 cp .env.example .env          # fill in the change-me values
 docker compose up --build     # db, redis, backend, celery, beat, caddy
-docker compose exec backend python manage.py migrate
+# Migrations use the dedicated role; demo bootstrap uses the local superuser.
+docker compose exec backend sh -c 'DATABASE_USER=dokan_migrator DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" python manage.py migrate'
+docker compose exec backend sh -c 'DATABASE_USER=postgres DATABASE_PASSWORD="$POSTGRES_PASSWORD" python manage.py seed_demo'
 ```
 
 Local development without Docker:
