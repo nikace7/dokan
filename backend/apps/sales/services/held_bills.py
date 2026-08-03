@@ -145,6 +145,7 @@ def complete_held_bill(
     created_by: "User",
     override_reason: str = "",
     business_date: date | None = None,
+    require_open_cash_session: bool = False,
 ) -> SalesInvoice:
     """Complete a held bill: stock, number, totals — one transaction."""
     _assert_held(invoice)
@@ -171,6 +172,7 @@ def complete_held_bill(
             created_by=created_by,
             override_reason=override_reason,
             business_date=business_date,
+            require_open_cash_session=require_open_cash_session,
         )
     return invoice
 

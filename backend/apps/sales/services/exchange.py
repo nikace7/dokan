@@ -63,6 +63,7 @@ def create_exchange(
     created_by: "User",
     override_reason: str = "",
     business_date: date | None = None,
+    require_open_cash_session: bool = False,
 ) -> ExchangeResult:
     """Swap items against a completed bill — ONE transaction, two documents."""
     key = idempotency_key.strip()
@@ -70,6 +71,17 @@ def create_exchange(
         raise ServiceError("IDEMPOTENCY_KEY_REQUIRED", "The Idempotency-Key header is required.")
     if not new_lines:
         raise ServiceError("LINES_REQUIRED", "An exchange needs at least one new line.")
+    if require_open_cash_session:
+        existing_sale = SalesInvoice.objects.filter(tenant=tenant, idempotency_key=key).first()
+        if existing_sale is not None:
+            return ExchangeResult(
+                return_invoice=SalesInvoice.objects.get(
+                    tenant=tenant, idempotency_key=f"{key}:return"
+                ),
+                sale_invoice=existing_sale,
+                refund_amount=_ZERO,
+                replayed=True,
+            )
 
     group_id = uuid4()
     try:
@@ -120,6 +132,7 @@ def create_exchange(
                 override_reason=override_reason,
                 business_date=business_date,
                 applied_credit=credit,
+                require_open_cash_session=require_open_cash_session,
             )
 
             # Settlement record on the return doc — written inside the same

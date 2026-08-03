@@ -789,7 +789,8 @@ Parked carts. Working state — may be updated and deleted.
 
 ### 9.1 `cash_session`
 
-Drawer open/close with variance (Phase 2).
+Drawer open/close with variance. POS sale completion requires an open session for the
+branch; holding a bill does not.
 
 | Column | Type | Null | Notes |
 |---|---|---|---|

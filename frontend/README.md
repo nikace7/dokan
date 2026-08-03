@@ -19,8 +19,9 @@ file is the quickstart.
    invoice from `GET /api/v1/sales`.
 3. `npm install && npm run dev`, open http://localhost:5173, and sign in
    with the seeded owner: phone `9800000000`, password `demo1234`.
-4. `/billing` is the POS screen: scan a barcode (or type a SKU), tender,
-   complete. Parked bills resume from the "Held bills" list.
+4. Open the branch cash session from `/payments`, then use `/billing` as the
+   POS screen: scan a barcode (or type a SKU), tender, complete. Parked bills
+   resume from the "Held bills" list.
 
 ## Screens
 

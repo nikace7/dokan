@@ -55,7 +55,7 @@ native, IRD-compliant billing, offline-tolerant POS.
 | **Exchange Flow** | "Size didn't fit" is the #1 counter interaction in clothing. Must be one screen, not two transactions. |
 | **Barcode & Price-Tag Printing** | Shops receive unlabelled goods. Generate + print barcode labels and MRP tags in-app. |
 | **Size × Color Matrix Entry** | Enter 6 sizes × 4 colors in one grid, not 24 form submissions. Biggest single stock-entry time saver. |
-| **Cash Session / Day Close** | Open drawer with float, close with counted cash, system shows variance. Stops end-of-day arguments. |
+| **Cash Session / Day Close** | Open drawer with float, close with counted cash, system shows variance; POS sale completion requires the branch session to be open. Stops end-of-day arguments. |
 | **Ageing / Dead Stock Report** | Clothing rots in value. "Not sold in 90 days" drives the discount decision. |
 | **Season & Collection Tagging** | Dashain/Tihar collections, winter/summer, so reports slice by campaign. |
 | **Sales Staff Attribution + Commission** | Commission is normal in garment retail; needs per-invoice salesperson. |
