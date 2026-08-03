@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import type { Customer } from '@/features/billing/api';
 import { demoConfig, listPayments, recordReceipt, searchCustomers } from '@/features/payments/api';
+import { CashSessionPanel } from '@/features/payments/CashSessionPanel';
 import type { ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
@@ -207,6 +208,7 @@ export function PaymentsPage() {
           {statusMessage}
         </p>
       ) : null}
+      <CashSessionPanel />
       <Card title="Collect customer receipt / उधारो उठाउने">
         <ReceiptForm
           onRecorded={() => {

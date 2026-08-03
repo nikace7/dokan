@@ -8,6 +8,7 @@ import { clearTokens, setTokens } from '@/lib/auth/tokens';
 vi.mock('@/lib/config', () => ({ demoConfig: { branchId: 'branch-1' } }));
 
 const fetchMock = vi.fn<typeof fetch>();
+let currentSession: Record<string, unknown> | null = null;
 
 function envelope(data: unknown, status = 200): Response {
   return new Response(JSON.stringify({ data, error: null }), {
@@ -70,9 +71,31 @@ const payment = {
 describe('PaymentsPage', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock);
+    currentSession = null;
     setTokens({ access: 'a', refresh: 'r' });
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
+      if (url.includes('/v1/cash-sessions/current?')) {
+        return envelope({ session: currentSession });
+      }
+      if (url.endsWith('/v1/cash-sessions/open')) {
+        currentSession = {
+          id: 'session-1',
+          branch: 'branch-1',
+          branch_code: 'MAIN',
+          opened_by: 'user-1',
+          opened_by_name: 'Owner',
+          opened_at: '2026-08-03T08:00:00Z',
+          opening_float: '5000.00',
+          closed_by: null,
+          closed_at: null,
+          counted_cash: null,
+          expected_cash: null,
+          variance: null,
+          note: '',
+        };
+        return envelope(currentSession, 201);
+      }
       if (url.includes('/v1/payments?')) return page([payment]);
       if (url.includes('/v1/customers?')) return envelope([customer]);
       if (url.endsWith('/v1/payments/receipts')) return envelope(payment, 201);
@@ -111,5 +134,17 @@ describe('PaymentsPage', () => {
       );
     });
     expect(await screen.findByText('Receipt recorded.')).toBeInTheDocument();
+  });
+
+  it('opens the cash session for the configured branch', async () => {
+    renderPayments();
+
+    fireEvent.change(await screen.findByLabelText('Opening float (NPR)'), {
+      target: { value: '5000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Open session' }));
+
+    expect(await screen.findByText('Cash session opened.')).toBeInTheDocument();
+    expect(await screen.findByText('Owner')).toBeInTheDocument();
   });
 });
