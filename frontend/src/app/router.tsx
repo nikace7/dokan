@@ -9,6 +9,7 @@ import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
 import { ItemFormPage } from '@/features/catalog/ItemFormPage';
 import { ItemsPage } from '@/features/catalog/ItemsPage';
 import { ExpensesPage } from '@/features/expenses/ExpensesPage';
+import { ExchangePage } from '@/features/exchange/ExchangePage';
 import { StockPage } from '@/features/inventory/StockPage';
 import { PaymentsPage } from '@/features/payments/PaymentsPage';
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
@@ -72,6 +73,7 @@ const router = createBrowserRouter([
       { path: '/payments', element: <PaymentsPage /> },
       { path: '/returns', element: <ReturnsPage /> },
       { path: '/audit', element: <AuditPage /> },
+      { path: '/exchanges', element: <ExchangePage /> },
       { path: '/reports', element: <ReportsHomePage /> },
       { path: '/reports/sales', element: <SalesReportPage /> },
       { path: '/reports/stock', element: <StockReportsPage /> },
