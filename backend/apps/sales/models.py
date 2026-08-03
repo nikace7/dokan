@@ -105,6 +105,9 @@ class SalesInvoice(TenantScopedModel):
     fiscal_year_bs = models.CharField(max_length=7)
     device_id = models.TextField(null=True, blank=True)
     idempotency_key = models.TextField()
+    # Actual tender split used for cash-session reconciliation. CREDIT and
+    # exchange credit may be present, but only CASH affects the drawer.
+    tenders = models.JSONField(default=list)
     # RETURN docs only: how the credit was settled — [{method, amount}],
     # method CASH/ESEWA/… for money back, CREDIT_NOTE for udharo reduction,
     # EXCHANGE_APPLIED for credit consumed by an exchange sale.

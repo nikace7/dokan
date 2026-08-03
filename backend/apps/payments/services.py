@@ -408,25 +408,28 @@ def open_session(
 
 
 def _expected_cash(tenant: "Tenant", session: CashSession) -> Decimal:
-    """Expected drawer total at close (documented approximation).
+    """Expected drawer total at close from persisted cash movements.
 
-    = opening float
-    + paid_amount of COMPLETED sales in the window (tender-agnostic until
-      sale tenders are recorded per-payment — see deferral note)
-    + CASH receipts in the window
-    − CASH refunds (returns' refunds list, method CASH) in the window.
+    = opening float + CASH sale tenders + CASH receipts
+    − CASH supplier payments − CASH refunds.
     """
     from apps.sales.models import SalesInvoice
 
-    sales_paid = (
-        SalesInvoice.objects.filter(
-            tenant=tenant,
-            branch=session.branch,
-            doc_type=SalesInvoice.DocType.SALE,
-            status=SalesInvoice.Status.COMPLETED,
-            created_at__gte=session.opened_at,
-        ).aggregate(total=Sum("paid_amount"))["total"]
-        or _ZERO
+    sales = SalesInvoice.objects.filter(
+        tenant=tenant,
+        branch=session.branch,
+        doc_type=SalesInvoice.DocType.SALE,
+        status=SalesInvoice.Status.COMPLETED,
+        created_at__gte=session.opened_at,
+    ).values_list("tenders", flat=True)
+    cash_sales = sum(
+        (
+            Decimal(str(tender.get("amount", "0")))
+            for tenders in sales
+            for tender in tenders
+            if tender.get("method") == Payment.Method.CASH
+        ),
+        _ZERO,
     )
 
     cash_receipts = (
@@ -434,6 +437,17 @@ def _expected_cash(tenant: "Tenant", session: CashSession) -> Decimal:
             tenant=tenant,
             branch=session.branch,
             direction=Payment.Direction.RECEIPT,
+            method=Payment.Method.CASH,
+            created_at__gte=session.opened_at,
+        ).aggregate(total=Sum("amount"))["total"]
+        or _ZERO
+    )
+
+    cash_supplier_payments = (
+        Payment.objects.filter(
+            tenant=tenant,
+            branch=session.branch,
+            direction=Payment.Direction.PAYMENT,
             method=Payment.Method.CASH,
             created_at__gte=session.opened_at,
         ).aggregate(total=Sum("amount"))["total"]
@@ -452,7 +466,9 @@ def _expected_cash(tenant: "Tenant", session: CashSession) -> Decimal:
             if refund.get("method") == "CASH":
                 cash_refunds += Decimal(str(refund.get("amount", "0")))
 
-    return quantize_money(session.opening_float + sales_paid + cash_receipts - cash_refunds)
+    return quantize_money(
+        session.opening_float + cash_sales + cash_receipts - cash_supplier_payments - cash_refunds
+    )
 
 
 def close_session(

@@ -271,6 +271,10 @@ def finalize_invoice(
     invoice.business_date_ad = date_ad
     invoice.business_date_bs = ad_to_bs(date_ad)
     invoice.fiscal_year_bs = fy_bs
+    invoice.tenders = [
+        {"method": payment["method"], "amount": str(quantize_money(payment["amount"]))}
+        for payment in payments
+    ]
     invoice.subtotal = totals["subtotal"]
     invoice.discount_amount = totals["discount_amount"]
     invoice.taxable_amount = totals["taxable_amount"]
