@@ -149,6 +149,11 @@ create_sale(...):
         audit("sale.create", before=None, after=invoice)
 ```
 
+The POS HTTP completion paths pass the branch through the payments service's open
+cash-session guard before stock is posted. `POST /sales/hold` remains available while
+the drawer is closed, and idempotent replays return the original invoice without
+re-running the guard.
+
 ---
 
 ## 4. Module map

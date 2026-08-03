@@ -58,7 +58,8 @@ completed invoices — outstanding is ledger-derived (dues − credit notes −
 receipts) in one canonical selector; linked negative counter-entry reversals
 with audit and `payment.reverse`; party ledgers and receivables aging;
 CashSession day-close with persisted tender-aware expected cash, supplier cash
-outflows, and variance snapshot), `apps/reports`
+outflows, variance snapshot, and an open-session guard on POS sale completion),
+`apps/reports`
 (read-only selectors, no models: daily/monthly/item sales, stock summary /
 low / dead stock, profit pinned to cost_at_sale and gated on report.profit +
 pricing.view_cost, dues reusing canonical outstanding, sales+purchase VAT
@@ -165,6 +166,9 @@ HTTP → urls → view (thin) → service (writes) / selector (reads) → model
     ("below cost" is itself a disclosure).
 11. **Money is Decimal** via `core/money.py`; display uses Nepali lakh/crore grouping
     (`1,23,456`) with optional Devanagari numerals.
+12. **POS sale completion requires an open `CashSession`** for the branch. Holding a
+    bill remains allowed without a session, and idempotent replays return the original
+    invoice even after the session closes.
 
 ## Testing strategy
 

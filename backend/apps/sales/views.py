@@ -160,6 +160,7 @@ class SaleListView(_SalesAPIView):
             idempotency_key=key,
             created_by=_user(request),
             override_reason=data.get("override_reason", ""),
+            require_open_cash_session=True,
         )
         http_status = status.HTTP_200_OK if result.replayed else status.HTTP_201_CREATED
         response = ok(self._detail(request, result.invoice), http_status)
@@ -238,6 +239,7 @@ class CompleteBillView(_SalesAPIView):
             payments=serializer.validated_data.get("payments", []),
             created_by=_user(request),
             override_reason=serializer.validated_data.get("override_reason", ""),
+            require_open_cash_session=True,
         )
         return ok(self._detail(request, completed))
 
@@ -320,6 +322,7 @@ class ExchangeCreateView(_SalesAPIView):
             idempotency_key=key,
             created_by=_user(request),
             override_reason=data.get("override_reason", ""),
+            require_open_cash_session=True,
         )
         http_status = status.HTTP_200_OK if result.replayed else status.HTTP_201_CREATED
         return ok(

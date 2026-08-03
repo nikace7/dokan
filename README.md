@@ -56,8 +56,8 @@ Every tenant endpoint must be called on the `demo.localhost` host — the
 tenant comes from the subdomain, never from a header. `seed_demo` creates
 a branch, an owner with all permissions, a default Retail rate type, three
 items with M/L variants, and 20 units of opening stock per variant, so
-`POST /api/v1/sales` works out of the box (remember the mandatory
-`Idempotency-Key` header).
+`POST /api/v1/sales` works after opening the branch's cash session (remember
+the mandatory `Idempotency-Key` header).
 
 The frontend (`frontend/`) serves login and the POS billing screen:
 `npm install && npm run dev` proxies `/api` to `demo.localhost:8000` (the

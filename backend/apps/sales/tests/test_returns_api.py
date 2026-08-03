@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import Permission
 from apps.inventory.services import post_opening_stock
+from apps.payments import services as payment_services
 from apps.sales import services
 from apps.sales.services import SaleLineInput
 from tests.factories import (
@@ -59,6 +60,12 @@ def shop(tenant: Any, user: Any) -> dict[str, Any]:
         qty=Decimal("10"),
         unit_cost=Decimal("600.00"),
         created_by=user,
+    )
+    payment_services.open_session(
+        tenant,
+        branch=branch,
+        opening_float=Decimal("0.00"),
+        opened_by=user,
     )
     customer = CustomerFactory(tenant=tenant, credit_limit=None)
     original = services.create_sale(
@@ -271,3 +278,40 @@ class TestExchangeApi:
         assert data["return_invoice"]["doc_type"] == "RETURN"
         assert data["refund_amount"] == "0.00"
         assert data["sale_invoice"]["paid_amount"] == "1200.00"
+
+    def test_exchange_requires_open_cash_session(self, tenant: Any, user: Any, shop: dict) -> None:
+        payment_session = payment_services.get_open_session(tenant, shop["branch"])
+        assert payment_session is not None
+        payment_services.close_session(
+            tenant,
+            session=payment_session,
+            counted_cash=Decimal("0.00"),
+            closed_by=user,
+        )
+        other_variant = ItemVariantFactory(tenant=tenant, mrp=Decimal("1200.00"))
+        post_opening_stock(
+            tenant,
+            branch=shop["branch"],
+            variant=other_variant,
+            qty=Decimal("5"),
+            unit_cost=Decimal("700.00"),
+            created_by=user,
+        )
+        grant(tenant, user, "sale.return", "sale.view")
+
+        response = auth_client(user).post(
+            EXCHANGES_URL,
+            {
+                "original_invoice": str(shop["original"].pk),
+                "returned_lines": [{"variant": str(shop["variant"].pk), "qty": "1"}],
+                "new_lines": [{"variant": str(other_variant.pk), "qty": "1"}],
+                "payments": [{"method": "CASH", "amount": "200.00"}],
+                "reason": "Wrong size",
+            },
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="exchange-without-session",
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "CASH_SESSION_REQUIRED"
