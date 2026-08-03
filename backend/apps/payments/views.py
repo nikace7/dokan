@@ -2,7 +2,8 @@
 
 Permissions (seeded in payments.0001): ``payment.receive`` for receipts,
 ``payment.pay`` for supplier payments, ``payment.view`` for reads and the
-aging report, ``cash.manage`` for cash sessions. Receiving money is
+aging report, ``payment.reverse`` for payment reversals, ``cash.manage`` for
+cash sessions. Receiving money is
 counter work — kept out of customer.credit, which governs udharo terms.
 """
 
@@ -16,12 +17,13 @@ from rest_framework.views import APIView
 
 from apps.customers.models import Customer
 from apps.payments import selectors, services
-from apps.payments.models import CashSession
+from apps.payments.models import CashSession, Payment
 from apps.payments.serializers import (
     CashSessionCloseSerializer,
     CashSessionOpenSerializer,
     CashSessionSerializer,
     LedgerRowSerializer,
+    PaymentReversalSerializer,
     PaymentSerializer,
     ReceiptCreateSerializer,
     SupplierPaymentCreateSerializer,
@@ -166,6 +168,27 @@ class SupplierPaymentCreateView(_PaymentsAPIView):
             allocations=allocations,
             ref_no=data.get("ref_no", ""),
             note=data.get("note", ""),
+            idempotency_key=key,
+            created_by=_user(request),
+        )
+        return self._respond(request, result)
+
+
+class PaymentReverseView(_PaymentsAPIView):
+    """POST /payments/<id>/reverse — append a linked counter-entry."""
+
+    method_permissions: ClassVar[dict[str, str]] = {"POST": "payment.reverse"}
+
+    def post(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        payment = _get_or_404(tenant, Payment, pk, "Payment")
+        key = _idempotency_key(request)
+        serializer = PaymentReversalSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = services.reverse_payment(
+            tenant,
+            payment=payment,
+            reason=serializer.validated_data["reason"],
             idempotency_key=key,
             created_by=_user(request),
         )

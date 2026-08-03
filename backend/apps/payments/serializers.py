@@ -38,6 +38,12 @@ class SupplierPaymentCreateSerializer(serializers.Serializer):
     allocations = AllocationInputSerializer(many=True, required=False, default=list)
 
 
+class PaymentReversalSerializer(serializers.Serializer):
+    """POST /payments/<id>/reverse payload."""
+
+    reason = serializers.CharField(max_length=500, allow_blank=False, trim_whitespace=True)
+
+
 class PaymentAllocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentAllocation
@@ -55,6 +61,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = (
             "id",
+            "reversal_of",
             "branch",
             "branch_code",
             "direction",

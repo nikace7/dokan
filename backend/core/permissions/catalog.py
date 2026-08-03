@@ -45,6 +45,7 @@ PERMISSIONS: Final[list[PermissionDef]] = [
     PermissionDef("payment.receive", "Payments", "Receive customer payments"),
     PermissionDef("payment.pay", "Payments", "Pay suppliers"),
     PermissionDef("payment.view", "Payments", "View payments and ledgers"),
+    PermissionDef("payment.reverse", "Payments", "Reverse payments", sensitive=True),
     PermissionDef("cash.manage", "Payments", "Open and close cash sessions"),
     # Expenses
     PermissionDef("expense.view", "Expenses", "View expenses and summaries"),

@@ -7,6 +7,7 @@ from apps.payments.views import (
     CashSessionCurrentView,
     CashSessionOpenView,
     PaymentListView,
+    PaymentReverseView,
     ReceiptCreateView,
     ReceivablesAgingView,
     SupplierPaymentCreateView,
@@ -17,6 +18,7 @@ app_name = "payments"
 urlpatterns = [
     path("payments", PaymentListView.as_view(), name="payment-list"),
     path("payments/receipts", ReceiptCreateView.as_view(), name="receipt-create"),
+    path("payments/<uuid:pk>/reverse", PaymentReverseView.as_view(), name="payment-reverse"),
     path(
         "payments/supplier-payments",
         SupplierPaymentCreateView.as_view(),
