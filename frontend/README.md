@@ -38,6 +38,7 @@ The demo workflow covers the full loop in the browser:
 - `/expenses` — record tenant-wide expenses, add categories, filter by BS
   period/category, and view category totals.
 - `/payments` — record customer khata receipts and review payment history.
+- `/returns` — select completed bills, record return quantities, and issue return documents.
 - `/billing` — the POS screen.
 - `/reports` — the owner's reports: sales (daily by BS date with totals,
   monthly by fiscal year, top items), stock (summary/low/dead), profit

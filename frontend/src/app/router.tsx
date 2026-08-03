@@ -11,6 +11,7 @@ import { ExpensesPage } from '@/features/expenses/ExpensesPage';
 import { StockPage } from '@/features/inventory/StockPage';
 import { PaymentsPage } from '@/features/payments/PaymentsPage';
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
+import { ReturnsPage } from '@/features/returns/ReturnsPage';
 import { DuesReportPage } from '@/features/reports/DuesReportPage';
 import { ProfitReportPage } from '@/features/reports/ProfitReportPage';
 import { ReportsHomePage } from '@/features/reports/ReportsHomePage';
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
       { path: '/purchasing', element: <PurchasingPage /> },
       { path: '/expenses', element: <ExpensesPage /> },
       { path: '/payments', element: <PaymentsPage /> },
+      { path: '/returns', element: <ReturnsPage /> },
       { path: '/reports', element: <ReportsHomePage /> },
       { path: '/reports/sales', element: <SalesReportPage /> },
       { path: '/reports/stock', element: <StockReportsPage /> },
