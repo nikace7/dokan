@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { listSuppliers } from '@/features/purchasing/api';
 import type { Supplier } from '@/features/purchasing/api';
 import { demoConfig, recordSupplierPayment } from '@/features/payments/api';
+import { InvoiceAllocationPicker } from '@/features/payments/InvoiceAllocationPicker';
 import type { ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
 
@@ -90,6 +91,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
   const [method, setMethod] = useState<ReceiptMethod>('CASH');
   const [refNo, setRefNo] = useState('');
   const [note, setNote] = useState('');
+  const [allocations, setAllocations] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: () => {
@@ -103,6 +105,9 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
         method,
         ref_no: refNo.trim(),
         note: note.trim(),
+        allocations: Object.entries(allocations)
+          .filter(([, value]) => value.trim())
+          .map(([invoice, value]) => ({ invoice, amount: value.trim() })),
       });
     },
     onSuccess: () => {
@@ -111,6 +116,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
       setAmount('');
       setRefNo('');
       setNote('');
+      setAllocations({});
       setError(null);
       onRecorded();
     },
@@ -140,10 +146,22 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
           onSelect={(value) => {
             setSupplier(value);
             setSearch('');
+            setAllocations({});
           }}
-          onClear={() => setSupplier(null)}
+          onClear={() => {
+            setSupplier(null);
+            setAllocations({});
+          }}
         />
       </div>
+      {supplier ? (
+        <InvoiceAllocationPicker
+          party="supplier"
+          partyId={supplier.id}
+          values={allocations}
+          onChange={setAllocations}
+        />
+      ) : null}
       <Input
         label="Amount (NPR)"
         type="number"
