@@ -50,6 +50,22 @@ export interface PaymentListFilters {
   page?: number;
 }
 
+export interface CashSession {
+  id: string;
+  branch: string;
+  branch_code: string;
+  opened_by: string;
+  opened_by_name: string | null;
+  opened_at: string;
+  opening_float: string;
+  closed_by: string | null;
+  closed_at: string | null;
+  counted_cash: string | null;
+  expected_cash: string | null;
+  variance: string | null;
+  note: string | null;
+}
+
 export function listPayments(filters: PaymentListFilters = {}): Promise<Page<Payment>> {
   const params = new URLSearchParams({ limit: '20', page: String(filters.page ?? 1) });
   if (filters.direction) params.set('direction', filters.direction);
@@ -59,6 +75,28 @@ export function listPayments(filters: PaymentListFilters = {}): Promise<Page<Pay
 
 export function recordReceipt(payload: ReceiptPayload): Promise<Payment> {
   return authedRequest<Payment>('/v1/payments/receipts', { method: 'POST', body: payload });
+}
+
+export function getCurrentCashSession(
+  branch = demoConfig.branchId,
+): Promise<{ session: CashSession | null }> {
+  return authedRequest<{ session: CashSession | null }>(
+    `/v1/cash-sessions/current?branch=${encodeURIComponent(branch)}`,
+  );
+}
+
+export function openCashSession(openingFloat: string, note: string): Promise<CashSession> {
+  return authedRequest<CashSession>('/v1/cash-sessions/open', {
+    method: 'POST',
+    body: { branch: demoConfig.branchId, opening_float: openingFloat, note },
+  });
+}
+
+export function closeCashSession(id: string, countedCash: string): Promise<CashSession> {
+  return authedRequest<CashSession>(`/v1/cash-sessions/${id}/close`, {
+    method: 'POST',
+    body: { counted_cash: countedCash },
+  });
 }
 
 export { demoConfig, searchCustomers };
