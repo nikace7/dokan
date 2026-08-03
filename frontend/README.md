@@ -40,6 +40,7 @@ The demo workflow covers the full loop in the browser:
 - `/payments` — record customer khata receipts and review payment history.
 - `/returns` — select completed bills, record return quantities, and issue return documents.
 - `/audit` — owner-only read-only audit trail with action/date filters and before/after diffs.
+- `/exchanges` — atomically return original items and record replacement items.
 - `/billing` — the POS screen.
 - `/reports` — the owner's reports: sales (daily by BS date with totals,
   monthly by fiscal year, top items), stock (summary/low/dead), profit
