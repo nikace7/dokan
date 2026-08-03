@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import type { Customer } from '@/features/billing/api';
 import { demoConfig, listPayments, recordReceipt, searchCustomers } from '@/features/payments/api';
 import { CashSessionPanel } from '@/features/payments/CashSessionPanel';
+import { SupplierPaymentForm } from '@/features/payments/SupplierPaymentForm';
 import type { ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
@@ -216,6 +217,9 @@ export function PaymentsPage() {
             void queryClient.invalidateQueries({ queryKey: ['payments', 'list'] });
           }}
         />
+      </Card>
+      <Card title="Pay supplier / सप्लायर भुक्तानी">
+        <SupplierPaymentForm onRecorded={() => setStatusMessage('Supplier payment recorded.')} />
       </Card>
       <Card title="Payment history / भुक्तानी इतिहास">
         <div className="mb-3 flex flex-wrap items-end gap-2">
