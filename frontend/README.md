@@ -37,6 +37,7 @@ The demo workflow covers the full loop in the browser:
   Confirm (guarded, irreversible) to post stock and update cost.
 - `/expenses` — record tenant-wide expenses, add categories, filter by BS
   period/category, and view category totals.
+- `/payments` — record customer khata receipts and review payment history.
 - `/billing` — the POS screen.
 - `/reports` — the owner's reports: sales (daily by BS date with totals,
   monthly by fiscal year, top items), stock (summary/low/dead), profit
