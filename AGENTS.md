@@ -55,7 +55,8 @@ other_charges — with StockBatch rows and a PURCHASE numbering series; VAT rule
 mirrors sales), `apps/payments` (append-only Payment with mandatory
 Idempotency-Key + PaymentAllocation so receipts reduce dues WITHOUT touching
 completed invoices — outstanding is ledger-derived (dues − credit notes −
-receipts) in one canonical selector; party ledgers and receivables aging;
+receipts) in one canonical selector; linked negative counter-entry reversals
+with audit and `payment.reverse`; party ledgers and receivables aging;
 CashSession day-close with expected/variance snapshot), `apps/reports`
 (read-only selectors, no models: daily/monthly/item sales, stock summary /
 low / dead stock, profit pinned to cost_at_sale and gated on report.profit +
