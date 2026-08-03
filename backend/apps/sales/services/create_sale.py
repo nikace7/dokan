@@ -213,6 +213,7 @@ def finalize_invoice(
     override_reason: str,
     business_date: date | None = None,
     applied_credit: Decimal = _ZERO,
+    require_open_cash_session: bool = False,
 ) -> list[_ResolvedLine]:
     """Run the completion pipeline for an invoice object (new or held).
 
@@ -225,6 +226,10 @@ def finalize_invoice(
     udharo check runs on the NET due, and paid_amount + due_amount still
     equals total.
     """
+    if require_open_cash_session:
+        from apps.payments.services import require_open_session
+
+        require_open_session(tenant, invoice.branch)
     resolved = _resolve_lines(
         tenant,
         rate_type=invoice.rate_type,
@@ -322,12 +327,18 @@ def create_sale(
     created_by: "User",
     override_reason: str = "",
     business_date: date | None = None,
+    require_open_cash_session: bool = False,
 ) -> SaleResult:
     """Create and complete a sale in ONE transaction (idempotent)."""
     if not idempotency_key.strip():
         raise ServiceError("IDEMPOTENCY_KEY_REQUIRED", "The Idempotency-Key header is required.")
     if not lines:
         raise ServiceError("LINES_REQUIRED", "A bill needs at least one line.")
+    key = idempotency_key.strip()
+    if require_open_cash_session:
+        existing = SalesInvoice.objects.filter(tenant=tenant, idempotency_key=key).first()
+        if existing is not None:
+            return SaleResult(invoice=existing, replayed=True)
 
     try:
         with transaction.atomic():
@@ -340,7 +351,7 @@ def create_sale(
                 status=SalesInvoice.Status.HELD,  # becomes COMPLETED in finalize
                 is_vat_bill=is_vat_bill,
                 device_id=device_id,
-                idempotency_key=idempotency_key.strip(),
+                idempotency_key=key,
                 created_by=created_by,
                 subtotal=_ZERO,
                 taxable_amount=_ZERO,
@@ -362,12 +373,11 @@ def create_sale(
                 created_by=created_by,
                 override_reason=override_reason,
                 business_date=business_date,
+                require_open_cash_session=require_open_cash_session,
             )
             return SaleResult(invoice=invoice, replayed=False)
     except IntegrityError as exc:
         if "idempotency" in str(exc):
-            original = SalesInvoice.objects.get(
-                tenant=tenant, idempotency_key=idempotency_key.strip()
-            )
+            original = SalesInvoice.objects.get(tenant=tenant, idempotency_key=key)
             return SaleResult(invoice=original, replayed=True)
         raise

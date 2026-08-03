@@ -10,6 +10,7 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import Permission
 from apps.inventory.services import post_opening_stock
+from apps.payments import services as payment_services
 from apps.sales.models import SalesInvoice
 from tests.factories import (
     DEFAULT_PASSWORD,
@@ -59,6 +60,12 @@ def shop(tenant: Any, user: Any) -> dict[str, Any]:
         qty=Decimal("20"),
         unit_cost=Decimal("600.00"),
         created_by=user,
+    )
+    payment_services.open_session(
+        tenant,
+        branch=branch,
+        opening_float=Decimal("0.00"),
+        opened_by=user,
     )
     return {"branch": branch, "rate_type": rate_type, "variant": variant}
 
@@ -128,6 +135,60 @@ class TestAuthAndPermissions:
 
 
 class TestCreateSaleApi:
+    def test_sale_requires_open_cash_session(self, tenant: Any, user: Any, shop: dict) -> None:
+        payment_session = payment_services.get_open_session(tenant, shop["branch"])
+        assert payment_session is not None
+        payment_services.close_session(
+            tenant,
+            session=payment_session,
+            counted_cash=Decimal("0.00"),
+            closed_by=user,
+        )
+        grant(tenant, user, "sale.create")
+
+        response = auth_client(user).post(
+            SALES_URL,
+            sale_payload(shop),
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="requires-session",
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "CASH_SESSION_REQUIRED"
+
+    def test_held_bill_can_wait_for_session_before_completion(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        payment_session = payment_services.get_open_session(tenant, shop["branch"])
+        assert payment_session is not None
+        payment_services.close_session(
+            tenant,
+            session=payment_session,
+            counted_cash=Decimal("0.00"),
+            closed_by=user,
+        )
+        grant(tenant, user, "sale.create")
+        client = auth_client(user)
+
+        held = client.post(
+            f"{SALES_URL}/hold",
+            sale_payload(shop),
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="held-without-session",
+        )
+        assert held.status_code == 201
+
+        completed = client.post(
+            f"{SALES_URL}/{held.json()['data']['id']}/complete",
+            {"payments": [{"method": "CASH", "amount": "2000.00"}]},
+            **host(),
+            format="json",
+        )
+        assert completed.status_code == 409
+        assert completed.json()["error"]["code"] == "CASH_SESSION_REQUIRED"
+
     def test_missing_idempotency_key_is_400(self, tenant: Any, user: Any, shop: dict) -> None:
         grant(tenant, user, "sale.create")
         response = auth_client(user).post(SALES_URL, sale_payload(shop), **host(), format="json")
@@ -161,6 +222,14 @@ class TestCreateSaleApi:
             **host(),
             format="json",
             HTTP_IDEMPOTENCY_KEY="k-replay",
+        )
+        payment_session = payment_services.get_open_session(tenant, shop["branch"])
+        assert payment_session is not None
+        payment_services.close_session(
+            tenant,
+            session=payment_session,
+            counted_cash=Decimal("0.00"),
+            closed_by=user,
         )
         second = client.post(
             SALES_URL,
