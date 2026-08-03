@@ -15,6 +15,7 @@ from tests.factories import (
     CustomerFactory,
     ItemVariantFactory,
     RateTypeFactory,
+    SupplierFactory,
     TenantFactory,
     UserFactory,
 )
@@ -123,6 +124,96 @@ class TestOpenClose:
 
 
 class TestExpectedCash:
+    def test_non_cash_sale_tender_is_not_drawer_cash(self, shop: dict) -> None:
+        session = services.open_session(
+            shop["tenant"],
+            branch=shop["branch"],
+            opening_float=Decimal("100.00"),
+            opened_by=shop["user"],
+        )
+        sale_services.create_sale(
+            shop["tenant"],
+            branch=shop["branch"],
+            rate_type=shop["rate_type"],
+            customer=shop["customer"],
+            lines=[
+                SaleLineInput(
+                    variant=shop["variant"],
+                    qty=Decimal("1"),
+                    unit_price=None,
+                    discount=Decimal("0"),
+                )
+            ],
+            payments=[{"method": "ESEWA", "amount": Decimal("1000.00")}],
+            idempotency_key="s-noncash",
+            created_by=shop["user"],
+        )
+
+        closed = services.close_session(
+            shop["tenant"],
+            session=session,
+            counted_cash=Decimal("100.00"),
+            closed_by=shop["user"],
+        )
+        assert closed.expected_cash == Decimal("100.00")
+
+    def test_cash_supplier_payment_leaves_the_drawer(self, shop: dict) -> None:
+        session = services.open_session(
+            shop["tenant"],
+            branch=shop["branch"],
+            opening_float=Decimal("500.00"),
+            opened_by=shop["user"],
+        )
+        services.record_payment(
+            shop["tenant"],
+            branch=shop["branch"],
+            supplier=SupplierFactory(tenant=shop["tenant"]),
+            amount=Decimal("200.00"),
+            method="CASH",
+            idempotency_key="supplier-cash",
+            created_by=shop["user"],
+        )
+
+        closed = services.close_session(
+            shop["tenant"],
+            session=session,
+            counted_cash=Decimal("300.00"),
+            closed_by=shop["user"],
+        )
+        assert closed.expected_cash == Decimal("300.00")
+
+    def test_reversed_cash_receipt_nets_to_zero(self, shop: dict) -> None:
+        session = services.open_session(
+            shop["tenant"],
+            branch=shop["branch"],
+            opening_float=Decimal("100.00"),
+            opened_by=shop["user"],
+        )
+        original = services.record_receipt(
+            shop["tenant"],
+            branch=shop["branch"],
+            customer=shop["customer"],
+            amount=Decimal("300.00"),
+            method="CASH",
+            idempotency_key="receipt-cash",
+            created_by=shop["user"],
+        ).payment
+        services.reverse_payment(
+            shop["tenant"],
+            payment=original,
+            reason="Duplicate receipt",
+            idempotency_key="receipt-cash-reversal",
+            created_by=shop["user"],
+        )
+
+        closed = services.close_session(
+            shop["tenant"],
+            session=session,
+            counted_cash=Decimal("100.00"),
+            closed_by=shop["user"],
+        )
+        assert closed.expected_cash == Decimal("100.00")
+
     def test_expected_with_sale_receipt_and_refund_in_window(self, shop: dict) -> None:
         session = services.open_session(
             shop["tenant"],
