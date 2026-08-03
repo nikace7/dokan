@@ -79,6 +79,31 @@ const payment = {
   allocations: [],
 };
 
+const priorAllocationPayment = {
+  ...payment,
+  allocations: [
+    {
+      id: 'allocation-1',
+      sales_invoice: 'invoice-1',
+      purchase_invoice: null,
+      amount: '1000.00',
+    },
+  ],
+};
+
+const allocationInvoice = {
+  id: 'invoice-1',
+  branch: 'branch-1',
+  branch_code: 'MAIN',
+  invoice_no: 1001,
+  customer: customer.id,
+  customer_name: customer.name,
+  due_amount: '4000.00',
+  status: 'COMPLETED',
+  doc_type: 'SALE',
+  business_date_bs: '2083-04-18',
+};
+
 describe('PaymentsPage', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock);
@@ -108,6 +133,8 @@ describe('PaymentsPage', () => {
         return envelope(currentSession, 201);
       }
       if (url.includes('/v1/purchasing/suppliers?')) return page([supplier]);
+      if (url.includes('/v1/sales?')) return page([allocationInvoice]);
+      if (url.includes('customer=')) return page([priorAllocationPayment]);
       if (url.endsWith('/v1/payments/supplier-payments')) return envelope(payment, 201);
       if (url.includes('/v1/payments?')) return page([payment]);
       if (url.includes('/v1/customers?')) return envelope([customer]);
@@ -147,6 +174,32 @@ describe('PaymentsPage', () => {
       );
     });
     expect(await screen.findByText('Receipt recorded.')).toBeInTheDocument();
+  });
+
+  it('allocates a customer receipt to an invoice', async () => {
+    renderPayments();
+
+    fireEvent.change(screen.getByLabelText('Search customer for receipt'), {
+      target: { value: 'Sita' },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: /Sita Rai 9800000000/i }));
+    fireEvent.change(screen.getAllByLabelText('Amount (NPR)')[0], { target: { value: '2500' } });
+    const allocation = await screen.findByLabelText('Allocation for invoice 1001');
+    expect(allocation).toHaveAttribute('max', '3000.00');
+    fireEvent.change(allocation, {
+      target: { value: '2500' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Record receipt' }));
+
+    await waitFor(() => {
+      const request = fetchMock.mock.calls.find(([input]) =>
+        String(input).endsWith('/v1/payments/receipts'),
+      );
+      expect(request).toBeDefined();
+      expect(JSON.parse(String(request?.[1]?.body))).toMatchObject({
+        allocations: [{ invoice: 'invoice-1', amount: '2500' }],
+      });
+    });
   });
 
   it('opens the cash session for the configured branch', async () => {

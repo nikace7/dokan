@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import type { Customer } from '@/features/billing/api';
 import { demoConfig, listPayments, recordReceipt, searchCustomers } from '@/features/payments/api';
 import { CashSessionPanel } from '@/features/payments/CashSessionPanel';
+import { InvoiceAllocationPicker } from '@/features/payments/InvoiceAllocationPicker';
 import { SupplierPaymentForm } from '@/features/payments/SupplierPaymentForm';
 import type { ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
@@ -89,6 +90,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
   const [method, setMethod] = useState<ReceiptMethod>('CASH');
   const [refNo, setRefNo] = useState('');
   const [note, setNote] = useState('');
+  const [allocations, setAllocations] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
@@ -103,6 +105,9 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         method,
         ref_no: refNo.trim(),
         note: note.trim(),
+        allocations: Object.entries(allocations)
+          .filter(([, value]) => value.trim())
+          .map(([invoice, value]) => ({ invoice, amount: value.trim() })),
       });
     },
     onSuccess: () => {
@@ -111,6 +116,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
       setAmount('');
       setRefNo('');
       setNote('');
+      setAllocations({});
       setError(null);
       onRecorded();
     },
@@ -140,10 +146,22 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
           onSelect={(value) => {
             setCustomer(value);
             setSearch('');
+            setAllocations({});
           }}
-          onClear={() => setCustomer(null)}
+          onClear={() => {
+            setCustomer(null);
+            setAllocations({});
+          }}
         />
       </div>
+      {customer ? (
+        <InvoiceAllocationPicker
+          party="customer"
+          partyId={customer.id}
+          values={allocations}
+          onChange={setAllocations}
+        />
+      ) : null}
       <Input
         label="Amount (NPR)"
         type="number"

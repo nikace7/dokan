@@ -12,6 +12,7 @@ import { ExpensesPage } from '@/features/expenses/ExpensesPage';
 import { ExchangePage } from '@/features/exchange/ExchangePage';
 import { StockPage } from '@/features/inventory/StockPage';
 import { PaymentsPage } from '@/features/payments/PaymentsPage';
+import { PartyLedgerPage } from '@/features/payments/PartyLedgerPage';
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
 import { ReturnsPage } from '@/features/returns/ReturnsPage';
 import { DuesReportPage } from '@/features/reports/DuesReportPage';
@@ -71,6 +72,7 @@ const router = createBrowserRouter([
       { path: '/purchasing', element: <PurchasingPage /> },
       { path: '/expenses', element: <ExpensesPage /> },
       { path: '/payments', element: <PaymentsPage /> },
+      { path: '/ledgers', element: <PartyLedgerPage /> },
       { path: '/returns', element: <ReturnsPage /> },
       { path: '/audit', element: <AuditPage /> },
       { path: '/exchanges', element: <ExchangePage /> },
