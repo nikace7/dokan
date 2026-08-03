@@ -1,6 +1,7 @@
 import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 
 import { AppLayout } from '@/app/AppLayout';
+import { AuditPage } from '@/features/audit/AuditPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { BillingPage } from '@/features/billing/BillingPage';
@@ -70,6 +71,7 @@ const router = createBrowserRouter([
       { path: '/expenses', element: <ExpensesPage /> },
       { path: '/payments', element: <PaymentsPage /> },
       { path: '/returns', element: <ReturnsPage /> },
+      { path: '/audit', element: <AuditPage /> },
       { path: '/reports', element: <ReportsHomePage /> },
       { path: '/reports/sales', element: <SalesReportPage /> },
       { path: '/reports/stock', element: <StockReportsPage /> },
