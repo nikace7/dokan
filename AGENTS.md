@@ -57,7 +57,8 @@ Idempotency-Key + PaymentAllocation so receipts reduce dues WITHOUT touching
 completed invoices — outstanding is ledger-derived (dues − credit notes −
 receipts) in one canonical selector; linked negative counter-entry reversals
 with audit and `payment.reverse`; party ledgers and receivables aging;
-CashSession day-close with expected/variance snapshot), `apps/reports`
+CashSession day-close with persisted tender-aware expected cash, supplier cash
+outflows, and variance snapshot), `apps/reports`
 (read-only selectors, no models: daily/monthly/item sales, stock summary /
 low / dead stock, profit pinned to cost_at_sale and gated on report.profit +
 pricing.view_cost, dues reusing canonical outstanding, sales+purchase VAT

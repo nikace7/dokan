@@ -687,6 +687,7 @@ documents referencing the original.
 | fiscal_year_bs | char(7) | no | denormalized; drives numbering + VAT periods |
 | device_id | text | yes | POS device, for offline reconciliation |
 | idempotency_key | text | no | UNIQUE `(tenant_id, idempotency_key)`; mandatory on `POST /sales` |
+| tenders | jsonb | no | Actual tender split (`[{method, amount}]`); only `CASH` affects drawer reconciliation |
 | created_by | uuid FK → user | yes | |
 | created_at | timestamptz | no | default now() |
 
@@ -800,7 +801,7 @@ Drawer open/close with variance (Phase 2).
 | closed_by | uuid FK → user | yes | |
 | closed_at | timestamptz | yes | |
 | counted_cash | numeric(14,2) | yes | |
-| expected_cash | numeric(14,2) | yes | float + cash IN − cash OUT |
+| expected_cash | numeric(14,2) | yes | float + CASH sale/receipt tenders − CASH supplier payments/refunds |
 | variance | numeric(14,2) | yes | counted − expected |
 | note | text | yes | |
 
