@@ -1,14 +1,20 @@
 import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 
 import { AppLayout } from '@/app/AppLayout';
+import { AuditPage } from '@/features/audit/AuditPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { BillingPage } from '@/features/billing/BillingPage';
 import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
 import { ItemFormPage } from '@/features/catalog/ItemFormPage';
 import { ItemsPage } from '@/features/catalog/ItemsPage';
+import { ExpensesPage } from '@/features/expenses/ExpensesPage';
+import { ExchangePage } from '@/features/exchange/ExchangePage';
 import { StockPage } from '@/features/inventory/StockPage';
+import { PaymentsPage } from '@/features/payments/PaymentsPage';
+import { PartyLedgerPage } from '@/features/payments/PartyLedgerPage';
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
+import { ReturnsPage } from '@/features/returns/ReturnsPage';
 import { DuesReportPage } from '@/features/reports/DuesReportPage';
 import { ProfitReportPage } from '@/features/reports/ProfitReportPage';
 import { ReportsHomePage } from '@/features/reports/ReportsHomePage';
@@ -64,6 +70,12 @@ const router = createBrowserRouter([
       { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
       { path: '/stock', element: <StockPage /> },
       { path: '/purchasing', element: <PurchasingPage /> },
+      { path: '/expenses', element: <ExpensesPage /> },
+      { path: '/payments', element: <PaymentsPage /> },
+      { path: '/ledgers', element: <PartyLedgerPage /> },
+      { path: '/returns', element: <ReturnsPage /> },
+      { path: '/audit', element: <AuditPage /> },
+      { path: '/exchanges', element: <ExchangePage /> },
       { path: '/reports', element: <ReportsHomePage /> },
       { path: '/reports/sales', element: <SalesReportPage /> },
       { path: '/reports/stock', element: <StockReportsPage /> },
