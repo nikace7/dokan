@@ -179,6 +179,92 @@ class TestReceiptFlow:
         assert response.json()["error"]["code"] == "ALLOCATION_EXCEEDS_OUTSTANDING"
 
 
+class TestPaymentReversal:
+    def test_reversal_requires_permission(self, tenant: Any, user: Any, shop: dict) -> None:
+        original = services.record_receipt(
+            tenant,
+            branch=shop["branch"],
+            customer=shop["customer"],
+            amount=Decimal("300.00"),
+            method="CASH",
+            idempotency_key="r-original",
+            created_by=user,
+        ).payment
+        grant(tenant, user, "payment.view")
+
+        response = auth_client(user).post(
+            f"{PAYMENTS_URL}/{original.pk}/reverse",
+            {"reason": "Duplicate receipt"},
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="r-reversal",
+        )
+        assert response.status_code == 403
+
+    def test_reversal_replays_and_is_serialized(self, tenant: Any, user: Any, shop: dict) -> None:
+        original = services.record_receipt(
+            tenant,
+            branch=shop["branch"],
+            customer=shop["customer"],
+            amount=Decimal("300.00"),
+            method="CASH",
+            idempotency_key="r-original",
+            created_by=user,
+        ).payment
+        grant(tenant, user, "payment.reverse")
+        client = auth_client(user)
+        url = f"{PAYMENTS_URL}/{original.pk}/reverse"
+
+        first = client.post(
+            url,
+            {"reason": "Duplicate receipt"},
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="r-reversal",
+        )
+        assert first.status_code == 201
+        assert first.json()["data"]["amount"] == "-300.00"
+        assert first.json()["data"]["reversal_of"] == str(original.pk)
+
+        replay = client.post(
+            url,
+            {"reason": "Same request replay"},
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="r-reversal",
+        )
+        assert replay.status_code == 200
+        assert replay.headers.get("X-Idempotent-Replay") == "true"
+        assert replay.json()["data"]["id"] == first.json()["data"]["id"]
+
+    def test_reversal_of_other_tenant_payment_is_hidden(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        other_tenant = TenantFactory(slug="other-shop")
+        other_user = UserFactory(tenant=other_tenant)
+        other_branch = BranchFactory(tenant=other_tenant)
+        other_customer = CustomerFactory(tenant=other_tenant)
+        original = services.record_receipt(
+            other_tenant,
+            branch=other_branch,
+            customer=other_customer,
+            amount=Decimal("300.00"),
+            method="CASH",
+            idempotency_key="r-other",
+            created_by=other_user,
+        ).payment
+        grant(tenant, user, "payment.reverse")
+
+        response = auth_client(user).post(
+            f"{PAYMENTS_URL}/{original.pk}/reverse",
+            {"reason": "Cross tenant attempt"},
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="r-cross-tenant",
+        )
+        assert response.status_code == 404
+
+
 class TestListAndLedgers:
     def test_payments_list_filters(self, tenant: Any, user: Any, shop: dict) -> None:
         services.record_receipt(

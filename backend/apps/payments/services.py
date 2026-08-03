@@ -6,7 +6,7 @@ Invariant map (AGENTS.md):
   receipts), never written back onto the invoice.
 - #8: Idempotency-Key is mandatory; a replay returns the original payment.
 - Payments are append-only (DB-level REVOKE); a mistake is reversed with a
-  counter-entry in a later slice, never edited.
+  linked negative counter-entry, never edited.
 """
 
 from dataclasses import dataclass
@@ -18,6 +18,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from apps.audit.services import audit
 from apps.payments.models import CashSession, Payment, PaymentAllocation
 from apps.payments.selectors import invoice_outstanding
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
@@ -135,6 +136,7 @@ def _write_payment(
     business_date: date | None,
     customer: "Customer | None" = None,
     supplier: "Supplier | None" = None,
+    reversal_of: Payment | None = None,
 ) -> Payment:
     date_ad = business_date or timezone.localdate()
     payment = Payment(
@@ -153,6 +155,7 @@ def _write_payment(
         fiscal_year_bs=fiscal_year_bs(date_ad),
         idempotency_key=idempotency_key,
         created_by=created_by,
+        reversal_of=reversal_of,
     )
     payment.save()
     PaymentAllocation.objects.bulk_create(
@@ -262,6 +265,104 @@ def record_payment(
             original = Payment.objects.get(tenant=tenant, idempotency_key=key)
             return PaymentResult(payment=original, replayed=True)
         raise
+
+
+def reverse_payment(
+    tenant: "Tenant",
+    *,
+    payment: Payment,
+    reason: str,
+    idempotency_key: str,
+    created_by: "User",
+    business_date: date | None = None,
+) -> PaymentResult:
+    """Reverse one payment with a linked, negative counter-entry.
+
+    The original row and its allocations remain immutable. Locking the
+    original serializes competing reversals and guarantees one counter-entry.
+    """
+    key = _validate_key(idempotency_key)
+    reason = reason.strip()
+    if not reason:
+        raise ServiceError("REVERSAL_REASON_REQUIRED", "A reversal reason is required.")
+    if payment.tenant_id != tenant.pk:
+        raise ServiceError("PAYMENT_NOT_FOUND", "Payment not found.", http_status=404)
+
+    try:
+        with transaction.atomic():
+            original = (
+                Payment.objects.select_for_update().filter(tenant=tenant, pk=payment.pk).first()
+            )
+            if original is None:
+                raise ServiceError("PAYMENT_NOT_FOUND", "Payment not found.", http_status=404)
+
+            existing = Payment.objects.filter(tenant=tenant, idempotency_key=key).first()
+            if existing is not None:
+                if existing.reversal_of_id == original.pk:
+                    return PaymentResult(payment=existing, replayed=True)
+                raise ServiceError(
+                    "IDEMPOTENCY_KEY_REUSED",
+                    "This Idempotency-Key belongs to another payment.",
+                    http_status=409,
+                )
+
+            if (
+                original.reversal_of_id is not None
+                or Payment.objects.filter(tenant=tenant, reversal_of=original).exists()
+            ):
+                raise ServiceError(
+                    "PAYMENT_ALREADY_REVERSED",
+                    "This payment has already been reversed.",
+                    http_status=409,
+                )
+
+            reversal = _write_payment(
+                tenant,
+                branch=original.branch,
+                direction=original.direction,
+                party_type=original.party_type,
+                customer=original.customer,
+                supplier=original.supplier,
+                amount=-original.amount,
+                method=original.method,
+                ref_no=f"REVERSAL-{original.pk}",
+                note=reason,
+                allocations=[
+                    {
+                        "sales_invoice": allocation.sales_invoice,
+                        "purchase_invoice": allocation.purchase_invoice,
+                        "amount": -allocation.amount,
+                    }
+                    for allocation in original.allocations.select_related(
+                        "sales_invoice", "purchase_invoice"
+                    )
+                ],
+                idempotency_key=key,
+                created_by=created_by,
+                business_date=business_date,
+                reversal_of=original,
+            )
+            audit(
+                tenant,
+                actor=created_by,
+                action="payment.reverse",
+                target_type="payment",
+                target_id=original,
+                before={"reversal_id": None},
+                after={"reversal_id": str(reversal.pk), "reason": reason},
+            )
+            return PaymentResult(payment=reversal, replayed=False)
+    except IntegrityError as exc:
+        if "idempotency" not in str(exc):
+            raise
+        existing = Payment.objects.get(tenant=tenant, idempotency_key=key)
+        if existing.reversal_of_id == payment.pk:
+            return PaymentResult(payment=existing, replayed=True)
+        raise ServiceError(
+            "IDEMPOTENCY_KEY_REUSED",
+            "This Idempotency-Key belongs to another payment.",
+            http_status=409,
+        ) from exc
 
 
 # --- Cash sessions (day close, design §1.2) ------------------------------------

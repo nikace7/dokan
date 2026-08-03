@@ -58,6 +58,13 @@ class Payment(TenantScopedModel):
     fiscal_year_bs = models.CharField(max_length=7)
     idempotency_key = models.TextField()
     created_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
+    reversal_of = models.OneToOneField(
+        "self",
+        on_delete=models.PROTECT,
+        related_name="reversal",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = "payment"
@@ -72,6 +79,13 @@ class Payment(TenantScopedModel):
                     | Q(direction="PAYMENT", supplier__isnull=False, customer__isnull=True)
                 ),
                 name="payment_party_check",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(reversal_of__isnull=True, amount__gt=0)
+                    | Q(reversal_of__isnull=False, amount__lt=0)
+                ),
+                name="payment_amount_reversal_check",
             ),
         ]
         indexes: ClassVar = [
