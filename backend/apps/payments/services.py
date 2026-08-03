@@ -369,12 +369,20 @@ def reverse_payment(
 
 
 def get_open_session(tenant: "Tenant", branch: "Branch") -> CashSession | None:
-    """The branch's currently open session, if any (POS guard helper).
-
-    TODO: requiring an open session before billing is a tenant setting and
-    lands with the day-close feature slice — create_sale is not wired yet.
-    """
+    """Return the branch's currently open session, if any."""
     return CashSession.objects.filter(tenant=tenant, branch=branch, closed_at__isnull=True).first()
+
+
+def require_open_session(tenant: "Tenant", branch: "Branch") -> CashSession:
+    """Require an open drawer before a POS completion can move stock."""
+    session = get_open_session(tenant, branch)
+    if session is None:
+        raise ServiceError(
+            "CASH_SESSION_REQUIRED",
+            "Open a cash session before completing a POS sale.",
+            http_status=409,
+        )
+    return session
 
 
 def open_session(
