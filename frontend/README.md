@@ -35,6 +35,8 @@ The demo workflow covers the full loop in the browser:
   whose backend permissions expose it.
 - `/purchasing` — suppliers and purchase invoices: save a DRAFT, then
   Confirm (guarded, irreversible) to post stock and update cost.
+- `/expenses` — record tenant-wide expenses, add categories, filter by BS
+  period/category, and view category totals.
 - `/billing` — the POS screen.
 - `/reports` — the owner's reports: sales (daily by BS date with totals,
   monthly by fiscal year, top items), stock (summary/low/dead), profit
