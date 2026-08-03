@@ -725,12 +725,13 @@ All money in/out. `POST /payments` requires `Idempotency-Key`.
 | Column | Type | Null | Notes |
 |---|---|---|---|
 | id | uuid PK | no | |
+| reversal_of | uuid FK → payment | yes | NULL for an original payment; a reversal is one linked negative counter-entry |
 | branch_id | uuid FK → branch | no | |
 | direction | text | no | CHECK IN (`IN`,`OUT`) |
 | party_type | text | no | CHECK IN (`CUSTOMER`,`SUPPLIER`,`NONE`) |
 | party_id | uuid | yes | NULL when `party_type = NONE` |
 | method | text | no | CHECK IN (`CASH`,`ESEWA`,`KHALTI`,`FONEPAY`,`CARD`,`BANK`,`CREDIT`,`POINTS`) |
-| amount | numeric(14,2) | no | |
+| amount | numeric(14,2) | no | positive for originals, negative when `reversal_of` is set |
 | ref_no | text | yes | gateway/QR reference |
 | sales_invoice_id | uuid FK → sales_invoice | yes | |
 | purchase_invoice_id | uuid FK → purchase_invoice | yes | |
@@ -741,7 +742,9 @@ All money in/out. `POST /payments` requires `Idempotency-Key`.
 | created_by | uuid FK → user | yes | |
 | created_at | timestamptz | no | default now() |
 
-Append-only (a wrong payment is reversed by a counter-payment, not edited).
+Append-only (a wrong payment is reversed by one linked counter-entry, not edited).
+`payment.reverse` is required; the reversal reason is stored in `note`, and the
+same `Idempotency-Key` replays the original reversal with `200`.
 Index: `(tenant_id, party_type, party_id, business_date_bs)`;
 `(tenant_id, sales_invoice_id)`.
 

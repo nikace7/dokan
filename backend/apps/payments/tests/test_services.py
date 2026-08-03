@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 from django.db import ProgrammingError, connection, transaction
 
+from apps.audit.models import AuditLog
 from apps.customers.selectors import get_customer_outstanding
 from apps.inventory.services import post_opening_stock
 from apps.payments import services
@@ -325,6 +326,78 @@ class TestIdempotency:
         assert second.replayed is True
         assert second.payment.pk == first.payment.pk
         assert Payment.objects.filter(tenant=shop["tenant"]).count() == 1
+
+
+class TestPaymentReversal:
+    def test_reversal_writes_counter_entries_and_restores_outstanding(self, shop: dict) -> None:
+        sale = _sale(shop, "0", "s-reversal")
+        original = _receipt(
+            shop,
+            "300.00",
+            key="rcpt-reversal",
+            allocations=[{"sales_invoice": sale, "amount": Decimal("300.00")}],
+        ).payment
+
+        result = services.reverse_payment(
+            shop["tenant"],
+            payment=original,
+            reason="Duplicate receipt",
+            idempotency_key="reverse-1",
+            created_by=shop["user"],
+        )
+
+        reversal = result.payment
+        assert result.replayed is False
+        assert reversal.amount == Decimal("-300.00")
+        assert reversal.reversal_of_id == original.pk
+        assert reversal.allocations.get().amount == Decimal("-300.00")
+        assert invoice_outstanding(shop["tenant"], invoice=sale) == Decimal("1000.00")
+        assert get_customer_outstanding(shop["tenant"], shop["customer"]) == Decimal("1000.00")
+        audit_row = AuditLog.objects.get(tenant=shop["tenant"], action="payment.reverse")
+        assert audit_row.target_id == original.pk
+        assert audit_row.after is not None
+        assert audit_row.after["reversal_id"] == str(reversal.pk)
+
+    def test_reversal_is_idempotent_and_only_one_is_allowed(self, shop: dict) -> None:
+        original = _receipt(shop, "300.00", key="rcpt-reversal").payment
+        first = services.reverse_payment(
+            shop["tenant"],
+            payment=original,
+            reason="Duplicate receipt",
+            idempotency_key="reverse-1",
+            created_by=shop["user"],
+        )
+        replay = services.reverse_payment(
+            shop["tenant"],
+            payment=original,
+            reason="Same request replay",
+            idempotency_key="reverse-1",
+            created_by=shop["user"],
+        )
+        assert replay.replayed is True
+        assert replay.payment.pk == first.payment.pk
+
+        with pytest.raises(ServiceError) as exc:
+            services.reverse_payment(
+                shop["tenant"],
+                payment=original,
+                reason="Second reversal",
+                idempotency_key="reverse-2",
+                created_by=shop["user"],
+            )
+        assert exc.value.code == "PAYMENT_ALREADY_REVERSED"
+
+    def test_reversal_reason_is_required(self, shop: dict) -> None:
+        original = _receipt(shop, "300.00", key="rcpt-reversal").payment
+        with pytest.raises(ServiceError) as exc:
+            services.reverse_payment(
+                shop["tenant"],
+                payment=original,
+                reason=" ",
+                idempotency_key="reverse-1",
+                created_by=shop["user"],
+            )
+        assert exc.value.code == "REVERSAL_REASON_REQUIRED"
 
 
 class TestLedgers:
