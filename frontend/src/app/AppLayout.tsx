@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { useAuth } from '@/features/auth/useAuth';
+import { WorkspaceSelector } from '@/features/settings/WorkspaceSelector';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -58,6 +59,7 @@ export function AppLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
+            <WorkspaceSelector />
             <span className="text-slate-300">{user?.full_name}</span>
             <button
               type="button"

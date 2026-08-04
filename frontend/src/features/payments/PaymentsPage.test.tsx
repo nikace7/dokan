@@ -5,7 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PaymentsPage } from '@/features/payments/PaymentsPage';
 import { clearTokens, setTokens } from '@/lib/auth/tokens';
 
-vi.mock('@/lib/config', () => ({ demoConfig: { branchId: 'branch-1' } }));
+vi.mock('@/features/settings/useWorkspace', () => ({
+  useWorkspace: () => ({
+    branches: [{ id: 'branch-1', name: 'Main', is_default: true }],
+    rateTypes: [{ id: 'rate-1', name: 'Retail', is_default: true }],
+    branchId: 'branch-1',
+    rateTypeId: 'rate-1',
+    setBranchId: vi.fn(),
+    setRateTypeId: vi.fn(),
+    isReady: true,
+    isLoading: false,
+    error: null,
+  }),
+}));
 
 const fetchMock = vi.fn<typeof fetch>();
 let currentSession: Record<string, unknown> | null = null;

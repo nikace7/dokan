@@ -23,6 +23,7 @@ export interface Tender {
 
 interface PaymentPanelProps {
   busy: boolean;
+  disabled?: boolean;
   onComplete: (tender: Tender) => void;
 }
 
@@ -31,7 +32,7 @@ interface PaymentPanelProps {
  * server rejects it otherwise (UDHARO_REQUIRES_CUSTOMER), so we block it
  * here first to save the round-trip.
  */
-export function PaymentPanel({ busy, onComplete }: PaymentPanelProps) {
+export function PaymentPanel({ busy, disabled = false, onComplete }: PaymentPanelProps) {
   const lines = useCartStore((s) => s.lines);
   const customer = useCartStore((s) => s.customer);
   const [method, setMethod] = useState<PaymentMethod>('CASH');
@@ -75,11 +76,7 @@ export function PaymentPanel({ busy, onComplete }: PaymentPanelProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div
-        role="group"
-        aria-label="Payment method"
-        className="grid grid-cols-3 gap-2"
-      >
+      <div role="group" aria-label="Payment method" className="grid grid-cols-3 gap-2">
         {METHODS.map((m) => (
           <button
             key={m.id}
@@ -148,7 +145,7 @@ export function PaymentPanel({ busy, onComplete }: PaymentPanelProps) {
         </p>
       ) : null}
 
-      <Button size="lg" disabled={busy || lines.length === 0} onClick={submit}>
+      <Button size="lg" disabled={busy || disabled || lines.length === 0} onClick={submit}>
         {busy ? 'Completing…' : 'Complete sale / बिल काट्नुहोस्'}
       </Button>
     </div>
