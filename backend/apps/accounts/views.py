@@ -21,7 +21,10 @@ from apps.accounts.models import Role, User
 from apps.accounts.selectors import get_permission_codes
 from apps.accounts.serializers import (
     MeSerializer,
+    PermissionSerializer,
+    RoleCreateSerializer,
     RoleSerializer,
+    RoleUpdateSerializer,
     StaffCreateSerializer,
     StaffRoleAssignmentSerializer,
     StaffUserSerializer,
@@ -115,8 +118,18 @@ class _AccountsManagementAPIView(APIView):
         return super().handle_exception(exc)
 
 
+class PermissionListView(_AccountsManagementAPIView):
+    """GET /permissions — global permission catalog for role editing."""
+
+    def get(self, request: Request) -> Response:
+        data: list[Any] = list(
+            PermissionSerializer(selectors.list_permissions(_user(request)), many=True).data
+        )
+        return ok(data)
+
+
 class RoleListView(_AccountsManagementAPIView):
-    """GET /roles — roles available for staff assignment."""
+    """GET/POST /roles — list and create tenant roles."""
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -126,6 +139,52 @@ class RoleListView(_AccountsManagementAPIView):
         )
         data: list[Any] = list(RoleSerializer(page, many=True).data)
         return paginator.get_paginated_response(data)
+
+    def post(self, request: Request) -> Response:
+        tenant = require_request_tenant(request)
+        serializer = RoleCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        role = services.create_role(
+            tenant,
+            actor=_user(request),
+            code=data["code"],
+            name=data["name"],
+            name_np=data.get("name_np"),
+            description=data.get("description"),
+            permission_codes=data.get("permission_codes", []),
+            request=request,
+        )
+        return ok(RoleSerializer(role).data, status.HTTP_201_CREATED)
+
+
+class RoleDetailView(_AccountsManagementAPIView):
+    """PATCH/DELETE /roles/<id> — change or remove custom roles."""
+
+    method_permissions: ClassVar[dict[str, str]] = {
+        "PATCH": "user.manage",
+        "DELETE": "user.manage",
+    }
+
+    def patch(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        serializer = RoleUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        role = _tenant_object(tenant, Role, pk, "Role")
+        updated = services.update_role(
+            tenant,
+            actor=_user(request),
+            role=role,
+            changes=serializer.validated_data,
+            request=request,
+        )
+        return ok(RoleSerializer(updated).data)
+
+    def delete(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        role = _tenant_object(tenant, Role, pk, "Role")
+        services.delete_role(tenant, actor=_user(request), role=role, request=request)
+        return ok({"deleted": str(pk)})
 
 
 class StaffListView(_AccountsManagementAPIView):

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/features/auth/useAuth';
 import { assignStaffRole, createStaff, listRoles, listStaff } from '@/features/settings/api';
 import type { CreateStaffPayload } from '@/features/settings/api';
+import { RoleManagementCard } from '@/features/settings/RoleManagementCard';
 import { ApiError } from '@/lib/api/client';
 import { hasPermission } from '@/lib/permissions';
 
@@ -247,6 +248,7 @@ export function StaffPage() {
           </ul>
         )}
       </Card>
+      <RoleManagementCard roles={roles} />
     </main>
   );
 }

@@ -61,6 +61,17 @@ describe('StaffPage', () => {
         });
       }
       if (url.includes('/v1/roles')) return page([role]);
+      if (url.includes('/v1/permissions')) {
+        return envelope([
+          {
+            code: 'sale.create',
+            module: 'Sales',
+            name: 'Create bills',
+            description: null,
+            is_sensitive: false,
+          },
+        ]);
+      }
       if (url.endsWith('/v1/users') && init?.method === 'POST') {
         return envelope(
           {

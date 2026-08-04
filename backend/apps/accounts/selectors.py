@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Final
 
 from django.core.cache import cache
 
-from apps.accounts.models import Role, RolePermission, User, UserRole
+from apps.accounts.models import Permission, Role, RolePermission, User, UserRole
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -70,6 +70,11 @@ def list_roles(tenant: "Tenant", user: "User") -> "QuerySet[Role]":
         .prefetch_related("role_permissions__permission")
         .order_by("-is_system", "name", "code")
     )
+
+
+def list_permissions(user: "User") -> "QuerySet[Permission]":
+    """List the global permission catalog for role administration."""
+    return Permission.objects.order_by("module", "code")
 
 
 def list_staff(tenant: "Tenant", user: "User") -> "QuerySet[User]":
