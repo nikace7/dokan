@@ -5,10 +5,11 @@ from typing import Any
 import pytest
 from rest_framework.test import APIClient
 
-from apps.accounts.models import Permission, Role, RolePermission, User
+from apps.accounts.models import Permission, Role, RolePermission, User, UserRole
 from apps.audit.models import AuditLog
 from tests.factories import (
     DEFAULT_PASSWORD,
+    BranchFactory,
     RoleFactory,
     RolePermissionFactory,
     TenantFactory,
@@ -133,6 +134,33 @@ class TestStaffManagement:
         assert response.status_code == 201
         assert staff.has_perm("sale.create") is True
         assert AuditLog.objects.filter(tenant=tenant, action="user.role.assign").exists()
+
+    def test_assigns_role_to_branch_and_rejects_other_tenant_branch(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+        staff = UserFactory(tenant=tenant)
+        role = RoleFactory(tenant=tenant, code="CASHIER", name="Cashier")
+        branch = BranchFactory(tenant=tenant, code="MAIN", name="Main outlet")
+        other_branch = BranchFactory(tenant=TenantFactory(slug="otherbranch"))
+        client = auth_client(owner, tenant.slug)
+
+        assigned = client.post(
+            f"{USERS_URL}/{staff.pk}/roles",
+            {"role": str(role.pk), "branch": str(branch.pk)},
+            format="json",
+            **host(tenant.slug),
+        )
+        rejected = client.post(
+            f"{USERS_URL}/{staff.pk}/roles",
+            {"role": str(role.pk), "branch": str(other_branch.pk)},
+            format="json",
+            **host(tenant.slug),
+        )
+
+        assert assigned.status_code == 201
+        assert assigned.json()["data"]["branch"] == "MAIN"
+        assert rejected.status_code == 404
+        assert UserRole.objects.filter(user=staff, role=role, branch=branch).exists()
 
     def test_tenant_token_cannot_manage_another_tenant(self, tenant: Any) -> None:
         owner = UserFactory(tenant=tenant)

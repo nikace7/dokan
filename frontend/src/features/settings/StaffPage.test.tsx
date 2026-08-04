@@ -60,6 +60,21 @@ describe('StaffPage', () => {
           permissions: ['user.manage'],
         });
       }
+      if (url.includes('/v1/branches')) {
+        return page([
+          {
+            id: 'branch-1',
+            code: 'MAIN',
+            name: 'Main outlet',
+            name_np: null,
+            address: null,
+            phone: null,
+            invoice_prefix: 'INV',
+            is_default: true,
+            is_active: true,
+          },
+        ]);
+      }
       if (url.includes('/v1/roles')) return page([role]);
       if (url.includes('/v1/permissions')) {
         return envelope([
@@ -137,6 +152,9 @@ describe('StaffPage', () => {
     fireEvent.change(screen.getByLabelText('Role for Existing Cashier'), {
       target: { value: role.id },
     });
+    fireEvent.change(screen.getByLabelText('Branch for Existing Cashier'), {
+      target: { value: 'branch-1' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Assign' }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -144,5 +162,10 @@ describe('StaffPage', () => {
         expect.objectContaining({ method: 'POST' }),
       );
     });
+    const assignmentCall = fetchMock.mock.calls.find(
+      ([input, init]) =>
+        String(input).includes('/v1/users/staff-1/roles') && init?.method === 'POST',
+    );
+    expect(JSON.parse(String(assignmentCall?.[1]?.body))).toMatchObject({ branch: 'branch-1' });
   });
 });
