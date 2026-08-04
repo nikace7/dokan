@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -214,6 +215,19 @@ export function SettingsPage() {
           </div>
         </form>
       </Card>
+      {hasPermission(user, 'user.manage') ? (
+        <Card title="Staff & roles / कर्मचारी">
+          <p className="mb-3 text-sm text-slate-600">
+            Create staff accounts and assign the roles already configured for this shop.
+          </p>
+          <Link
+            to="/settings/staff"
+            className="inline-flex rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Manage staff
+          </Link>
+        </Card>
+      ) : null}
     </main>
   );
 }

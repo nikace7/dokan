@@ -13,6 +13,8 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 /** Authenticated shell: top nav, current user, sign out. */
 export function AppLayout() {
   const { user, signOut } = useAuth();
+  const canManageSettings = hasPermission(user, 'settings.manage');
+  const canManageUsers = hasPermission(user, 'user.manage');
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -48,8 +50,11 @@ export function AppLayout() {
               <NavLink to="/audit" className={navLinkClass}>
                 Audit
               </NavLink>
-              {hasPermission(user, 'settings.manage') ? (
-                <NavLink to="/settings" className={navLinkClass}>
+              {canManageSettings || canManageUsers ? (
+                <NavLink
+                  to={canManageSettings ? '/settings' : '/settings/staff'}
+                  className={navLinkClass}
+                >
                   Settings
                 </NavLink>
               ) : null}
