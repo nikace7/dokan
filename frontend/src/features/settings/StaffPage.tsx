@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/features/auth/useAuth';
-import { assignStaffRole, createStaff, listRoles, listStaff } from '@/features/settings/api';
+import {
+  assignStaffRole,
+  createStaff,
+  listBranches,
+  listRoles,
+  listStaff,
+} from '@/features/settings/api';
 import type { CreateStaffPayload } from '@/features/settings/api';
 import { RoleManagementCard } from '@/features/settings/RoleManagementCard';
 import { ApiError } from '@/lib/api/client';
@@ -31,6 +37,12 @@ export function StaffPage() {
     enabled: canManage,
     staleTime: 5 * 60_000,
   });
+  const branchesQuery = useQuery({
+    queryKey: ['tenant', 'branches'],
+    queryFn: listBranches,
+    enabled: canManage,
+    staleTime: 5 * 60_000,
+  });
   const staffQuery = useQuery({
     queryKey: ['tenant', 'staff'],
     queryFn: listStaff,
@@ -38,6 +50,7 @@ export function StaffPage() {
   });
   const [form, setForm] = useState<CreateStaffPayload>(emptyForm);
   const [roleSelections, setRoleSelections] = useState<Record<string, string>>({});
+  const [branchSelections, setBranchSelections] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -53,8 +66,8 @@ export function StaffPage() {
   });
 
   const assignMutation = useMutation({
-    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
-      assignStaffRole(userId, role),
+    mutationFn: ({ userId, role, branch }: { userId: string; role: string; branch: string }) =>
+      assignStaffRole(userId, role, branch || null),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tenant', 'staff'] });
       setStatusMessage('Role assigned.');
@@ -73,6 +86,7 @@ export function StaffPage() {
   }
 
   const roles = rolesQuery.data?.data ?? [];
+  const branches = branchesQuery.data?.data ?? [];
   const staff = staffQuery.data?.data ?? [];
   const queryError = rolesQuery.error ?? staffQuery.error;
 
@@ -149,6 +163,22 @@ export function StaffPage() {
                 ))}
               </select>
             </label>
+            <label className="flex min-w-52 flex-col gap-1 text-sm font-medium text-slate-700">
+              Initial branch
+              <select
+                aria-label="Initial branch"
+                value={form.branch ?? ''}
+                onChange={(event) => setForm({ ...form, branch: event.target.value || null })}
+                className="rounded-md border border-slate-300 px-3 py-2 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All branches</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name} ({branch.code})
+                  </option>
+                ))}
+              </select>
+            </label>
             <Button type="submit" disabled={createMutation.isPending || roles.length === 0}>
               {createMutation.isPending ? 'Creating…' : 'Create staff'}
             </Button>
@@ -159,6 +189,11 @@ export function StaffPage() {
           ) : null}
         </form>
       </Card>
+      {branchesQuery.error ? (
+        <p role="status" className="text-sm text-amber-700">
+          Branches could not be loaded; role assignments will apply to all branches.
+        </p>
+      ) : null}
 
       <Card title="Staff accounts">
         {staffQuery.isPending ? <p className="text-sm text-slate-500">Loading staff…</p> : null}
@@ -172,24 +207,27 @@ export function StaffPage() {
                 <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
                   <th className="py-2 pr-3 font-medium">Name</th>
                   <th className="py-2 pr-3 font-medium">Phone</th>
-                  <th className="py-2 pr-3 font-medium">Roles</th>
-                  <th className="py-2 font-medium">Assign role</th>
+                  <th className="py-2 pr-3 font-medium">Roles / branches</th>
+                  <th className="py-2 font-medium">Assign role and branch</th>
                 </tr>
               </thead>
               <tbody>
                 {staff.map((member) => {
                   const selectedRole = roleSelections[member.id] ?? '';
+                  const selectedBranch = branchSelections[member.id] ?? '';
                   return (
                     <tr key={member.id} className="border-b border-slate-100 align-top">
                       <td className="py-3 pr-3 font-medium">{member.full_name}</td>
                       <td className="py-3 pr-3">{member.phone}</td>
                       <td className="py-3 pr-3">
                         {member.roles.length > 0
-                          ? member.roles.map((role) => role.code).join(', ')
+                          ? member.roles
+                              .map((role) => `${role.code} @ ${role.branch_code ?? 'all branches'}`)
+                              .join(', ')
                           : 'No role'}
                       </td>
                       <td className="py-3">
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <select
                             aria-label={`Role for ${member.full_name}`}
                             value={selectedRole}
@@ -208,11 +246,33 @@ export function StaffPage() {
                               </option>
                             ))}
                           </select>
+                          <select
+                            aria-label={`Branch for ${member.full_name}`}
+                            value={selectedBranch}
+                            onChange={(event) =>
+                              setBranchSelections({
+                                ...branchSelections,
+                                [member.id]: event.target.value,
+                              })
+                            }
+                            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                          >
+                            <option value="">All branches</option>
+                            {branches.map((branch) => (
+                              <option key={branch.id} value={branch.id}>
+                                {branch.code}
+                              </option>
+                            ))}
+                          </select>
                           <Button
                             size="sm"
                             disabled={!selectedRole || assignMutation.isPending}
                             onClick={() =>
-                              assignMutation.mutate({ userId: member.id, role: selectedRole })
+                              assignMutation.mutate({
+                                userId: member.id,
+                                role: selectedRole,
+                                branch: selectedBranch,
+                              })
                             }
                           >
                             Assign
