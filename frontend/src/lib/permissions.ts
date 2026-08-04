@@ -21,7 +21,8 @@ export type PermissionCodename =
   | 'pricing.set_bounds'
   | 'stock.adjust'
   | 'report.profit'
-  | 'user.manage';
+  | 'user.manage'
+  | 'settings.manage';
 
 /** Minimal user shape needed for permission checks. */
 export interface PermissionUser {

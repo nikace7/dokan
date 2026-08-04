@@ -1,5 +1,20 @@
-import { authedRequestPage } from '@/lib/api/authed';
+import { authedRequest, authedRequestPage } from '@/lib/api/authed';
 import type { Page } from '@/lib/api/client';
+
+export interface TenantSettings {
+  id: string;
+  slug: string;
+  name: string;
+  name_np: string | null;
+  legal_name: string | null;
+  pan_vat_no: string | null;
+  vat_registered: boolean;
+  timezone: string;
+  calendar_pref: 'BS' | 'AD' | 'BOTH';
+  locale: 'np' | 'en';
+  status: string;
+  plan_code: string;
+}
 
 export interface Branch {
   id: string;
@@ -31,4 +46,25 @@ export function listBranches(): Promise<Page<Branch>> {
 
 export function listRateTypes(): Promise<Page<RateType>> {
   return authedRequestPage<RateType>('/v1/pricing/rate-types?is_active=true&limit=200');
+}
+
+export function getTenantSettings(): Promise<TenantSettings> {
+  return authedRequest<TenantSettings>('/v1/settings');
+}
+
+export function updateTenantSettings(
+  payload: Partial<
+    Pick<
+      TenantSettings,
+      | 'name'
+      | 'name_np'
+      | 'legal_name'
+      | 'pan_vat_no'
+      | 'vat_registered'
+      | 'calendar_pref'
+      | 'locale'
+    >
+  >,
+): Promise<TenantSettings> {
+  return authedRequest<TenantSettings>('/v1/settings', { method: 'PATCH', body: payload });
 }

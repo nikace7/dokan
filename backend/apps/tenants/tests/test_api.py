@@ -6,6 +6,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Permission
+from apps.audit.models import AuditLog
 from tests.factories import (
     DEFAULT_PASSWORD,
     BranchFactory,
@@ -19,6 +20,7 @@ from tests.factories import (
 pytestmark = pytest.mark.django_db
 
 BRANCHES_URL = "/api/v1/branches"
+SETTINGS_URL = "/api/v1/settings"
 
 
 def host(slug: str) -> dict[str, str]:
@@ -92,3 +94,59 @@ class TestBranchList:
 
         assert response.status_code == 200
         assert [row["code"] for row in response.json()["data"]] == ["OWN"]
+
+
+class TestTenantSettings:
+    def test_unauthenticated_is_401(self, tenant: Any) -> None:
+        assert APIClient().get(SETTINGS_URL, **host(tenant.slug)).status_code == 401
+
+    def test_requires_settings_permission(self, tenant: Any) -> None:
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "catalog.view")
+        assert (
+            auth_client(user, tenant.slug).get(SETTINGS_URL, **host(tenant.slug)).status_code == 403
+        )
+
+    def test_reads_and_updates_profile_with_audit(self, tenant: Any) -> None:
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+        client = auth_client(user, tenant.slug)
+
+        listed = client.get(SETTINGS_URL, **host(tenant.slug))
+        assert listed.status_code == 200
+        assert listed.json()["data"]["slug"] == tenant.slug
+        assert listed.json()["data"]["plan_code"] == tenant.plan.code
+
+        response = client.patch(
+            SETTINGS_URL,
+            {
+                "name": "Updated Shop",
+                "legal_name": "Updated Shop Pvt. Ltd.",
+                "pan_vat_no": "123456789",
+                "vat_registered": True,
+                "calendar_pref": "BOTH",
+                "locale": "en",
+            },
+            format="json",
+            **host(tenant.slug),
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"]["name"] == "Updated Shop"
+        tenant.refresh_from_db()
+        assert tenant.legal_name == "Updated Shop Pvt. Ltd."
+        row = AuditLog.objects.get(tenant=tenant, action="tenant.settings.update")
+        assert row.target_type == "tenant"
+        assert row.before is not None and row.before["name"] != "Updated Shop"
+        assert row.after is not None and row.after["vat_registered"] is True
+
+    def test_token_cannot_read_another_tenant_settings(self, tenant: Any) -> None:
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+        other = TenantFactory(slug="othershop")
+        UserFactory(tenant=other)
+
+        response = auth_client(user, tenant.slug).get(SETTINGS_URL, **host(other.slug))
+
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "TOKEN_TENANT_MISMATCH"
