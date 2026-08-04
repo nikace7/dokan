@@ -16,11 +16,11 @@ export default defineConfig({
     proxy: {
       // Django dev server (config/urls mounts the API under /api). The
       // tenant comes from the request HOST (invariant 4), so the proxy must
-      // forward to the seeded demo tenant's subdomain — plain
-      // `localhost:8000` has no tenant and every tenant endpoint fails.
+      // send the seeded demo tenant's host explicitly. IPv4 loopback avoids
+      // `demo.localhost` resolving to ::1 before Docker's Windows port proxy.
       '/api': {
-        target: 'http://demo.localhost:8000',
-        changeOrigin: true,
+        target: 'http://127.0.0.1:8000',
+        headers: { Host: 'demo.localhost' },
       },
     },
   },
