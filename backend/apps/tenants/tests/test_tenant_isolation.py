@@ -37,6 +37,7 @@ from apps.inventory.models import (
     StockTransfer,
     StockTransferItem,
 )
+from apps.notifications.models import SmsLog
 from apps.payments.models import CashSession, Payment, PaymentAllocation
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
 from apps.purchasing.models import PurchaseInvoice, PurchaseInvoiceItem, Supplier
@@ -68,6 +69,7 @@ from tests.factories import (
     SalesInvoiceFactory,
     SalesInvoiceItemFactory,
     SizeChartFactory,
+    SmsLogFactory,
     StockBatchFactory,
     StockCountFactory,
     StockCountItemFactory,
@@ -116,6 +118,7 @@ FACTORIES: dict[type[Any], Any] = {
     NumberSequence: NumberSequenceFactory,
     SalesInvoice: SalesInvoiceFactory,
     SalesInvoiceItem: SalesInvoiceItemFactory,
+    SmsLog: SmsLogFactory,
 }
 
 #: Plain role used to become RLS-subject inside the test transaction.

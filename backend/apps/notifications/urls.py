@@ -1,5 +1,12 @@
-"""URL routes for notifications — empty until the feature lands."""
+"""URL routes for notifications."""
 
-from typing import Any
+from django.urls import path
 
-urlpatterns: list[Any] = []
+from apps.notifications.views import ReceiptSmsView, SmsLogListView
+
+app_name = "notifications"
+
+urlpatterns = [
+    path("notifications/sms", SmsLogListView.as_view(), name="sms-list"),
+    path("notifications/sms/receipt", ReceiptSmsView.as_view(), name="sms-receipt"),
+]
