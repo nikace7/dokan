@@ -21,6 +21,7 @@ import { ReportsHomePage } from '@/features/reports/ReportsHomePage';
 import { SalesReportPage } from '@/features/reports/SalesReportPage';
 import { StockReportsPage } from '@/features/reports/StockReportsPage';
 import { VatRegisterPage } from '@/features/reports/VatRegisterPage';
+import { SettingsPage } from '@/features/settings/SettingsPage';
 
 /**
  * Route skeleton. Feature routes mount here as modules land; super-admin
@@ -75,6 +76,7 @@ const router = createBrowserRouter([
       { path: '/ledgers', element: <PartyLedgerPage /> },
       { path: '/returns', element: <ReturnsPage /> },
       { path: '/audit', element: <AuditPage /> },
+      { path: '/settings', element: <SettingsPage /> },
       { path: '/exchanges', element: <ExchangePage /> },
       { path: '/reports', element: <ReportsHomePage /> },
       { path: '/reports/sales', element: <SalesReportPage /> },

@@ -62,6 +62,11 @@ def get_tenant_pk_by_slug(slug: str) -> "UUID | None":
     return tenant.pk if tenant is not None else None
 
 
+def get_tenant_settings(tenant: Tenant, user: "User") -> Tenant:
+    """Return the current tenant profile for an explicit tenant read."""
+    return tenant
+
+
 def list_branches(
     tenant: "Tenant", user: "User", *, is_active: bool | None = None
 ) -> "QuerySet[Branch]":

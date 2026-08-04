@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 
 import { useAuth } from '@/features/auth/useAuth';
 import { WorkspaceSelector } from '@/features/settings/WorkspaceSelector';
+import { hasPermission } from '@/lib/permissions';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -47,6 +48,11 @@ export function AppLayout() {
               <NavLink to="/audit" className={navLinkClass}>
                 Audit
               </NavLink>
+              {hasPermission(user, 'settings.manage') ? (
+                <NavLink to="/settings" className={navLinkClass}>
+                  Settings
+                </NavLink>
+              ) : null}
               <NavLink to="/exchanges" className={navLinkClass}>
                 Exchanges
               </NavLink>
