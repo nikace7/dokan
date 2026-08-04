@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { listLevels } from '@/features/inventory/api';
 import { OpeningStockDialog } from '@/features/inventory/OpeningStockDialog';
-import { isDemoBillingConfigured } from '@/lib/config';
 import { formatNpr } from '@/lib/money';
 
 /**
@@ -38,16 +37,6 @@ export function StockPage() {
           </Button>
         }
       >
-        {!isDemoBillingConfigured() ? (
-          <p
-            role="alert"
-            className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800"
-          >
-            Set VITE_DEMO_BRANCH_ID in frontend/.env to post opening stock (see
-            src/lib/config.ts).
-          </p>
-        ) : null}
-
         <input
           aria-label="Search stock"
           value={search}

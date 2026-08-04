@@ -12,11 +12,9 @@ file is the quickstart.
    parameter — which is why the Vite dev proxy in `vite.config.ts` forwards
    `/api` to `http://demo.localhost:8000`, not plain `localhost:8000`
    (browsers resolve `*.localhost` to loopback; no hosts-file edits).
-2. `cp .env.example .env` and fill in `VITE_DEMO_BRANCH_ID` /
-   `VITE_DEMO_RATE_TYPE_ID` with the seeded demo branch and default rate
-   type UUIDs. There is no branch/rate-type list endpoint yet (see the TODO
-   in `src/lib/config.ts`); find the IDs via the demo DB or a recent
-   invoice from `GET /api/v1/sales`.
+2. `cp .env.example .env` if you need a custom API base URL. Active branches
+   and rate types load from the tenant after login; choose them in the app
+   header.
 3. `npm install && npm run dev`, open http://localhost:5173, and sign in
    with the seeded owner: phone `9800000000`, password `demo1234`.
 4. Open the branch cash session from `/payments`, then use `/billing` as the

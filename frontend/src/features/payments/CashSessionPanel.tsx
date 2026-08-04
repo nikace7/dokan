@@ -4,20 +4,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import {
-  closeCashSession,
-  demoConfig,
-  getCurrentCashSession,
-  openCashSession,
-} from '@/features/payments/api';
+import { closeCashSession, getCurrentCashSession, openCashSession } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
+import { useWorkspace } from '@/features/settings/useWorkspace';
 
 function message(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
 }
 
 export function CashSessionPanel() {
+  const workspace = useWorkspace();
   const queryClient = useQueryClient();
   const [openingFloat, setOpeningFloat] = useState('');
   const [openingNote, setOpeningNote] = useState('');
@@ -25,14 +22,15 @@ export function CashSessionPanel() {
   const [error, setError] = useState<string | null>(null);
   const [messageText, setMessageText] = useState<string | null>(null);
   const query = useQuery({
-    queryKey: ['payments', 'cash-session', demoConfig.branchId],
-    queryFn: () => getCurrentCashSession(),
-    enabled: Boolean(demoConfig.branchId),
+    queryKey: ['payments', 'cash-session', workspace.branchId],
+    queryFn: () => getCurrentCashSession(workspace.branchId ?? ''),
+    enabled: Boolean(workspace.branchId),
   });
   const session = query.data?.session ?? null;
 
   const openMutation = useMutation({
-    mutationFn: () => openCashSession(openingFloat.trim(), openingNote.trim()),
+    mutationFn: () =>
+      openCashSession(workspace.branchId ?? '', openingFloat.trim(), openingNote.trim()),
     onSuccess: () => {
       setOpeningFloat('');
       setOpeningNote('');
@@ -55,11 +53,11 @@ export function CashSessionPanel() {
     onError: (err) => setError(message(err, 'Could not close the cash session.')),
   });
 
-  if (!demoConfig.branchId) {
+  if (!workspace.branchId) {
     return (
       <Card title="Cash session / क्यास सेसन">
         <p className="text-sm text-amber-800">
-          Set VITE_DEMO_BRANCH_ID before managing the cash drawer.
+          Select an active branch before managing the cash drawer.
         </p>
       </Card>
     );

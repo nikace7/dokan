@@ -7,7 +7,7 @@ import { postOpeningStock } from '@/features/inventory/api';
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { VariantPicker } from '@/features/catalog/VariantPicker';
 import { ApiError } from '@/lib/api/client';
-import { demoConfig } from '@/lib/config';
+import { useWorkspace } from '@/features/settings/useWorkspace';
 
 interface OpeningStockDialogProps {
   onClose: () => void;
@@ -17,9 +17,9 @@ interface OpeningStockDialogProps {
 /**
  * "Add opening stock" dialog. Writes one OPENING ledger movement — the
  * only way stock enters the system besides purchasing (invariant 1).
- * Branch comes from the demo config until a branch list endpoint exists.
  */
 export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProps) {
+  const workspace = useWorkspace();
   const [variant, setVariant] = useState<PickedVariant | null>(null);
   const [qty, setQty] = useState('');
   const [unitCost, setUnitCost] = useState('');
@@ -40,8 +40,12 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
       setError('Pick a variant first.');
       return;
     }
+    if (!workspace.branchId) {
+      setError('Select an active branch first.');
+      return;
+    }
     mutation.mutate({
-      branch: demoConfig.branchId,
+      branch: workspace.branchId,
       variant: variant.id,
       qty: qty.trim(),
       unit_cost: unitCost.trim(),

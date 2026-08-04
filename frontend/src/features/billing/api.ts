@@ -9,7 +9,6 @@
 
 import { ApiError } from '@/lib/api/client';
 import { authedRequest } from '@/lib/api/authed';
-import { demoConfig } from '@/lib/config';
 import type { Paisa } from '@/lib/money';
 
 /** `GET /catalog/variants/lookup` — the POS hot path (plain dict from the selector). */
@@ -167,7 +166,10 @@ export function completeSale(id: string, payments: PaymentPayload[], idempotency
   });
 }
 
-/** Branch/rate-type the billing screen posts against (demo config for now). */
-export function currentSaleContext(): { branch: string; rate_type: string } {
-  return { branch: demoConfig.branchId, rate_type: demoConfig.rateTypeId };
+/** Branch/rate-type selected in the authenticated workspace shell. */
+export function currentSaleContext(
+  branchId: string,
+  rateTypeId: string,
+): { branch: string; rate_type: string } {
+  return { branch: branchId, rate_type: rateTypeId };
 }

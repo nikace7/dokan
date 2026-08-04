@@ -1,7 +1,6 @@
 import { paisaToApiString, searchCustomers } from '@/features/billing/api';
 import { authedRequest, authedRequestPage } from '@/lib/api/authed';
 import type { Page } from '@/lib/api/client';
-import { demoConfig } from '@/lib/config';
 import { addPaisa, toPaisa } from '@/lib/money';
 
 export type PaymentDirection = 'RECEIPT' | 'PAYMENT';
@@ -125,18 +124,20 @@ export function recordSupplierPayment(payload: SupplierPaymentPayload): Promise<
   });
 }
 
-export function getCurrentCashSession(
-  branch = demoConfig.branchId,
-): Promise<{ session: CashSession | null }> {
+export function getCurrentCashSession(branch: string): Promise<{ session: CashSession | null }> {
   return authedRequest<{ session: CashSession | null }>(
     `/v1/cash-sessions/current?branch=${encodeURIComponent(branch)}`,
   );
 }
 
-export function openCashSession(openingFloat: string, note: string): Promise<CashSession> {
+export function openCashSession(
+  branch: string,
+  openingFloat: string,
+  note: string,
+): Promise<CashSession> {
   return authedRequest<CashSession>('/v1/cash-sessions/open', {
     method: 'POST',
-    body: { branch: demoConfig.branchId, opening_float: openingFloat, note },
+    body: { branch, opening_float: openingFloat, note },
   });
 }
 
@@ -250,4 +251,4 @@ async function allPurchasesForSupplier(
   return rows.filter((invoice) => toPaisa(invoice.due_amount) > 0);
 }
 
-export { demoConfig, searchCustomers };
+export { searchCustomers };

@@ -63,9 +63,8 @@ the mandatory `Idempotency-Key` header).
 
 The frontend (`frontend/`) serves login and the POS billing screen:
 `npm install && npm run dev` proxies `/api` to `demo.localhost:8000` (the
-tenant host) — see `frontend/README.md` for the two `VITE_DEMO_*` env vars
-the billing screen needs until branch/rate-type list endpoints exist. Sign
-in at http://localhost:5173 with the seeded owner above.
+tenant host). After sign-in, choose the active branch and rate type in the
+app header. Sign in at http://localhost:5173 with the seeded owner above.
 
 Useful commands (from `backend/`):
 
