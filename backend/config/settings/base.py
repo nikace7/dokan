@@ -155,6 +155,10 @@ CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_TRACK_STARTED = True
 CELERY_WORKER_SEND_TASK_EVENTS = True
 
+# ADR 0004. "log" is the no-network local/staging adapter; production must
+# select a real adapter when SMS is enabled there.
+SMS_PROVIDER = env("SMS_PROVIDER", "log")
+
 # ---------------------------------------------------------------------------
 # Internationalization — code is English; the UI is bilingual Nepali/English.
 # ---------------------------------------------------------------------------
