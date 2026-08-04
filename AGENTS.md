@@ -69,11 +69,15 @@ lookup + Expense CRUD with AD/BS filters, summary by category/BS month;
 ordinary CRUD records, no ledger), `apps/audit` (append-only AuditLog with
 REVOKE UPDATE/DELETE — explicit audit() calls in services, never signals;
 wired: price.set, price.set_bounds, stock.adjust, stock.write_off,
-sale.cancel_held; GET /audit/ gated on settings.manage). Shared API plumbing
-lives in
+sale.cancel_held; GET /audit/ gated on settings.manage), `apps/notifications`
+(RLS-protected SmsLog; receipt template + Nepal mobile normalization;
+vendor-neutral provider contract per ADR 0004; no-network local provider;
+Celery delivery with bounded retry and duplicate-task protection; receipt
+queue gated on sale.create and delivery log gated on settings.manage). Shared
+API plumbing lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
-`apps/` packages are empty skeletons per §8.2. When implementation continues,
+`apps/compliance` package is an empty skeleton per §8.2. When implementation continues,
 follow the structure and rules specified in `docs/SYSTEM_DESIGN.md` and keep this
 file current.
 

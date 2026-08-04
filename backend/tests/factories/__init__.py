@@ -35,6 +35,7 @@ from tests.factories.inventory import (
     StockTransferFactory,
     StockTransferItemFactory,
 )
+from tests.factories.notifications import SmsLogFactory
 from tests.factories.payments import (
     CashSessionFactory,
     PaymentAllocationFactory,
@@ -85,6 +86,7 @@ __all__ = [
     "SalesInvoiceFactory",
     "SalesInvoiceItemFactory",
     "SizeChartFactory",
+    "SmsLogFactory",
     "StockBatchFactory",
     "StockCountFactory",
     "StockCountItemFactory",

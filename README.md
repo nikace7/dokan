@@ -62,9 +62,16 @@ items with M/L variants, and 20 units of opening stock per variant, so
 the mandatory `Idempotency-Key` header).
 
 The frontend (`frontend/`) serves login and the POS billing screen:
-`npm install && npm run dev` proxies `/api` to `demo.localhost:8000` (the
-tenant host). After sign-in, choose the active branch and rate type in the
-app header. Sign in at http://localhost:5173 with the seeded owner above.
+`npm install && npm run dev` proxies `/api` to IPv4 loopback while preserving
+`demo.localhost` as the tenant host. After sign-in, choose the active branch
+and rate type in the app header. Sign in at http://localhost:5173 with the
+seeded owner above.
+
+Local SMS uses the no-network `log` provider: receipt requests are queued and
+delivery state is persisted without sending real messages. Use
+`POST /api/v1/notifications/sms/receipt`; owners can inspect status at
+`GET /api/v1/notifications/sms`. A real provider adapter is required before
+enabling SMS in production.
 
 Useful commands (from `backend/`):
 
