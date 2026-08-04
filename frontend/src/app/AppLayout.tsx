@@ -1,6 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { useAuth } from '@/features/auth/useAuth';
+import { WorkspaceSelector } from '@/features/settings/WorkspaceSelector';
+import { hasPermission } from '@/lib/permissions';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -11,6 +13,8 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 /** Authenticated shell: top nav, current user, sign out. */
 export function AppLayout() {
   const { user, signOut } = useAuth();
+  const canManageSettings = hasPermission(user, 'settings.manage');
+  const canManageUsers = hasPermission(user, 'user.manage');
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -46,6 +50,14 @@ export function AppLayout() {
               <NavLink to="/audit" className={navLinkClass}>
                 Audit
               </NavLink>
+              {canManageSettings || canManageUsers ? (
+                <NavLink
+                  to={canManageSettings ? '/settings' : '/settings/staff'}
+                  className={navLinkClass}
+                >
+                  Settings
+                </NavLink>
+              ) : null}
               <NavLink to="/exchanges" className={navLinkClass}>
                 Exchanges
               </NavLink>
@@ -58,6 +70,7 @@ export function AppLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
+            <WorkspaceSelector />
             <span className="text-slate-300">{user?.full_name}</span>
             <button
               type="button"

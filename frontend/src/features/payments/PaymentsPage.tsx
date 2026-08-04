@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import type { Customer } from '@/features/billing/api';
-import { demoConfig, listPayments, recordReceipt, searchCustomers } from '@/features/payments/api';
+import { listPayments, recordReceipt, searchCustomers } from '@/features/payments/api';
 import { CashSessionPanel } from '@/features/payments/CashSessionPanel';
 import { InvoiceAllocationPicker } from '@/features/payments/InvoiceAllocationPicker';
 import { SupplierPaymentForm } from '@/features/payments/SupplierPaymentForm';
 import type { ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
+import { useWorkspace } from '@/features/settings/useWorkspace';
 
 const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
 
@@ -84,6 +85,7 @@ function CustomerField({
 }
 
 function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
+  const workspace = useWorkspace();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [search, setSearch] = useState('');
   const [amount, setAmount] = useState('');
@@ -95,11 +97,11 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
 
   const mutation = useMutation({
     mutationFn: () => {
-      if (!demoConfig.branchId || !customer || !amount.trim()) {
+      if (!workspace.branchId || !customer || !amount.trim()) {
         throw new Error('Branch, customer, and amount are required.');
       }
       return recordReceipt({
-        branch: demoConfig.branchId,
+        branch: workspace.branchId,
         customer: customer.id,
         amount: amount.trim(),
         method,
@@ -125,8 +127,8 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!demoConfig.branchId) {
-      setError('Set VITE_DEMO_BRANCH_ID before recording receipts.');
+    if (!workspace.branchId) {
+      setError('Select an active branch before recording receipts.');
       return;
     }
     if (!customer || !amount.trim()) {

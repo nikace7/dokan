@@ -5,7 +5,12 @@ from typing import TYPE_CHECKING, Final
 
 from django.core.cache import cache
 
-from apps.accounts.models import RolePermission, UserRole
+from apps.accounts.models import Permission, Role, RolePermission, User, UserRole
+
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+
+    from apps.tenants.models import Tenant
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -56,3 +61,26 @@ def get_permission_codes(user: "User") -> frozenset[str]:
     except Exception:
         logger.warning("permission cache set failed", exc_info=True)
     return codes
+
+
+def list_roles(tenant: "Tenant", user: "User") -> "QuerySet[Role]":
+    """List roles and their permissions for the current tenant."""
+    return (
+        Role.objects.filter(tenant=tenant)
+        .prefetch_related("role_permissions__permission")
+        .order_by("-is_system", "name", "code")
+    )
+
+
+def list_permissions(user: "User") -> "QuerySet[Permission]":
+    """List the global permission catalog for role administration."""
+    return Permission.objects.order_by("module", "code")
+
+
+def list_staff(tenant: "Tenant", user: "User") -> "QuerySet[User]":
+    """List tenant staff with their assigned roles and optional branches."""
+    return (
+        User.objects.filter(tenant=tenant)
+        .prefetch_related("user_roles__role", "user_roles__branch")
+        .order_by("full_name", "phone")
+    )

@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { listSuppliers } from '@/features/purchasing/api';
 import type { Supplier } from '@/features/purchasing/api';
-import { demoConfig, recordSupplierPayment } from '@/features/payments/api';
+import { recordSupplierPayment } from '@/features/payments/api';
 import { InvoiceAllocationPicker } from '@/features/payments/InvoiceAllocationPicker';
 import type { ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
+import { useWorkspace } from '@/features/settings/useWorkspace';
 
 const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
 
@@ -85,6 +86,7 @@ function SupplierField({
 }
 
 export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) {
+  const workspace = useWorkspace();
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [search, setSearch] = useState('');
   const [amount, setAmount] = useState('');
@@ -95,11 +97,11 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
   const [error, setError] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: () => {
-      if (!demoConfig.branchId || !supplier || !amount.trim()) {
+      if (!workspace.branchId || !supplier || !amount.trim()) {
         throw new Error('Branch, supplier, and amount are required.');
       }
       return recordSupplierPayment({
-        branch: demoConfig.branchId,
+        branch: workspace.branchId,
         supplier: supplier.id,
         amount: amount.trim(),
         method,
@@ -125,8 +127,8 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!demoConfig.branchId) {
-      setError('Set VITE_DEMO_BRANCH_ID before recording payments.');
+    if (!workspace.branchId) {
+      setError('Select an active branch before recording payments.');
       return;
     }
     if (!supplier || !amount.trim()) {

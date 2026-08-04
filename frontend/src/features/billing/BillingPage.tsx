@@ -17,7 +17,7 @@ import type { Tender } from '@/features/billing/PaymentPanel';
 import { PaymentPanel } from '@/features/billing/PaymentPanel';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { ScanInput } from '@/features/billing/ScanInput';
-import { isDemoBillingConfigured } from '@/lib/config';
+import { useWorkspace } from '@/features/settings/useWorkspace';
 import { useCartStore } from '@/stores/cartStore';
 
 function serverMessage(err: unknown): string {
@@ -40,19 +40,25 @@ export function BillingPage() {
   const heldSaleId = useCartStore((s) => s.heldSaleId);
   const clear = useCartStore((s) => s.clear);
   const queryClient = useQueryClient();
+  const workspace = useWorkspace();
 
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [saleError, setSaleError] = useState<string | null>(null);
 
-  const buildBasePayload = (): Omit<CreateSalePayload, 'payments' | 'is_vat_bill'> => ({
-    ...currentSaleContext(),
-    customer: customer?.id,
-    lines: lines.map((line) => ({
-      variant: line.variantId,
-      qty: String(line.quantity),
-      discount: paisaToApiString(line.discountPaisa),
-    })),
-  });
+  const buildBasePayload = (): Omit<CreateSalePayload, 'payments' | 'is_vat_bill'> => {
+    if (!workspace.branchId || !workspace.rateTypeId) {
+      throw new Error('Select an active branch and rate type before billing.');
+    }
+    return {
+      ...currentSaleContext(workspace.branchId, workspace.rateTypeId),
+      customer: customer?.id,
+      lines: lines.map((line) => ({
+        variant: line.variantId,
+        qty: String(line.quantity),
+        discount: paisaToApiString(line.discountPaisa),
+      })),
+    };
+  };
 
   const buildSalePayload = (tender: Tender): CreateSalePayload => ({
     ...buildBasePayload(),
@@ -103,13 +109,20 @@ export function BillingPage() {
 
   return (
     <main className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[1fr_360px]">
-      {!isDemoBillingConfigured() ? (
+      {workspace.isLoading ? (
+        <p
+          role="status"
+          className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800 lg:col-span-2"
+        >
+          Loading branches and rate types…
+        </p>
+      ) : !workspace.isReady ? (
         <p
           role="alert"
           className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800 lg:col-span-2"
         >
-          Billing is not configured: set VITE_DEMO_BRANCH_ID and VITE_DEMO_RATE_TYPE_ID in
-          frontend/.env (see src/lib/config.ts) until branch/rate-type list endpoints exist.
+          Billing needs an active branch and rate type. Configure them in the header or finish
+          tenant setup first.
         </p>
       ) : null}
 
@@ -126,14 +139,18 @@ export function BillingPage() {
         <Card title="Payment / भुक्तानी">
           <PaymentPanel
             busy={saleMutation.isPending}
-            onComplete={(tender) =>
-              saleMutation.mutate({ tender, key: crypto.randomUUID() })
-            }
+            disabled={!workspace.isReady}
+            onComplete={(tender) => saleMutation.mutate({ tender, key: crypto.randomUUID() })}
           />
           <div className="mt-3 border-t border-slate-200 pt-3">
             <button
               type="button"
-              disabled={holdMutation.isPending || lines.length === 0 || heldSaleId !== null}
+              disabled={
+                holdMutation.isPending ||
+                lines.length === 0 ||
+                heldSaleId !== null ||
+                !workspace.isReady
+              }
               onClick={() => holdMutation.mutate()}
               className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300"
             >

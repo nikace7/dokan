@@ -8,10 +8,10 @@ import type { PurchaseInvoice } from '@/features/purchasing/api';
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { VariantPicker } from '@/features/catalog/VariantPicker';
 import { ApiError } from '@/lib/api/client';
-import { demoConfig } from '@/lib/config';
 import { MoneyError, multiplyPaisa, toPaisa } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 import { formatPaisa } from '@/lib/money';
+import { useWorkspace } from '@/features/settings/useWorkspace';
 
 interface DraftLine {
   variantId: string;
@@ -50,6 +50,7 @@ function todayIso(): string {
  * display-only.
  */
 export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceFormProps) {
+  const workspace = useWorkspace();
   const queryClient = useQueryClient();
   const [supplier, setSupplier] = useState('');
   const [billDate, setBillDate] = useState(todayIso());
@@ -104,8 +105,12 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
       setError('Every line needs a quantity and a unit cost.');
       return;
     }
+    if (!workspace.branchId) {
+      setError('Select an active branch first.');
+      return;
+    }
     createMutation.mutate({
-      branch: demoConfig.branchId,
+      branch: workspace.branchId,
       supplier,
       bill_date_ad: billDate,
       is_vat_bill: isVatBill,

@@ -1,5 +1,10 @@
-"""URL routes for tenants — empty until the feature lands."""
+"""URL routes for tenant-scoped metadata and platform tenant operations."""
 
-from typing import Any
+from django.urls import path
 
-urlpatterns: list[Any] = []
+from apps.tenants.views import BranchListView, TenantSettingsView
+
+urlpatterns = [
+    path("settings", TenantSettingsView.as_view(), name="tenant-settings"),
+    path("branches", BranchListView.as_view(), name="branch-list"),
+]
