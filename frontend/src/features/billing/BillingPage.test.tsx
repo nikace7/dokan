@@ -6,6 +6,20 @@ import { BillingPage } from '@/features/billing/BillingPage';
 import { clearTokens, setTokens } from '@/lib/auth/tokens';
 import { useCartStore } from '@/stores/cartStore';
 
+vi.mock('@/features/settings/useWorkspace', () => ({
+  useWorkspace: () => ({
+    branches: [{ id: 'branch-1', name: 'Main', is_default: true }],
+    rateTypes: [{ id: 'rate-1', name: 'Retail', is_default: true }],
+    branchId: 'branch-1',
+    rateTypeId: 'rate-1',
+    setBranchId: vi.fn(),
+    setRateTypeId: vi.fn(),
+    isReady: true,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 const fetchMock = vi.fn<typeof fetch>();
 
 function envelope(data: unknown, status = 200): Response {
@@ -137,9 +151,13 @@ describe('BillingPage', () => {
     const [, init] = saleCall as [RequestInfo | URL, RequestInit];
     expect((init.headers as Headers).get('Idempotency-Key')).toBeTruthy();
     const body = JSON.parse(String(init.body)) as {
+      branch: string;
+      rate_type: string;
       lines: Array<{ variant: string; qty: string }>;
       payments: Array<{ method: string; amount: string }>;
     };
+    expect(body.branch).toBe('branch-1');
+    expect(body.rate_type).toBe('rate-1');
     expect(body.lines).toEqual([{ variant: 'var-1', qty: '1', discount: '0.00' }]);
     expect(body.payments).toEqual([{ method: 'CASH', amount: '1500.00' }]);
 

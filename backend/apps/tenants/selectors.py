@@ -5,10 +5,14 @@ from typing import TYPE_CHECKING, Final
 
 from django.core.cache import cache
 
-from apps.tenants.models import Tenant
+from apps.tenants.models import Branch, Tenant
 
 if TYPE_CHECKING:
     from uuid import UUID
+
+    from django.db.models import QuerySet
+
+    from apps.accounts.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -56,3 +60,23 @@ def get_tenant_pk_by_slug(slug: str) -> "UUID | None":
     """Primary-key-only variant for hot paths that don't need the row."""
     tenant = get_tenant_by_slug(slug)
     return tenant.pk if tenant is not None else None
+
+
+def get_tenant_settings(tenant: Tenant, user: "User") -> Tenant:
+    """Return the current tenant profile for an explicit tenant read."""
+    return tenant
+
+
+def list_branches(
+    tenant: "Tenant", user: "User", *, is_active: bool | None = None
+) -> "QuerySet[Branch]":
+    """List branch choices for the current tenant.
+
+    ``user`` stays explicit to keep the selector contract consistent with
+    tenant-scoped reads; branch-role filtering can be added here when
+    branch-scoped permissions become enforceable.
+    """
+    qs = Branch.objects.filter(tenant=tenant)
+    if is_active is not None:
+        qs = qs.filter(is_active=is_active)
+    return qs.order_by("-is_default", "name", "code")
