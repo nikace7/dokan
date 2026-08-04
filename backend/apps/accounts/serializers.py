@@ -4,7 +4,16 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.accounts.models import Role, User
+from apps.accounts.models import Permission, Role, User
+
+
+class PermissionSerializer(serializers.ModelSerializer):
+    """Global permission metadata for the role editor."""
+
+    class Meta:
+        model = Permission
+        fields = ("code", "module", "name", "description", "is_sensitive")
+        read_only_fields = fields
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -21,6 +30,41 @@ class RoleSerializer(serializers.ModelSerializer):
         return sorted(
             role_permission.permission_id for role_permission in obj.role_permissions.all()
         )
+
+
+class RoleCreateSerializer(serializers.Serializer):
+    """POST /roles payload; permission validity belongs to the service."""
+
+    code = serializers.CharField(max_length=64, trim_whitespace=True)
+    name = serializers.CharField(max_length=200, trim_whitespace=True)
+    name_np = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, allow_null=True
+    )
+    description = serializers.CharField(
+        max_length=500, required=False, allow_blank=True, allow_null=True
+    )
+    permission_codes = serializers.ListField(
+        child=serializers.CharField(max_length=64, trim_whitespace=True),
+        required=False,
+        allow_empty=True,
+    )
+
+
+class RoleUpdateSerializer(serializers.Serializer):
+    """PATCH /roles/<id> payload for custom roles."""
+
+    name = serializers.CharField(max_length=200, required=False, trim_whitespace=True)
+    name_np = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, allow_null=True
+    )
+    description = serializers.CharField(
+        max_length=500, required=False, allow_blank=True, allow_null=True
+    )
+    permission_codes = serializers.ListField(
+        child=serializers.CharField(max_length=64, trim_whitespace=True),
+        required=False,
+        allow_empty=True,
+    )
 
 
 class StaffUserSerializer(serializers.ModelSerializer):

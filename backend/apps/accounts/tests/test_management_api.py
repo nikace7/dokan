@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 from rest_framework.test import APIClient
 
-from apps.accounts.models import Permission, User
+from apps.accounts.models import Permission, Role, RolePermission, User
 from apps.audit.models import AuditLog
 from tests.factories import (
     DEFAULT_PASSWORD,
@@ -20,6 +20,7 @@ pytestmark = pytest.mark.django_db
 
 USERS_URL = "/api/v1/users"
 ROLES_URL = "/api/v1/roles"
+PERMISSIONS_URL = "/api/v1/permissions"
 
 
 def host(slug: str) -> dict[str, str]:
@@ -143,3 +144,99 @@ class TestStaffManagement:
 
         assert response.status_code == 403
         assert response.json()["error"]["code"] == "TOKEN_TENANT_MISMATCH"
+
+
+class TestRoleManagement:
+    def test_lists_permission_catalog(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+
+        response = auth_client(owner, tenant.slug).get(PERMISSIONS_URL, **host(tenant.slug))
+
+        assert response.status_code == 200
+        codes = {row["code"] for row in response.json()["data"]}
+        assert {"sale.create", "pricing.view_cost", "user.manage"} <= codes
+
+    def test_creates_custom_role_with_permissions(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+
+        response = auth_client(owner, tenant.slug).post(
+            ROLES_URL,
+            {
+                "code": "SUPERVISOR",
+                "name": "Supervisor",
+                "description": "Floor supervisor",
+                "permission_codes": ["sale.create", "report.sales"],
+            },
+            format="json",
+            **host(tenant.slug),
+        )
+
+        assert response.status_code == 201
+        role = Role.objects.get(tenant=tenant, code="SUPERVISOR")
+        assert role.is_system is False
+        assert set(
+            RolePermission.objects.filter(role=role).values_list("permission_id", flat=True)
+        ) == {"sale.create", "report.sales"}
+        assert AuditLog.objects.filter(tenant=tenant, action="role.create").exists()
+
+    def test_updates_custom_role_and_invalidates_assigned_user(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+        staff = UserFactory(tenant=tenant)
+        role = RoleFactory(tenant=tenant, code="SUPERVISOR", name="Supervisor")
+        RolePermissionFactory(
+            tenant=tenant,
+            role=role,
+            permission=Permission.objects.get(code="sale.create"),
+        )
+        UserRoleFactory(tenant=tenant, user=staff, role=role)
+        assert staff.has_perm("sale.create") is True
+
+        response = auth_client(owner, tenant.slug).patch(
+            f"{ROLES_URL}/{role.pk}",
+            {"name": "Floor Supervisor", "permission_codes": ["report.sales"]},
+            format="json",
+            **host(tenant.slug),
+        )
+
+        assert response.status_code == 200
+        assert role.__class__.objects.get(pk=role.pk).name == "Floor Supervisor"
+        assert staff.has_perm("sale.create") is False
+        assert staff.has_perm("report.sales") is True
+        assert AuditLog.objects.filter(tenant=tenant, action="role.update").exists()
+
+    def test_system_role_is_protected_and_custom_role_can_be_deleted(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+        system_role = RoleFactory(tenant=tenant, code="OWNER", name="Owner", is_system=True)
+        client = auth_client(owner, tenant.slug)
+
+        protected = client.patch(
+            f"{ROLES_URL}/{system_role.pk}",
+            {"name": "Changed"},
+            format="json",
+            **host(tenant.slug),
+        )
+
+        assert protected.status_code == 409
+        custom_role = RoleFactory(tenant=tenant, code="TEMP", name="Temporary")
+        deleted = client.delete(f"{ROLES_URL}/{custom_role.pk}", **host(tenant.slug))
+
+        assert deleted.status_code == 200
+        assert not Role.objects.filter(pk=custom_role.pk).exists()
+        assert AuditLog.objects.filter(tenant=tenant, action="role.delete").exists()
+
+    def test_role_in_use_cannot_be_deleted(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+        role = RoleFactory(tenant=tenant, code="CASHIER", name="Cashier")
+        UserRoleFactory(tenant=tenant, user=UserFactory(tenant=tenant), role=role)
+
+        response = auth_client(owner, tenant.slug).delete(
+            f"{ROLES_URL}/{role.pk}", **host(tenant.slug)
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "ROLE_IN_USE"

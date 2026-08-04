@@ -50,6 +50,27 @@ export interface Role {
   permission_codes: string[];
 }
 
+export interface Permission {
+  code: string;
+  module: string;
+  name: string;
+  description: string | null;
+  is_sensitive: boolean;
+}
+
+export interface CreateRolePayload {
+  code: string;
+  name: string;
+  description?: string;
+  permission_codes: string[];
+}
+
+export interface UpdateRolePayload {
+  name?: string;
+  description?: string | null;
+  permission_codes: string[];
+}
+
 export interface StaffRoleAssignment {
   id: string;
   code: string;
@@ -108,6 +129,22 @@ export function updateTenantSettings(
 
 export function listRoles(): Promise<Page<Role>> {
   return authedRequestPage<Role>('/v1/roles?limit=200');
+}
+
+export function listPermissions(): Promise<Permission[]> {
+  return authedRequest<Permission[]>('/v1/permissions');
+}
+
+export function createRole(payload: CreateRolePayload): Promise<Role> {
+  return authedRequest<Role>('/v1/roles', { method: 'POST', body: payload });
+}
+
+export function updateRole(roleId: string, payload: UpdateRolePayload): Promise<Role> {
+  return authedRequest<Role>(`/v1/roles/${roleId}`, { method: 'PATCH', body: payload });
+}
+
+export function deleteRole(roleId: string): Promise<{ deleted: string }> {
+  return authedRequest<{ deleted: string }>(`/v1/roles/${roleId}`, { method: 'DELETE' });
 }
 
 export function listStaff(): Promise<Page<StaffUser>> {
