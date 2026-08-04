@@ -882,15 +882,18 @@ financial rows.
 | Column | Type | Null | Notes |
 |---|---|---|---|
 | id | uuid PK | no | |
+| tenant_id | uuid FK → tenant | no | RLS isolation key |
 | to_phone | text | no | |
 | template | text | no | e.g. `receipt`, `otp`, `due_reminder` |
 | body | text | no | |
 | provider | text | yes | resolved provider name (ADR 0004) |
+| provider_message_id | text | yes | provider receipt ID for delivery polling |
 | status | text | no | `QUEUED`,`SENT`,`DELIVERED`,`FAILED` |
 | cost | numeric(8,4) | yes | per-message cost for plan accounting |
 | created_at | timestamptz | no | default now() |
+| updated_at | timestamptz | no | last status transition |
 
-Index: `(tenant_id, created_at DESC)`.
+Indexes: `(tenant_id, created_at DESC)`, `(tenant_id, status)`.
 
 ---
 
