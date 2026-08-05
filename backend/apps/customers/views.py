@@ -71,7 +71,9 @@ class CustomerListView(_CustomerAPIView):
         tenant = require_request_tenant(request)
         serializer = CustomerSerializer(data=request.data, context=self._context(request))
         serializer.is_valid(raise_exception=True)
-        customer = services.create_customer(tenant, **serializer.validated_data)
+        customer = services.create_customer(
+            tenant, actor=_user(request), **serializer.validated_data
+        )
         return ok(
             CustomerSerializer(customer, context=self._context(request)).data,
             status.HTTP_201_CREATED,
@@ -91,7 +93,9 @@ class CustomerDetailView(_CustomerAPIView):
             customer, data=request.data, partial=True, context=self._context(request)
         )
         serializer.is_valid(raise_exception=True)
-        customer = services.update_customer(customer, **serializer.validated_data)
+        customer = services.update_customer(
+            customer, actor=_user(request), **serializer.validated_data
+        )
         return ok(CustomerSerializer(customer, context=self._context(request)).data)
 
     def delete(self, request: Request, pk: UUID) -> Response:
