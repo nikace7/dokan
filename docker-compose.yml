@@ -80,6 +80,18 @@ services:
         condition: service_healthy
     volumes:
       - staticfiles:/app/staticfiles
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import os,urllib.request;
+          r=urllib.request.Request('http://127.0.0.1:8000/api/health',
+          headers={'Host':'app.'+os.environ['ROOT_DOMAIN']});
+          urllib.request.urlopen(r,timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   celery:
     build: .
@@ -184,8 +196,22 @@ services:
       db:
         condition: service_healthy
 
+  frontend:
+    image: dokan-frontend
+    build:
+      context: frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   caddy:
-    image: caddy:2
+    image: dokan-caddy
+    build:
+      context: docker/caddy
     restart: unless-stopped
     env_file: .env
     ports:
@@ -193,10 +219,14 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - staticfiles:/srv/django-static:ro
       - caddydata:/data
       - caddyconfig:/config
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
 
 volumes:
   pgdata:
