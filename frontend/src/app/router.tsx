@@ -9,6 +9,7 @@ import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
 import { ItemFormPage } from '@/features/catalog/ItemFormPage';
 import { ItemsPage } from '@/features/catalog/ItemsPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
+import { CustomersPage } from '@/features/customers/CustomersPage';
 import { ExpensesPage } from '@/features/expenses/ExpensesPage';
 import { ExchangePage } from '@/features/exchange/ExchangePage';
 import { StockPage } from '@/features/inventory/StockPage';
@@ -67,6 +68,7 @@ function getRouter() {
         { path: '/catalog/items/:id', element: <ItemDetailPage /> },
         { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
         { path: '/pricing', element: <PricingPage /> },
+        { path: '/customers', element: <CustomersPage /> },
         { path: '/stock', element: <StockPage /> },
         { path: '/purchasing', element: <PurchasingPage /> },
         { path: '/expenses', element: <ExpensesPage /> },

@@ -48,7 +48,9 @@ VARIANT → ITEM → CATEGORY-tree → MRP → 409 PRICE_NOT_SET; min/max guardr
 (variant → item → category pct-of-MRP) with pricing.override_min and always-block
 above-max; PriceChangeLog written in the same transaction as every price change;
 permission-aware frontend for rate types, scoped effective prices, bounds, and history),
-`apps/customers` (Customer CRUD, partial-unique phone, nullable credit_limit),
+`apps/customers` (Customer CRUD, partial-unique phone, nullable credit_limit protected
+by `customer.credit` at serializer + service layers; permission-aware tenant list,
+create/edit/deactivate frontend),
 `apps/sales` (POS billing core: one-transaction create_sale with price
 resolution, documented 13% VAT rule, udharo + credit-limit enforcement, SALE
 ledger postings, gapless per-branch-per-fiscal-year numbering, cost_at_sale
