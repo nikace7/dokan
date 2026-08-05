@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/features/auth/useAuth';
 import { createInvoice, listSuppliers } from '@/features/purchasing/api';
 import type { PurchaseInvoice } from '@/features/purchasing/api';
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
@@ -11,6 +12,7 @@ import { ApiError } from '@/lib/api/client';
 import { MoneyError, multiplyPaisa, toPaisa } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 import { formatPaisa } from '@/lib/money';
+import { hasPlanFeature } from '@/lib/plans';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 
 interface DraftLine {
@@ -51,6 +53,8 @@ function todayIso(): string {
  */
 export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceFormProps) {
   const workspace = useWorkspace();
+  const { user } = useAuth();
+  const allowVatBill = hasPlanFeature(user, 'vat_module');
   const queryClient = useQueryClient();
   const [supplier, setSupplier] = useState('');
   const [billDate, setBillDate] = useState(todayIso());
@@ -113,7 +117,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
       branch: workspace.branchId,
       supplier,
       bill_date_ad: billDate,
-      is_vat_bill: isVatBill,
+      is_vat_bill: allowVatBill && isVatBill,
       other_charges: otherCharges.trim() || '0',
       paid_amount: paidAmount.trim() || '0',
       ...(note.trim() !== '' ? { note: note.trim() } : {}),
@@ -164,15 +168,17 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
         </div>
-        <label className="flex items-end gap-2 pb-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={isVatBill}
-            onChange={(e) => setIsVatBill(e.target.checked)}
-            className="h-4 w-4"
-          />
-          VAT bill
-        </label>
+        {allowVatBill ? (
+          <label className="flex items-end gap-2 pb-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={isVatBill}
+              onChange={(e) => setIsVatBill(e.target.checked)}
+              className="h-4 w-4"
+            />
+            VAT bill
+          </label>
+        ) : null}
       </div>
 
       <VariantPicker onPick={addVariant} placeholder="Add a line: search item…" />

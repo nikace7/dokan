@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.accounts.services import MAX_FAILED_LOGINS
+from apps.tenants.models import TenantFeatureOverride
 from tests.factories import (
     DEFAULT_PASSWORD,
     RoleFactory,
@@ -128,6 +129,13 @@ class TestMe:
         return client
 
     def test_me_returns_user_and_permissions(self, tenant: Any, user: Any) -> None:
+        tenant.plan.features = {"sms": True, "profit_reports": True}
+        tenant.plan.save(update_fields=["features"])
+        TenantFeatureOverride.objects.create(
+            tenant=tenant,
+            key="features.profit_reports",
+            value=False,
+        )
         role = RoleFactory(tenant=tenant, code="CASHIER")
         RolePermissionFactory(tenant=tenant, role=role)
         UserRoleFactory(tenant=tenant, user=user, role=role)
@@ -138,6 +146,11 @@ class TestMe:
         assert data["phone"] == user.phone
         assert data["full_name"] == user.full_name
         assert data["permissions"] == ["sale.create"]
+        assert data["plan"] == {
+            "code": tenant.plan.code,
+            "name": tenant.plan.name,
+            "features": {"sms": True, "profit_reports": False},
+        }
 
     def test_me_without_token_is_401(self, tenant: Any) -> None:
         response = APIClient().get(ME_URL, **host("shreeganesh"))

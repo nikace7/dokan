@@ -24,6 +24,7 @@ export interface Tender {
 interface PaymentPanelProps {
   busy: boolean;
   disabled?: boolean;
+  allowVatBill: boolean;
   onComplete: (tender: Tender) => void;
 }
 
@@ -32,7 +33,12 @@ interface PaymentPanelProps {
  * server rejects it otherwise (UDHARO_REQUIRES_CUSTOMER), so we block it
  * here first to save the round-trip.
  */
-export function PaymentPanel({ busy, disabled = false, onComplete }: PaymentPanelProps) {
+export function PaymentPanel({
+  busy,
+  disabled = false,
+  allowVatBill,
+  onComplete,
+}: PaymentPanelProps) {
   const lines = useCartStore((s) => s.lines);
   const customer = useCartStore((s) => s.customer);
   const [method, setMethod] = useState<PaymentMethod>('CASH');
@@ -71,7 +77,7 @@ export function PaymentPanel({ busy, disabled = false, onComplete }: PaymentPane
       setError('Udharo requires a customer — search and pick one above.');
       return;
     }
-    onComplete({ method, amountPaisa: effectiveTender, isVatBill });
+    onComplete({ method, amountPaisa: effectiveTender, isVatBill: allowVatBill && isVatBill });
   };
 
   return (
@@ -129,15 +135,17 @@ export function PaymentPanel({ busy, disabled = false, onComplete }: PaymentPane
         </div>
       </dl>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
-        <input
-          type="checkbox"
-          checked={isVatBill}
-          onChange={(e) => setIsVatBill(e.target.checked)}
-          className="h-4 w-4"
-        />
-        VAT bill / भ्याट बिजक
-      </label>
+      {allowVatBill ? (
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={isVatBill}
+            onChange={(e) => setIsVatBill(e.target.checked)}
+            className="h-4 w-4"
+          />
+          VAT bill / भ्याट बिजक
+        </label>
+      ) : null}
 
       {error ? (
         <p role="alert" className="text-sm text-red-600">

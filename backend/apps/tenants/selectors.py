@@ -43,6 +43,20 @@ def is_feature_enabled(tenant: Tenant, key: str) -> bool:
     return get_effective_plan_value(tenant, "features", key) is True
 
 
+def get_effective_plan_features(tenant: Tenant) -> dict[str, Any]:
+    """Return plan features with every active tenant override applied."""
+    values = tenant.plan.features
+    features = dict(values) if isinstance(values, dict) else {}
+    overrides = (
+        TenantFeatureOverride.objects.filter(tenant=tenant, key__startswith="features.")
+        .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now()))
+        .values_list("key", "value")
+    )
+    for key, value in overrides:
+        features[key.removeprefix("features.")] = value
+    return features
+
+
 def _cache_key(slug: str) -> str:
     return f"tenant:slug:{slug}"
 
