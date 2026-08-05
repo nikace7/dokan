@@ -40,6 +40,7 @@ class AuditLog(TenantScopedModel):
         blank=True,
     )
     ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
 
     class Meta:
         db_table = "audit_log"
