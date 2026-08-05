@@ -195,8 +195,11 @@ Provisioning / suspension / deletion:
   423/402 and the shop's data is untouched.
 - **Delete**: soft delete (`deleted_at`). Hard deletion is a manual, audited
   ops procedure after the retention window, never an API action.
-- **Export**: `manage.py export_tenant <slug>` → zip of CSVs. Shops will ask;
-  it must exist before they do.
+- **Export**: `manage.py export_tenant <slug> --output <path>.zip` writes one
+  UTF-8 CSV per tenant-scoped table plus `tenant.csv` and a row-count manifest.
+  The command sets the RLS tenant context and also filters every query by
+  `tenant_id`; credential fields such as password hashes are excluded, and an
+  existing destination is never overwritten.
 
 ---
 
