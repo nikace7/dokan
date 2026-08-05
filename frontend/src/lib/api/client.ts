@@ -37,6 +37,16 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * True when the request never got an HTTP answer — fetch rejects with a
+ * TypeError when the network is down. This is the ONLY signal the offline
+ * POS may use to enqueue: an `ApiError` (4xx/5xx) means the server
+ * responded, and a server response is never a reason to queue.
+ */
+export function isNetworkError(err: unknown): boolean {
+  return err instanceof TypeError;
+}
+
 interface ApiEnvelope<T> {
   data: T | null;
   meta?: Record<string, unknown>;
