@@ -164,6 +164,10 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_TRACK_STARTED = True
+
+# CBMS sync provider: "local" (no network, default) or "cbms" (live IRD —
+# verify requirements with a Nepali CA/IRD before enabling, design §1185).
+CBMS_PROVIDER = env("CBMS_PROVIDER", "local")
 CELERY_WORKER_SEND_TASK_EVENTS = True
 CELERY_BEAT_SCHEDULE = {
     "tenants-reconcile-usage-nightly": {
