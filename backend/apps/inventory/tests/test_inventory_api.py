@@ -231,9 +231,7 @@ class TestListEndpoints:
             tenant=tenant, branch=refs["branch"], variant=low_variant, qty_on_hand="4"
         )
         ok_variant = ItemVariantFactory(tenant=tenant)  # no reorder level
-        StockLevelFactory(
-            tenant=tenant, branch=refs["branch"], variant=ok_variant, qty_on_hand="4"
-        )
+        StockLevelFactory(tenant=tenant, branch=refs["branch"], variant=ok_variant, qty_on_hand="4")
         grant(tenant, user, "stock.view")
         response = auth_client(user).get(LEVELS_URL, **host())
         rows = {row["variant_sku"]: row for row in response.json()["data"]}
