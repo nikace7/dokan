@@ -6,6 +6,7 @@ from apps.platformadmin.impersonation_views import (
     AdminImpersonationEndView,
     CurrentSupportAccessView,
     ImpersonationStartView,
+    ImpersonationTargetListView,
     TenantSupportAccessEndView,
     TenantSupportAccessListView,
 )
@@ -67,6 +68,11 @@ urlpatterns = [
         name="platform-feature-override-detail",
     ),
     path("admin/audit", PlatformAuditListView.as_view(), name="platform-audit-list"),
+    path(
+        "admin/tenants/<uuid:tenant_pk>/users",
+        ImpersonationTargetListView.as_view(),
+        name="platform-impersonation-target-list",
+    ),
     path(
         "admin/tenants/<uuid:tenant_pk>/impersonate",
         ImpersonationStartView.as_view(),
