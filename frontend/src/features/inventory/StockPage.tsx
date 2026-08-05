@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -9,6 +10,7 @@ import { OpeningStockDialog } from '@/features/inventory/OpeningStockDialog';
 import { StockOperationDialog } from '@/features/inventory/StockOperationDialog';
 import { formatNpr } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
+import { hasPlanFeature } from '@/lib/plans';
 
 type Dialog = 'opening' | 'adjustment' | 'write-off' | null;
 
@@ -21,6 +23,7 @@ export function StockPage() {
   const [dialog, setDialog] = useState<Dialog>(null);
   const canView = hasPermission(user, 'stock.view');
   const canAdjust = hasPermission(user, 'stock.adjust');
+  const canTransfer = hasPlanFeature(user, 'multi_branch');
 
   const levelsQuery = useQuery({
     queryKey: ['inventory', 'levels', search, page],
@@ -58,19 +61,35 @@ export function StockPage() {
       <Card
         title="Stock / स्टक"
         actions={
-          canAdjust ? (
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" onClick={() => setDialog('adjustment')}>
-                Adjust stock
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setDialog('write-off')}>
-                Write off damage
-              </Button>
-              <Button size="sm" onClick={() => setDialog('opening')}>
-                Add opening stock
-              </Button>
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap gap-2">
+            {canTransfer ? (
+              <Link
+                className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-medium hover:bg-slate-50"
+                to="/stock/transfers"
+              >
+                Transfers
+              </Link>
+            ) : null}
+            <Link
+              className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-medium hover:bg-slate-50"
+              to="/stock/counts"
+            >
+              Physical counts
+            </Link>
+            {canAdjust ? (
+              <>
+                <Button size="sm" variant="secondary" onClick={() => setDialog('adjustment')}>
+                  Adjust stock
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setDialog('write-off')}>
+                  Write off damage
+                </Button>
+                <Button size="sm" onClick={() => setDialog('opening')}>
+                  Add opening stock
+                </Button>
+              </>
+            ) : null}
+          </div>
         }
       >
         <input
