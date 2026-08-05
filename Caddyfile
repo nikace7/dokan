@@ -1,28 +1,52 @@
-# Reverse proxy for the single-VPS deployment (docs/SYSTEM_DESIGN.md §8.8).
-#
-# Production wildcard TLS for *.dokan.com.np requires the DNS-01 challenge —
-# build Caddy with the provider plugin for your DNS host (e.g. Cloudflare)
-# and set the API token via environment:
-#
-#   tls {
-#       dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-#   }
-#
-# Local dev: Caddy serves these hosts over HTTP on :80; add entries to your
-# hosts file (e.g. 127.0.0.1 shreeganesh.dokan.localhost) or use
-# dokan.localhost as ROOT_DOMAIN.
+# Public single-VPS edge. API requests preserve the original Host so Django's
+# subdomain tenant resolver remains the only source of tenant identity.
 
-# Tenant shops — the middleware resolves the tenant from this subdomain.
+(app_routes) {
+	@backend path /api/* /django-admin*
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	handle_path /static/* {
+		root * /srv/django-static
+		file_server
+	}
+
+	handle {
+		reverse_proxy frontend:8080
+	}
+}
+
+(security_headers) {
+	encode zstd gzip
+	header {
+		-Server
+		Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+		Permissions-Policy "camera=(), geolocation=(), microphone=()"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+}
+
+# Tenant shops. Production sets CADDY_TLS_CONFIG to tls-cloudflare; local uses
+# Caddy's internal CA.
 *.{$ROOT_DOMAIN} {
-	reverse_proxy backend:8000
+	import app_routes
+	import security_headers
+	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
 }
 
-# Super-admin portal — separate auth realm, IP allowlist, mandatory 2FA.
+# Exact platform hosts retain separate application auth realms.
 admin.{$ROOT_DOMAIN} {
-	reverse_proxy backend:8000
+	import app_routes
+	import security_headers
+	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
 }
 
-# Marketing site / tenant selector.
 www.{$ROOT_DOMAIN}, app.{$ROOT_DOMAIN} {
-	reverse_proxy backend:8000
+	import app_routes
+	import security_headers
+	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
 }
