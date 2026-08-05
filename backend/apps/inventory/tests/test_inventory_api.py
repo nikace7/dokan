@@ -219,6 +219,31 @@ class TestCostVisibility:
 
 
 class TestListEndpoints:
+    def test_levels_annotate_reorder_threshold(self, tenant: Any, user: Any, refs: Any) -> None:
+        """The levels list annotates reorder_level + is_low so the UI can
+        flag low rows without a per-row query (same source of truth as the
+        low-stock report: item.reorder_level)."""
+        from tests.factories import ItemFactory
+
+        low_item = ItemFactory(tenant=tenant, reorder_level="10")
+        low_variant = ItemVariantFactory(tenant=tenant, item=low_item)
+        StockLevelFactory(
+            tenant=tenant, branch=refs["branch"], variant=low_variant, qty_on_hand="4"
+        )
+        ok_variant = ItemVariantFactory(tenant=tenant)  # no reorder level
+        StockLevelFactory(
+            tenant=tenant, branch=refs["branch"], variant=ok_variant, qty_on_hand="4"
+        )
+        grant(tenant, user, "stock.view")
+        response = auth_client(user).get(LEVELS_URL, **host())
+        rows = {row["variant_sku"]: row for row in response.json()["data"]}
+        assert rows[low_variant.sku]["reorder_level"] == "10.000"
+        assert rows[low_variant.sku]["is_low"] is True
+        assert rows[ok_variant.sku]["reorder_level"] is None
+        assert rows[ok_variant.sku]["is_low"] is False
+        # Cost rule unchanged: no avg_cost without pricing.view_cost.
+        assert "avg_cost" not in rows[low_variant.sku]
+
     def test_levels_search_by_sku(self, tenant: Any, user: Any, refs: Any) -> None:
         StockLevelFactory(tenant=tenant, branch=refs["branch"], variant=refs["variant"])
         other_variant = ItemVariantFactory(tenant=tenant, sku="ZZZ-999")
