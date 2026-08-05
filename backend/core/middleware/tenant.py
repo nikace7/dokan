@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 from django.db import connection, transaction
 from django.http import JsonResponse
+from django.utils import timezone
 
 from apps.tenants.constants import RESERVED_SLUGS, TenantStatus
 from apps.tenants.selectors import get_tenant_by_slug
@@ -106,6 +107,17 @@ class TenantMiddleware:
         if tenant is None:
             return _error_response(
                 404, "TENANT_NOT_FOUND", "We could not find this shop. Check the address."
+            )
+
+        if (
+            tenant.status == TenantStatus.TRIAL
+            and tenant.trial_ends_at is not None
+            and tenant.trial_ends_at <= timezone.now()
+        ):
+            return _error_response(
+                402,
+                "TENANT_TRIAL_EXPIRED",
+                "This shop's trial has ended. Please choose a plan to continue.",
             )
 
         if tenant.status not in TenantStatus.ACTIVE_STATUSES:

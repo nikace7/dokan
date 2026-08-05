@@ -1,24 +1,44 @@
-"""Thin platform-admin authentication views."""
+"""Thin authentication and control-plane views for the admin host."""
 
-from typing import cast
+from typing import Any, ClassVar, cast
+from uuid import UUID
 
+from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from apps.platformadmin import selectors, services, tenant_services
 from apps.platformadmin.authentication import PlatformJWTAuthentication
 from apps.platformadmin.models import PlatformUser
+from apps.platformadmin.permissions import ALL_PLATFORM_ROLES, PlatformRolePermission
+from apps.platformadmin.provisioning import provision_tenant
 from apps.platformadmin.serializers import (
+    FeatureOverrideSerializer,
+    FeatureOverrideSetSerializer,
+    PlanCreateSerializer,
+    PlanSerializer,
+    PlanUpdateSerializer,
+    PlatformAuditSerializer,
     PlatformLoginSerializer,
     PlatformMeSerializer,
     PlatformTokenRefreshSerializer,
+    SubscriptionCreateSerializer,
+    SubscriptionSerializer,
+    SubscriptionUpdateSerializer,
+    TenantCreateSerializer,
+    TenantSerializer,
+    TenantUpdateSerializer,
+    UsageSnapshotSerializer,
 )
 from apps.platformadmin.services import PlatformAuthError, authenticate_platform_user
-from apps.platformadmin.throttles import PlatformAuthThrottle
+from apps.platformadmin.throttles import PlatformAdminThrottle, PlatformAuthThrottle
 from apps.platformadmin.tokens import issue_platform_tokens
-from core.responses import error, ok
+from apps.tenants.constants import TenantStatus
+from core.pagination import EnvelopePageNumberPagination
+from core.responses import ServiceError, error, ok
 
 
 class PlatformTokenObtainView(APIView):
@@ -52,3 +72,264 @@ class PlatformMeView(APIView):
 
     def get(self, request: Request) -> Response:
         return ok(PlatformMeSerializer(cast("PlatformUser", request.user)).data)
+
+
+def _actor(request: Request) -> PlatformUser:
+    return cast("PlatformUser", request.user)
+
+
+def _optional_uuid(raw: str | None, label: str) -> UUID | None:
+    if not raw:
+        return None
+    try:
+        return UUID(raw)
+    except ValueError as exc:
+        raise ServiceError("FILTER_INVALID", f"{label} must be a UUID.") from exc
+
+
+def _paginated(
+    request: Request,
+    view: APIView,
+    queryset: Any,
+    serializer: type,
+) -> Response:
+    paginator = EnvelopePageNumberPagination()
+    page: list[Any] | None = paginator.paginate_queryset(queryset, request, view=view)
+    data: list[Any] = list(serializer(page, many=True).data)
+    return paginator.get_paginated_response(data)
+
+
+class _PlatformAPIView(APIView):
+    authentication_classes = (PlatformJWTAuthentication,)
+    permission_classes = (IsAuthenticated, PlatformRolePermission)
+    throttle_classes = (PlatformAdminThrottle,)
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {}
+
+    def handle_exception(self, exc: Exception) -> Response:
+        if isinstance(exc, ServiceError):
+            return error(exc.http_status, exc.code, exc.message)
+        return super().handle_exception(exc)
+
+
+class PlanListView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "GET": ALL_PLATFORM_ROLES,
+        "POST": (PlatformUser.Role.SUPER_ADMIN,),
+    }
+
+    def get(self, request: Request) -> Response:
+        include_inactive = request.query_params.get("include_inactive", "").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        return _paginated(
+            request,
+            self,
+            selectors.list_plans(_actor(request), include_inactive=include_inactive),
+            PlanSerializer,
+        )
+
+    def post(self, request: Request) -> Response:
+        serializer = PlanCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        plan = services.create_plan(
+            actor=_actor(request),
+            request=request,
+            **serializer.validated_data,
+        )
+        return ok(PlanSerializer(plan).data, status.HTTP_201_CREATED)
+
+
+class PlanDetailView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "GET": ALL_PLATFORM_ROLES,
+        "PATCH": (PlatformUser.Role.SUPER_ADMIN,),
+    }
+
+    def get(self, request: Request, pk: UUID) -> Response:
+        return ok(PlanSerializer(selectors.get_plan(_actor(request), pk)).data)
+
+    def patch(self, request: Request, pk: UUID) -> Response:
+        serializer = PlanUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        plan = services.update_plan(
+            selectors.get_plan(_actor(request), pk),
+            actor=_actor(request),
+            changes=serializer.validated_data,
+            request=request,
+        )
+        return ok(PlanSerializer(plan).data)
+
+
+class TenantListView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "GET": ALL_PLATFORM_ROLES,
+        "POST": (PlatformUser.Role.SUPER_ADMIN,),
+    }
+
+    def get(self, request: Request) -> Response:
+        raw_status = request.query_params.get("status", "").upper()
+        if raw_status and raw_status not in dict(TenantStatus.CHOICES):
+            raise ServiceError("FILTER_INVALID", "Unknown tenant status.")
+        queryset = selectors.list_tenants(
+            _actor(request),
+            status=raw_status,
+            search=request.query_params.get("search", "").strip(),
+            plan_id=_optional_uuid(request.query_params.get("plan"), "plan"),
+        )
+        return _paginated(request, self, queryset, TenantSerializer)
+
+    def post(self, request: Request) -> Response:
+        serializer = TenantCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        tenant = provision_tenant(
+            actor=_actor(request),
+            request=request,
+            **serializer.validated_data,
+        )
+        return ok(TenantSerializer(tenant).data, status.HTTP_201_CREATED)
+
+
+class TenantDetailView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "GET": ALL_PLATFORM_ROLES,
+        "PATCH": (PlatformUser.Role.SUPER_ADMIN,),
+    }
+
+    def get(self, request: Request, pk: UUID) -> Response:
+        return ok(TenantSerializer(selectors.get_tenant(_actor(request), pk)).data)
+
+    def patch(self, request: Request, pk: UUID) -> Response:
+        serializer = TenantUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        tenant = services.update_tenant(
+            selectors.get_tenant(_actor(request), pk),
+            actor=_actor(request),
+            changes=serializer.validated_data,
+            request=request,
+        )
+        return ok(TenantSerializer(tenant).data)
+
+
+class SubscriptionListView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "GET": ALL_PLATFORM_ROLES,
+        "POST": (PlatformUser.Role.SUPER_ADMIN, PlatformUser.Role.BILLING),
+    }
+
+    def get(self, request: Request, tenant_pk: UUID) -> Response:
+        tenant = selectors.get_tenant(_actor(request), tenant_pk)
+        return _paginated(
+            request,
+            self,
+            selectors.list_subscriptions(tenant, _actor(request)),
+            SubscriptionSerializer,
+        )
+
+    def post(self, request: Request, tenant_pk: UUID) -> Response:
+        tenant = selectors.get_tenant(_actor(request), tenant_pk)
+        serializer = SubscriptionCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        subscription = tenant_services.create_subscription(
+            tenant,
+            actor=_actor(request),
+            request=request,
+            **serializer.validated_data,
+        )
+        return ok(SubscriptionSerializer(subscription).data, status.HTTP_201_CREATED)
+
+
+class SubscriptionDetailView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "PATCH": (PlatformUser.Role.SUPER_ADMIN, PlatformUser.Role.BILLING),
+    }
+
+    def patch(self, request: Request, tenant_pk: UUID, pk: UUID) -> Response:
+        tenant = selectors.get_tenant(_actor(request), tenant_pk)
+        serializer = SubscriptionUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        subscription = tenant_services.update_subscription(
+            selectors.get_subscription(tenant, _actor(request), pk),
+            actor=_actor(request),
+            changes=serializer.validated_data,
+            request=request,
+        )
+        return ok(SubscriptionSerializer(subscription).data)
+
+
+class TenantUsageView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {"GET": ALL_PLATFORM_ROLES}
+
+    def get(self, request: Request, tenant_pk: UUID) -> Response:
+        tenant = selectors.get_tenant(_actor(request), tenant_pk)
+        return _paginated(
+            request,
+            self,
+            selectors.list_usage(tenant, _actor(request)),
+            UsageSnapshotSerializer,
+        )
+
+
+class FeatureOverrideListView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "GET": ALL_PLATFORM_ROLES,
+        "POST": (PlatformUser.Role.SUPER_ADMIN,),
+    }
+
+    def get(self, request: Request, tenant_pk: UUID) -> Response:
+        tenant = selectors.get_tenant(_actor(request), tenant_pk)
+        return _paginated(
+            request,
+            self,
+            selectors.list_feature_overrides(tenant, _actor(request)),
+            FeatureOverrideSerializer,
+        )
+
+    def post(self, request: Request, tenant_pk: UUID) -> Response:
+        tenant = selectors.get_tenant(_actor(request), tenant_pk)
+        serializer = FeatureOverrideSetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        override, created = tenant_services.set_feature_override(
+            tenant,
+            actor=_actor(request),
+            request=request,
+            **serializer.validated_data,
+        )
+        return ok(
+            FeatureOverrideSerializer(override).data,
+            status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class FeatureOverrideDetailView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "DELETE": (PlatformUser.Role.SUPER_ADMIN,)
+    }
+
+    def delete(self, request: Request, tenant_pk: UUID, pk: UUID) -> Response:
+        tenant = selectors.get_tenant(_actor(request), tenant_pk)
+        override = selectors.get_feature_override(tenant, _actor(request), pk)
+        tenant_services.delete_feature_override(
+            override,
+            actor=_actor(request),
+            request=request,
+        )
+        return ok({"deleted": str(pk)})
+
+
+class PlatformAuditListView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "GET": (PlatformUser.Role.SUPER_ADMIN,)
+    }
+
+    def get(self, request: Request) -> Response:
+        queryset = selectors.list_platform_audit(
+            _actor(request),
+            tenant_id=_optional_uuid(request.query_params.get("tenant"), "tenant"),
+            action=request.query_params.get("action", "").strip(),
+            platform_user_id=_optional_uuid(
+                request.query_params.get("platform_user"), "platform_user"
+            ),
+        )
+        return _paginated(request, self, queryset, PlatformAuditSerializer)

@@ -2,11 +2,12 @@
 
 Separate table and token audience from the tenant ``user`` table: a super
 admin NEVER gets a row in a tenant's user table (docs/SYSTEM_DESIGN.md §2.4,
-ADR 0001). Not wired to Django auth — the admin portal (separate auth realm,
-IP allowlist, mandatory 2FA) lands later; this is the model only.
+ADR 0001). It uses its own admin-host auth realm, IP allowlist, mandatory 2FA,
+and role-gated control-plane API.
 """
 
 import uuid
+from typing import ClassVar
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
@@ -47,3 +48,33 @@ class PlatformUser(models.Model):
     def is_authenticated(self) -> bool:
         """DRF compatibility without joining the tenant auth model."""
         return True
+
+
+class PlatformAuditLog(models.Model):
+    """Append-only audit entry for control-plane mutations."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    actor = models.ForeignKey(PlatformUser, on_delete=models.PROTECT, related_name="audit_entries")
+    action = models.TextField()
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="platform_audit_entries",
+        null=True,
+        blank=True,
+    )
+    payload = models.JSONField(default=dict)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "platform_audit_log"
+        ordering: ClassVar = ["-created_at"]
+        indexes: ClassVar = [
+            models.Index(fields=["tenant", "-created_at"], name="platform_audit_tenant_idx"),
+            models.Index(fields=["actor", "-created_at"], name="platform_audit_actor_idx"),
+            models.Index(fields=["action", "-created_at"], name="platform_audit_action_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.action} by {self.actor_id}"
