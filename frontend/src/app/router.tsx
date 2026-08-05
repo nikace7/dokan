@@ -13,6 +13,8 @@ import { CustomersPage } from '@/features/customers/CustomersPage';
 import { ExpensesPage } from '@/features/expenses/ExpensesPage';
 import { ExchangePage } from '@/features/exchange/ExchangePage';
 import { StockPage } from '@/features/inventory/StockPage';
+import { TransfersPage } from '@/features/inventory/TransfersPage';
+import { CountsPage } from '@/features/inventory/CountsPage';
 import { PaymentsPage } from '@/features/payments/PaymentsPage';
 import { PartyLedgerPage } from '@/features/payments/PartyLedgerPage';
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
@@ -70,6 +72,8 @@ function getRouter() {
         { path: '/pricing', element: <PricingPage /> },
         { path: '/customers', element: <CustomersPage /> },
         { path: '/stock', element: <StockPage /> },
+        { path: '/stock/transfers', element: <TransfersPage /> },
+        { path: '/stock/counts', element: <CountsPage /> },
         { path: '/purchasing', element: <PurchasingPage /> },
         { path: '/expenses', element: <ExpensesPage /> },
         { path: '/payments', element: <PaymentsPage /> },

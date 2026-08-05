@@ -1,4 +1,4 @@
-export type PlanFeature = 'profit_reports' | 'vat_module';
+export type PlanFeature = 'profit_reports' | 'vat_module' | 'multi_branch';
 
 interface PlanUser {
   plan: { features: Record<string, unknown> };
