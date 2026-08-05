@@ -16,6 +16,7 @@ export function AppLayout() {
   const { user, signOut } = useAuth();
   const canManageSettings = hasPermission(user, 'settings.manage');
   const canManageUsers = hasPermission(user, 'user.manage');
+  const canViewPricing = hasPermission(user, 'pricing.view');
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -31,6 +32,11 @@ export function AppLayout() {
               <NavLink to="/catalog" className={navLinkClass}>
                 Catalog
               </NavLink>
+              {canViewPricing ? (
+                <NavLink to="/pricing" className={navLinkClass}>
+                  Pricing
+                </NavLink>
+              ) : null}
               <NavLink to="/stock" className={navLinkClass}>
                 Stock
               </NavLink>

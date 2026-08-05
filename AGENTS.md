@@ -10,9 +10,10 @@ The **backend platform spine is scaffolded** under `backend/` (Django 5 project:
 `config/` settings split, `core/` spine — BS calendar, money, RLS helpers, tenant
 middleware, numbering, permissions — and empty `apps/` skeletons per §8.2), with
 root infra (`Dockerfile`, `docker-compose.yml`, `Caddyfile`) and
-`.github/workflows/ci.yml`. The **frontend is scaffolded** under `frontend/` (Vite +
-React + TS: app router/providers, `lib/bs`, `lib/money`, `lib/api`, `components/ui`,
-feature placeholders). Foundation docs exist: `docs/ARCHITECTURE.md`,
+`.github/workflows/ci.yml`. The **tenant and platform-admin frontends are implemented**
+under `frontend/` (Vite + React + TS: host-isolated routers/providers, shared BS/money/
+API libraries and UI components, plus business-feature screens). Foundation docs exist:
+`docs/ARCHITECTURE.md`,
 `docs/MULTI_TENANCY.md`, `docs/DATABASE_SCHEMA.md`, `docs/DECISIONS/0001-0004`.
 
 **Landed business features:** `apps/tenants` (Plan, Tenant, TenantSubscription,
@@ -45,7 +46,8 @@ one-default-per-tenant and required_permission gating; effective-dated ItemPrice
 at VARIANT/ITEM/CATEGORY scope with exactly-one-FK CHECK; resolve_price chain
 VARIANT → ITEM → CATEGORY-tree → MRP → 409 PRICE_NOT_SET; min/max guardrails
 (variant → item → category pct-of-MRP) with pricing.override_min and always-block
-above-max; PriceChangeLog written in the same transaction as every price change),
+above-max; PriceChangeLog written in the same transaction as every price change;
+permission-aware frontend for rate types, scoped effective prices, bounds, and history),
 `apps/customers` (Customer CRUD, partial-unique phone, nullable credit_limit),
 `apps/sales` (POS billing core: one-transaction create_sale with price
 resolution, documented 13% VAT rule, udharo + credit-limit enforcement, SALE

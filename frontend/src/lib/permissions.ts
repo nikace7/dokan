@@ -15,6 +15,7 @@ export type PermissionCodename =
   | 'sale.void'
   | 'sale.return'
   | 'sale.discount'
+  | 'pricing.view'
   | 'pricing.view_cost'
   | 'pricing.edit'
   | 'pricing.override_min'
