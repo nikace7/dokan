@@ -6,6 +6,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
+from apps.accounts.models import User
 from apps.accounts.tokens import AUDIENCE_PLATFORM
 from apps.platformadmin.models import ImpersonationSession, PlatformAuditLog, PlatformUser
 from apps.platformadmin.tokens import PlatformRefreshToken
@@ -238,6 +239,15 @@ class ImpersonationStartSerializer(serializers.Serializer):
     reason = serializers.CharField(max_length=1000, trim_whitespace=True)
     scope = serializers.CharField(default=ImpersonationSession.Scope.READ_ONLY, max_length=10)
     duration_minutes = serializers.IntegerField(default=15)
+
+
+class ImpersonationTargetSerializer(serializers.ModelSerializer):
+    """Minimal tenant identity exposed to support for target selection."""
+
+    class Meta:
+        model = User
+        fields = ("id", "phone", "full_name")
+        read_only_fields = fields
 
 
 class ImpersonationSessionSerializer(serializers.ModelSerializer):

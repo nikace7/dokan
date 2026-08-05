@@ -67,6 +67,14 @@ The frontend (`frontend/`) serves login and the POS billing screen:
 and rate type in the app header. Sign in at http://localhost:5173 with the
 seeded owner above.
 
+The same build serves the isolated platform control plane on
+http://admin.localhost:5173. Set `PLATFORM_ADMIN_ALLOWED_IPS` for the client
+network, provision an account with `python manage.py create_platform_user
+--email admin@example.com --full-name "Platform Admin"`, and enroll the
+one-time TOTP secret printed by that command. Platform and tenant tokens use
+separate storage, and tenant support sessions are handed off through a
+short-lived URL fragment that is cleared immediately after use.
+
 Local SMS uses the no-network `log` provider: receipt requests are queued and
 delivery state is persisted without sending real messages. Use
 `POST /api/v1/notifications/sms/receipt`; owners can inspect status at
@@ -95,8 +103,8 @@ backend/
 docs/                  # SYSTEM_DESIGN.md (authoritative) + planned docs
 frontend/              # React PWA (separate scaffold)
 docker/postgres/init/  # app/migration role bootstrap
-.github/workflows/     # CI gates: ruff, mypy, pytest+coverage, migrations,
-                       # gitleaks
+.github/workflows/     # CI gates: ruff, mypy, pytest+coverage, frontend tests,
+                       # build, migrations, gitleaks
 ```
 
 ## Documentation
