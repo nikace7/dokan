@@ -114,6 +114,8 @@ class _SalesAPIView(APIView):
 
 
 class SaleListView(_SalesAPIView):
+    plan_usage_by_method: ClassVar[dict[str, str]] = {"POST": "max_invoices_per_month"}
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_invoices(
@@ -227,6 +229,8 @@ class HeldBillListView(_SalesAPIView):
 
 class CompleteBillView(_SalesAPIView):
     """POST /sales/<id>/complete — finish a held bill with tender."""
+
+    plan_usage_by_method: ClassVar[dict[str, str]] = {"POST": "max_invoices_per_month"}
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)

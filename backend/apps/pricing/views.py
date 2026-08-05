@@ -87,6 +87,8 @@ class _PricingAPIView(APIView):
 
 
 class RateTypeListView(_PricingAPIView):
+    plan_features_by_method: ClassVar[dict[str, str]] = {"POST": "custom_rate_types"}
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_rate_types(tenant, _user(request), is_active=_is_active_param(request))

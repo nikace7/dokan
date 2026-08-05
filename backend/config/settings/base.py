@@ -11,6 +11,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from celery.schedules import crontab
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
@@ -91,6 +93,9 @@ MIDDLEWARE = [
     # SET LOCAL app.tenant_id inside the request transaction. Must run
     # before any ORM access.
     "core.middleware.tenant.TenantMiddleware",
+    # Feature gating runs after tenant resolution but before authentication
+    # and route permissions.
+    "core.middleware.plan_gate.PlanGateMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -154,6 +159,12 @@ CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_TRACK_STARTED = True
 CELERY_WORKER_SEND_TASK_EVENTS = True
+CELERY_BEAT_SCHEDULE = {
+    "tenants-reconcile-usage-nightly": {
+        "task": "apps.tenants.tasks.reconcile_usage_snapshots",
+        "schedule": crontab(hour=0, minute=15),
+    }
+}
 
 # ADR 0004. "log" is the no-network local/staging adapter; production must
 # select a real adapter when SMS is enabled there.

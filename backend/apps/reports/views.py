@@ -162,6 +162,7 @@ class DeadStockView(_ReportsAPIView):
 
 class ProfitReportView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.profit"}
+    plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "profit_reports"}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -190,6 +191,7 @@ class DuesReportView(_ReportsAPIView):
 
 class SalesVatRegisterView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.vat"}
+    plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "vat_module"}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -205,6 +207,7 @@ class SalesVatRegisterView(_ReportsAPIView):
 
 class PurchaseVatRegisterView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.vat"}
+    plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "vat_module"}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)

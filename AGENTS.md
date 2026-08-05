@@ -73,7 +73,12 @@ sale.cancel_held; GET /audit/ gated on settings.manage), `apps/notifications`
 (RLS-protected SmsLog; receipt template + Nepal mobile normalization;
 vendor-neutral provider contract per ADR 0004; no-network local provider;
 Celery delivery with bounded retry and duplicate-task protection; receipt
-queue gated on sale.create and delivery log gated on settings.manage). Shared
+queue gated on sale.create and delivery log gated on settings.manage). Plan
+enforcement is active above route permissions: unexpired tenant overrides win
+over plan JSON; disabled SMS/profit/VAT/multi-branch/custom-rate routes return
+402; service writes hard-block staff/item/rate-type/SMS limits under tenant-row
+locks; invoice volume remains soft with 80%/100% response warnings; Celery beat
+writes nightly TenantUsageSnapshot rows under per-tenant RLS context. Shared
 API plumbing lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
