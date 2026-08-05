@@ -3,12 +3,14 @@
 from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Any, Literal
 
-from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.audit.services import audit
-from apps.tenants.models import Tenant, TenantUsageSnapshot
+from apps.tenants.constants import TenantStatus
+from apps.tenants.models import Branch, Plan, Tenant, TenantUsageSnapshot
 from apps.tenants.selectors import get_effective_plan_value, invalidate_tenant_cache
 from core.responses import ServiceError
 
@@ -206,3 +208,67 @@ def update_tenant_settings(
     )
     invalidate_tenant_cache(tenant.slug)
     return tenant
+
+
+def _required_platform_text(value: str, label: str) -> str:
+    clean = value.strip()
+    if not clean:
+        raise ServiceError("TENANT_INVALID", f"{label} is required.")
+    return clean
+
+
+@transaction.atomic
+def create_platform_tenant(
+    *,
+    plan: Plan,
+    slug: str,
+    name: str,
+    status: str,
+    trial_ends_at: datetime | None,
+    name_np: str | None = None,
+    legal_name: str | None = None,
+    pan_vat_no: str | None = None,
+    vat_registered: bool = False,
+    calendar_pref: str = Tenant.CalendarPref.BS,
+    locale: str = Tenant.Locale.NP,
+) -> Tenant:
+    """Create the platform row before the orchestrator opens tenant RLS context."""
+    if not plan.is_active:
+        raise ServiceError("PLAN_INACTIVE", "Inactive plans cannot be assigned.", http_status=409)
+    if status == TenantStatus.TRIAL and (trial_ends_at is None or trial_ends_at <= timezone.now()):
+        raise ServiceError("TRIAL_END_REQUIRED", "A trial tenant requires a future trial end time.")
+    tenant = Tenant(
+        slug=slug.strip().lower(),
+        name=_required_platform_text(name, "Shop name"),
+        name_np=name_np.strip() if name_np else None,
+        legal_name=legal_name.strip() if legal_name else None,
+        pan_vat_no=pan_vat_no.strip() if pan_vat_no else None,
+        vat_registered=vat_registered,
+        plan=plan,
+        status=status,
+        trial_ends_at=trial_ends_at,
+        calendar_pref=calendar_pref,
+        locale=locale,
+    )
+    try:
+        tenant.full_clean()
+        tenant.save()
+    except ValidationError as exc:
+        if Tenant.objects.filter(slug=tenant.slug).exists():
+            raise ServiceError(
+                "ALREADY_EXISTS", "This shop subdomain is already in use.", 409
+            ) from exc
+        raise ServiceError("TENANT_INVALID", "; ".join(exc.messages)) from exc
+    except IntegrityError as exc:
+        raise ServiceError("ALREADY_EXISTS", "This shop subdomain is already in use.", 409) from exc
+    return tenant
+
+
+def create_default_branch(tenant: Tenant, *, code: str, name: str) -> Branch:
+    """Create the mandatory first branch after tenant RLS context is set."""
+    return Branch.objects.create(
+        tenant=tenant,
+        code=_required_platform_text(code, "Branch code").upper(),
+        name=_required_platform_text(name, "Branch name"),
+        is_default=True,
+    )

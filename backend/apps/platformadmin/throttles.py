@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 from core.middleware.platform_admin import get_client_ip
 
@@ -20,3 +20,10 @@ class PlatformAuthThrottle(AnonRateThrottle):
             "scope": self.scope,
             "ident": get_client_ip(request),
         }
+
+
+class PlatformAdminThrottle(UserRateThrottle):
+    """Per-platform-user control-plane limit from the security design."""
+
+    scope = "platform_admin"
+    rate = "300/min"
