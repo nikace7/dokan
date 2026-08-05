@@ -23,7 +23,10 @@ JWT login/refresh/me per ADR 0001 with failed-login lockout and tenant-claim
 binding), `apps/platformadmin` (PlatformUser plus a separate admin-host/IP-allowlisted,
 password+TOTP JWT auth realm and safe provisioning command; append-only PlatformAuditLog;
 role-gated plan CRUD, atomic tenant provisioning/lifecycle, subscription, usage,
-feature-override, and platform-audit APIs; impersonation and portal pending),
+feature-override, and platform-audit APIs; time-boxed READ_ONLY/READ_WRITE support
+impersonation with reason/duration bounds, durable + Redis revocation, owner SMS,
+audit attribution, tenant red banner/end-now control, and owner-visible access log;
+the admin frontend portal is pending),
 `apps/catalog` (Category tree, Brand, SizeChart, Item, ItemVariant with
 size×colour matrix bulk entry and the barcode/SKU POS lookup; barcode
 validation per ADR 0003; `avg_cost` hidden without `pricing.view_cost` at

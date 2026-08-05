@@ -5,7 +5,7 @@ from uuid import UUID
 
 from django.db.models import Q, QuerySet
 
-from apps.platformadmin.models import PlatformAuditLog
+from apps.platformadmin.models import ImpersonationSession, PlatformAuditLog
 from apps.tenants.models import (
     Plan,
     Tenant,
@@ -106,3 +106,33 @@ def list_platform_audit(
     if platform_user_id:
         qs = qs.filter(actor_id=platform_user_id)
     return qs.order_by("-created_at")
+
+
+def get_impersonation(actor: "PlatformUser", pk: UUID) -> ImpersonationSession:
+    session = (
+        ImpersonationSession.objects.filter(pk=pk).select_related("platform_user", "tenant").first()
+    )
+    if session is None:
+        raise ServiceError("NOT_FOUND", "Support session not found.", http_status=404)
+    return session
+
+
+def list_tenant_impersonations(
+    tenant: Tenant, actor: "PlatformUser | None" = None
+) -> QuerySet[ImpersonationSession]:
+    return (
+        ImpersonationSession.objects.filter(tenant=tenant)
+        .select_related("platform_user", "tenant")
+        .order_by("-started_at")
+    )
+
+
+def get_tenant_impersonation(tenant: Tenant, pk: UUID) -> ImpersonationSession:
+    session = (
+        ImpersonationSession.objects.filter(tenant=tenant, pk=pk)
+        .select_related("platform_user", "tenant")
+        .first()
+    )
+    if session is None:
+        raise ServiceError("NOT_FOUND", "Support session not found.", http_status=404)
+    return session

@@ -11,9 +11,10 @@ calls on the hot path:
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.accounts.tokens import AUDIENCE_TENANT
@@ -24,6 +25,65 @@ if TYPE_CHECKING:
     from rest_framework.request import Request
 
 logger = logging.getLogger(__name__)
+
+_IMPERSONATION_BLOCKED_PREFIXES: Final = (
+    "/api/v1/users",
+    "/api/v1/roles",
+    "/api/v1/permissions",
+    "/api/v1/auth/password",
+    "/api/v1/export",
+    "/api/v1/admin/",
+)
+
+
+def _is_support_self_end(request: "HttpRequest") -> bool:
+    path = request.path_info.rstrip("/")
+    return (
+        request.method == "POST"
+        and path.startswith("/api/v1/support-access/")
+        and path.endswith("/end")
+    )
+
+
+def _enforce_impersonation(request: "HttpRequest", token: Any) -> None:
+    from apps.platformadmin.impersonation import impersonation_is_active
+
+    if not impersonation_is_active(token):
+        raise AuthenticationFailed(
+            "This support session has ended or expired.",
+            code="IMPERSONATION_ENDED",
+        )
+    if request.path_info.startswith(_IMPERSONATION_BLOCKED_PREFIXES):
+        raise PermissionDenied(
+            detail="This action is blocked during support access.",
+            code="IMPERSONATION_ACTION_BLOCKED",
+        )
+    scope = token.get("scope")
+    if scope not in {"read_only", "read_write"}:
+        raise PermissionDenied(
+            detail="This support token has an invalid scope.",
+            code="IMPERSONATION_SCOPE_INVALID",
+        )
+    if (
+        scope == "read_only"
+        and request.method not in SAFE_METHODS
+        and not _is_support_self_end(request)
+    ):
+        raise PermissionDenied(
+            detail="This support session is read-only.",
+            code="IMPERSONATION_READ_ONLY",
+        )
+    if (
+        scope == "read_write"
+        and request.method not in SAFE_METHODS
+        and request.path_info.rstrip("/") != "/api/v1/settings"
+        and not _is_support_self_end(request)
+    ):
+        # ponytail: fail closed until another write service has explicit audit coverage.
+        raise PermissionDenied(
+            detail="This action is not approved for write support access.",
+            code="IMPERSONATION_ACTION_BLOCKED",
+        )
 
 
 def record_token_tenant_mismatch(request: "HttpRequest", token: Any) -> None:
@@ -71,4 +131,6 @@ class TenantJWTAuthentication(JWTAuthentication):
                 detail="This token belongs to a different shop.",
                 code="TOKEN_TENANT_MISMATCH",
             )
+        if token.get("act"):
+            _enforce_impersonation(request, token)
         return self.get_user(token), token

@@ -112,7 +112,14 @@ class MeView(APIView):
             "name": tenant.plan.name,
             "features": get_effective_plan_features(tenant),
         }
-        return _ok(MeSerializer.for_user(user, get_permission_codes(user), plan))
+        return _ok(
+            MeSerializer.for_user(
+                user,
+                get_permission_codes(user),
+                plan,
+                is_owner=selectors.is_owner(user),
+            )
+        )
 
 
 class _AccountsManagementAPIView(APIView):

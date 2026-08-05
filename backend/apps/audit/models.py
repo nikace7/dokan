@@ -6,8 +6,8 @@ produce garbage trails, design §8.6). The migration REVOKEs UPDATE and
 DELETE from the app role: wrong entries are reversed by counter-entries,
 never edited or removed.
 
-``impersonated_by`` exists for Phase 2 support access (platform users
-acting inside a tenant, design §2.6) — always NULL until then.
+``impersonated_by`` attributes support-session writes to the acting platform
+user while retaining the target tenant user as ``actor`` (design §2.6).
 """
 
 import uuid
