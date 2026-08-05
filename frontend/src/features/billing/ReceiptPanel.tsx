@@ -1,5 +1,9 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { recordReceiptPrint } from '@/features/billing/api';
 import type { SalesInvoice } from '@/features/billing/api';
 import { formatNpr } from '@/lib/money';
 
@@ -13,15 +17,61 @@ interface ReceiptPanelProps {
  * the client never re-derives invoice totals.
  */
 export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
+  const [printCount, setPrintCount] = useState(invoice.print_count);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [printError, setPrintError] = useState<string | null>(null);
+  const autoPrintStarted = useRef(false);
+  const printInFlight = useRef(false);
+  const invoiceNumber = `${invoice.doc_type === 'RETURN' ? 'RET' : invoice.invoice_prefix}-${invoice.invoice_no}`;
+
+  const printReceipt = useCallback(async () => {
+    if (printInFlight.current) return;
+    printInFlight.current = true;
+    setIsPrinting(true);
+    try {
+      const result = await recordReceiptPrint(invoice.id);
+      flushSync(() => setPrintCount(result.print_count));
+      setPrintError(null);
+    } catch {
+      setPrintError('Receipt opened, but its print history could not be saved.');
+    } finally {
+      window.print();
+      printInFlight.current = false;
+      setIsPrinting(false);
+    }
+  }, [invoice.id]);
+
+  useEffect(() => {
+    if (autoPrintStarted.current) return;
+    autoPrintStarted.current = true;
+    void printReceipt();
+  }, [printReceipt]);
+
   return (
-    <Card className="mx-auto max-w-lg">
-      <div className="text-center">
+    <Card id="sales-receipt" className="mx-auto max-w-lg">
+      <div className="receipt-screen-only text-center">
         <p className="text-sm font-medium text-green-700">Sale completed</p>
-        <h2 className="mt-1 text-2xl font-bold">Invoice {invoice.invoice_no}</h2>
-        <p className="mt-1 text-sm text-slate-500">
+      </div>
+      <div className="text-center">
+        <h1 className="text-xl font-bold">{invoice.tenant_name}</h1>
+        {invoice.tenant_name_np ? <p className="font-medium">{invoice.tenant_name_np}</p> : null}
+        {invoice.legal_name ? <p className="text-xs">{invoice.legal_name}</p> : null}
+        <p className="text-xs">
+          {invoice.branch_name}
+          {invoice.branch_address ? ` · ${invoice.branch_address}` : ''}
+          {invoice.branch_phone ? ` · ${invoice.branch_phone}` : ''}
+        </p>
+        {invoice.pan_vat_no ? <p className="text-xs">PAN/VAT: {invoice.pan_vat_no}</p> : null}
+        <p className="mt-2 text-xs font-semibold uppercase">
+          {invoice.is_vat_bill ? 'Tax Invoice / कर बिजक' : 'Invoice / बिल'}
+        </p>
+        <h2 className="mt-1 text-2xl font-bold">Invoice {invoiceNumber}</h2>
+        <p className="mt-1 text-sm">
           BS {invoice.business_date_bs} · FY {invoice.fiscal_year_bs}
           {invoice.customer_name ? ` · ${invoice.customer_name}` : ''}
         </p>
+        <p className="text-xs text-slate-500">AD {invoice.business_date_ad}</p>
+        {printCount > 1 ? <p className="mt-1 text-xs font-semibold">Copy {printCount}</p> : null}
       </div>
 
       <table className="mt-4 w-full text-sm">
@@ -38,6 +88,9 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
             <tr key={item.id} className="border-b border-slate-100">
               <td className="py-1.5">
                 {item.item_name} <span className="text-xs text-slate-500">{item.variant_sku}</span>
+                {item.item_name_np ? (
+                  <span className="block text-xs">{item.item_name_np}</span>
+                ) : null}
               </td>
               <td className="py-1.5 text-right">{item.qty}</td>
               <td className="py-1.5 text-right">{formatNpr(item.unit_price, { symbol: '' })}</td>
@@ -59,6 +112,13 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
           <dd>{formatNpr(invoice.total)}</dd>
         </div>
         <Row label="Paid" value={invoice.paid_amount} />
+        {invoice.tenders.map((tender, index) => (
+          <Row
+            key={`${tender.method}-${index}`}
+            label={`Tender · ${tender.method}`}
+            value={tender.amount}
+          />
+        ))}
         <div className="flex justify-between">
           <dt className="text-slate-600">Due (udharo)</dt>
           <dd className={invoice.due_amount !== '0.00' ? 'font-semibold text-red-600' : ''}>
@@ -67,9 +127,26 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
         </div>
       </dl>
 
-      <Button size="lg" className="mt-6 w-full" onClick={onNewBill} autoFocus>
-        New bill / नयाँ बिल
-      </Button>
+      <p className="mt-4 text-center text-xs">Thank you / धन्यवाद</p>
+
+      <div className="receipt-actions mt-6 grid gap-2 sm:grid-cols-2">
+        <Button
+          variant="secondary"
+          size="lg"
+          disabled={isPrinting}
+          onClick={() => void printReceipt()}
+        >
+          {isPrinting ? 'Printing…' : 'Reprint / फेरि प्रिन्ट'}
+        </Button>
+        <Button size="lg" onClick={onNewBill} autoFocus>
+          New bill / नयाँ बिल
+        </Button>
+      </div>
+      {printError ? (
+        <p role="alert" className="receipt-screen-only mt-3 text-sm text-amber-700">
+          {printError}
+        </p>
+      ) : null}
     </Card>
   );
 }

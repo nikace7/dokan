@@ -8,14 +8,33 @@ from datetime import date
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from django.db.models import Prefetch, QuerySet
+from django.db.models import Count, IntegerField, OuterRef, Prefetch, QuerySet, Subquery, Value
+from django.db.models.functions import Coalesce
 
+from apps.audit.models import AuditLog
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
     from apps.tenants.models import Tenant
+
+
+def _with_receipt_print_count(qs: QuerySet[SalesInvoice]) -> QuerySet[SalesInvoice]:
+    counts = (
+        AuditLog.objects.filter(
+            tenant_id=OuterRef("tenant_id"),
+            action="sale.receipt.print",
+            target_type="sales_invoice",
+            target_id=OuterRef("pk"),
+        )
+        .values("target_id")
+        .annotate(total=Count("id"))
+        .values("total")[:1]
+    )
+    return qs.annotate(
+        receipt_print_count=Coalesce(Subquery(counts, output_field=IntegerField()), Value(0))
+    )
 
 
 def list_invoices(
@@ -32,8 +51,10 @@ def list_invoices(
 ) -> QuerySet[SalesInvoice]:
     """Invoice list. AD dates filter business_date_ad; BS strings compare
     lexicographically on the denormalized char(10) column."""
-    qs = SalesInvoice.objects.filter(tenant=tenant).select_related(
-        "branch", "customer", "rate_type", "created_by"
+    qs = _with_receipt_print_count(
+        SalesInvoice.objects.filter(tenant=tenant).select_related(
+            "tenant", "branch", "customer", "rate_type", "created_by"
+        )
     )
     if status:
         qs = qs.filter(status=status)
@@ -58,8 +79,8 @@ def get_invoice(tenant: "Tenant", user: "User", pk: UUID) -> SalesInvoice | None
     if not user.has_perm("pricing.view_cost"):
         items_qs = items_qs.defer("cost_at_sale")
     return (
-        SalesInvoice.objects.filter(tenant=tenant, pk=pk)
-        .select_related("branch", "customer", "rate_type", "created_by")
+        _with_receipt_print_count(SalesInvoice.objects.filter(tenant=tenant, pk=pk))
+        .select_related("tenant", "branch", "customer", "rate_type", "created_by")
         .prefetch_related(Prefetch("items", queryset=items_qs))
         .first()
     )
