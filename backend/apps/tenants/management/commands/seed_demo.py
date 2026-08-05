@@ -44,14 +44,27 @@ class Command(BaseCommand):
         self.stdout.write(f"  Owner:    {owner.full_name}")
 
     def _seed(self) -> User:
-        plan, _ = Plan.objects.get_or_create(
+        plan, _ = Plan.objects.update_or_create(
             code="demo",
             defaults={
                 "name": "Demo Plan",
                 "price_npr": Decimal("0"),
                 "billing_cycle": "monthly",
-                "limits": {},
-                "features": {},
+                "limits": {
+                    "max_users": 20,
+                    "max_branches": 5,
+                    "max_items": 5000,
+                    "max_invoices_per_month": 10000,
+                    "sms_credits_per_month": 1000,
+                },
+                "features": {
+                    "sms": True,
+                    "profit_reports": True,
+                    "custom_rate_types": True,
+                    "max_rate_types": 10,
+                    "multi_branch": True,
+                    "vat_module": True,
+                },
             },
         )
         tenant, _ = Tenant.objects.get_or_create(

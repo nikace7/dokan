@@ -52,6 +52,8 @@ export interface RequestOptions {
   /** Bearer access token (SimpleJWT). Auth wiring lands with useAuth. */
   accessToken?: string;
   signal?: AbortSignal;
+  /** Observe response metadata such as usage-warning headers. */
+  onResponse?: (response: Response) => void;
 }
 
 function newIdempotencyKey(): string {
@@ -68,7 +70,7 @@ function isEnvelope(value: unknown): value is ApiEnvelope<unknown> {
  * Throws `ApiError` on any non-2xx status or envelope-level error.
  */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, idempotencyKey, accessToken, signal } = options;
+  const { method = 'GET', body, idempotencyKey, accessToken, signal, onResponse } = options;
 
   const headers = new Headers({ Accept: 'application/json' });
   if (accessToken) {
@@ -104,6 +106,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     credentials: 'include',
     signal,
   });
+  onResponse?.(response);
 
   const parsed: unknown = response.status === 204 ? null : await response.json().catch(() => null);
 
@@ -147,7 +150,7 @@ export async function apiRequestPage<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<Page<T>> {
-  const { method = 'GET', body, idempotencyKey, accessToken, signal } = options;
+  const { method = 'GET', body, idempotencyKey, accessToken, signal, onResponse } = options;
 
   const headers = new Headers({ Accept: 'application/json' });
   if (accessToken) {
@@ -170,6 +173,7 @@ export async function apiRequestPage<T>(
     credentials: 'include',
     signal,
   });
+  onResponse?.(response);
 
   const parsed: unknown = await response.json().catch(() => null);
   if (!response.ok) {
@@ -186,9 +190,6 @@ export async function apiRequestPage<T>(
   const meta = parsed.meta;
   return {
     data: (parsed.data ?? []) as T[],
-    meta:
-      meta && typeof meta.count === 'number'
-        ? (meta as unknown as PageMeta)
-        : null,
+    meta: meta && typeof meta.count === 'number' ? (meta as unknown as PageMeta) : null,
   };
 }

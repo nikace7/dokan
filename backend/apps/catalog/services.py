@@ -13,6 +13,7 @@ from django.db import IntegrityError, transaction
 
 from apps.catalog.barcodes import BarcodeValidationError, validate_barcode
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
+from apps.tenants.services import enforce_creation_limit
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -167,8 +168,15 @@ def update_size_chart(chart: SizeChart, **fields: Any) -> SizeChart:
 # --- Items --------------------------------------------------------------------
 
 
+@transaction.atomic
 def create_item(tenant: "Tenant", *, created_by: "User", **fields: Any) -> Item:
     """Create an item (code unique per tenant, min≤max price bounds)."""
+    enforce_creation_limit(
+        tenant,
+        key="max_items",
+        queryset=Item.objects.filter(tenant=tenant, is_active=True),
+        label="active items",
+    )
     validate_price_bounds(fields.get("min_selling_price"), fields.get("max_selling_price"))
     for fk, model, what in (
         ("category", Category, "Category"),

@@ -77,6 +77,22 @@ def shop() -> dict[str, Any]:
 
 
 class TestReceiptQueue:
+    def test_sms_quota_hard_blocks_new_message(self, shop: dict[str, Any]) -> None:
+        shop["tenant"].plan.limits = {"sms_credits_per_month": 1}
+        shop["tenant"].plan.save(update_fields=["limits"])
+        SmsLog.objects.create(
+            tenant=shop["tenant"],
+            to_phone="9779800000001",
+            template="receipt",
+            body="Existing message",
+        )
+
+        with pytest.raises(ServiceError) as exc_info:
+            queue_receipt_sms(shop["tenant"], invoice=shop["invoice"])
+
+        assert exc_info.value.code == "PLAN_LIMIT_REACHED"
+        assert exc_info.value.http_status == 402
+
     def test_queues_template_and_dispatches_after_commit(
         self, shop: dict[str, Any], django_capture_on_commit_callbacks: Any
     ) -> None:
@@ -183,6 +199,18 @@ class TestDeliveryTask:
 
 
 class TestNotificationsApi:
+    def test_sms_feature_disabled_returns_plan_402(self, shop: dict[str, Any]) -> None:
+        shop["tenant"].plan.features = {"sms": False}
+        shop["tenant"].plan.save(update_fields=["features"])
+        grant(shop["tenant"], shop["user"], "sale.create")
+
+        response = auth_client(shop["user"]).post(
+            RECEIPT_URL, {"invoice": str(shop["invoice"].pk)}, **host(), format="json"
+        )
+
+        assert response.status_code == 402
+        assert response.json()["error"]["code"] == "PLAN_FEATURE_REQUIRED"
+
     def test_receipt_requires_sale_create(self, shop: dict[str, Any]) -> None:
         grant(shop["tenant"], shop["user"], "sale.view")
         response = auth_client(shop["user"]).post(

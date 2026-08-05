@@ -31,6 +31,7 @@ from django.utils import timezone
 from apps.inventory.services import post_sale_movement
 from apps.pricing.services import assert_price_within_bounds, resolve_price
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
+from apps.tenants.services import require_plan_feature
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from core.money import quantize_money
 from core.numbering import allocate_number
@@ -139,6 +140,8 @@ def _compute_totals(
     round_off: Decimal,
 ) -> dict[str, Decimal]:
     """Invoice totals per the documented VAT rule."""
+    if is_vat_bill:
+        require_plan_feature(tenant, "vat_module")
     subtotal = quantize_money(sum(line.gross for line in resolved))
     discount_amount = quantize_money(sum(line.discount for line in resolved) + bill_discount)
     if bill_discount < _ZERO or discount_amount > subtotal:

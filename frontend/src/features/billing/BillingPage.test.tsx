@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BillingPage } from '@/features/billing/BillingPage';
@@ -81,10 +81,27 @@ const INVOICE = {
 };
 
 /** Route mock responses by URL + method. */
-function installApiMock(saleResponse: Response) {
+function installApiMock(saleResponse: Response, vatModule = true) {
   fetchMock.mockImplementation((input, init) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
+    if (url.includes('/v1/auth/me')) {
+      return Promise.resolve(
+        envelope({
+          id: 'user-1',
+          phone: '9800000000',
+          full_name: 'Demo Owner',
+          email: null,
+          must_change_password: false,
+          permissions: ['sale.create'],
+          plan: {
+            code: 'basic',
+            name: 'Basic',
+            features: { vat_module: vatModule },
+          },
+        }),
+      );
+    }
     if (url.includes('/v1/catalog/variants/lookup')) {
       return Promise.resolve(envelope(VARIANT));
     }
@@ -185,5 +202,34 @@ describe('BillingPage', () => {
     expect(await screen.findByText('Insufficient stock for T-Shirt — M.')).toBeInTheDocument();
     // No receipt; the cart survives so the counter can fix the bill.
     expect(useCartStore.getState().lines).toHaveLength(1);
+  });
+
+  it('hides the VAT bill option when the tenant plan disables VAT', async () => {
+    installApiMock(envelope(INVOICE, 201), false);
+
+    renderBilling();
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/v1/auth/me'),
+        expect.anything(),
+      ),
+    );
+    expect(screen.queryByRole('checkbox', { name: /vat bill/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the non-blocking invoice plan warning after completion', async () => {
+    const response = envelope(INVOICE, 201);
+    response.headers.set('X-Plan-Usage-Warning', 'PLAN_USAGE_WARNING_80');
+    response.headers.set('X-Plan-Usage', '8');
+    response.headers.set('X-Plan-Limit', '10');
+    installApiMock(response);
+    renderBilling();
+
+    await scanAndAdd('8901234567890');
+    fireEvent.click(screen.getByRole('button', { name: /complete sale/i }));
+
+    expect(await screen.findByText(/8 of 10 monthly bills/i)).toBeInTheDocument();
+    expect(screen.getByText(/billing remains available/i)).toBeInTheDocument();
   });
 });
