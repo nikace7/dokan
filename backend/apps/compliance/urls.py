@@ -1,5 +1,16 @@
-"""URL routes for compliance — empty until the feature lands."""
+"""URL routes for compliance."""
 
-from typing import Any
+from django.urls import path
 
-urlpatterns: list[Any] = []
+from apps.compliance.views import InvoiceSyncStatusView, SyncFailureListView
+
+app_name = "compliance"
+
+urlpatterns = [
+    path(
+        "compliance/status/<uuid:invoice_id>",
+        InvoiceSyncStatusView.as_view(),
+        name="sync-status",
+    ),
+    path("compliance/failures", SyncFailureListView.as_view(), name="sync-failures"),
+]

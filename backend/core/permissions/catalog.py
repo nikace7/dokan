@@ -62,6 +62,8 @@ PERMISSIONS: Final[list[PermissionDef]] = [
     # Admin
     PermissionDef("user.manage", "Admin", "Manage users and roles", sensitive=True),
     PermissionDef("settings.manage", "Admin", "Change tenant settings", sensitive=True),
+    # Compliance
+    PermissionDef("compliance.view", "Compliance", "View CBMS sync status and failures"),
 ]
 
 ALL_CODES: Final = frozenset(p.code for p in PERMISSIONS)
