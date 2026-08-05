@@ -3,8 +3,10 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from django.db import connection, transaction
 from django.db.models import Q, QuerySet
 
+from apps.accounts.models import User
 from apps.platformadmin.models import ImpersonationSession, PlatformAuditLog
 from apps.tenants.models import (
     Plan,
@@ -13,6 +15,7 @@ from apps.tenants.models import (
     TenantSubscription,
     TenantUsageSnapshot,
 )
+from core.db.rls import set_local_tenant
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -115,6 +118,13 @@ def get_impersonation(actor: "PlatformUser", pk: UUID) -> ImpersonationSession:
     if session is None:
         raise ServiceError("NOT_FOUND", "Support session not found.", http_status=404)
     return session
+
+
+@transaction.atomic
+def list_impersonation_targets(tenant: Tenant, actor: "PlatformUser") -> list[User]:
+    """Read active tenant users under an explicit RLS transaction."""
+    set_local_tenant(connection, tenant.pk)
+    return list(User.objects.filter(tenant=tenant, is_active=True).order_by("full_name", "phone"))
 
 
 def list_tenant_impersonations(

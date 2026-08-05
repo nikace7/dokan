@@ -15,6 +15,7 @@ from apps.platformadmin.models import PlatformUser
 from apps.platformadmin.serializers import (
     ImpersonationSessionSerializer,
     ImpersonationStartSerializer,
+    ImpersonationTargetSerializer,
 )
 from apps.platformadmin.views import _PlatformAPIView
 from core.middleware.tenant import require_request_tenant
@@ -73,6 +74,17 @@ class ImpersonationStartView(_PlatformAPIView):
             },
             status.HTTP_201_CREATED,
         )
+
+
+class ImpersonationTargetListView(_PlatformAPIView):
+    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
+        "GET": (PlatformUser.Role.SUPER_ADMIN, PlatformUser.Role.SUPPORT),
+    }
+
+    def get(self, request: Request, tenant_pk: UUID) -> Response:
+        tenant = selectors.get_tenant(_platform_actor(request), tenant_pk)
+        targets = selectors.list_impersonation_targets(tenant, _platform_actor(request))
+        return ok(ImpersonationTargetSerializer(targets, many=True).data)
 
 
 class AdminImpersonationEndView(_PlatformAPIView):
