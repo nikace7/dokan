@@ -228,6 +228,19 @@ export function SettingsPage() {
           </Link>
         </Card>
       ) : null}
+      {user?.is_owner ? (
+        <Card title="Support access / सहायता पहुँच">
+          <p className="mb-3 text-sm text-slate-600">
+            Review every time Dokan support entered this shop and who ended the session.
+          </p>
+          <Link
+            to="/settings/support-access"
+            className="inline-flex rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          >
+            View support access log
+          </Link>
+        </Card>
+      ) : null}
     </main>
   );
 }
