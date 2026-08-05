@@ -96,6 +96,9 @@ MIDDLEWARE = [
     # Feature gating runs after tenant resolution but before authentication
     # and route permissions.
     "core.middleware.plan_gate.PlanGateMiddleware",
+    # Explicit service-layer audit writes inherit IP, user agent, and any
+    # signed support-session actor claim from the current request.
+    "core.middleware.audit.AuditContextMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

@@ -12,6 +12,7 @@ Rules (AGENTS.md invariant 7, design §8.6):
 from typing import TYPE_CHECKING, Any
 
 from apps.audit.models import AuditLog
+from core.middleware.audit import get_audit_request
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -35,6 +36,20 @@ def _extract_ip(request: "HttpRequest | None") -> str | None:
     return request.META.get("REMOTE_ADDR") or None
 
 
+def _extract_user_agent(request: "HttpRequest | None") -> str | None:
+    if request is None:
+        return None
+    return request.META.get("HTTP_USER_AGENT") or None
+
+
+def _extract_impersonator(request: "HttpRequest | None") -> Any:
+    if request is None:
+        return None
+    auth = getattr(request, "auth", None)
+    getter = getattr(auth, "get", None)
+    return getter("act") if callable(getter) else None
+
+
 def audit(
     tenant: "Tenant",
     *,
@@ -50,9 +65,12 @@ def audit(
     """Write one audit row. Call inside the mutation's transaction.
 
     ``target_id`` accepts a model instance (uses its pk) or a uuid/str.
-    No-op-safe outside a request context: IP is simply NULL.
+    Request metadata is inherited from the middleware when ``request`` is
+    omitted. Outside a request, those fields remain NULL.
     """
+    current_request = request or get_audit_request()
     pk = getattr(target_id, "pk", target_id)
+    impersonator = impersonated_by or _extract_impersonator(current_request)
     return AuditLog.objects.create(
         tenant=tenant,
         actor=actor,
@@ -61,6 +79,7 @@ def audit(
         target_id=pk,
         before=before,
         after=after,
-        impersonated_by=impersonated_by,
-        ip=_extract_ip(request),
+        impersonated_by_id=getattr(impersonator, "pk", impersonator),
+        ip=_extract_ip(current_request),
+        user_agent=_extract_user_agent(current_request),
     )
