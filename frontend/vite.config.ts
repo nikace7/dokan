@@ -20,7 +20,16 @@ export default defineConfig({
       // `demo.localhost` resolving to ::1 before Docker's Windows port proxy.
       '/api': {
         target: 'http://127.0.0.1:8000',
-        headers: { Host: 'demo.localhost' },
+        configure(proxy) {
+          proxy.on('proxyReq', (proxyRequest, request) => {
+            const browserHost = request.headers.host?.split(':')[0] ?? 'localhost';
+            const apiHost =
+              browserHost === 'localhost' || browserHost === '127.0.0.1'
+                ? 'demo.localhost'
+                : browserHost;
+            proxyRequest.setHeader('Host', apiHost);
+          });
+        },
       },
     },
   },

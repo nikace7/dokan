@@ -24,6 +24,7 @@ import { VatRegisterPage } from '@/features/reports/VatRegisterPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { StaffPage } from '@/features/settings/StaffPage';
 import { SupportAccessPage } from '@/features/support/SupportAccessPage';
+import { SupportLoginPage } from '@/features/support/SupportLoginPage';
 
 /**
  * Route skeleton. Feature routes mount here as modules land; super-admin
@@ -56,43 +57,49 @@ function NotFound() {
   );
 }
 
-const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
-  {
-    element: (
-      <RequireAuth>
-        <AppLayout />
-      </RequireAuth>
-    ),
-    children: [
-      { path: '/', element: <DashboardPlaceholder /> },
-      { path: '/billing', element: <BillingPage /> },
-      { path: '/catalog', element: <ItemsPage /> },
-      { path: '/catalog/items/new', element: <ItemFormPage /> },
-      { path: '/catalog/items/:id', element: <ItemDetailPage /> },
-      { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
-      { path: '/stock', element: <StockPage /> },
-      { path: '/purchasing', element: <PurchasingPage /> },
-      { path: '/expenses', element: <ExpensesPage /> },
-      { path: '/payments', element: <PaymentsPage /> },
-      { path: '/ledgers', element: <PartyLedgerPage /> },
-      { path: '/returns', element: <ReturnsPage /> },
-      { path: '/audit', element: <AuditPage /> },
-      { path: '/settings', element: <SettingsPage /> },
-      { path: '/settings/staff', element: <StaffPage /> },
-      { path: '/settings/support-access', element: <SupportAccessPage /> },
-      { path: '/exchanges', element: <ExchangePage /> },
-      { path: '/reports', element: <ReportsHomePage /> },
-      { path: '/reports/sales', element: <SalesReportPage /> },
-      { path: '/reports/stock', element: <StockReportsPage /> },
-      { path: '/reports/profit', element: <ProfitReportPage /> },
-      { path: '/reports/dues', element: <DuesReportPage /> },
-      { path: '/reports/vat', element: <VatRegisterPage /> },
-    ],
-  },
-  { path: '*', element: <NotFound /> },
-]);
+let router: ReturnType<typeof createBrowserRouter> | null = null;
+
+function getRouter() {
+  router ??= createBrowserRouter([
+    { path: '/login', element: <LoginPage /> },
+    { path: '/support-login', element: <SupportLoginPage /> },
+    {
+      element: (
+        <RequireAuth>
+          <AppLayout />
+        </RequireAuth>
+      ),
+      children: [
+        { path: '/', element: <DashboardPlaceholder /> },
+        { path: '/billing', element: <BillingPage /> },
+        { path: '/catalog', element: <ItemsPage /> },
+        { path: '/catalog/items/new', element: <ItemFormPage /> },
+        { path: '/catalog/items/:id', element: <ItemDetailPage /> },
+        { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
+        { path: '/stock', element: <StockPage /> },
+        { path: '/purchasing', element: <PurchasingPage /> },
+        { path: '/expenses', element: <ExpensesPage /> },
+        { path: '/payments', element: <PaymentsPage /> },
+        { path: '/ledgers', element: <PartyLedgerPage /> },
+        { path: '/returns', element: <ReturnsPage /> },
+        { path: '/audit', element: <AuditPage /> },
+        { path: '/settings', element: <SettingsPage /> },
+        { path: '/settings/staff', element: <StaffPage /> },
+        { path: '/settings/support-access', element: <SupportAccessPage /> },
+        { path: '/exchanges', element: <ExchangePage /> },
+        { path: '/reports', element: <ReportsHomePage /> },
+        { path: '/reports/sales', element: <SalesReportPage /> },
+        { path: '/reports/stock', element: <StockReportsPage /> },
+        { path: '/reports/profit', element: <ProfitReportPage /> },
+        { path: '/reports/dues', element: <DuesReportPage /> },
+        { path: '/reports/vat', element: <VatRegisterPage /> },
+      ],
+    },
+    { path: '*', element: <NotFound /> },
+  ]);
+  return router;
+}
 
 export function AppRouter() {
-  return <RouterProvider router={router} />;
+  return <RouterProvider router={getRouter()} />;
 }

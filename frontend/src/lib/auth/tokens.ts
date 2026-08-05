@@ -40,13 +40,17 @@ export function setTokens(tokens: AuthTokens): void {
   localStorage.setItem(REFRESH_KEY, tokens.refresh);
 }
 
+export function setAccessToken(access: string): void {
+  localStorage.setItem(ACCESS_KEY, access);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
 export function clearTokens(): void {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
 }
 
-export function getImpersonationClaims(): ImpersonationClaims | null {
-  const token = getAccessToken();
+export function parseImpersonationClaims(token: string): ImpersonationClaims | null {
   if (!token) return null;
   try {
     const raw = token.split('.')[1];
@@ -65,4 +69,9 @@ export function getImpersonationClaims(): ImpersonationClaims | null {
   } catch {
     return null;
   }
+}
+
+export function getImpersonationClaims(): ImpersonationClaims | null {
+  const token = getAccessToken();
+  return token ? parseImpersonationClaims(token) : null;
 }
