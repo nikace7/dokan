@@ -179,9 +179,7 @@ function SummaryTable({ rows }: { rows: StockSummaryRow[] }) {
 function LowTable({ rows }: { rows: LowStockRow[] }) {
   if (rows.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-slate-500">
-        Nothing below its reorder level. 
-      </p>
+      <p className="py-8 text-center text-sm text-slate-500">Nothing below its reorder level.</p>
     );
   }
   return (

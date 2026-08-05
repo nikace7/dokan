@@ -77,7 +77,10 @@ describe('LoginPage', () => {
   it('shows the server error message on bad credentials', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ data: null, error: { code: 'AUTH_FAILED', message: 'Phone number or password is incorrect.' } }),
+        JSON.stringify({
+          data: null,
+          error: { code: 'AUTH_FAILED', message: 'Phone number or password is incorrect.' },
+        }),
         { status: 401, headers: { 'Content-Type': 'application/json' } },
       ),
     );
@@ -88,9 +91,7 @@ describe('LoginPage', () => {
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'wrong' } });
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(
-      await screen.findByText('Phone number or password is incorrect.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Phone number or password is incorrect.')).toBeInTheDocument();
     expect(getAccessToken()).toBeNull();
   });
 });

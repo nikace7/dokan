@@ -51,14 +51,14 @@ The demo workflow covers the full loop in the browser:
 
 ## Scripts
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Vite dev server with the tenant-aware `/api` proxy |
-| `npm run typecheck` | `tsc --noEmit` (strict) |
-| `npm run lint` | ESLint |
-| `npm run test` | Vitest unit/component tests |
-| `npm run build` | Type check + production build |
-| `npm run api:gen` | Regenerate the typed API client from the backend OpenAPI schema |
+| Command             | Purpose                                                         |
+| ------------------- | --------------------------------------------------------------- |
+| `npm run dev`       | Vite dev server with the tenant-aware `/api` proxy              |
+| `npm run typecheck` | `tsc --noEmit` (strict)                                         |
+| `npm run lint`      | ESLint                                                          |
+| `npm run test`      | Vitest unit/component tests                                     |
+| `npm run build`     | Type check + production build                                   |
+| `npm run api:gen`   | Regenerate the typed API client from the backend OpenAPI schema |
 
 ## Conventions
 
@@ -76,3 +76,9 @@ The demo workflow covers the full loop in the browser:
   never permission guesses.
 - `POST /sales` (and hold/complete) send one `Idempotency-Key` per bill
   attempt — never regenerated on retry of the same attempt.
+- Offline POS (`src/lib/offline/`): a network-failed sale is queued in
+  Dexie with its original Idempotency-Key and drained against the
+  idempotent `POST /sales` when the connection returns; offline receipts
+  show a provisional `OFF-XXXXXXXX` reference, never an invoice number.
+  Barcode lookup falls back to the Dexie variant cache. The app-shell
+  service worker (`public/sw.js`) never intercepts `/api`.

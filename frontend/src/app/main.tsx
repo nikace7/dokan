@@ -15,3 +15,12 @@ createRoot(container).render(
     <App />
   </StrictMode>,
 );
+
+// App-shell service worker for the installable/offline-bootable POS (PWA).
+// Production only — in dev it would serve stale bundles. It never caches
+// /api responses (see public/sw.js).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js');
+  });
+}

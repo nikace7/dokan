@@ -160,10 +160,7 @@ export function VariantMatrix({
       </div>
 
       {selectedCount > 0 ? (
-        <table
-          aria-label="Variant grid preview"
-          className="w-auto border-collapse text-xs"
-        >
+        <table aria-label="Variant grid preview" className="w-auto border-collapse text-xs">
           <thead>
             <tr>
               <th className="border border-slate-200 bg-slate-50 px-2 py-1 text-left font-medium text-slate-500">
@@ -236,10 +233,7 @@ export function VariantMatrix({
         <div role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
           <p>
             Created {result.created_count} variant{result.created_count === 1 ? '' : 's'}
-            {result.skipped_count > 0
-              ? `, skipped ${result.skipped_count} (already exist)`
-              : ''}
-            .
+            {result.skipped_count > 0 ? `, skipped ${result.skipped_count} (already exist)` : ''}.
           </p>
           {result.skipped.length > 0 ? (
             <ul className="mt-1 text-xs text-green-700">
