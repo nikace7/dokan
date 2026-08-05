@@ -26,6 +26,7 @@ from django.db import ProgrammingError, connection, transaction
 from apps.accounts.models import Role, RolePermission, User, UserRole
 from apps.audit.models import AuditLog
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
+from apps.compliance.models import CbmsSyncLog
 from apps.customers.models import Customer
 from apps.expenses.models import Expense, ExpenseCategory
 from apps.inventory.models import (
@@ -51,6 +52,7 @@ from tests.factories import (
     BrandFactory,
     CashSessionFactory,
     CategoryFactory,
+    CbmsSyncLogFactory,
     CustomerFactory,
     ExpenseCategoryFactory,
     ExpenseFactory,
@@ -87,6 +89,7 @@ from tests.factories import (
 FACTORIES: dict[type[Any], Any] = {
     Branch: BranchFactory,
     AuditLog: AuditLogFactory,
+    CbmsSyncLog: CbmsSyncLogFactory,
     User: UserFactory,
     Role: RoleFactory,
     RolePermission: RolePermissionFactory,
