@@ -1,11 +1,13 @@
 """Read-side queries for tenants — the middleware's tenant lookup lives here."""
 
 import logging
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 from django.core.cache import cache
+from django.db.models import Q
+from django.utils import timezone
 
-from apps.tenants.models import Branch, Tenant
+from apps.tenants.models import Branch, Tenant, TenantFeatureOverride
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -17,6 +19,28 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _CACHE_TTL_SECONDS: Final = 300
+
+
+def get_effective_plan_value(
+    tenant: Tenant,
+    namespace: Literal["features", "limits"],
+    key: str,
+) -> Any:
+    """Resolve an unexpired tenant override before the tenant's plan JSON."""
+    override = (
+        TenantFeatureOverride.objects.filter(tenant=tenant, key=f"{namespace}.{key}")
+        .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now()))
+        .first()
+    )
+    if override is not None:
+        return override.value
+    values = getattr(tenant.plan, namespace, {})
+    return values.get(key) if isinstance(values, dict) else None
+
+
+def is_feature_enabled(tenant: Tenant, key: str) -> bool:
+    """Return true only for an explicit boolean plan feature value."""
+    return get_effective_plan_value(tenant, "features", key) is True
 
 
 def _cache_key(slug: str) -> str:

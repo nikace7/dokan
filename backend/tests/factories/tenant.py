@@ -23,8 +23,21 @@ class PlanFactory(DjangoModelFactory):
     name = Sequence(lambda n: f"Plan {n}")
     price_npr = "2000.00"
     billing_cycle = Plan.BillingCycle.MONTHLY
-    limits = {"max_users": 5, "max_branches": 1, "max_items": 2000}
-    features = {"sms": True, "profit_reports": True}
+    limits = {
+        "max_users": 5,
+        "max_branches": 1,
+        "max_items": 2000,
+        "max_invoices_per_month": 3000,
+        "sms_credits_per_month": 100,
+    }
+    features = {
+        "sms": True,
+        "profit_reports": True,
+        "custom_rate_types": True,
+        "max_rate_types": 3,
+        "multi_branch": True,
+        "vat_module": True,
+    }
 
 
 class TenantFactory(DjangoModelFactory):

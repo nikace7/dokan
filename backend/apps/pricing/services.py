@@ -31,6 +31,7 @@ from django.utils import timezone
 from apps.audit.services import audit
 from apps.catalog.models import Category, Item, ItemVariant
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
+from apps.tenants.services import enforce_creation_limit, require_plan_feature
 from core.money import format_npr, quantize_money
 from core.responses import ServiceError
 
@@ -325,10 +326,18 @@ def set_price(
 
 def create_rate_type(tenant: "Tenant", *, user: "User", **fields: Any) -> RateType:
     """Create a rate type; exactly one default per tenant (§4.5)."""
-    if fields.get("required_permission"):
-        fields["required_permission"] = _get_permission(fields["required_permission"])
-    is_default = bool(fields.get("is_default"))
     with transaction.atomic():
+        require_plan_feature(tenant, "custom_rate_types")
+        enforce_creation_limit(
+            tenant,
+            key="max_rate_types",
+            namespace="features",
+            queryset=RateType.objects.filter(tenant=tenant, is_active=True),
+            label="active rate types",
+        )
+        if fields.get("required_permission"):
+            fields["required_permission"] = _get_permission(fields["required_permission"])
+        is_default = bool(fields.get("is_default"))
         if is_default:
             _unset_default(tenant)
         rate_type = RateType(tenant=tenant, **fields)

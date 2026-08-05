@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Permission, Role, RolePermission, User, UserRole
 from apps.audit.services import audit
+from apps.tenants.services import enforce_creation_limit
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -91,6 +92,12 @@ def create_staff_user(
 ) -> User:
     """Create staff with an initial password and one existing role."""
     _validate_assignment(tenant, role, branch)
+    enforce_creation_limit(
+        tenant,
+        key="max_users",
+        queryset=User.objects.filter(tenant=tenant, is_active=True),
+        label="active staff accounts",
+    )
     user = User(
         tenant=tenant,
         phone=phone.strip(),

@@ -54,6 +54,25 @@ class TestPriceBounds:
         assert item.min_selling_price == Decimal("100.00")
 
 
+class TestPlanLimits:
+    def test_item_creation_hard_blocks_at_plan_limit(self) -> None:
+        tenant = TenantFactory()
+        tenant.plan.limits = {"max_items": 1}
+        tenant.plan.save(update_fields=["limits"])
+        ItemFactory(tenant=tenant)
+
+        with pytest.raises(ServiceError) as exc:
+            services.create_item(
+                tenant,
+                created_by=UserFactory(tenant=tenant),
+                code="LIMITED",
+                name="Blocked item",
+            )
+
+        assert exc.value.code == "PLAN_LIMIT_REACHED"
+        assert exc.value.http_status == 402
+
+
 class TestCategoryCycleGuard:
     def test_reparent_into_own_subtree_rejected(self) -> None:
         tenant = TenantFactory()
