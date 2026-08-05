@@ -1,0 +1,16 @@
+{
+  "name": "dokan-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Playwright E2E smoke suite for Dokan (runs against the local compose stack or the Vite dev server).",
+  "scripts": {
+    "test": "playwright test",
+    "test:list": "playwright test --list",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.0",
+    "@types/node": "20.19.0",
+    "typescript": "5.9.2"
+  }
+}
