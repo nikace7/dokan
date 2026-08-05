@@ -1080,8 +1080,9 @@ worse than none.
 | `SECURITY.md` | Security posture and reporting | Threat model summary, vulnerability disclosure contact, secret handling, dependency policy, incident response steps, data breach notification plan. |
 | `CONTRIBUTING.md` | Local setup + house rules | Environment setup, code style, how to add an app, how to add a permission, how to add an RLS-protected table, PR expectations. |
 
-Start with **README, ARCHITECTURE, MULTI_TENANCY, DATABASE_SCHEMA, RATE_RULES, GIT_WORKFLOW,
-ROADMAP**. Add the rest as the corresponding code lands. Writing all 19 upfront guarantees
+The priority set — **README, ARCHITECTURE, MULTI_TENANCY, DATABASE_SCHEMA, RATE_RULES,
+NEPALI_LOCALIZATION, GIT_WORKFLOW, ROADMAP** — plus DEPLOYMENT and CHANGELOG now exist.
+Add the rest as the corresponding code lands. Writing all 19 upfront guarantees
 17 of them go stale before anyone reads them.
 
 ---
