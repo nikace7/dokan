@@ -70,6 +70,17 @@ describe('formatNpr', () => {
   it('supports Devanagari numerals', () => {
     expect(formatNpr('1500.50', { devanagari: true })).toBe('रू १,५००.५०');
   });
+
+  // Currency-symbol rule (docs/NEPALI_LOCALIZATION.md §7): screens and the
+  // printed 80mm receipt use `रू`; non-Unicode channels (SMS receipts) use
+  // the ASCII `NPR` prefix via the symbol option — a non-GSM-7 `रू` would
+  // force UCS-2 and double the SMS segment count. No single artifact ever
+  // mixes the two.
+  it('pins the artifact symbol rule: रू by default, ASCII opt-out per channel', () => {
+    expect(formatNpr('1500.00')).toBe('रू 1,500.00');
+    expect(formatNpr('1500.00', { symbol: 'NPR ' })).toBe('NPR 1,500.00');
+    expect(formatNpr('1500.00', { symbol: '' })).toBe('1,500.00');
+  });
 });
 
 describe('toDevanagariDigits', () => {
