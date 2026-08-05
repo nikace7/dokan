@@ -16,6 +16,13 @@ export interface AuthTokens {
   refresh: string;
 }
 
+export interface ImpersonationClaims {
+  act: string;
+  jti: string;
+  scope: 'read_only' | 'read_write';
+  exp: number;
+}
+
 export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_KEY);
 }
@@ -36,4 +43,26 @@ export function setTokens(tokens: AuthTokens): void {
 export function clearTokens(): void {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
+}
+
+export function getImpersonationClaims(): ImpersonationClaims | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  try {
+    const raw = token.split('.')[1];
+    if (!raw) return null;
+    const base64 = raw
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(raw.length / 4) * 4, '=');
+    const claims = JSON.parse(atob(base64)) as Partial<ImpersonationClaims>;
+    return typeof claims.act === 'string' &&
+      typeof claims.jti === 'string' &&
+      (claims.scope === 'read_only' || claims.scope === 'read_write') &&
+      typeof claims.exp === 'number'
+      ? (claims as ImpersonationClaims)
+      : null;
+  } catch {
+    return null;
+  }
 }

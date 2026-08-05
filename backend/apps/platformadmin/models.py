@@ -7,6 +7,7 @@ and role-gated control-plane API.
 """
 
 import uuid
+from datetime import timedelta
 from typing import ClassVar
 
 from django.contrib.auth.hashers import check_password, make_password
@@ -78,3 +79,56 @@ class PlatformAuditLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.action} by {self.actor_id}"
+
+
+class ImpersonationSession(models.Model):
+    """Time-boxed support access without creating a tenant user for platform staff."""
+
+    class Scope(models.TextChoices):
+        READ_ONLY = "READ_ONLY", "Read only"
+        READ_WRITE = "READ_WRITE", "Read/write"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    platform_user = models.ForeignKey(
+        PlatformUser,
+        on_delete=models.PROTECT,
+        related_name="impersonation_sessions",
+    )
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="impersonation_sessions",
+    )
+    target_user_id = models.UUIDField()
+    reason = models.TextField()
+    scope = models.TextField(choices=Scope.choices, default=Scope.READ_ONLY)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "impersonation_session"
+        ordering: ClassVar = ["-started_at"]
+        indexes: ClassVar = [
+            models.Index(fields=["tenant", "-started_at"], name="impersonation_tenant_idx")
+        ]
+        constraints: ClassVar = [
+            models.CheckConstraint(
+                condition=models.Q(scope__in=("READ_ONLY", "READ_WRITE")),
+                name="impersonation_scope_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(expires_at__gt=models.F("started_at")),
+                name="impersonation_expiry_after_start",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(expires_at__lte=models.F("started_at") + timedelta(minutes=60)),
+                name="impersonation_duration_max_60m",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.platform_user_id} as {self.target_user_id}"
