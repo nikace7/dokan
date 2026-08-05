@@ -94,7 +94,13 @@ support actor claims; GET /audit/ gated on settings.manage), `apps/notifications
 (RLS-protected SmsLog; receipt template + Nepal mobile normalization;
 vendor-neutral provider contract per ADR 0004; no-network local provider;
 Celery delivery with bounded retry and duplicate-task protection; receipt
-queue gated on sale.create and delivery log gated on settings.manage). Plan
+queue gated on sale.create and delivery log gated on settings.manage),
+`apps/compliance` (durable CBMS sync queue: CbmsSyncLog with frozen payload
+snapshot per completed SALE/RETURN, UNIQUE-per-document idempotent enqueue
+wired into completion paths, Celery task with bounded exponential retry to
+FAILED, vendor-neutral provider contract with no-network local default and a
+NotImplementedError IRD stub behind CBMS_PROVIDER; status/failures endpoints;
+docs/COMPLIANCE_IRD.md). Plan
 enforcement is active above route permissions: unexpired tenant overrides win
 over plan JSON; disabled SMS/profit/VAT/multi-branch/custom-rate routes return
 402; service writes hard-block staff/item/rate-type/SMS limits under tenant-row
