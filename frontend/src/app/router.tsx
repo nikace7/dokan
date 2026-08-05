@@ -23,6 +23,7 @@ import { StockReportsPage } from '@/features/reports/StockReportsPage';
 import { VatRegisterPage } from '@/features/reports/VatRegisterPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { StaffPage } from '@/features/settings/StaffPage';
+import { SupportAccessPage } from '@/features/support/SupportAccessPage';
 
 /**
  * Route skeleton. Feature routes mount here as modules land; super-admin
@@ -79,6 +80,7 @@ const router = createBrowserRouter([
       { path: '/audit', element: <AuditPage /> },
       { path: '/settings', element: <SettingsPage /> },
       { path: '/settings/staff', element: <StaffPage /> },
+      { path: '/settings/support-access', element: <SupportAccessPage /> },
       { path: '/exchanges', element: <ExchangePage /> },
       { path: '/reports', element: <ReportsHomePage /> },
       { path: '/reports/sales', element: <SalesReportPage /> },
