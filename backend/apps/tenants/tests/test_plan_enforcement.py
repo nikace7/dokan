@@ -9,6 +9,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.test import RequestFactory
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from apps.accounts.models import User
 from apps.catalog.models import Item
@@ -108,6 +109,25 @@ class TestPlanGateMiddleware:
         assert response["X-Plan-Usage-Warning"] == "PLAN_USAGE_WARNING_80"
         assert response["X-Plan-Usage"] == "8"
         assert response["X-Plan-Limit"] == "10"
+
+
+class TestTrialLifecycle:
+    def test_expired_trial_is_rejected_at_the_subdomain_boundary(self) -> None:
+        tenant = TenantFactory(
+            slug="expired-trial",
+            status=TenantStatus.TRIAL,
+            trial_ends_at=timezone.now() - timedelta(seconds=1),
+        )
+
+        response = APIClient().post(
+            "/api/v1/auth/token",
+            {"phone": "9800000000", "password": "irrelevant"},
+            HTTP_HOST=f"{tenant.slug}.dokan.com.np",
+            format="json",
+        )
+
+        assert response.status_code == 402
+        assert response.json()["error"]["code"] == "TENANT_TRIAL_EXPIRED"
 
 
 class TestUsageReconciliation:

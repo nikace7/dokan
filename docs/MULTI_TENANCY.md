@@ -187,9 +187,10 @@ Slug rules:
 Provisioning / suspension / deletion:
 
 - **Provision**: super admin (or Phase 2 self-serve signup) creates the `tenant`
-  row + slug + plan, then the default branch, owner user, system roles, and
-  number sequences. No per-tenant DDL is needed — that is the point of shared
-  schema.
+  row + slug + plan, then the default branch, owner user, five system roles,
+  owner assignment, and default retail rate in one transaction. Gapless number
+  rows initialize atomically on the first document in each branch/fiscal-year
+  series. No per-tenant DDL is needed — that is the point of shared schema.
 - **Suspend / reactivate**: a `tenant.status` change; the middleware returns
   423/402 and the shop's data is untouched.
 - **Delete**: soft delete (`deleted_at`). Hard deletion is a manual, audited
