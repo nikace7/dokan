@@ -96,6 +96,8 @@ class SalesInvoice(TenantScopedModel):
     due_amount = models.DecimalField(max_digits=14, decimal_places=2)
     status = models.TextField(choices=Status.choices, default=Status.HELD)
     is_vat_bill = models.BooleanField(default=False)
+    # Kept for schema compatibility; API counts immutable sale.receipt.print
+    # audit events so completed invoices never need an UPDATE.
     print_count = models.IntegerField(default=0)
     ird_synced_at = models.DateTimeField(null=True, blank=True)  # CBMS (Phase 2)
     ird_sync_error = models.TextField(null=True, blank=True)

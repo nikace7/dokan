@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+
+  html,
+  body {
+    width: 80mm;
+    background: white;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #sales-receipt,
+  #sales-receipt * {
+    visibility: visible;
+  }
+
+  #sales-receipt {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 74mm;
+    border: 0;
+    box-shadow: none;
+    color: black;
+    font-size: 11px;
+    print-color-adjust: exact;
+  }
+
+  #sales-receipt > div {
+    padding: 0;
+  }
+
+  #sales-receipt table {
+    break-inside: avoid;
+  }
+
+  .receipt-actions,
+  .receipt-screen-only {
+    display: none !important;
+  }
+}

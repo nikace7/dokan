@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { CustomerPicker } from '@/features/billing/CustomerPicker';
@@ -59,7 +59,7 @@ export function PaymentPanel({
   const paidPaisa = method === 'CREDIT' ? 0 : effectiveTender;
   const duePaisa = totalPaisa - paidPaisa;
 
-  const submit = () => {
+  const submit = useCallback(() => {
     setError(null);
     if (lines.length === 0) {
       setError('Add at least one item to the bill.');
@@ -78,7 +78,27 @@ export function PaymentPanel({
       return;
     }
     onComplete({ method, amountPaisa: effectiveTender, isVatBill: allowVatBill && isVatBill });
-  };
+  }, [
+    allowVatBill,
+    amountRaw,
+    customer,
+    effectiveTender,
+    isVatBill,
+    lines.length,
+    method,
+    onComplete,
+    tenderPaisa,
+  ]);
+
+  useEffect(() => {
+    const completeWithF9 = (event: KeyboardEvent) => {
+      if (event.key !== 'F9') return;
+      event.preventDefault();
+      if (!busy && !disabled && lines.length > 0) submit();
+    };
+    window.addEventListener('keydown', completeWithF9);
+    return () => window.removeEventListener('keydown', completeWithF9);
+  }, [busy, disabled, lines.length, submit]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -153,8 +173,13 @@ export function PaymentPanel({
         </p>
       ) : null}
 
-      <Button size="lg" disabled={busy || disabled || lines.length === 0} onClick={submit}>
-        {busy ? 'Completing…' : 'Complete sale / बिल काट्नुहोस्'}
+      <Button
+        size="lg"
+        aria-keyshortcuts="F9"
+        disabled={busy || disabled || lines.length === 0}
+        onClick={submit}
+      >
+        {busy ? 'Completing…' : 'F9 Complete sale + print / बिल सेभ + प्रिन्ट'}
       </Button>
     </div>
   );
