@@ -9,7 +9,7 @@ The authoritative specification is `docs/SYSTEM_DESIGN.md` (Design v1, 2026-07-2
 The **backend platform spine is scaffolded** under `backend/` (Django 5 project:
 `config/` settings split, `core/` spine — BS calendar, money, RLS helpers, tenant
 middleware, numbering, permissions — and empty `apps/` skeletons per §8.2), with
-root infra (`Dockerfile`, `docker-compose.yml`, `Caddyfile`) and
+root infra (`Dockerfile`, `docker-compose.yml`, custom DNS-enabled Caddy) and
 `.github/workflows/ci.yml`. The **tenant and platform-admin frontends are implemented**
 under `frontend/` (Vite + React + TS: host-isolated routers/providers, shared BS/money/
 API libraries and UI components, plus business-feature screens). Foundation docs exist:
@@ -102,7 +102,10 @@ writes nightly TenantUsageSnapshot rows under per-tenant RLS context. The
 tenant-scoped table while excluding credential fields. The production Compose
 profile runs verified nightly logical dumps, weekly physical base backups, and
 continuous S3-compatible WAL upload; the ops profile runs a guarded restore
-drill, and CI exercises every recovery path against real Postgres and MinIO. Shared
+drill, and CI exercises every recovery path against real Postgres and MinIO.
+The production frontend is an unprivileged immutable SPA image behind Caddy;
+tenant/admin routes, same-origin API forwarding, security headers, static assets,
+and DNS-01 capability are exercised by an edge-stack CI smoke test. Shared
 API plumbing lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
 tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
