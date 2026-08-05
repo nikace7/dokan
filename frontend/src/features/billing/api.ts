@@ -7,9 +7,10 @@
  * drop these local types.
  */
 
-import { ApiError } from '@/lib/api/client';
+import { ApiError, isNetworkError } from '@/lib/api/client';
 import type { RequestOptions } from '@/lib/api/client';
 import { authedRequest } from '@/lib/api/authed';
+import { cacheVariant, lookupCachedVariant } from '@/lib/offline/catalogCache';
 import type { Paisa } from '@/lib/money';
 
 /** `GET /catalog/variants/lookup` — the POS hot path (plain dict from the selector). */
@@ -157,8 +158,31 @@ async function completeWithUsageWarning(
 /**
  * Look up a variant by scanned/typed code. Scanners emit barcodes, but the
  * counter also types SKUs — try barcode first and fall back to SKU on a 404.
+ *
+ * Offline: a network failure falls back to the Dexie lookup cache (variants
+ * previously fetched while online); every successful online lookup refreshes
+ * that cache. A 404 stays a 404 — the server answered.
  */
 export async function lookupVariant(code: string): Promise<VariantLookup> {
+  try {
+    const variant = await lookupVariantOnline(code);
+    void cacheVariant(variant).catch(() => {
+      // Cache writes are best-effort; a full/blocked IndexedDB must never
+      // break the hot path.
+    });
+    return variant;
+  } catch (err) {
+    if (isNetworkError(err)) {
+      const cached = await lookupCachedVariant(code);
+      if (cached) {
+        return cached;
+      }
+    }
+    throw err;
+  }
+}
+
+async function lookupVariantOnline(code: string): Promise<VariantLookup> {
   const params = new URLSearchParams({ barcode: code });
   try {
     return await authedRequest<VariantLookup>(`/v1/catalog/variants/lookup?${params}`);
