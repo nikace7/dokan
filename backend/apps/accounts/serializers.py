@@ -146,6 +146,7 @@ class MeSerializer(serializers.Serializer):
     full_name = serializers.CharField()
     email = serializers.CharField(allow_null=True)
     must_change_password = serializers.BooleanField()
+    is_owner = serializers.BooleanField()
     permissions = serializers.ListField(child=serializers.CharField())
     plan = serializers.JSONField()
 
@@ -155,6 +156,8 @@ class MeSerializer(serializers.Serializer):
         user: Any,
         permissions: frozenset[str],
         plan: dict[str, Any],
+        *,
+        is_owner: bool,
     ) -> dict[str, Any]:
         """Build the payload for a user (keeps the view thin)."""
         return cls(
@@ -164,6 +167,7 @@ class MeSerializer(serializers.Serializer):
                 "full_name": user.full_name,
                 "email": user.email,
                 "must_change_password": user.must_change_password,
+                "is_owner": is_owner,
                 "permissions": sorted(permissions),
                 "plan": plan,
             }

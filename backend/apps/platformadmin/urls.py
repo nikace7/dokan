@@ -2,6 +2,13 @@
 
 from django.urls import path
 
+from apps.platformadmin.impersonation_views import (
+    AdminImpersonationEndView,
+    CurrentSupportAccessView,
+    ImpersonationStartView,
+    TenantSupportAccessEndView,
+    TenantSupportAccessListView,
+)
 from apps.platformadmin.views import (
     FeatureOverrideDetailView,
     FeatureOverrideListView,
@@ -60,4 +67,29 @@ urlpatterns = [
         name="platform-feature-override-detail",
     ),
     path("admin/audit", PlatformAuditListView.as_view(), name="platform-audit-list"),
+    path(
+        "admin/tenants/<uuid:tenant_pk>/impersonate",
+        ImpersonationStartView.as_view(),
+        name="platform-impersonation-start",
+    ),
+    path(
+        "admin/impersonations/<uuid:pk>/end",
+        AdminImpersonationEndView.as_view(),
+        name="platform-impersonation-end",
+    ),
+    path(
+        "support-access",
+        TenantSupportAccessListView.as_view(),
+        name="tenant-support-access-list",
+    ),
+    path(
+        "support-access/current",
+        CurrentSupportAccessView.as_view(),
+        name="tenant-support-access-current",
+    ),
+    path(
+        "support-access/<uuid:pk>/end",
+        TenantSupportAccessEndView.as_view(),
+        name="tenant-support-access-end",
+    ),
 ]

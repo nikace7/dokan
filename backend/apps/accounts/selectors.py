@@ -63,6 +63,11 @@ def get_permission_codes(user: "User") -> frozenset[str]:
     return codes
 
 
+def is_owner(user: "User") -> bool:
+    """Expose exact owner status for owner-only trust and security UI."""
+    return UserRole.objects.filter(tenant=user.tenant, user=user, role__code="OWNER").exists()
+
+
 def list_roles(tenant: "Tenant", user: "User") -> "QuerySet[Role]":
     """List roles and their permissions for the current tenant."""
     return (
