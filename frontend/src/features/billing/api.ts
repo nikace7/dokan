@@ -39,14 +39,7 @@ export interface Customer {
 }
 
 export type PaymentMethod =
-  | 'CASH'
-  | 'ESEWA'
-  | 'KHALTI'
-  | 'FONEPAY'
-  | 'CARD'
-  | 'BANK'
-  | 'CREDIT'
-  | 'POINTS';
+  'CASH' | 'ESEWA' | 'KHALTI' | 'FONEPAY' | 'CARD' | 'BANK' | 'CREDIT' | 'POINTS';
 
 export interface PaymentPayload {
   method: PaymentMethod;

@@ -34,8 +34,7 @@ export async function cacheVariant(variant: VariantLookup): Promise<void> {
  */
 export async function lookupCachedVariant(code: string): Promise<VariantLookup | undefined> {
   const byBarcode = await offlineDb.variantCache.where('barcode').equals(code).first();
-  const row =
-    byBarcode ?? (await offlineDb.variantCache.where('sku').equals(code).first());
+  const row = byBarcode ?? (await offlineDb.variantCache.where('sku').equals(code).first());
   if (!row) {
     return undefined;
   }
