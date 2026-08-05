@@ -4,6 +4,7 @@ from django.urls import path
 
 from apps.reports.views import (
     DailySalesView,
+    DashboardView,
     DeadStockView,
     DuesReportView,
     ItemSalesView,
@@ -18,6 +19,7 @@ from apps.reports.views import (
 app_name = "reports"
 
 urlpatterns = [
+    path("dashboard", DashboardView.as_view(), name="dashboard"),
     path("reports/daily-sales", DailySalesView.as_view(), name="daily-sales"),
     path("reports/monthly-sales", MonthlySalesView.as_view(), name="monthly-sales"),
     path("reports/item-sales", ItemSalesView.as_view(), name="item-sales"),

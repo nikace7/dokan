@@ -13,6 +13,7 @@ from typing import Any, ClassVar
 from uuid import UUID
 
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -89,6 +90,34 @@ class _ReportsAPIView(APIView):
                 "error": None,
             }
         )
+
+
+class DashboardPermission(BasePermission):
+    """Allow staff who can use at least one dashboard operation."""
+
+    codes: ClassVar[tuple[str, ...]] = (
+        "customer.view",
+        "report.ledger",
+        "report.profit",
+        "sale.create",
+        "sale.view",
+        "stock.view",
+    )
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        del view
+        user = request.user
+        return bool(
+            user and user.is_authenticated and any(user.has_perm(code) for code in self.codes)
+        )
+
+
+class DashboardView(APIView):
+    permission_classes = (DashboardPermission,)
+
+    def get(self, request: Request) -> Response:
+        tenant = require_request_tenant(request)
+        return ok(selectors.dashboard_summary(tenant, _user(request)))
 
 
 class DailySalesView(_ReportsAPIView):
