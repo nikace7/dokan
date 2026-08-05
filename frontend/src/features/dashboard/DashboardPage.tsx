@@ -100,7 +100,7 @@ export function DashboardPage() {
           </Link>
         ) : null}
         {hasPermission(user, 'report.ledger') ? (
-          <Link to="/ledgers" className={actionClass}>
+          <Link to="/customers" className={actionClass}>
             Customers / ग्राहक
           </Link>
         ) : null}

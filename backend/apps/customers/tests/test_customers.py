@@ -92,7 +92,7 @@ class TestApi:
         assert auth_client(user).get(LIST_URL, **host()).status_code == 403
 
     def test_crud_flow_and_search(self, tenant: Any, user: Any) -> None:
-        grant(tenant, user, "customer.view", "customer.manage")
+        grant(tenant, user, "customer.view", "customer.manage", "customer.credit")
         client = auth_client(user)
 
         created = client.post(
@@ -119,6 +119,26 @@ class TestApi:
         deactivated = client.delete(f"{LIST_URL}/{customer_id}", **host())
         assert deactivated.json()["data"]["is_active"] is False
         assert Customer.objects.filter(pk=customer_id).exists()
+
+    def test_credit_limit_requires_customer_credit_permission(self, tenant: Any, user: Any) -> None:
+        grant(tenant, user, "customer.view", "customer.manage")
+        response = auth_client(user).post(
+            LIST_URL,
+            {"name": "Sita Rai", "credit_limit": "50000.00"},
+            **host(),
+        )
+        assert response.status_code == 403
+        assert not Customer.objects.filter(tenant=tenant, name="Sita Rai").exists()
+
+    def test_service_rejects_credit_limit_without_permission(self, tenant: Any, user: Any) -> None:
+        with pytest.raises(ServiceError) as exc:
+            services.create_customer(
+                tenant,
+                actor=user,
+                name="Sita Rai",
+                credit_limit="50000.00",
+            )
+        assert exc.value.code == "CUSTOMER_CREDIT_PERMISSION_REQUIRED"
 
     def test_update_duplicate_phone_friendly_error(self, tenant: Any, user: Any) -> None:
         grant(tenant, user, "customer.view", "customer.manage")

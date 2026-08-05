@@ -8,11 +8,22 @@ from apps.customers.models import Customer
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
+    from apps.accounts.models import User
     from apps.tenants.models import Tenant
 
 
-def create_customer(tenant: "Tenant", **fields: Any) -> Customer:
+def _require_credit_permission(actor: "User | None", fields: dict[str, Any]) -> None:
+    if "credit_limit" in fields and not (actor and actor.has_perm("customer.credit")):
+        raise ServiceError(
+            "CUSTOMER_CREDIT_PERMISSION_REQUIRED",
+            "Changing a customer credit limit requires customer.credit.",
+            http_status=403,
+        )
+
+
+def create_customer(tenant: "Tenant", *, actor: "User | None" = None, **fields: Any) -> Customer:
     """Create a customer; phone unique per tenant when present."""
+    _require_credit_permission(actor, fields)
     customer = Customer(tenant=tenant, **fields)
     try:
         with transaction.atomic():
@@ -26,8 +37,9 @@ def create_customer(tenant: "Tenant", **fields: Any) -> Customer:
     return customer
 
 
-def update_customer(customer: Customer, **fields: Any) -> Customer:
+def update_customer(customer: Customer, *, actor: "User | None" = None, **fields: Any) -> Customer:
     """Update mutable customer fields (same phone-uniqueness rule)."""
+    _require_credit_permission(actor, fields)
     for name, value in fields.items():
         setattr(customer, name, value)
     try:
