@@ -16,6 +16,7 @@ from django.utils import timezone
 from apps.inventory.models import StockBatch
 from apps.inventory.services import post_purchase_movement
 from apps.purchasing.models import PurchaseInvoice, PurchaseInvoiceItem, Supplier
+from apps.tenants.services import require_plan_feature
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from core.money import quantize_money
 from core.numbering import allocate_number
@@ -91,6 +92,8 @@ def _compute_invoice_totals(
 ) -> dict[str, Decimal]:
     """Totals mirroring the sales VAT rule: 13% on the VAT-applicable lines'
     taxable amount when the bill is a VAT bill and the tenant is registered."""
+    if invoice.is_vat_bill:
+        require_plan_feature(tenant, "vat_module")
     subtotal = quantize_money(sum(item.qty * item.unit_cost for item in items))
     discount = quantize_money(sum(item.discount for item in items))
     taxable = quantize_money(subtotal - discount)

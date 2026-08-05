@@ -33,6 +33,7 @@ from apps.accounts.serializers import (
 from apps.accounts.services import AuthError, authenticate_tenant_user
 from apps.accounts.tokens import issue_tokens_for_user
 from apps.tenants.models import Branch
+from apps.tenants.selectors import get_effective_plan_features
 from core.middleware.tenant import get_request_tenant, require_request_tenant
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
@@ -102,7 +103,13 @@ class MeView(APIView):
 
     def get(self, request: Request) -> Response:
         user = cast("User", request.user)  # IsAuthenticated guarantees a User
-        return _ok(MeSerializer.for_user(user, get_permission_codes(user)))
+        tenant = require_request_tenant(request)
+        plan = {
+            "code": tenant.plan.code,
+            "name": tenant.plan.name,
+            "features": get_effective_plan_features(tenant),
+        }
+        return _ok(MeSerializer.for_user(user, get_permission_codes(user), plan))
 
 
 class _AccountsManagementAPIView(APIView):

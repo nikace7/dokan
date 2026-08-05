@@ -522,6 +522,26 @@ class TestSetPrice:
 
 
 class TestRateTypes:
+    def test_custom_rate_types_require_plan_feature(self, tenant: Any, user: Any) -> None:
+        tenant.plan.features = {"custom_rate_types": False, "max_rate_types": 3}
+        tenant.plan.save(update_fields=["features"])
+
+        with pytest.raises(ServiceError) as exc:
+            services.create_rate_type(tenant, user=user, code="VIP", name="VIP")
+
+        assert exc.value.code == "PLAN_FEATURE_REQUIRED"
+        assert exc.value.http_status == 402
+
+    def test_rate_type_creation_hard_blocks_at_plan_limit(self, tenant: Any, user: Any) -> None:
+        tenant.plan.features = {"custom_rate_types": True, "max_rate_types": 1}
+        tenant.plan.save(update_fields=["features"])
+        RateTypeFactory(tenant=tenant)
+
+        with pytest.raises(ServiceError) as exc:
+            services.create_rate_type(tenant, user=user, code="VIP", name="VIP")
+
+        assert exc.value.code == "PLAN_LIMIT_REACHED"
+
     def test_first_default_and_replacement(self, tenant: Any, user: Any) -> None:
         first = services.create_rate_type(
             tenant, user=user, code="RETAIL", name="Retail", is_default=True

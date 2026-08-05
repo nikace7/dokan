@@ -88,7 +88,16 @@ class _OpsAPIView(APIView):
         ]
 
 
-class TransferListView(_OpsAPIView):
+class _TransferAPIView(_OpsAPIView):
+    plan_features_by_method: ClassVar[dict[str, str]] = {
+        "GET": "multi_branch",
+        "POST": "multi_branch",
+        "PATCH": "multi_branch",
+        "DELETE": "multi_branch",
+    }
+
+
+class TransferListView(_TransferAPIView):
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_transfers(
@@ -120,14 +129,14 @@ class TransferListView(_OpsAPIView):
         )
 
 
-class TransferDetailView(_OpsAPIView):
+class TransferDetailView(_TransferAPIView):
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
         return ok(StockTransferSerializer(transfer, context=self._context(request)).data)
 
 
-class TransferSendView(_OpsAPIView):
+class TransferSendView(_TransferAPIView):
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
@@ -137,7 +146,7 @@ class TransferSendView(_OpsAPIView):
         return ok(StockTransferSerializer(transfer, context=self._context(request)).data)
 
 
-class TransferReceiveView(_OpsAPIView):
+class TransferReceiveView(_TransferAPIView):
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         serializer = TransferReceiveSerializer(data=request.data)
@@ -152,7 +161,7 @@ class TransferReceiveView(_OpsAPIView):
         return ok(StockTransferSerializer(transfer, context=self._context(request)).data)
 
 
-class TransferCompleteView(_OpsAPIView):
+class TransferCompleteView(_TransferAPIView):
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
@@ -162,7 +171,7 @@ class TransferCompleteView(_OpsAPIView):
         return ok(StockTransferSerializer(transfer, context=self._context(request)).data)
 
 
-class TransferCancelView(_OpsAPIView):
+class TransferCancelView(_TransferAPIView):
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
@@ -170,7 +179,7 @@ class TransferCancelView(_OpsAPIView):
         return ok({"id": str(pk), "status": transfer.status})
 
 
-class InTransitView(_OpsAPIView):
+class InTransitView(_TransferAPIView):
     """GET /inventory/transfers/in-transit — stock between branches now."""
 
     def get(self, request: Request) -> Response:

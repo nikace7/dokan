@@ -27,6 +27,7 @@ from django.utils import timezone
 
 from apps.inventory.models import StockLevel, StockMovement, StockTransfer, StockTransferItem
 from apps.inventory.services import _apply_stock_in, _lock_level, _write_movement
+from apps.tenants.services import require_plan_feature
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -46,6 +47,7 @@ def create_transfer(
     created_by: "User",
 ) -> StockTransfer:
     """Create a DRAFT transfer with its lines."""
+    require_plan_feature(tenant, "multi_branch")
     if from_branch.pk == to_branch.pk:
         raise ServiceError("TRANSFER_SAME_BRANCH", "Source and destination branches must differ.")
     if not lines:
@@ -90,6 +92,7 @@ def send_transfer(
 ) -> StockTransfer:
     """Post TRANSFER_OUT per line at source (zero-floor guard), set SENT,
     and snapshot each line's unit_cost at the source's avg_cost."""
+    require_plan_feature(tenant, "multi_branch")
     _assert_status(transfer, StockTransfer.Status.DRAFT, "sent")
     with transaction.atomic():
         for item in transfer.items.select_related("variant"):
@@ -135,6 +138,7 @@ def receive_transfer(
     """Post TRANSFER_IN at destination for received quantities (partial
     allowed — call repeatedly). Cumulative received per line must not
     exceed qty_sent."""
+    require_plan_feature(tenant, "multi_branch")
     _assert_status(transfer, StockTransfer.Status.SENT, "received")
     if not receipts:
         raise ServiceError("LINES_REQUIRED", "Provide at least one received line.")
@@ -193,6 +197,7 @@ def complete_transfer(
     """Close a SENT transfer. Shortage per line (sent − received) is
     written off with a zero-delta DAMAGE annotation at source (documented
     in the module docstring — no double-count)."""
+    require_plan_feature(tenant, "multi_branch")
     _assert_status(transfer, StockTransfer.Status.SENT, "completed")
     with transaction.atomic():
         for item in transfer.items.select_related("variant"):
@@ -227,6 +232,7 @@ def complete_transfer(
 
 def cancel_transfer(tenant: "Tenant", *, transfer: StockTransfer) -> StockTransfer:
     """Void a DRAFT. SENT transfers complete or partially receive instead."""
+    require_plan_feature(tenant, "multi_branch")
     _assert_status(transfer, StockTransfer.Status.DRAFT, "cancelled")
     transfer.status = StockTransfer.Status.CANCELLED
     transfer.save(update_fields=["status", "updated_at"])

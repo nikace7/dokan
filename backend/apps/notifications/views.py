@@ -22,6 +22,10 @@ def _user(request: Request) -> Any:
 
 class _NotificationsAPIView(APIView):
     permission_classes = (HasPermission,)
+    plan_features_by_method: ClassVar[dict[str, str]] = {
+        "GET": "sms",
+        "POST": "sms",
+    }
 
     def handle_exception(self, exc: Exception) -> Response:
         if isinstance(exc, ServiceError):

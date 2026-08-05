@@ -11,6 +11,7 @@ from django.db import transaction
 
 from apps.notifications.models import SmsLog
 from apps.notifications.templates import render_sms_template
+from apps.tenants.services import enforce_monthly_usage_limit, require_plan_feature
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -31,6 +32,7 @@ def normalize_nepal_phone(value: str | None) -> str:
     return f"977{local}"
 
 
+@transaction.atomic
 def queue_sms(
     tenant: Tenant,
     *,
@@ -39,6 +41,12 @@ def queue_sms(
     context: Mapping[str, str],
 ) -> SmsLog:
     """Persist QUEUED first, then dispatch only after the DB transaction commits."""
+    require_plan_feature(tenant, "sms")
+    enforce_monthly_usage_limit(
+        tenant,
+        key="sms_credits_per_month",
+        label="SMS credits",
+    )
     row = SmsLog.objects.create(
         tenant=tenant,
         to_phone=normalize_nepal_phone(to_phone),
