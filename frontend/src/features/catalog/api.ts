@@ -106,6 +106,7 @@ export interface ItemListFilters {
   category?: string;
   isActive?: boolean;
   page?: number;
+  limit?: number;
 }
 
 function qs(params: Record<string, string | number | boolean | undefined>): string {
@@ -126,7 +127,7 @@ export function listItems(filters: ItemListFilters = {}): Promise<Page<Item>> {
       category: filters.category,
       is_active: filters.isActive,
       page: filters.page,
-      limit: 25,
+      limit: filters.limit ?? 25,
     })}`,
   );
 }
@@ -194,7 +195,5 @@ export function createSizeChart(payload: { name: string; values: string[] }): Pr
 
 /** Item search used by the shared VariantPicker (name or code, first page). */
 export function searchItems(search: string): Promise<Page<Item>> {
-  return authedRequestPage<Item>(
-    `/v1/catalog/items${qs({ search, is_active: true, limit: 10 })}`,
-  );
+  return authedRequestPage<Item>(`/v1/catalog/items${qs({ search, is_active: true, limit: 10 })}`);
 }

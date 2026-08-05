@@ -14,6 +14,7 @@ import { StockPage } from '@/features/inventory/StockPage';
 import { PaymentsPage } from '@/features/payments/PaymentsPage';
 import { PartyLedgerPage } from '@/features/payments/PartyLedgerPage';
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
+import { PricingPage } from '@/features/pricing/PricingPage';
 import { ReturnsPage } from '@/features/returns/ReturnsPage';
 import { DuesReportPage } from '@/features/reports/DuesReportPage';
 import { ProfitReportPage } from '@/features/reports/ProfitReportPage';
@@ -76,6 +77,7 @@ function getRouter() {
         { path: '/catalog/items/new', element: <ItemFormPage /> },
         { path: '/catalog/items/:id', element: <ItemDetailPage /> },
         { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
+        { path: '/pricing', element: <PricingPage /> },
         { path: '/stock', element: <StockPage /> },
         { path: '/purchasing', element: <PurchasingPage /> },
         { path: '/expenses', element: <ExpensesPage /> },
