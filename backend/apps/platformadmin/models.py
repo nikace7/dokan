@@ -42,3 +42,8 @@ class PlatformUser(models.Model):
     def check_password(self, raw_password: str) -> bool:
         """Verify a password against the stored hash."""
         return check_password(raw_password, self.password_hash)
+
+    @property
+    def is_authenticated(self) -> bool:
+        """DRF compatibility without joining the tenant auth model."""
+        return True

@@ -3,8 +3,11 @@
 from typing import Any
 
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from apps.accounts.models import Permission, Role, User
+from apps.accounts.tokens import AUDIENCE_TENANT, TenantRefreshToken
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -121,6 +124,18 @@ class TokenObtainSerializer(serializers.Serializer):
 
     phone = serializers.CharField(max_length=32, trim_whitespace=True)
     password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
+
+
+class TenantTokenRefreshSerializer(TokenRefreshSerializer):
+    """Rotate only tenant-realm refresh tokens."""
+
+    token_class = TenantRefreshToken
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, str]:
+        refresh = self.token_class(attrs["refresh"])
+        if refresh.get("aud") != AUDIENCE_TENANT or refresh.get("token_use") != "refresh":
+            raise PermissionDenied(detail="This token is not valid here.", code="REALM_MISMATCH")
+        return super().validate(attrs)
 
 
 class MeSerializer(serializers.Serializer):

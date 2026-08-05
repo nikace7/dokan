@@ -28,6 +28,7 @@ from apps.accounts.serializers import (
     StaffCreateSerializer,
     StaffRoleAssignmentSerializer,
     StaffUserSerializer,
+    TenantTokenRefreshSerializer,
     TokenObtainSerializer,
 )
 from apps.accounts.services import AuthError, authenticate_tenant_user
@@ -88,6 +89,8 @@ class TokenObtainView(APIView):
 
 class TenantTokenRefreshView(TokenRefreshView):
     """Rotating refresh; the response is wrapped in the API envelope."""
+
+    serializer_class = TenantTokenRefreshSerializer
 
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         response = super().post(request, *args, **kwargs)
