@@ -46,9 +46,7 @@ def sales_vat_register(
             "doc_type": invoice.doc_type,
             "business_date_bs": invoice.business_date_bs,
             "customer_name": invoice.customer.name if invoice.customer else None,
-            "customer_pan": (
-                (invoice.customer.pan or "—") if invoice.customer else None
-            ),
+            "customer_pan": ((invoice.customer.pan or "—") if invoice.customer else None),
             "taxable_amount": str(invoice.taxable_amount),
             "vat_amount": str(invoice.vat_amount),
             "total": str(invoice.total),
