@@ -15,7 +15,7 @@ under `frontend/` (Vite + React + TS: host-isolated routers/providers, shared BS
 API libraries and UI components, plus business-feature screens). Foundation docs exist:
 `docs/ARCHITECTURE.md`,
 `docs/MULTI_TENANCY.md`, `docs/DATABASE_SCHEMA.md`, `docs/DEPLOYMENT.md`,
-`docs/DECISIONS/0001-0004`.
+`docs/DECISIONS/0001-0006`.
 
 **Landed business features:** `apps/tenants` (Plan, Tenant, TenantSubscription,
 TenantFeatureOverride, TenantUsageSnapshot — platform scope; Branch — RLS-protected;
@@ -116,10 +116,21 @@ tenant/admin routes, same-origin API forwarding, security headers, static assets
 and DNS-01 capability are exercised by an edge-stack CI smoke test. Shared
 API plumbing lives in
 `core/responses.py` (envelope + ServiceError) and `core/pagination.py`. The
-tenant-isolation + RLS suite runs against real Postgres in CI. The remaining
-`apps/compliance` package is an empty skeleton per §8.2. When implementation continues,
-follow the structure and rules specified in `docs/SYSTEM_DESIGN.md` and keep this
-file current.
+tenant-isolation + RLS suite runs against real Postgres in CI. The offline-tolerant
+POS (Phase 3) is implemented per ADR 0006: a Dexie-backed queue
+(`frontend/src/lib/offline/`) of idempotency-keyed sale ops drained against the
+existing idempotent `POST /sales` (invoice numbers are assigned server-side at
+sync time — gapless numbering is an IRD invariant), server-wins conflicts with a
+visible exception list, offline barcode/SKU lookup cache, sync-status UI, and a
+hand-rolled app-shell service worker. E2E and load testing live in `e2e/`
+(standalone Playwright package — login, billing, returns smoke; 6/6 green against
+the local Compose stack; deliberately not in CI) and `loadtests/` (k6: POST
+/sales at 50 rps, variant lookup at 200 rps). Docs now also include
+`docs/RATE_RULES.md`, `docs/NEPALI_LOCALIZATION.md`, `docs/GIT_WORKFLOW.md`,
+`docs/ROADMAP.md`, `docs/COMPLIANCE_IRD.md`, `docs/DECISIONS/0006`, and root
+`CHANGELOG.md`. All 15 apps are implemented — no empty skeletons remain. When
+implementation continues, follow the structure and rules specified in
+`docs/SYSTEM_DESIGN.md` and keep this file current.
 
 ## Project overview
 
@@ -130,8 +141,9 @@ Multi-tenant SaaS for clothing retail shops in Nepal. Core characteristics:
 - **Nepali calendar (BS) native**: Bikram Sambat dates and the Nepali fiscal year
   (Shrawan 1 → Ashad end) are first-class in storage, reporting, and UI.
 - **IRD-compliant billing**: gapless invoice numbering, no bill deletion (credit notes
-  only), VAT registers, CBMS sync (Phase 2).
-- **Offline-tolerant POS** (PWA) for load shedding and ISP drops (Phase 3).
+  only), VAT registers, CBMS sync (durable retry queue; live provider behind settings).
+- **Offline-tolerant POS** (PWA): Dexie queue drained against idempotent `POST /sales`,
+  server-wins conflicts, offline barcode lookup (ADR 0006).
 - Nepal-specific payments (eSewa / Khalti / Fonepay QR), SMS receipts, and the
   udharo (credit/khata) ledger that Nepali retail runs on.
 
