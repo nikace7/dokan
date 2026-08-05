@@ -290,6 +290,11 @@ def _create_return_invoice(
             line_total=line.credit,
             cost_at_sale=line.original_item.cost_at_sale,
         )
+
+    # CBMS sync queue — explicit call, same transaction (never a signal).
+    from apps.compliance.services import enqueue_for_sync
+
+    enqueue_for_sync(tenant, invoice=invoice)
     return invoice
 
 

@@ -24,6 +24,7 @@ from tests.factories.catalog import (
     ItemVariantFactory,
     SizeChartFactory,
 )
+from tests.factories.compliance import CbmsSyncLogFactory
 from tests.factories.customers import CustomerFactory
 from tests.factories.expenses import ExpenseCategoryFactory, ExpenseFactory
 from tests.factories.inventory import (
@@ -66,6 +67,7 @@ __all__ = [
     "BrandFactory",
     "CashSessionFactory",
     "CategoryFactory",
+    "CbmsSyncLogFactory",
     "CustomerFactory",
     "ExpenseCategoryFactory",
     "ExpenseFactory",

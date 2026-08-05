@@ -311,6 +311,11 @@ def finalize_invoice(
             for line in resolved
         ]
     )
+
+    # CBMS sync queue — explicit call, same transaction (never a signal).
+    from apps.compliance.services import enqueue_for_sync
+
+    enqueue_for_sync(tenant, invoice=invoice)
     return resolved
 
 
