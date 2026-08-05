@@ -48,14 +48,15 @@ class TenantJWTAuthentication(JWTAuthentication):
     """SimpleJWT authentication + ADR 0001 claim enforcement."""
 
     def authenticate(self, request: "HttpRequest") -> tuple[Any, Any] | None:
-        # DRF passes its Request wrapper; SimpleJWT accepts it, and our
-        # request-attribute reads work through its proxying.
-        result = super().authenticate(cast("Request", request))
-        if result is None:
+        drf_request = cast("Request", request)
+        header = cast("bytes | None", self.get_header(drf_request))
+        if header is None:
             return None
-        user, token = result
-
-        if token.get("aud") != AUDIENCE_TENANT:
+        raw_token = self.get_raw_token(header)
+        if raw_token is None:
+            return None
+        token = self.get_validated_token(raw_token)
+        if token.get("aud") != AUDIENCE_TENANT or token.get("token_use") != "access":
             raise PermissionDenied(detail="This token is not valid here.", code="REALM_MISMATCH")
 
         request_tenant = get_request_tenant(request)
@@ -70,4 +71,4 @@ class TenantJWTAuthentication(JWTAuthentication):
                 detail="This token belongs to a different shop.",
                 code="TOKEN_TENANT_MISMATCH",
             )
-        return user, token
+        return self.get_user(token), token
