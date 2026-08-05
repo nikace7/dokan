@@ -131,6 +131,14 @@ Two implementations of the same display conventions:
 | Symbol | `Rs` prefix (`format_npr`) | `रू ` prefix (`formatNpr`) |
 | Devanagari | `numerals="devanagari"` → `१,२३,४५६.००` | `devanagari: true` option |
 
+**Artifact rule (one symbol per artifact, chosen per channel):** on-screen UI
+and the printed 80mm receipt use `रू` (frontend-rendered); SMS receipts use
+the ASCII `NPR` prefix (`apps/notifications/templates.py`) because a
+non-GSM-7 `रू` forces UCS-2 encoding and doubles the segment count. Backend
+`format_npr` (`Rs`) currently has no production callers — anything that
+adopts it must follow the same per-channel rule, and no single artifact may
+ever mix two symbols.
+
 Examples:
 
 ```
