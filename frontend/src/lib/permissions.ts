@@ -22,6 +22,8 @@ export type PermissionCodename =
   | 'pricing.set_bounds'
   | 'stock.adjust'
   | 'report.profit'
+  | 'report.ledger'
+  | 'report.sales'
   | 'user.manage'
   | 'settings.manage';
 

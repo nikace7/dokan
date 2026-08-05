@@ -12,6 +12,7 @@ Conventions (docs/SYSTEM_DESIGN.md §5, AGENTS.md):
   literally a string comparison on the indexed column).
 """
 
+from apps.reports.selectors.dashboard import dashboard_summary
 from apps.reports.selectors.financial import (
     dues_report,
     profit_report,
@@ -33,6 +34,7 @@ from apps.reports.selectors.vat import (
 
 __all__ = [
     "daily_sales",
+    "dashboard_summary",
     "dead_stock",
     "dues_report",
     "item_sales",
