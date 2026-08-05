@@ -88,7 +88,14 @@ ruff check . && ruff format --check .   # lint + format gate
 mypy .                                  # type gate
 pytest --cov                            # tests (coverage floor 80%)
 python scripts/generate_bs_golden.py    # regenerate the AD↔BS golden fixture
+python manage.py export_tenant demo --output demo-export.zip
 ```
+
+Production database recovery runs under the Compose `production` profile:
+verified nightly logical dumps, weekly physical base backups, and continuous
+WAL upload to S3-compatible storage. Run the guarded monthly check with
+`docker compose --profile ops run --rm restore-drill`; see
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) before operating production.
 
 ## Repository layout
 
