@@ -180,6 +180,18 @@ class SaleDetailView(_SalesAPIView):
         return ok(self._detail(request, invoice))
 
 
+class ReceiptPrintView(_SalesAPIView):
+    """POST /sales/<id>/print — append an immutable print audit event."""
+
+    method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.create"}
+
+    def post(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        invoice = _get_or_404(tenant, SalesInvoice, pk, "Invoice")
+        print_count = services.record_receipt_print(tenant, invoice=invoice, actor=_user(request))
+        return ok({"id": str(pk), "print_count": print_count})
+
+
 class HoldBillView(_SalesAPIView):
     """POST /sales/hold — park a bill (no stock, no invoice number)."""
 

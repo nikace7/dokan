@@ -59,7 +59,9 @@ create/edit/deactivate frontend),
 resolution, documented 13% VAT rule, udharo + credit-limit enforcement, SALE
 ledger postings, gapless per-branch-per-fiscal-year numbering, cost_at_sale
 snapshots, mandatory Idempotency-Key with 200-replay; held-bill flow where HELD
-takes no stock and no invoice number; COMPLETED terminal), returns & exchange
+takes no stock and no invoice number; COMPLETED terminal; F9 auto-print and
+80mm bilingual receipts with shop/tax/tender details; print counts derived from
+immutable audit events without updating completed invoices), returns & exchange
 (`apps/sales/services/returns.py` — credit notes with their own gapless RETURN
 numbering series, proportional discount/VAT math, SALE_RETURN at original
 cost_at_sale, refunds JSON settlement incl. CREDIT_NOTE against udharo with

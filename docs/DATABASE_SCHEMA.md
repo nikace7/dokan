@@ -678,7 +678,7 @@ documents referencing the original.
 | due_amount | numeric(14,2) | no | |
 | status | text | no | CHECK IN (`HELD`,`COMPLETED`,`CANCELLED`) |
 | is_vat_bill | boolean | no | default false |
-| print_count | integer | no | default 0 |
+| print_count | integer | no | legacy column, default 0; API derives the count from immutable `sale.receipt.print` audit events so completed invoices remain untouched |
 | ird_synced_at | timestamptz | yes | CBMS sync status (Phase 2) |
 | ird_sync_error | text | yes | last sync failure, visible per bill |
 | datetime_ad | timestamptz | no | moment of sale (UTC) |

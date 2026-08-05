@@ -65,7 +65,8 @@ For hot-reload development, the frontend (`frontend/`) serves login and the POS 
 `npm install && npm run dev` proxies `/api` to IPv4 loopback while preserving
 `demo.localhost` as the tenant host. After sign-in, choose the active branch
 and rate type in the app header. Sign in at http://localhost:5173 with the
-seeded owner above.
+seeded owner above. On a ready bill, F9 completes the sale and opens the
+bilingual 80mm receipt; reprints are recorded as immutable audit events.
 
 The same build serves the isolated platform control plane on
 http://admin.localhost:5173. Set `PLATFORM_ADMIN_ALLOWED_IPS` for the client

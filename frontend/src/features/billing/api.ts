@@ -37,7 +37,15 @@ export interface Customer {
   is_active: boolean;
 }
 
-export type PaymentMethod = 'CASH' | 'ESEWA' | 'KHALTI' | 'FONEPAY' | 'CREDIT';
+export type PaymentMethod =
+  | 'CASH'
+  | 'ESEWA'
+  | 'KHALTI'
+  | 'FONEPAY'
+  | 'CARD'
+  | 'BANK'
+  | 'CREDIT'
+  | 'POINTS';
 
 export interface PaymentPayload {
   method: PaymentMethod;
@@ -65,6 +73,7 @@ export interface SalesInvoiceItem {
   variant: string;
   variant_sku: string;
   item_name: string;
+  item_name_np: string | null;
   qty: string;
   unit_price: string;
   discount: string;
@@ -75,9 +84,19 @@ export interface SalesInvoiceItem {
 /** `SalesInvoiceDetailSerializer` (fields the billing screen uses). */
 export interface SalesInvoice {
   id: string;
+  tenant_name: string;
+  tenant_name_np: string | null;
+  legal_name: string | null;
+  pan_vat_no: string | null;
+  vat_registered: boolean;
   branch: string;
   branch_code: string;
-  invoice_no: string;
+  invoice_prefix: string;
+  branch_name: string;
+  branch_name_np: string | null;
+  branch_address: string | null;
+  branch_phone: string | null;
+  invoice_no: number | null;
   doc_type: string;
   status: 'DRAFT' | 'HELD' | 'COMPLETED' | 'CANCELLED';
   customer: string | null;
@@ -92,7 +111,10 @@ export interface SalesInvoice {
   paid_amount: string;
   due_amount: string;
   is_vat_bill: boolean;
+  print_count: number;
+  tenders: Array<{ method: PaymentMethod; amount: string }>;
   datetime_ad: string;
+  business_date_ad: string;
   business_date_bs: string;
   fiscal_year_bs: string;
   items: SalesInvoiceItem[];
@@ -190,6 +212,10 @@ export function listHeldBills(): Promise<Array<Omit<SalesInvoice, 'items'>>> {
 
 export function getSale(id: string): Promise<SalesInvoice> {
   return authedRequest<SalesInvoice>(`/v1/sales/${id}`);
+}
+
+export function recordReceiptPrint(id: string): Promise<{ id: string; print_count: number }> {
+  return authedRequest(`/v1/sales/${id}/print`, { method: 'POST', body: {} });
 }
 
 /** Tender a parked bill — turns HELD into COMPLETED. */
