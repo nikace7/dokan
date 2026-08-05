@@ -26,7 +26,9 @@ role-gated plan CRUD, atomic tenant provisioning/lifecycle, subscription, usage,
 feature-override, and platform-audit APIs; time-boxed READ_ONLY/READ_WRITE support
 impersonation with reason/duration bounds, durable + Redis revocation, owner SMS,
 audit attribution, tenant red banner/end-now control, and owner-visible access log;
-the admin frontend portal is pending),
+host-isolated admin frontend with separate token storage, TOTP login, role-aware
+plan/tenant/subscription/usage/override/audit screens, target-user selection, and
+fragment-only tenant support handoff),
 `apps/catalog` (Category tree, Brand, SizeChart, Item, ItemVariant with
 size×colour matrix bulk entry and the barcode/SKU POS lookup; barcode
 validation per ADR 0003; `avg_cost` hidden without `pricing.view_cost` at
