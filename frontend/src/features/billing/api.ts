@@ -8,6 +8,7 @@
  */
 
 import { ApiError } from '@/lib/api/client';
+import type { RequestOptions } from '@/lib/api/client';
 import { authedRequest } from '@/lib/api/authed';
 import type { Paisa } from '@/lib/money';
 
@@ -97,6 +98,40 @@ export interface SalesInvoice {
   items: SalesInvoiceItem[];
 }
 
+export interface PlanUsageWarning {
+  code: 'PLAN_USAGE_WARNING_80' | 'PLAN_USAGE_WARNING_100';
+  usage: number;
+  limit: number;
+}
+
+export interface SaleCompletion {
+  invoice: SalesInvoice;
+  planWarning: PlanUsageWarning | null;
+}
+
+async function completeWithUsageWarning(
+  path: string,
+  options: RequestOptions,
+): Promise<SaleCompletion> {
+  let planWarning: PlanUsageWarning | null = null;
+  const invoice = await authedRequest<SalesInvoice>(path, {
+    ...options,
+    onResponse: (response) => {
+      const code = response.headers.get('X-Plan-Usage-Warning');
+      const usage = Number(response.headers.get('X-Plan-Usage'));
+      const limit = Number(response.headers.get('X-Plan-Limit'));
+      planWarning =
+        (code === 'PLAN_USAGE_WARNING_80' || code === 'PLAN_USAGE_WARNING_100') &&
+        Number.isFinite(usage) &&
+        Number.isFinite(limit) &&
+        limit > 0
+          ? { code, usage, limit }
+          : null;
+    },
+  });
+  return { invoice, planWarning };
+}
+
 /**
  * Look up a variant by scanned/typed code. Scanners emit barcodes, but the
  * counter also types SKUs — try barcode first and fall back to SKU on a 404.
@@ -129,7 +164,7 @@ export function paisaToApiString(paisa: Paisa): string {
 }
 
 export function createSale(payload: CreateSalePayload, idempotencyKey: string) {
-  return authedRequest<SalesInvoice>('/v1/sales', {
+  return completeWithUsageWarning('/v1/sales', {
     method: 'POST',
     body: payload,
     idempotencyKey,
@@ -159,7 +194,7 @@ export function getSale(id: string): Promise<SalesInvoice> {
 
 /** Tender a parked bill — turns HELD into COMPLETED. */
 export function completeSale(id: string, payments: PaymentPayload[], idempotencyKey: string) {
-  return authedRequest<SalesInvoice>(`/v1/sales/${id}/complete`, {
+  return completeWithUsageWarning(`/v1/sales/${id}/complete`, {
     method: 'POST',
     body: { payments },
     idempotencyKey,

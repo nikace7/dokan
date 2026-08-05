@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Card } from '@/components/ui/Card';
+import { useAuth } from '@/features/auth/useAuth';
 import { ApiError } from '@/lib/api/client';
 import {
   completeSale,
@@ -10,7 +11,7 @@ import {
   holdSale,
   paisaToApiString,
 } from '@/features/billing/api';
-import type { CreateSalePayload, SalesInvoice } from '@/features/billing/api';
+import type { CreateSalePayload, PlanUsageWarning, SalesInvoice } from '@/features/billing/api';
 import { CartTable } from '@/features/billing/CartTable';
 import { HeldBillsPanel } from '@/features/billing/HeldBillsPanel';
 import type { Tender } from '@/features/billing/PaymentPanel';
@@ -18,6 +19,7 @@ import { PaymentPanel } from '@/features/billing/PaymentPanel';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { ScanInput } from '@/features/billing/ScanInput';
 import { useWorkspace } from '@/features/settings/useWorkspace';
+import { hasPlanFeature } from '@/lib/plans';
 import { useCartStore } from '@/stores/cartStore';
 
 function serverMessage(err: unknown): string {
@@ -41,8 +43,10 @@ export function BillingPage() {
   const clear = useCartStore((s) => s.clear);
   const queryClient = useQueryClient();
   const workspace = useWorkspace();
+  const { user } = useAuth();
 
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
+  const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
   const [saleError, setSaleError] = useState<string | null>(null);
 
   const buildBasePayload = (): Omit<CreateSalePayload, 'payments' | 'is_vat_bill'> => {
@@ -80,8 +84,9 @@ export function BillingPage() {
       }
       return createSale(buildSalePayload(tender), key);
     },
-    onSuccess: (invoice) => {
+    onSuccess: ({ invoice, planWarning: warning }) => {
       setReceipt(invoice);
+      setPlanWarning(warning);
       setSaleError(null);
       clear();
       void queryClient.invalidateQueries({ queryKey: ['sales', 'held'] });
@@ -102,7 +107,19 @@ export function BillingPage() {
   if (receipt) {
     return (
       <main className="p-6">
-        <ReceiptPanel invoice={receipt} onNewBill={() => setReceipt(null)} />
+        {planWarning ? (
+          <p role="status" className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            You have used {planWarning.usage} of {planWarning.limit} monthly bills. Billing remains
+            available; contact support if you need a higher plan.
+          </p>
+        ) : null}
+        <ReceiptPanel
+          invoice={receipt}
+          onNewBill={() => {
+            setReceipt(null);
+            setPlanWarning(null);
+          }}
+        />
       </main>
     );
   }
@@ -140,6 +157,7 @@ export function BillingPage() {
           <PaymentPanel
             busy={saleMutation.isPending}
             disabled={!workspace.isReady}
+            allowVatBill={hasPlanFeature(user, 'vat_module')}
             onComplete={(tender) => saleMutation.mutate({ tender, key: crypto.randomUUID() })}
           />
           <div className="mt-3 border-t border-slate-200 pt-3">

@@ -18,6 +18,11 @@ export interface MeUser {
   email: string | null;
   must_change_password: boolean;
   permissions: string[];
+  plan: {
+    code: string;
+    name: string;
+    features: Record<string, unknown>;
+  };
 }
 
 /** `POST /auth/token` — phone + password, scoped to the host's tenant. */
