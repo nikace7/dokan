@@ -65,9 +65,7 @@ describe('VariantMatrix', () => {
         {
           created_count: 1,
           skipped_count: 1,
-          created: [
-            { ...EXISTING[0], id: 'v-new', size: 'M', color: 'Black', sku: 'TS-M-BLACK' },
-          ],
+          created: [{ ...EXISTING[0], id: 'v-new', size: 'M', color: 'Black', sku: 'TS-M-BLACK' }],
           skipped: [{ size: 'S', color: 'Black', reason: 'already exists' }],
         },
         201,

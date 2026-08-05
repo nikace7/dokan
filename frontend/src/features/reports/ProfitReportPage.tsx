@@ -35,8 +35,8 @@ export function ProfitReportPage() {
           <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-8 text-center">
             <p className="text-base font-medium text-slate-700">Owner only</p>
             <p className="mt-1 text-sm text-slate-500">
-              The profit report contains cost data and is only available to accounts with the
-              profit and cost-visibility permissions. Ask the shop owner to run it.
+              The profit report contains cost data and is only available to accounts with the profit
+              and cost-visibility permissions. Ask the shop owner to run it.
             </p>
           </div>
         ) : null}
@@ -83,7 +83,9 @@ export function ProfitReportPage() {
                       <td className="py-2 pr-2 text-right">
                         {formatNpr(row.revenue, { symbol: '' })}
                       </td>
-                      <td className="py-2 pr-2 text-right">{formatNpr(row.cogs, { symbol: '' })}</td>
+                      <td className="py-2 pr-2 text-right">
+                        {formatNpr(row.cogs, { symbol: '' })}
+                      </td>
                       <td className="py-2 text-right font-medium">
                         {formatNpr(row.gross_profit, { symbol: '' })}
                       </td>
@@ -99,7 +101,15 @@ export function ProfitReportPage() {
   );
 }
 
-function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function StatCard({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
     <div
       className={[

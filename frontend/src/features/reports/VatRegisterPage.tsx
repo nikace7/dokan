@@ -138,7 +138,9 @@ function SalesRegister({ data }: { data: VatRegister<SalesVatRow> }) {
 function PurchaseRegister({ data }: { data: VatRegister<PurchaseVatRow> }) {
   if (data.rows.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-slate-500">No purchase VAT bills in this range.</p>
+      <p className="py-8 text-center text-sm text-slate-500">
+        No purchase VAT bills in this range.
+      </p>
     );
   }
   return (

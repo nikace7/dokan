@@ -83,8 +83,7 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'items'] });
       onSaved(item);
     },
-    onError: (err) =>
-      setError(err instanceof ApiError ? err.message : 'Could not save the item.'),
+    onError: (err) => setError(err instanceof ApiError ? err.message : 'Could not save the item.'),
   });
 
   const onSubmit = (event: FormEvent) => {
@@ -116,11 +115,7 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       <Input label="Code" value={code} onChange={(e) => setCode(e.target.value)} required />
       <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-      <Input
-        label="Name (Nepali)"
-        value={nameNp}
-        onChange={(e) => setNameNp(e.target.value)}
-      />
+      <Input label="Name (Nepali)" value={nameNp} onChange={(e) => setNameNp(e.target.value)} />
       <Input label="Unit" value={unit} onChange={(e) => setUnit(e.target.value)} />
 
       <QuickAddSelect
@@ -223,7 +218,10 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
       </label>
 
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 sm:col-span-2">
+        <p
+          role="alert"
+          className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 sm:col-span-2"
+        >
           {error}
         </p>
       ) : null}

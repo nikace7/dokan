@@ -101,10 +101,7 @@ describe('PurchasingPage draft → confirm', () => {
       }
       if (url.includes('/v1/purchasing/invoices')) {
         return Promise.resolve(
-          envelope(
-            [{ ...DRAFT_INVOICE, status: confirmed ? 'CONFIRMED' : 'DRAFT' }],
-            PAGE_META,
-          ),
+          envelope([{ ...DRAFT_INVOICE, status: confirmed ? 'CONFIRMED' : 'DRAFT' }], PAGE_META),
         );
       }
       return Promise.reject(new Error(`Unexpected request: ${method} ${url}`));
