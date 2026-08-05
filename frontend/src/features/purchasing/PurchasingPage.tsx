@@ -59,7 +59,9 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
                 {item.item_name} <span className="text-xs text-slate-500">{item.variant_sku}</span>
               </td>
               <td className="py-1.5 pr-2 text-right">{item.qty}</td>
-              <td className="py-1.5 pr-2 text-right">{formatNpr(item.unit_cost, { symbol: '' })}</td>
+              <td className="py-1.5 pr-2 text-right">
+                {formatNpr(item.unit_cost, { symbol: '' })}
+              </td>
               <td className="py-1.5 text-right">{formatNpr(item.line_total, { symbol: '' })}</td>
             </tr>
           ))}
@@ -95,8 +97,8 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
           {confirming ? (
             <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
               <p className="text-sm text-amber-900">
-                Confirm this purchase? It posts the stock into the ledger and updates cost
-                (weighted average). This cannot be undone.
+                Confirm this purchase? It posts the stock into the ledger and updates cost (weighted
+                average). This cannot be undone.
               </p>
               {error ? (
                 <p role="alert" className="mt-1 text-sm text-red-600">

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/features/auth/useAuth';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, isNetworkError } from '@/lib/api/client';
 import {
   completeSale,
   createSale,
@@ -18,7 +19,10 @@ import type { Tender } from '@/features/billing/PaymentPanel';
 import { PaymentPanel } from '@/features/billing/PaymentPanel';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { ScanInput } from '@/features/billing/ScanInput';
+import { SyncStatusBanner } from '@/features/billing/SyncStatusBanner';
 import { useWorkspace } from '@/features/settings/useWorkspace';
+import { enqueueSale } from '@/lib/offline/queue';
+import { refreshSyncState } from '@/lib/offline/sync';
 import { hasPlanFeature } from '@/lib/plans';
 import { useCartStore } from '@/stores/cartStore';
 
@@ -46,6 +50,7 @@ export function BillingPage() {
   const { user } = useAuth();
 
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
+  const [queuedRef, setQueuedRef] = useState<string | null>(null);
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
   const [saleError, setSaleError] = useState<string | null>(null);
 
@@ -91,7 +96,22 @@ export function BillingPage() {
       clear();
       void queryClient.invalidateQueries({ queryKey: ['sales', 'held'] });
     },
-    onError: (err) => setSaleError(serverMessage(err)),
+    onError: (err, variables) => {
+      // Network down for a NEW sale: queue it with the SAME Idempotency-Key
+      // the attempt already used, so the sync drain replays safely. A 4xx
+      // is a real rejection (stock, credit limit, …) and never queues.
+      // Held-bill completion needs the server id — it stays online-only.
+      if (!heldSaleId && isNetworkError(err)) {
+        void enqueueSale(buildSalePayload(variables.tender), variables.key).then(async (op) => {
+          setQueuedRef(op.localRef);
+          setSaleError(null);
+          clear();
+          await refreshSyncState();
+        });
+        return;
+      }
+      setSaleError(serverMessage(err));
+    },
   });
 
   const holdMutation = useMutation({
@@ -103,6 +123,25 @@ export function BillingPage() {
     },
     onError: (err) => setSaleError(serverMessage(err)),
   });
+
+  if (queuedRef) {
+    return (
+      <main className="p-6">
+        <Card className="mx-auto max-w-lg text-center">
+          <p className="text-sm font-medium text-blue-700">No connection — bill queued</p>
+          <h2 className="mt-1 text-2xl font-bold">Reference {queuedRef}</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            The bill is stored on this device and syncs automatically when the connection returns.
+            The invoice number is assigned by the server at sync time — quote this reference, never
+            an invoice number.
+          </p>
+          <Button size="lg" className="mt-6 w-full" onClick={() => setQueuedRef(null)} autoFocus>
+            New bill / नयाँ बिल
+          </Button>
+        </Card>
+      </main>
+    );
+  }
 
   if (receipt) {
     return (
@@ -126,6 +165,7 @@ export function BillingPage() {
 
   return (
     <main className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[1fr_360px]">
+      <SyncStatusBanner />
       {workspace.isLoading ? (
         <p
           role="status"

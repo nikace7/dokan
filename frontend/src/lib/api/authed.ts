@@ -12,12 +12,7 @@
 
 import { ApiError, apiRequest, apiRequestPage } from '@/lib/api/client';
 import type { Page, RequestOptions } from '@/lib/api/client';
-import {
-  clearTokens,
-  getAccessToken,
-  getRefreshToken,
-  setTokens,
-} from '@/lib/auth/tokens';
+import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/lib/auth/tokens';
 
 interface RefreshResponse {
   access: string;

@@ -29,4 +29,11 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  {
+    // The app-shell service worker runs in the SW global scope.
+    files: ['public/sw.js'],
+    languageOptions: {
+      globals: globals.serviceworker,
+    },
+  },
 );

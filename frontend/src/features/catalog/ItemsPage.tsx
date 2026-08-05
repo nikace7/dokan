@@ -127,13 +127,18 @@ export function ItemsPage() {
               {items.map((item) => (
                 <tr key={item.id} className="border-b border-slate-100">
                   <td className="py-2 pr-2 font-medium">
-                    <Link className="text-blue-700 hover:underline" to={`/catalog/items/${item.id}`}>
+                    <Link
+                      className="text-blue-700 hover:underline"
+                      to={`/catalog/items/${item.id}`}
+                    >
                       {item.code}
                     </Link>
                   </td>
                   <td className="py-2 pr-2">
                     {item.name}
-                    {item.name_np ? <span className="ml-1 text-slate-500">{item.name_np}</span> : null}
+                    {item.name_np ? (
+                      <span className="ml-1 text-slate-500">{item.name_np}</span>
+                    ) : null}
                   </td>
                   <td className="py-2 pr-2 text-slate-600">
                     {item.category ? (categoryNames.get(item.category) ?? '—') : '—'}
