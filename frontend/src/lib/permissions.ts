@@ -20,6 +20,7 @@ export type PermissionCodename =
   | 'pricing.edit'
   | 'pricing.override_min'
   | 'pricing.set_bounds'
+  | 'stock.view'
   | 'stock.adjust'
   | 'customer.view'
   | 'customer.manage'
