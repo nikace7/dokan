@@ -69,6 +69,86 @@ jobs:
       - name: Scan for secrets
         run: ./gitleaks git --redact --verbose .
 
+  recovery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Compose archiving, backups, and restore
+        run: |
+          cp .env.example .env
+          docker compose --profile production --profile ops config --quiet
+          docker build --tag dokan-backup:test docker/backup
+          mkdir .ops-backups
+          chmod 777 .ops-backups
+          project=dokan-recovery-ci
+          cleanup() { docker compose -p "$project" down --volumes --remove-orphans; }
+          trap cleanup EXIT
+          export POSTGRES_ARCHIVE_MODE=on
+          docker compose -p "$project" up -d db
+          for attempt in $(seq 1 30); do
+            test "$(docker inspect --format '{{.State.Health.Status}}' "$project-db-1")" = healthy && break
+            test "$attempt" -lt 30
+            sleep 1
+          done
+          docker compose -p "$project" exec -T db sh -c \
+            'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -c \
+            "CREATE TABLE django_migrations (id bigint PRIMARY KEY); INSERT INTO django_migrations VALUES (1); SELECT pg_switch_wal();"'
+          for attempt in $(seq 1 30); do
+            test "$(docker compose -p "$project" exec -T db sh -c \
+              'find /wal-archive -maxdepth 1 -type f ! -name "*.tmp" | wc -l')" -gt 0 && break
+            test "$attempt" -lt 30
+            sleep 1
+          done
+          docker run --rm --network "$project"_default --env-file .env \
+            -e PGHOST=db -e PGPORT=5432 -e PGDATABASE=dokan -e PGUSER=postgres \
+            -e REQUIRE_OBJECT_STORAGE=false \
+            -e BASE_BACKUP_ENABLED=true -v "$PWD/.ops-backups:/backups" \
+            --entrypoint sh dokan-backup:test \
+            -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; exec backup.sh'
+          docker run --rm -e BASE_BACKUP_ENABLED=true \
+            -v "$PWD/.ops-backups:/backups" \
+            --entrypoint backup-healthcheck.sh dokan-backup:test
+          docker run --rm --network "$project"_default --env-file .env \
+            -e PGHOST=db -e PGPORT=5432 -e PGDATABASE=dokan -e PGUSER=postgres \
+            -e RESTORE_DATABASE=dokan_restore_drill \
+            -v "$PWD/.ops-backups:/backups" \
+            --entrypoint sh dokan-backup:test \
+            -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; exec restore-drill.sh'
+          cleanup
+          trap - EXIT
+
+      - name: Verify S3-compatible WAL upload
+        run: |
+          mkdir .ops-wal
+          chmod 777 .ops-wal
+          printf test-wal > .ops-wal/000000010000000000000001
+          docker run -d --name dokan-ci-minio --network host \
+            -e MINIO_ROOT_USER=dokan_test -e MINIO_ROOT_PASSWORD=testpassword123 \
+            minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e \
+            server /data --address :9000
+          trap 'docker rm -f dokan-ci-minio >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            curl --fail --silent http://127.0.0.1:9000/minio/health/live && break
+            test "$attempt" -lt 30
+            sleep 1
+          done
+          docker run --rm --network host \
+            -e AWS_ACCESS_KEY_ID=dokan_test -e AWS_SECRET_ACCESS_KEY=testpassword123 \
+            -e AWS_DEFAULT_REGION=us-east-1 --entrypoint aws dokan-backup:test \
+            --endpoint-url http://127.0.0.1:9000 s3 mb s3://dokan-ci
+          docker run --rm --network host \
+            -e BACKUP_S3_URI=s3://dokan-ci \
+            -e AWS_ENDPOINT_URL=http://127.0.0.1:9000 \
+            -e AWS_ACCESS_KEY_ID=dokan_test -e AWS_SECRET_ACCESS_KEY=testpassword123 \
+            -e AWS_DEFAULT_REGION=us-east-1 -v "$PWD/.ops-wal:/wal-archive" \
+            --entrypoint sh dokan-backup:test -c 'wal-upload.sh && wal-healthcheck.sh'
+          docker run --rm --network host \
+            -e AWS_ACCESS_KEY_ID=dokan_test -e AWS_SECRET_ACCESS_KEY=testpassword123 \
+            -e AWS_DEFAULT_REGION=us-east-1 --entrypoint aws dokan-backup:test \
+            --endpoint-url http://127.0.0.1:9000 \
+            s3 ls s3://dokan-ci/wal/000000010000000000000001
+
   changes:
     runs-on: ubuntu-latest
     outputs:
