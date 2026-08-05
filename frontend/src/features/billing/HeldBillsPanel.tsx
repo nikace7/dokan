@@ -50,16 +50,10 @@ export function HeldBillsPanel() {
         {held.map((invoice) => (
           <li key={invoice.id} className="flex items-center justify-between gap-2 text-sm">
             <div>
-              <span className="font-medium">
-                {invoice.customer_name ?? 'Walk-in'}
-              </span>{' '}
+              <span className="font-medium">{invoice.customer_name ?? 'Walk-in'}</span>{' '}
               <span className="text-slate-500">{formatNpr(invoice.total)}</span>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void resume(invoice.id)}
-            >
+            <Button variant="secondary" size="sm" onClick={() => void resume(invoice.id)}>
               Resume
             </Button>
           </li>

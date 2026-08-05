@@ -59,7 +59,10 @@ export function SuppliersPanel() {
       }
     >
       {showForm ? (
-        <form onSubmit={onSubmit} className="mb-4 grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 sm:grid-cols-4">
+        <form
+          onSubmit={onSubmit}
+          className="mb-4 grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 sm:grid-cols-4"
+        >
           <input
             aria-label="Supplier name"
             value={name}

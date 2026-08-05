@@ -196,9 +196,7 @@ export function fetchLowStock(page = 1): Promise<Page<LowStockRow>> {
 }
 
 export function fetchDeadStock(days: number, page = 1): Promise<Page<DeadStockRow>> {
-  return authedRequestPage<DeadStockRow>(
-    `/v1/reports/dead-stock${qs({ days, page, limit: 50 })}`,
-  );
+  return authedRequestPage<DeadStockRow>(`/v1/reports/dead-stock${qs({ days, page, limit: 50 })}`);
 }
 
 export function fetchProfit(range: BsRange): Promise<ProfitReport> {

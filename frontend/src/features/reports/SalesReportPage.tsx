@@ -163,9 +163,7 @@ function DailyTable({ rows }: { rows: DailySalesRow[] }) {
           <td className="py-2 pr-2 text-right">
             {formatPaisa(sumMoney(rows.map((r) => r.returns_total)))}
           </td>
-          <td className="py-2 text-right">
-            {formatPaisa(sumMoney(rows.map((r) => r.net_total)))}
-          </td>
+          <td className="py-2 text-right">{formatPaisa(sumMoney(rows.map((r) => r.net_total)))}</td>
         </tr>
       </tfoot>
     </table>

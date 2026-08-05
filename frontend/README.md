@@ -51,14 +51,14 @@ The demo workflow covers the full loop in the browser:
 
 ## Scripts
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Vite dev server with the tenant-aware `/api` proxy |
-| `npm run typecheck` | `tsc --noEmit` (strict) |
-| `npm run lint` | ESLint |
-| `npm run test` | Vitest unit/component tests |
-| `npm run build` | Type check + production build |
-| `npm run api:gen` | Regenerate the typed API client from the backend OpenAPI schema |
+| Command             | Purpose                                                         |
+| ------------------- | --------------------------------------------------------------- |
+| `npm run dev`       | Vite dev server with the tenant-aware `/api` proxy              |
+| `npm run typecheck` | `tsc --noEmit` (strict)                                         |
+| `npm run lint`      | ESLint                                                          |
+| `npm run test`      | Vitest unit/component tests                                     |
+| `npm run build`     | Type check + production build                                   |
+| `npm run api:gen`   | Regenerate the typed API client from the backend OpenAPI schema |
 
 ## Conventions
 

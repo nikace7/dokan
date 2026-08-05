@@ -94,8 +94,7 @@ export function ItemDetailPage() {
           <p className="text-sm text-slate-500">Loading…</p>
         ) : variants.length === 0 ? (
           <p className="py-4 text-center text-sm text-slate-500">
-            No variants yet — use the matrix below to create the whole size × colour grid in one
-            go.
+            No variants yet — use the matrix below to create the whole size × colour grid in one go.
           </p>
         ) : (
           <table className="w-full text-sm">
