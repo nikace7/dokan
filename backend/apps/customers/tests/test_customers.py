@@ -3,6 +3,7 @@
 from typing import Any
 
 import pytest
+from django.core.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Permission
@@ -164,3 +165,36 @@ class TestApi:
         grant(tenant, user, "customer.view")
         response = auth_client(user).get(LIST_URL, {"is_active": "true"}, **host())
         assert response.json()["meta"]["count"] == 1
+
+
+class TestPan:
+    def test_valid_pan_accepted(self, tenant: Any) -> None:
+        customer = services.create_customer(tenant, name="B2B Shop", pan="600123456")
+        customer.full_clean()
+        assert customer.pan == "600123456"
+
+    def test_non_numeric_pan_rejected(self, tenant: Any) -> None:
+        customer = CustomerFactory.build(tenant=tenant, pan="60ABC")
+        with pytest.raises(ValidationError):
+            customer.full_clean()
+
+    def test_too_long_pan_rejected(self, tenant: Any) -> None:
+        customer = CustomerFactory.build(tenant=tenant, pan="1234567890")
+        with pytest.raises(ValidationError):
+            customer.full_clean()
+
+    def test_pan_via_api_create_and_edit(self, tenant: Any, user: Any) -> None:
+        grant(tenant, user, "customer.view", "customer.manage")
+        client = auth_client(user)
+        created = client.post(LIST_URL, {"name": "B2B Shop", "pan": "600123456"}, **host())
+        assert created.status_code == 201
+        customer_id = created.json()["data"]["id"]
+        assert created.json()["data"]["pan"] == "600123456"
+
+        bad = client.post(LIST_URL, {"name": "Bad", "pan": "12AB"}, **host())
+        assert bad.status_code == 400
+
+        patched = client.patch(
+            f"{LIST_URL}/{customer_id}", {"pan": "999888777"}, **host(), format="json"
+        )
+        assert patched.json()["data"]["pan"] == "999888777"

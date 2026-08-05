@@ -13,6 +13,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "phone",
+            "pan",
             "address",
             "default_rate_type",
             "credit_limit",
