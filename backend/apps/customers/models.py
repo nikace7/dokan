@@ -6,16 +6,24 @@ unique per tenant when present (docs/DATABASE_SCHEMA.md §8.1).
 
 import uuid
 
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 
 from core.models import TenantScopedModel
+
+_pan_validator = RegexValidator(
+    regex=r"^\d{1,9}$",
+    message="PAN must be up to 9 digits, numbers only.",
+)
 
 
 class Customer(TenantScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.TextField()
     phone = models.TextField(null=True, blank=True)
+    # VAT-registered customers' PAN — printed on VAT bills/registers.
+    pan = models.CharField(max_length=9, null=True, blank=True, validators=[_pan_validator])
     address = models.TextField(null=True, blank=True)
     default_rate_type = models.ForeignKey(
         "pricing.RateType",

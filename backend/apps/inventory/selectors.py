@@ -36,9 +36,27 @@ def list_levels(
     item_id: UUID | None = None,
     search: str = "",
 ) -> QuerySet[StockLevel]:
-    """Stock levels with branch/variant/item filters and name/SKU search."""
-    qs = StockLevel.objects.filter(tenant=tenant).select_related(
-        "branch", "variant", "variant__item"
+    """Stock levels with branch/variant/item filters and name/SKU search.
+
+    Annotates ``reorder_level`` and ``is_low`` (on hand ≤ threshold) from
+    ``item.reorder_level`` — the same source of truth the low-stock report
+    uses — so the UI flags low rows without a per-row query.
+    """
+    qs = (
+        StockLevel.objects.filter(tenant=tenant)
+        .select_related("branch", "variant", "variant__item")
+        .annotate(
+            reorder_level=F("variant__item__reorder_level"),
+            is_low=models.Case(
+                models.When(
+                    variant__item__reorder_level__isnull=False,
+                    qty_on_hand__lte=F("variant__item__reorder_level"),
+                    then=models.Value(True),
+                ),
+                default=models.Value(False),
+                output_field=models.BooleanField(),
+            ),
+        )
     )
     if branch_id:
         qs = qs.filter(branch_id=branch_id)
