@@ -69,7 +69,8 @@ lookup + Expense CRUD with AD/BS filters, summary by category/BS month;
 ordinary CRUD records, no ledger), `apps/audit` (append-only AuditLog with
 REVOKE UPDATE/DELETE — explicit audit() calls in services, never signals;
 wired: price.set, price.set_bounds, stock.adjust, stock.write_off,
-sale.cancel_held; GET /audit/ gated on settings.manage), `apps/notifications`
+sale.cancel_held; request context middleware stamps IP, user agent, and signed
+support actor claims; GET /audit/ gated on settings.manage), `apps/notifications`
 (RLS-protected SmsLog; receipt template + Nepal mobile normalization;
 vendor-neutral provider contract per ADR 0004; no-network local provider;
 Celery delivery with bounded retry and duplicate-task protection; receipt
