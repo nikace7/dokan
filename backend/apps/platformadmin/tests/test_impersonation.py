@@ -105,6 +105,47 @@ def start_session(
 
 
 class TestStartSupportAccess:
+    def test_support_can_list_active_target_users_for_one_tenant(self) -> None:
+        tenant, owner = tenant_user(owner=True)
+        with transaction.atomic():
+            set_local_tenant(connection, tenant.pk)
+            cashier = UserFactory(
+                tenant=tenant,
+                phone="9800000043",
+                full_name="A Cashier",
+            )
+            UserFactory(
+                tenant=tenant,
+                phone="9800000044",
+                full_name="Inactive User",
+                is_active=False,
+            )
+        _, other_user = tenant_user(owner=True)
+        client, _ = platform_client(PlatformUser.Role.SUPPORT)
+
+        response = client.get(
+            f"/api/v1/admin/tenants/{tenant.pk}/users",
+            **admin_host(),
+        )
+
+        assert response.status_code == 200
+        assert [row["id"] for row in response.json()["data"]] == [
+            str(cashier.pk),
+            str(owner.pk),
+        ]
+        assert str(other_user.pk) not in str(response.json())
+
+    def test_billing_cannot_list_impersonation_targets(self) -> None:
+        tenant, _ = tenant_user(owner=True)
+        client, _ = platform_client(PlatformUser.Role.BILLING)
+
+        response = client.get(
+            f"/api/v1/admin/tenants/{tenant.pk}/users",
+            **admin_host(),
+        )
+
+        assert response.status_code == 403
+
     @pytest.mark.parametrize(
         ("role", "scope", "expected"),
         [
