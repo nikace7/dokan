@@ -18,6 +18,7 @@ export function AppLayout() {
   const canManageUsers = hasPermission(user, 'user.manage');
   const canViewPricing = hasPermission(user, 'pricing.view');
   const canViewCustomers = hasPermission(user, 'customer.view');
+  const canViewStock = hasPermission(user, 'stock.view');
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -43,9 +44,11 @@ export function AppLayout() {
                   Customers
                 </NavLink>
               ) : null}
-              <NavLink to="/stock" className={navLinkClass}>
-                Stock
-              </NavLink>
+              {canViewStock ? (
+                <NavLink to="/stock" className={navLinkClass}>
+                  Stock
+                </NavLink>
+              ) : null}
               <NavLink to="/purchasing" className={navLinkClass}>
                 Purchasing
               </NavLink>
