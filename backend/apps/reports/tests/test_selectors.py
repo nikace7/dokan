@@ -432,9 +432,19 @@ class TestVatRegisters:
         assert sale_row["taxable_amount"] == "2000.00"
         assert sale_row["vat_amount"] == "260.00"
         assert sale_row["customer_name"] == graph["customer"].name
+        assert sale_row["customer_pan"] == "—"  # unset PAN falls back to dash
         assert return_row["doc_type"] == "RETURN"
         assert return_row["vat_amount"] == "130.00"
         assert report["totals"]["vat_amount"] == "390.00"
+
+    def test_sales_register_shows_customer_pan_when_set(self, graph: dict) -> None:
+        graph["customer"].pan = "600999888"
+        graph["customer"].save()
+        from_bs, to_bs = _range(graph, start=D_SALE1, end=D_SALE1)
+        report = selectors.sales_vat_register(
+            graph["tenant"], graph["user"], date_from_bs=from_bs, date_to_bs=to_bs
+        )
+        assert report["rows"][0]["customer_pan"] == "600999888"
 
     def test_purchase_register(self, graph: dict) -> None:
         from_bs, to_bs = _range(graph, start=D_PURCHASE, end=D_PURCHASE)

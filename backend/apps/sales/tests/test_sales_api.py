@@ -15,6 +15,7 @@ from apps.sales.models import SalesInvoice
 from tests.factories import (
     DEFAULT_PASSWORD,
     BranchFactory,
+    CustomerFactory,
     ItemFactory,
     ItemVariantFactory,
     RateTypeFactory,
@@ -289,6 +290,15 @@ class TestCostVisibilityOnLines:
         grant(tenant, user, "sale.view", "pricing.view_cost")
         response = auth_client(user).get(f"{SALES_URL}/{invoice.pk}", **host())
         assert response.json()["data"]["items"][0]["cost_at_sale"] == "600.00"
+
+    def test_invoice_payload_includes_customer_pan(self, tenant: Any, user: Any) -> None:
+        """The receipt/invoice payload carries the customer's PAN (VAT bills)."""
+        customer = CustomerFactory(tenant=tenant, pan="600123456")
+        invoice = SalesInvoiceFactory(tenant=tenant, customer=customer)
+        SalesInvoiceItemFactory(tenant=tenant, invoice=invoice)
+        grant(tenant, user, "sale.view")
+        response = auth_client(user).get(f"{SALES_URL}/{invoice.pk}", **host())
+        assert response.json()["data"]["customer_pan"] == "600123456"
 
     def test_unknown_invoice_is_404(self, tenant: Any, user: Any) -> None:
         import uuid

@@ -95,6 +95,7 @@ class SalesInvoiceSerializer(serializers.ModelSerializer):
     branch_address = serializers.CharField(source="branch.address", read_only=True, allow_null=True)
     branch_phone = serializers.CharField(source="branch.phone", read_only=True, allow_null=True)
     customer_name = serializers.CharField(source="customer.name", read_only=True, allow_null=True)
+    customer_pan = serializers.CharField(source="customer.pan", read_only=True, allow_null=True)
     rate_type_code = serializers.CharField(source="rate_type.code", read_only=True)
     print_count = serializers.SerializerMethodField()
     created_by_name = serializers.CharField(
@@ -120,6 +121,7 @@ class SalesInvoiceSerializer(serializers.ModelSerializer):
             "invoice_no",
             "doc_type",
             "customer",
+            "customer_pan",
             "customer_name",
             "rate_type",
             "rate_type_code",

@@ -41,7 +41,7 @@ def build_payload(tenant: "Tenant", invoice: "SalesInvoice") -> dict[str, Any]:
         "fiscal_year_bs": invoice.fiscal_year_bs,
         "is_vat_bill": invoice.is_vat_bill,
         "customer_name": invoice.customer.name if invoice.customer else None,
-        "customer_pan": None,  # customer PAN not modeled yet (deferral)
+        "customer_pan": (invoice.customer.pan if invoice.customer else None),
         "lines": [
             {
                 "sku": item.variant.sku,

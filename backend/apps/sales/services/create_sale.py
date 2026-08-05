@@ -164,8 +164,16 @@ def _compute_totals(
 
 
 def _split_payments(*, total: Decimal, payments: list[dict[str, Any]]) -> tuple[Decimal, Decimal]:
-    """Return (paid_amount, due_amount). CREDIT is not paid — it is the due."""
+    """Return (paid_amount, due_amount). CREDIT is not paid — it is the due.
+
+    Consistency rule: when a CREDIT tender is declared, its amount must
+    equal the computed due exactly (total − other tenders). The tenders
+    JSON feeds cash-session reconciliation; a CREDIT tender that disagrees
+    with due_amount would split the same udharo into two different truths.
+    Implicit udharo (due without a CREDIT tender) stays allowed.
+    """
     paid = _ZERO
+    credit = _ZERO
     for payment in payments:
         if payment["method"] not in PAYMENT_METHODS:
             raise ServiceError(
@@ -174,12 +182,20 @@ def _split_payments(*, total: Decimal, payments: list[dict[str, Any]]) -> tuple[
         amount = quantize_money(payment["amount"])
         if amount <= _ZERO:
             raise ServiceError("PAYMENT_AMOUNT_INVALID", "Payment amounts must be positive.")
-        if payment["method"] != "CREDIT":
+        if payment["method"] == "CREDIT":
+            credit += amount
+        else:
             paid += amount
     paid = quantize_money(paid)
     if paid > total:
         raise ServiceError("OVERPAYMENT", "Payments exceed the bill total.")
-    return paid, quantize_money(total - paid)
+    due = quantize_money(total - paid)
+    if credit > _ZERO and credit != due:
+        raise ServiceError(
+            "CREDIT_TENDER_MISMATCH",
+            "The credit tender amount must equal the remaining due.",
+        )
+    return paid, due
 
 
 def _check_credit(tenant: "Tenant", *, customer: Any, due: Decimal) -> None:
