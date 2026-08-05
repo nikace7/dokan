@@ -38,3 +38,4 @@ Rules:
 | [0003](0003-barcode-format.md) | Barcode format (Code 128 in-house, EAN-13 accepted) | Accepted |
 | [0004](0004-sms-gateway.md) | SMS gateway behind a provider interface | Accepted |
 | [0005](0005-pricing-never-derives-from-cost.md) | Price resolution and guardrails never derive from cost | Accepted |
+| [0006](0006-offline-sync-policy.md) | Offline POS sync policy | Accepted |
