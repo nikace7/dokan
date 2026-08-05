@@ -7,7 +7,7 @@ from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from apps.accounts.tokens import AUDIENCE_PLATFORM
-from apps.platformadmin.models import PlatformAuditLog, PlatformUser
+from apps.platformadmin.models import ImpersonationSession, PlatformAuditLog, PlatformUser
 from apps.platformadmin.tokens import PlatformRefreshToken
 from apps.tenants.constants import TenantStatus
 from apps.tenants.models import (
@@ -229,5 +229,33 @@ class PlatformAuditSerializer(serializers.ModelSerializer):
             "payload",
             "ip",
             "created_at",
+        )
+        read_only_fields = fields
+
+
+class ImpersonationStartSerializer(serializers.Serializer):
+    target_user = serializers.UUIDField()
+    reason = serializers.CharField(max_length=1000, trim_whitespace=True)
+    scope = serializers.CharField(default=ImpersonationSession.Scope.READ_ONLY, max_length=10)
+    duration_minutes = serializers.IntegerField(default=15)
+
+
+class ImpersonationSessionSerializer(serializers.ModelSerializer):
+    platform_user_name = serializers.CharField(source="platform_user.full_name", read_only=True)
+
+    class Meta:
+        model = ImpersonationSession
+        fields = (
+            "id",
+            "platform_user",
+            "platform_user_name",
+            "tenant",
+            "target_user_id",
+            "reason",
+            "scope",
+            "started_at",
+            "expires_at",
+            "ended_at",
+            "ended_by",
         )
         read_only_fields = fields

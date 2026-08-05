@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 
 import { useAuth } from '@/features/auth/useAuth';
 import { WorkspaceSelector } from '@/features/settings/WorkspaceSelector';
+import { SupportAccessBanner } from '@/features/support/SupportAccessBanner';
 import { hasPermission } from '@/lib/permissions';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -18,6 +19,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-slate-100">
+      <SupportAccessBanner onEnded={signOut} />
       <header className="bg-blue-900 text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2">
           <div className="flex items-center gap-6">

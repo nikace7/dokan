@@ -47,6 +47,16 @@ def queue_sms(
         key="sms_credits_per_month",
         label="SMS credits",
     )
+    return _persist_sms(tenant, to_phone=to_phone, template=template, context=context)
+
+
+def _persist_sms(
+    tenant: Tenant,
+    *,
+    to_phone: str | None,
+    template: str,
+    context: Mapping[str, str],
+) -> SmsLog:
     row = SmsLog.objects.create(
         tenant=tenant,
         to_phone=normalize_nepal_phone(to_phone),
@@ -61,6 +71,26 @@ def queue_sms(
 
     transaction.on_commit(dispatch, robust=True)
     return row
+
+
+def queue_support_access_sms(
+    tenant: Tenant,
+    *,
+    to_phone: str,
+    platform_user_name: str,
+    expires_at: str,
+) -> SmsLog:
+    """Security notifications bypass plan quotas; owners must always be warned."""
+    return _persist_sms(
+        tenant,
+        to_phone=to_phone,
+        template="support_access",
+        context={
+            "shop_name": tenant.name,
+            "platform_user_name": platform_user_name,
+            "expires_at": expires_at,
+        },
+    )
 
 
 def queue_receipt_sms(

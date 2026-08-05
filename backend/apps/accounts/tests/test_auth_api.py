@@ -145,6 +145,7 @@ class TestMe:
         data = response.json()["data"]
         assert data["phone"] == user.phone
         assert data["full_name"] == user.full_name
+        assert data["is_owner"] is False
         assert data["permissions"] == ["sale.create"]
         assert data["plan"] == {
             "code": tenant.plan.code,

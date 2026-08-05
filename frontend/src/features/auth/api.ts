@@ -17,6 +17,7 @@ export interface MeUser {
   full_name: string;
   email: string | null;
   must_change_password: boolean;
+  is_owner: boolean;
   permissions: string[];
   plan: {
     code: string;
