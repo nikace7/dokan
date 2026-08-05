@@ -40,6 +40,11 @@ class StockLevelSerializer(CostAwareSerializer):
     branch_code = serializers.CharField(source="branch.code", read_only=True)
     variant_sku = serializers.CharField(source="variant.sku", read_only=True)
     item_name = serializers.CharField(source="variant.item.name", read_only=True)
+    # Annotated by the levels selector (annotation attrs, not model fields).
+    reorder_level = serializers.DecimalField(
+        max_digits=12, decimal_places=3, read_only=True, allow_null=True
+    )
+    is_low = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = StockLevel
@@ -53,6 +58,8 @@ class StockLevelSerializer(CostAwareSerializer):
             "qty_on_hand",
             "qty_reserved",
             "avg_cost",
+            "reorder_level",
+            "is_low",
             "updated_at",
         )
         read_only_fields = fields
