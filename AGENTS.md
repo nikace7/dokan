@@ -20,7 +20,8 @@ TenantFeatureOverride, TenantUsageSnapshot — platform scope; Branch — RLS-pr
 cached slug selector behind the tenant middleware), `apps/accounts` (tenant-scoped
 User with phone auth, Role, global Permission catalog, RolePermission, UserRole;
 JWT login/refresh/me per ADR 0001 with failed-login lockout and tenant-claim
-binding), `apps/platformadmin` (PlatformUser model only, no portal yet),
+binding), `apps/platformadmin` (PlatformUser plus a separate admin-host/IP-allowlisted,
+password+TOTP JWT auth realm and safe provisioning command; management APIs and portal pending),
 `apps/catalog` (Category tree, Brand, SizeChart, Item, ItemVariant with
 size×colour matrix bulk entry and the barcode/SKU POS lookup; barcode
 validation per ADR 0003; `avg_cost` hidden without `pricing.view_cost` at

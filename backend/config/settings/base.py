@@ -53,6 +53,8 @@ ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*")
 
 # Tenancy: every tenant is served from <slug>.<ROOT_DOMAIN>.
 ROOT_DOMAIN = env("ROOT_DOMAIN", "dokan.com.np")
+# Empty means the admin API fails closed until explicit IPs/CIDRs are set.
+PLATFORM_ADMIN_ALLOWED_IPS = env_list("PLATFORM_ADMIN_ALLOWED_IPS")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -88,6 +90,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "core.middleware.platform_admin.PlatformAdminBoundaryMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     # Tenancy: resolves the tenant from the subdomain and runs
     # SET LOCAL app.tenant_id inside the request transaction. Must run
