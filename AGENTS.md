@@ -74,7 +74,9 @@ outflows, variance snapshot, and an open-session guard on POS sale completion),
 low / dead stock, profit pinned to cost_at_sale and gated on report.profit +
 pricing.view_cost, dues reusing canonical outstanding, sales+purchase VAT
 registers — all plain GROUP BYs on the denormalized BS columns; profit_report
-now also computes net = gross − expenses), `apps/expenses` (ExpenseCategory
+now also computes net = gross − expenses; role-filtered dashboard API and tenant
+screen with today's sales/profit/dues/low-stock tiles, 30-day trend, quick actions,
+and recent bills), `apps/expenses` (ExpenseCategory
 lookup + Expense CRUD with AD/BS filters, summary by category/BS month;
 ordinary CRUD records, no ledger), `apps/audit` (append-only AuditLog with
 REVOKE UPDATE/DELETE — explicit audit() calls in services, never signals;

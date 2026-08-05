@@ -166,6 +166,49 @@ class TestSalesReportsApi:
         assert response.json()["error"]["code"] == "DATE_RANGE_INCOMPLETE"
 
 
+class TestDashboardApi:
+    def test_unauthenticated_is_401(self, tenant: Any) -> None:
+        response = APIClient().get("/api/v1/dashboard", **host())
+        assert response.status_code == 401
+
+    def test_cashier_gets_only_operational_tiles(self, tenant: Any, user: Any, shop: dict) -> None:
+        item = shop["variant"].item
+        item.reorder_level = Decimal("25")
+        item.save(update_fields=["reorder_level"])
+        grant(tenant, user, "sale.create", "sale.view", "stock.view")
+
+        response = auth_client(user).get("/api/v1/dashboard", **host())
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["sales"]["today_total"] == "2260.00"
+        assert data["sales"]["bill_count"] == 1
+        assert data["low_stock"]["count"] == 1
+        assert data["recent_bills"][0]["invoice_no"] == shop["sale"].invoice_no
+        assert "profit" not in data
+        assert "dues" not in data
+
+    def test_owner_gets_profit_and_dues_tiles(self, tenant: Any, user: Any, shop: dict) -> None:
+        tenant.plan.features = {**tenant.plan.features, "profit_reports": True}
+        tenant.plan.save(update_fields=["features"])
+        grant(
+            tenant,
+            user,
+            "pricing.view_cost",
+            "report.ledger",
+            "report.profit",
+            "sale.view",
+            "stock.view",
+        )
+
+        response = auth_client(user).get("/api/v1/dashboard", **host())
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["profit"]["today_net_profit"] == "1060.00"
+        assert data["dues"] == {"customer_count": 0, "total_receivable": "0.00"}
+
+
 class TestProfitReportApi:
     def test_profit_requires_view_cost(self, tenant: Any, user: Any, shop: dict) -> None:
         grant(tenant, user, "report.profit")  # report.profit but NO pricing.view_cost
