@@ -23,6 +23,8 @@ file mode owner-only. Production additionally requires:
 
 - `DJANGO_SETTINGS_MODULE=config.settings.prod`
 - `ALLOWED_HOSTS`, `ROOT_DOMAIN`, `PLATFORM_ADMIN_ALLOWED_IPS`
+- `CADDY_TLS_CONFIG=/etc/caddy/tls-cloudflare` and a scoped
+  `CLOUDFLARE_API_TOKEN`
 - independent app, migrator and PostgreSQL passwords
 - `POSTGRES_ARCHIVE_MODE=on`
 - `BACKUP_S3_URI=s3://<private-bucket>/<environment>`
@@ -62,9 +64,12 @@ configured bucket prefix. Enable bucket versioning and server-side encryption.
 6. Provision the first platform administrator interactively with
    `create_platform_user`, enroll TOTP, and verify tenant and admin hosts.
 
-The wildcard certificate needs a Caddy build containing the DNS provider
-plugin. Supply its API token outside the repository and verify automatic renewal
-in staging before production DNS is switched.
+The repository's Caddy image compiles the pinned Cloudflare DNS module. The
+production TLS snippet requests the wildcard certificate through DNS-01; verify
+issuance and automatic renewal in staging before production DNS is switched.
+Tenant and admin browser routes are served by the unprivileged frontend image;
+`/api` keeps the original Host when proxied to Django, and fingerprinted assets
+receive immutable caching.
 
 ## Routine deployment
 

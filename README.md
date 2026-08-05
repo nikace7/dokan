@@ -10,8 +10,8 @@ contributors (human or AI) are in [`AGENTS.md`](AGENTS.md).
 
 - **Backend:** Django 5 + DRF + SimpleJWT, PostgreSQL 16 (Row-Level Security
   for tenant isolation), Redis, Celery.
-- **Frontend:** Vite + React + TypeScript PWA (lands separately — see
-  `frontend/`).
+- **Frontend:** Vite + React + TypeScript tenant/admin SPA, built into an
+  unprivileged production image.
 - **Deploy (Phase 1):** single VPS, Docker Compose, Caddy with wildcard TLS.
 
 ## Quickstart (backend)
@@ -20,7 +20,7 @@ Prerequisites: Docker + Docker Compose, or Python 3.12 for a local venv.
 
 ```bash
 cp .env.example .env          # fill in the change-me values
-docker compose up --build     # db, redis, backend, celery, beat, caddy
+docker compose up --build     # db, redis, backend, frontend, celery, beat, caddy
 # Migrations use the dedicated role; demo bootstrap uses the local superuser.
 docker compose exec backend sh -c 'DATABASE_USER=dokan_migrator DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" python manage.py migrate'
 docker compose exec backend sh -c 'DATABASE_USER=postgres DATABASE_PASSWORD="$POSTGRES_PASSWORD" python manage.py seed_demo'
@@ -61,7 +61,7 @@ items with M/L variants, and 20 units of opening stock per variant, so
 `POST /api/v1/sales` works after opening the branch's cash session (remember
 the mandatory `Idempotency-Key` header).
 
-The frontend (`frontend/`) serves login and the POS billing screen:
+For hot-reload development, the frontend (`frontend/`) serves login and the POS billing screen:
 `npm install && npm run dev` proxies `/api` to IPv4 loopback while preserving
 `demo.localhost` as the tenant host. After sign-in, choose the active branch
 and rate type in the app header. Sign in at http://localhost:5173 with the
@@ -74,6 +74,14 @@ network, provision an account with `python manage.py create_platform_user
 one-time TOTP secret printed by that command. Platform and tenant tokens use
 separate storage, and tenant support sessions are handed off through a
 short-lived URL fragment that is cleared immediately after use.
+
+The Compose stack builds the same frontend for production and serves tenant and
+admin routes through Caddy; `/api` remains same-origin and is forwarded to
+Django with the original Host intact. Local Caddy uses its internal certificate
+authority, while production uses the Cloudflare DNS-01 snippet documented in
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+After seeding, open `https://demo.localhost`; the first local visit may require
+accepting Caddy's development certificate.
 
 Local SMS uses the no-network `log` provider: receipt requests are queued and
 delivery state is persisted without sending real messages. Use
