@@ -21,6 +21,8 @@ vi.mock('@/features/settings/useWorkspace', () => ({
 }));
 
 const fetchMock = vi.fn<typeof fetch>();
+const printMock = vi.fn();
+let printCount = 0;
 
 function envelope(data: unknown, status = 200): Response {
   return new Response(JSON.stringify({ data, error: null }), {
@@ -45,9 +47,19 @@ const VARIANT = {
 
 const INVOICE = {
   id: 'sale-1',
+  tenant_name: 'Shree Ganesh',
+  tenant_name_np: 'श्री गणेश',
+  legal_name: 'Shree Ganesh Traders Pvt. Ltd.',
+  pan_vat_no: '123456789',
+  vat_registered: true,
   branch: 'branch-1',
   branch_code: 'MAIN',
-  invoice_no: 'INV-2082-0001',
+  invoice_prefix: 'INV',
+  branch_name: 'Main Outlet',
+  branch_name_np: 'मुख्य शाखा',
+  branch_address: 'New Road, Kathmandu',
+  branch_phone: '01-5550000',
+  invoice_no: 1,
   doc_type: 'SALE',
   status: 'COMPLETED',
   customer: null,
@@ -62,7 +74,10 @@ const INVOICE = {
   paid_amount: '1500.00',
   due_amount: '0.00',
   is_vat_bill: false,
+  print_count: 0,
+  tenders: [{ method: 'CASH', amount: '1500.00' }],
   datetime_ad: '2026-07-31T08:00:00+05:45',
+  business_date_ad: '2026-07-31',
   business_date_bs: '2083-04-15',
   fiscal_year_bs: '2083-84',
   items: [
@@ -71,6 +86,7 @@ const INVOICE = {
       variant: 'var-1',
       variant_sku: 'TS-BLK-M',
       item_name: 'T-Shirt',
+      item_name_np: 'टी-सर्ट',
       qty: '1.000',
       unit_price: '1500.00',
       discount: '0.00',
@@ -81,7 +97,7 @@ const INVOICE = {
 };
 
 /** Route mock responses by URL + method. */
-function installApiMock(saleResponse: Response, vatModule = true) {
+function installApiMock(saleResponse: Response, vatModule = true, printResponse?: Response) {
   fetchMock.mockImplementation((input, init) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
@@ -111,6 +127,11 @@ function installApiMock(saleResponse: Response, vatModule = true) {
     if (url.endsWith('/api/v1/sales') && method === 'POST') {
       return Promise.resolve(saleResponse);
     }
+    if (url.endsWith('/api/v1/sales/sale-1/print') && method === 'POST') {
+      if (printResponse) return Promise.resolve(printResponse);
+      printCount += 1;
+      return Promise.resolve(envelope({ id: 'sale-1', print_count: printCount }));
+    }
     return Promise.reject(new Error(`Unexpected request: ${method} ${url}`));
   });
 }
@@ -136,6 +157,8 @@ async function scanAndAdd(code: string) {
 describe('BillingPage', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(window, 'print').mockImplementation(printMock);
+    printCount = 0;
     setTokens({ access: 'access-1', refresh: 'refresh-1' });
     useCartStore.getState().clear();
   });
@@ -143,6 +166,8 @@ describe('BillingPage', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     fetchMock.mockReset();
+    printMock.mockReset();
+    vi.restoreAllMocks();
     clearTokens();
     useCartStore.getState().clear();
   });
@@ -157,8 +182,15 @@ describe('BillingPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /complete sale/i }));
 
-    expect(await screen.findByText('Invoice INV-2082-0001')).toBeInTheDocument();
+    expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
     expect(screen.getByText(/2083-04-15/)).toBeInTheDocument();
+    expect(screen.getByText('Shree Ganesh')).toBeInTheDocument();
+    expect(screen.getByText(/PAN\/VAT: 123456789/)).toBeInTheDocument();
+    await waitFor(() => expect(printMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: /reprint/i }));
+    await waitFor(() => expect(printMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByText(/copy 2/i)).toBeInTheDocument();
 
     // The sale POST carried an Idempotency-Key and the scanned variant.
     const saleCall = fetchMock.mock.calls.find(([url, init]) => {
@@ -182,6 +214,38 @@ describe('BillingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /new bill/i }));
     expect(await screen.findByText(/cart is empty/i)).toBeInTheDocument();
     expect(useCartStore.getState().lines).toHaveLength(0);
+  });
+
+  it('uses F9 to complete and print a ready bill', async () => {
+    installApiMock(envelope(INVOICE, 201));
+    renderBilling();
+
+    await scanAndAdd('8901234567890');
+    fireEvent.keyDown(window, { key: 'F9' });
+
+    expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+    await waitFor(() => expect(printMock).toHaveBeenCalledTimes(1));
+  });
+
+  it('still opens the receipt when print-history recording fails', async () => {
+    installApiMock(
+      envelope(INVOICE, 201),
+      true,
+      new Response(
+        JSON.stringify({
+          data: null,
+          error: { code: 'UNAVAILABLE', message: 'Print history unavailable.' },
+        }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    renderBilling();
+
+    await scanAndAdd('8901234567890');
+    fireEvent.click(screen.getByRole('button', { name: /complete sale/i }));
+
+    expect(await screen.findByText(/print history could not be saved/i)).toBeInTheDocument();
+    expect(printMock).toHaveBeenCalledTimes(1);
   });
 
   it('shows the server error message verbatim when the sale is rejected', async () => {

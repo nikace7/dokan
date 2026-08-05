@@ -16,6 +16,7 @@ from apps.sales.services.held_bills import (
     complete_held_bill,
     hold_bill,
 )
+from apps.sales.services.receipts import record_receipt_print
 from apps.sales.services.returns import REFUND_METHODS, ReturnLineInput, create_return
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "create_return",
     "create_sale",
     "hold_bill",
+    "record_receipt_print",
 ]

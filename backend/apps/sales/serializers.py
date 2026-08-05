@@ -59,6 +59,9 @@ class CompleteBillSerializer(serializers.Serializer):
 class SalesInvoiceItemSerializer(serializers.ModelSerializer):
     variant_sku = serializers.CharField(source="variant.sku", read_only=True)
     item_name = serializers.CharField(source="variant.item.name", read_only=True)
+    item_name_np = serializers.CharField(
+        source="variant.item.name_np", read_only=True, allow_null=True
+    )
 
     class Meta:
         model = SalesInvoiceItem
@@ -67,6 +70,7 @@ class SalesInvoiceItemSerializer(serializers.ModelSerializer):
             "variant",
             "variant_sku",
             "item_name",
+            "item_name_np",
             "qty",
             "rate_type",
             "unit_price",
@@ -79,9 +83,20 @@ class SalesInvoiceItemSerializer(serializers.ModelSerializer):
 
 
 class SalesInvoiceSerializer(serializers.ModelSerializer):
+    tenant_name = serializers.CharField(source="tenant.name", read_only=True)
+    tenant_name_np = serializers.CharField(source="tenant.name_np", read_only=True, allow_null=True)
+    legal_name = serializers.CharField(source="tenant.legal_name", read_only=True, allow_null=True)
+    pan_vat_no = serializers.CharField(source="tenant.pan_vat_no", read_only=True, allow_null=True)
+    vat_registered = serializers.BooleanField(source="tenant.vat_registered", read_only=True)
     branch_code = serializers.CharField(source="branch.code", read_only=True)
+    invoice_prefix = serializers.CharField(source="branch.invoice_prefix", read_only=True)
+    branch_name = serializers.CharField(source="branch.name", read_only=True)
+    branch_name_np = serializers.CharField(source="branch.name_np", read_only=True, allow_null=True)
+    branch_address = serializers.CharField(source="branch.address", read_only=True, allow_null=True)
+    branch_phone = serializers.CharField(source="branch.phone", read_only=True, allow_null=True)
     customer_name = serializers.CharField(source="customer.name", read_only=True, allow_null=True)
     rate_type_code = serializers.CharField(source="rate_type.code", read_only=True)
+    print_count = serializers.SerializerMethodField()
     created_by_name = serializers.CharField(
         source="created_by.full_name", read_only=True, allow_null=True
     )
@@ -90,8 +105,18 @@ class SalesInvoiceSerializer(serializers.ModelSerializer):
         model = SalesInvoice
         fields = (
             "id",
+            "tenant_name",
+            "tenant_name_np",
+            "legal_name",
+            "pan_vat_no",
+            "vat_registered",
             "branch",
             "branch_code",
+            "invoice_prefix",
+            "branch_name",
+            "branch_name_np",
+            "branch_address",
+            "branch_phone",
             "invoice_no",
             "doc_type",
             "customer",
@@ -110,6 +135,7 @@ class SalesInvoiceSerializer(serializers.ModelSerializer):
             "status",
             "is_vat_bill",
             "print_count",
+            "tenders",
             "datetime_ad",
             "business_date_ad",
             "business_date_bs",
@@ -121,6 +147,9 @@ class SalesInvoiceSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = fields
+
+    def get_print_count(self, obj: SalesInvoice) -> int:
+        return int(getattr(obj, "receipt_print_count", obj.print_count))
 
 
 class SalesInvoiceDetailSerializer(SalesInvoiceSerializer):
