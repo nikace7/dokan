@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -19,6 +20,7 @@ const today = () => {
 };
 
 export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSetBounds: boolean }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [rateType, setRateType] = useState('');
   const [scope, setScope] = useState<PriceScope>('VARIANT');
@@ -70,7 +72,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
       ]);
       setPriceValue('');
       setReason('');
-      setStatus('Selling price saved.');
+      setStatus(t('pricing.editor.priceSaved'));
     },
   });
   const saveBounds = useMutation({
@@ -79,7 +81,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
         min_selling_price: minimum || null,
         max_selling_price: maximum || null,
       }),
-    onSuccess: () => setStatus('Selling-price bounds saved.'),
+    onSuccess: () => setStatus(t('pricing.editor.boundsSaved')),
   });
 
   const changeScope = (next: PriceScope) => {
@@ -98,10 +100,10 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
   const error = savePrice.error ?? saveBounds.error;
 
   return (
-    <Card title="Set effective selling price">
+    <Card title={t('pricing.editor.title')}>
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="price-rate-type">Rate type</Label>
+          <Label htmlFor="price-rate-type">{t('pricing.editor.rateType')}</Label>
           <select
             id="price-rate-type"
             required
@@ -119,21 +121,21 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="price-scope">Price scope</Label>
+          <Label htmlFor="price-scope">{t('pricing.editor.scope')}</Label>
           <select
             id="price-scope"
             value={scope}
             onChange={(event) => changeScope(event.target.value as PriceScope)}
             className={selectClasses}
           >
-            <option value="VARIANT">Variant</option>
-            <option value="ITEM">Item</option>
-            <option value="CATEGORY">Category</option>
+            <option value="VARIANT">{t('pricing.editor.scopeVariant')}</option>
+            <option value="ITEM">{t('pricing.editor.scopeItem')}</option>
+            <option value="CATEGORY">{t('pricing.editor.scopeCategory')}</option>
           </select>
         </div>
         {scope === 'CATEGORY' ? (
           <div className="flex flex-col gap-1.5 lg:col-span-2">
-            <Label htmlFor="price-category-target">Category target</Label>
+            <Label htmlFor="price-category-target">{t('pricing.editor.categoryTarget')}</Label>
             <select
               id="price-category-target"
               required
@@ -141,7 +143,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
               onChange={(event) => setTargetId(event.target.value)}
               className={selectClasses}
             >
-              <option value="">Select category</option>
+              <option value="">{t('pricing.editor.selectCategory')}</option>
               {categories.data?.data
                 .filter((category) => category.is_active)
                 .map((category) => (
@@ -154,7 +156,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
         ) : (
           <>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="price-item-target">Item target</Label>
+              <Label htmlFor="price-item-target">{t('pricing.editor.itemTarget')}</Label>
               <select
                 id="price-item-target"
                 required
@@ -165,7 +167,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
                 }}
                 className={selectClasses}
               >
-                <option value="">Select item</option>
+                <option value="">{t('pricing.editor.selectItem')}</option>
                 {items.data?.data.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.code} · {item.name}
@@ -175,7 +177,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
             </div>
             {scope === 'VARIANT' ? (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="price-variant-target">Variant target</Label>
+                <Label htmlFor="price-variant-target">{t('pricing.editor.variantTarget')}</Label>
                 <select
                   id="price-variant-target"
                   required
@@ -184,7 +186,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
                   disabled={!itemId}
                   className={selectClasses}
                 >
-                  <option value="">Select variant</option>
+                  <option value="">{t('pricing.editor.selectVariant')}</option>
                   {variants.data?.data.map((variant) => (
                     <option key={variant.id} value={variant.id}>
                       {variant.sku} · {variant.size} / {variant.color}
@@ -196,27 +198,27 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
           </>
         )}
         <Input
-          label="Selling price"
+          label={t('pricing.editor.sellingPrice')}
           required
           inputMode="decimal"
           value={price}
           onChange={(event) => setPriceValue(event.target.value)}
         />
         <Input
-          label="Effective from"
+          label={t('pricing.editor.effectiveFrom')}
           type="date"
           required
           value={effectiveFrom}
           onChange={(event) => setEffectiveFrom(event.target.value)}
         />
         <Input
-          label="Effective to"
+          label={t('pricing.editor.effectiveTo')}
           type="date"
           value={effectiveTo}
           onChange={(event) => setEffectiveTo(event.target.value)}
         />
         <Input
-          label="Change reason"
+          label={t('pricing.editor.changeReason')}
           value={reason}
           onChange={(event) => setReason(event.target.value)}
         />
@@ -225,26 +227,26 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
             type="submit"
             disabled={savePrice.isPending || !selectedRate || !selectedTarget || !price}
           >
-            Save price
+            {t('pricing.editor.save')}
           </Button>
         </div>
       </form>
 
       {canSetBounds && (scope === 'ITEM' || scope === 'VARIANT') ? (
         <section className="mt-5 border-t border-border pt-4">
-          <h3 className="mb-2 text-sm font-semibold">Optional selling-price guardrails</h3>
+          <h3 className="mb-2 text-sm font-semibold">{t('pricing.editor.guardrails')}</h3>
           <p className="mb-3 text-xs text-muted-foreground">
-            Leave both blank to clear the guardrails.
+            {t('pricing.editor.guardrailsHint')}
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <Input
-              label="Minimum selling price"
+              label={t('pricing.editor.minPrice')}
               inputMode="decimal"
               value={minimum}
               onChange={(event) => setMinimum(event.target.value)}
             />
             <Input
-              label="Maximum selling price"
+              label={t('pricing.editor.maxPrice')}
               inputMode="decimal"
               value={maximum}
               onChange={(event) => setMaximum(event.target.value)}
@@ -254,7 +256,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
               disabled={saveBounds.isPending || !selectedTarget}
               onClick={() => saveBounds.mutate()}
             >
-              Save bounds
+              {t('pricing.editor.saveBounds')}
             </Button>
           </div>
         </section>
@@ -262,7 +264,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
 
       {error ? (
         <p role="alert" className="mt-3 text-sm text-destructive">
-          {error instanceof ApiError ? error.message : 'Could not save pricing.'}
+          {error instanceof ApiError ? error.message : t('pricing.editor.saveError')}
         </p>
       ) : null}
       {status ? (

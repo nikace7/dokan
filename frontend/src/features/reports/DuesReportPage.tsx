@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/Card';
 import { TableCell, TableRow } from '@/components/ui/table';
@@ -8,34 +9,24 @@ import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/r
 import type { ReportColumn } from '@/features/reports/ui';
 import { addPaisa, formatNpr, formatPaisa, toPaisa } from '@/lib/money';
 
-const RECEIVABLE_COLUMNS: readonly ReportColumn[] = [
-  { header: 'Customer' },
-  ...AGING_BUCKETS.map((bucket): ReportColumn => ({ header: `${bucket} days`, className: 'text-right' })),
-  { header: 'Total', className: 'text-right' },
-];
-
-const PAYABLE_COLUMNS: readonly ReportColumn[] = [
-  { header: 'Supplier' },
-  { header: 'Payable', className: 'text-right' },
-];
-
 /**
  * Dues report — customer udharo aging and supplier payables. Bucket
  * semantics (invoice age; unallocated money settles the oldest bucket
  * first) are computed server-side; this screen only renders.
  */
 export function DuesReportPage() {
+  const { t } = useTranslation();
   const query = useQuery({ queryKey: ['reports', 'dues'], queryFn: fetchDues });
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
-      <Card title="Customer dues (udharo) / उधारो">
+      <Card title={t('reports.dues.customerTitle')}>
         {query.isFetching ? <TableSkeleton /> : null}
         {query.isError ? <ReportError error={query.error} /> : null}
         {query.data ? <ReceivablesTable rows={query.data.receivables} /> : null}
       </Card>
 
-      <Card title="Supplier payables">
+      <Card title={t('reports.dues.supplierTitle')}>
         {query.data ? <PayablesTable rows={query.data.payables} /> : null}
       </Card>
     </main>
@@ -43,12 +34,23 @@ export function DuesReportPage() {
 }
 
 function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
+  const { t } = useTranslation();
+  const columns: readonly ReportColumn[] = [
+    { header: t('reports.columns.customer') },
+    ...AGING_BUCKETS.map(
+      (bucket): ReportColumn => ({
+        header: t('reports.dues.days', { bucket }),
+        className: 'text-right',
+      }),
+    ),
+    { header: t('reports.total'), className: 'text-right' },
+  ];
   return (
     <ReportTable
-      columns={RECEIVABLE_COLUMNS}
+      columns={columns}
       rows={rows}
       rowKey={(row) => row.customer_id}
-      empty="No outstanding customer dues."
+      empty={t('reports.dues.emptyReceivables')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.customer_name}</TableCell>
@@ -77,7 +79,7 @@ function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
       )}
       footer={
         <TableRow>
-          <TableCell className="font-semibold">Total</TableCell>
+          <TableCell className="font-semibold">{t('reports.total')}</TableCell>
           {AGING_BUCKETS.map((bucket) => (
             <MoneyCell key={bucket}>
               {formatPaisa(addPaisa(...rows.map((r) => toPaisa(r.buckets[bucket]))))}
@@ -92,7 +94,7 @@ function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
       }
       mobileFooter={
         <div className="mt-2 flex justify-between rounded-md bg-muted/50 p-3 text-sm">
-          <span className="text-muted-foreground">Total outstanding</span>
+          <span className="text-muted-foreground">{t('reports.dues.totalOutstanding')}</span>
           <span className="font-semibold tabular-nums">
             {formatPaisa(addPaisa(...rows.map((r) => toPaisa(r.total_outstanding))), {
               symbol: 'रू ',
@@ -105,12 +107,17 @@ function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
 }
 
 function PayablesTable({ rows }: { rows: PayableRow[] }) {
+  const { t } = useTranslation();
+  const columns: readonly ReportColumn[] = [
+    { header: t('reports.columns.supplier') },
+    { header: t('reports.columns.payable'), className: 'text-right' },
+  ];
   return (
     <ReportTable
-      columns={PAYABLE_COLUMNS}
+      columns={columns}
       rows={rows}
       rowKey={(row) => row.supplier_id}
-      empty="No outstanding payables."
+      empty={t('reports.dues.emptyPayables')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.supplier_name}</TableCell>
@@ -125,7 +132,7 @@ function PayablesTable({ rows }: { rows: PayableRow[] }) {
       )}
       footer={
         <TableRow>
-          <TableCell className="font-semibold">Total</TableCell>
+          <TableCell className="font-semibold">{t('reports.total')}</TableCell>
           <MoneyCell>
             {formatPaisa(addPaisa(...rows.map((r) => toPaisa(r.payable))), { symbol: 'रू ' })}
           </MoneyCell>

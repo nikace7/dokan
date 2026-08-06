@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +32,7 @@ export function VariantMatrix({
   existingVariants,
   onCreated,
 }: VariantMatrixProps) {
+  const { t } = useTranslation();
   const [sizes, setSizes] = useState<string[]>([]);
   const [customSize, setCustomSize] = useState('');
   const [colors, setColors] = useState<string[]>([]);
@@ -77,13 +79,13 @@ export function VariantMatrix({
       onCreated();
     },
     onError: (err) =>
-      setError(err instanceof ApiError ? err.message : 'Could not create variants.'),
+      setError(err instanceof ApiError ? err.message : t('catalog.matrix.createError')),
   });
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="mb-2 text-sm font-medium">Sizes</p>
+        <p className="mb-2 text-sm font-medium">{t('catalog.matrix.sizes')}</p>
         <div className="flex flex-wrap gap-2">
           {allSizes.map((size) => (
             <button
@@ -102,7 +104,7 @@ export function VariantMatrix({
             </button>
           ))}
           <input
-            aria-label="Custom size"
+            aria-label={t('catalog.matrix.customSize')}
             value={customSize}
             onChange={(e) => setCustomSize(e.target.value)}
             onKeyDown={(e) => {
@@ -111,21 +113,21 @@ export function VariantMatrix({
                 addCustomSize();
               }
             }}
-            placeholder="+ size"
+            placeholder={t('catalog.matrix.sizePlaceholder')}
             className="h-9 w-20 rounded-md border border-dashed border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium">Colours</p>
+        <p className="mb-2 text-sm font-medium">{t('catalog.matrix.colours')}</p>
         <div className="flex flex-wrap items-center gap-2">
           {colors.map((color) => (
             <Badge key={color} variant="secondary" className="gap-1 text-sm font-medium">
               {color}
               <button
                 type="button"
-                aria-label={`Remove colour ${color}`}
+                aria-label={t('catalog.matrix.removeColour', { color })}
                 className="text-muted-foreground hover:text-foreground"
                 onClick={() => setColors((current) => current.filter((c) => c !== color))}
               >
@@ -144,7 +146,7 @@ export function VariantMatrix({
             </button>
           ))}
           <input
-            aria-label="Custom colour"
+            aria-label={t('catalog.matrix.customColour')}
             value={colorInput}
             onChange={(e) => setColorInput(e.target.value)}
             onKeyDown={(e) => {
@@ -153,7 +155,7 @@ export function VariantMatrix({
                 addColor(colorInput);
               }
             }}
-            placeholder="+ colour"
+            placeholder={t('catalog.matrix.colourPlaceholder')}
             className="h-9 w-24 rounded-md border border-dashed border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
@@ -161,11 +163,11 @@ export function VariantMatrix({
 
       {selectedCount > 0 ? (
         <div className="overflow-x-auto">
-          <table aria-label="Variant grid preview" className="w-auto border-collapse text-xs">
+          <table aria-label={t('catalog.matrix.gridAria')} className="w-auto border-collapse text-xs">
             <thead>
               <tr>
                 <th className="border border-border bg-muted/50 px-2 py-1 text-left font-medium text-muted-foreground">
-                  Size \ Colour
+                  {t('catalog.matrix.sizeColourHeader')}
                 </th>
                 {colors.map((color) => (
                   <th
@@ -193,7 +195,7 @@ export function VariantMatrix({
                           : 'text-success',
                       )}
                     >
-                      {existing.has(`${size}::${color}`) ? 'exists' : '✓'}
+                      {existing.has(`${size}::${color}`) ? t('catalog.matrix.exists') : '✓'}
                     </td>
                   ))}
                 </tr>
@@ -205,7 +207,7 @@ export function VariantMatrix({
 
       <div className="flex items-end gap-3">
         <Input
-          label="MRP (रू, optional)"
+          label={t('catalog.matrix.mrpLabel')}
           value={mrp}
           onChange={(e) => setMrp(e.target.value)}
           inputMode="decimal"
@@ -217,8 +219,8 @@ export function VariantMatrix({
           onClick={() => createMutation.mutate()}
         >
           {createMutation.isPending
-            ? 'Creating…'
-            : `Create ${selectedCount} variant${selectedCount === 1 ? '' : 's'}`}
+            ? t('catalog.matrix.creating')
+            : t('catalog.matrix.create', { count: selectedCount })}
         </Button>
       </div>
 
@@ -234,8 +236,11 @@ export function VariantMatrix({
           className="rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success"
         >
           <p>
-            Created {result.created_count} variant{result.created_count === 1 ? '' : 's'}
-            {result.skipped_count > 0 ? `, skipped ${result.skipped_count} (already exist)` : ''}.
+            {t('catalog.matrix.created', { count: result.created_count })}
+            {result.skipped_count > 0
+              ? t('catalog.matrix.skippedNote', { count: result.skipped_count })
+              : ''}
+            .
           </p>
           {result.skipped.length > 0 ? (
             <ul className="mt-1 text-xs">

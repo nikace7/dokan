@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { hasPermission } from '@/lib/permissions';
 import { hasPlanFeature } from '@/lib/plans';
 export function TransfersPage() {
+  const { t } = useTranslation();
   const { user, isRestoring } = useAuth();
   const workspace = useWorkspace();
   const queryClient = useQueryClient();
@@ -69,25 +71,23 @@ export function TransfersPage() {
       setError(null);
       void queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
-    onError: (reason) => setError(message(reason, 'Could not update the transfer.')),
+    onError: (reason) => setError(message(reason, t('inventory.transfers.updateError'))),
   });
-  if (isRestoring || !user) return <PageMessage>Loading…</PageMessage>;
-  if (!canView)
-    return <PageMessage>You do not have permission to view stock transfers.</PageMessage>;
-  if (!planAllows)
-    return <PageMessage>Your plan does not include multi-branch transfers.</PageMessage>;
+  if (isRestoring || !user) return <PageMessage>{t('common.loading')}</PageMessage>;
+  if (!canView) return <PageMessage>{t('inventory.transfers.noPermission')}</PageMessage>;
+  if (!planAllows) return <PageMessage>{t('inventory.transfers.planDenied')}</PageMessage>;
   const transfers = transfersQuery.data?.data ?? [];
   return (
     <main className="mx-auto max-w-6xl space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Stock transfers / स्टक स्थानान्तरण</h1>
+          <h1 className="text-2xl font-semibold">{t('inventory.transfers.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Stock leaves the source when sent and remains in transit until received.
+            {t('inventory.transfers.subtitle')}
           </p>
         </div>
         <Link className="text-sm text-primary hover:underline" to="/stock">
-          Back to stock
+          {t('inventory.backToStock')}
         </Link>
       </div>
       {canAdjust ? (
@@ -99,12 +99,12 @@ export function TransfersPage() {
           }
         />
       ) : null}
-      <Card title="Currently in transit">
+      <Card title={t('inventory.transfers.inTransit')}>
         {transitQuery.isPending ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : null}
         {transitQuery.data?.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No stock is currently in transit.</p>
+          <p className="text-sm text-muted-foreground">{t('inventory.transfers.noTransit')}</p>
         ) : null}
         <div className="flex flex-wrap gap-2">
           {transitQuery.data?.map((row) => (
@@ -121,12 +121,12 @@ export function TransfersPage() {
       ) : null}
       {transfersQuery.isError ? (
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {message(transfersQuery.error, 'Could not load transfers.')}
+          {message(transfersQuery.error, t('inventory.transfers.loadError'))}
         </p>
       ) : null}
       {transfersQuery.data && transfers.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">No transfers yet.</p>
+          <p className="text-sm text-muted-foreground">{t('inventory.transfers.empty')}</p>
         </Card>
       ) : null}
       {transfers.map((transfer) => (
@@ -150,6 +150,7 @@ function TransferCreateCard({
   sourceBranch: string | null;
   onCreated: () => void;
 }) {
+  const { t } = useTranslation();
   const [fromBranch, setFromBranch] = useState('');
   const [toBranch, setToBranch] = useState('');
   const [variant, setVariant] = useState<PickedVariant | null>(null);
@@ -167,11 +168,11 @@ function TransferCreateCard({
       setError(null);
       onCreated();
     },
-    onError: (reason) => setError(message(reason, 'Could not create the transfer.')),
+    onError: (reason) => setError(message(reason, t('inventory.transfers.createError'))),
   });
   const addLine = () => {
     if (!variant || Number(qty) <= 0)
-      return setError('Pick a variant and enter a positive quantity.');
+      return setError(t('inventory.transfers.pickAndQty'));
     setLines((current) => [
       ...current.filter((line) => line.variant !== variant.id),
       { variant: variant.id, qty, label: `${variant.itemName} — ${variant.sku}` },
@@ -183,8 +184,8 @@ function TransferCreateCard({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!source || !destination || source === destination)
-      return setError('Choose two different branches.');
-    if (lines.length === 0) return setError('Add at least one transfer line.');
+      return setError(t('inventory.transfers.twoBranches'));
+    if (lines.length === 0) return setError(t('inventory.transfers.needLine'));
     mutation.mutate({
       from_branch: source,
       to_branch: destination,
@@ -193,17 +194,17 @@ function TransferCreateCard({
     });
   };
   return (
-    <Card title="Create transfer">
+    <Card title={t('inventory.transfers.create')}>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <SelectBranch
-            label="Source branch"
+            label={t('inventory.transfers.sourceBranch')}
             value={source}
             branches={branches}
             onChange={setFromBranch}
           />
           <SelectBranch
-            label="Destination branch"
+            label={t('inventory.transfers.destinationBranch')}
             value={destination}
             branches={branches.filter((branch) => branch.id !== source)}
             onChange={setToBranch}
@@ -217,7 +218,7 @@ function TransferCreateCard({
               className="ml-2 text-primary underline"
               onClick={() => setVariant(null)}
             >
-              Change
+              {t('catalog.picker.change')}
             </button>
           </p>
         ) : (
@@ -225,7 +226,7 @@ function TransferCreateCard({
         )}
         <div className="flex gap-2">
           <Input
-            aria-label="Transfer quantity"
+            aria-label={t('inventory.transfers.quantity')}
             type="number"
             min="0.001"
             step="0.001"
@@ -234,7 +235,7 @@ function TransferCreateCard({
             className="w-40"
           />
           <Button variant="secondary" onClick={addLine}>
-            Add transfer line
+            {t('inventory.transfers.addLine')}
           </Button>
         </div>
         {lines.map((line) => (
@@ -247,13 +248,13 @@ function TransferCreateCard({
           </div>
         ))}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="transfer-note">Note (optional)</Label>
+          <Label htmlFor="transfer-note">{t('inventory.transfers.note')}</Label>
           <textarea
             id="transfer-note"
-            aria-label="Transfer note"
+            aria-label={t('inventory.transfers.noteAria')}
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            placeholder="Note (optional)"
+            placeholder={t('inventory.transfers.note')}
             rows={2}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
@@ -264,7 +265,7 @@ function TransferCreateCard({
           </p>
         ) : null}
         <Button type="submit" disabled={mutation.isPending}>
-          Create transfer
+          {t('inventory.transfers.create')}
         </Button>
       </form>
     </Card>
@@ -310,6 +311,7 @@ function TransferCard({
   pending: boolean;
   onAction: (action: string, lines?: TransferLinePayload[]) => void;
 }) {
+  const { t } = useTranslation();
   const [receipts, setReceipts] = useState<Record<string, string>>({});
   const receivedLines = transfer.items.flatMap((item) =>
     Number(receipts[item.variant]) > 0
@@ -318,15 +320,15 @@ function TransferCard({
   );
   const receiving = transfer.status === 'SENT' && canAdjust;
   const columns: readonly ReportColumn[] = [
-    { header: 'Item' },
-    { header: 'SKU' },
-    { header: 'Sent', className: 'text-right' },
-    { header: 'Received', className: 'text-right' },
-    ...(receiving ? [{ header: 'Receive now' }] : []),
+    { header: t('inventory.transfers.columns.item') },
+    { header: t('inventory.transfers.columns.sku') },
+    { header: t('inventory.transfers.columns.sent'), className: 'text-right' },
+    { header: t('inventory.transfers.columns.received'), className: 'text-right' },
+    ...(receiving ? [{ header: t('inventory.transfers.columns.receiveNow') }] : []),
   ];
   const receiptInput = (variant: string, sku: string) => (
     <input
-      aria-label={`Receive ${sku}`}
+      aria-label={t('inventory.transfers.receiveSku', { sku })}
       type="number"
       min="0"
       step="0.001"
@@ -341,7 +343,7 @@ function TransferCard({
     />
   );
   return (
-    <Card title={`${transfer.status} · ${transfer.created_by_name ?? 'System'}`}>
+    <Card title={`${transfer.status} · ${transfer.created_by_name ?? t('inventory.system')}`}>
       <h2 className="text-lg font-semibold">
         {transfer.from_branch_code} → {transfer.to_branch_code}
       </h2>
@@ -353,7 +355,7 @@ function TransferCard({
           columns={columns}
           rows={transfer.items}
           rowKey={(item) => item.id}
-          empty="No lines on this transfer."
+          empty={t('inventory.transfers.emptyLines')}
           renderCells={(item) => (
             <>
               <TableCell className="font-medium">{item.item_name}</TableCell>
@@ -375,7 +377,10 @@ function TransferCard({
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1 text-right">
                 <p className="tabular-nums">
-                  Sent {item.qty_sent} · received {item.qty_received ?? '0'}
+                  {t('inventory.transfers.sentReceived', {
+                    sent: item.qty_sent,
+                    received: item.qty_received ?? '0',
+                  })}
                 </p>
                 {receiving ? receiptInput(item.variant, item.variant_sku) : null}
               </div>
@@ -388,10 +393,10 @@ function TransferCard({
           {transfer.status === 'DRAFT' ? (
             <>
               <Button disabled={pending} onClick={() => onAction('send')}>
-                Send transfer
+                {t('inventory.transfers.send')}
               </Button>
               <Button variant="danger" disabled={pending} onClick={() => onAction('cancel')}>
-                Cancel draft
+                {t('inventory.transfers.cancelDraft')}
               </Button>
             </>
           ) : null}
@@ -401,13 +406,13 @@ function TransferCard({
                 disabled={pending || receivedLines.length === 0}
                 onClick={() => onAction('receive', receivedLines)}
               >
-                Receive entered
+                {t('inventory.transfers.receiveEntered')}
               </Button>
               <Button variant="secondary" disabled={pending} onClick={() => onAction('complete')}>
-                Complete transfer
+                {t('inventory.transfers.complete')}
               </Button>
               <span className="text-xs text-warning">
-                Completing writes any remaining quantity off as a transfer shortage.
+                {t('inventory.transfers.shortageWarning')}
               </span>
             </>
           ) : null}

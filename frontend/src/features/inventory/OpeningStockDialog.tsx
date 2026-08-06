@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import {
@@ -27,6 +28,7 @@ interface OpeningStockDialogProps {
  * only way stock enters the system besides purchasing (invariant 1).
  */
 export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProps) {
+  const { t } = useTranslation();
   const workspace = useWorkspace();
   const [variant, setVariant] = useState<PickedVariant | null>(null);
   const [qty, setQty] = useState('');
@@ -38,18 +40,18 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
     mutationFn: postOpeningStock,
     onSuccess: onPosted,
     onError: (err) =>
-      setError(err instanceof ApiError ? err.message : 'Could not post opening stock.'),
+      setError(err instanceof ApiError ? err.message : t('inventory.opening.postError')),
   });
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     if (!variant) {
-      setError('Pick a variant first.');
+      setError(t('inventory.operation.pickVariant'));
       return;
     }
     if (!workspace.branchId) {
-      setError('Select an active branch first.');
+      setError(t('inventory.operation.selectBranch'));
       return;
     }
     mutation.mutate({
@@ -63,9 +65,9 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
-      <DialogContent aria-label="Add opening stock" className="max-w-md">
+      <DialogContent aria-label={t('inventory.opening.title')} className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add opening stock</DialogTitle>
+          <DialogTitle>{t('inventory.opening.title')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
           {variant ? (
@@ -79,7 +81,7 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
                 className="text-primary hover:underline"
                 onClick={() => setVariant(null)}
               >
-                Change
+                {t('catalog.picker.change')}
               </button>
             </div>
           ) : (
@@ -88,7 +90,7 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
 
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Quantity"
+              label={t('inventory.opening.quantity')}
               value={qty}
               onChange={(e) => setQty(e.target.value)}
               inputMode="decimal"
@@ -96,7 +98,7 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
               placeholder="20"
             />
             <Input
-              label="Unit cost (रू)"
+              label={t('inventory.opening.unitCost')}
               value={unitCost}
               onChange={(e) => setUnitCost(e.target.value)}
               inputMode="decimal"
@@ -106,7 +108,7 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
           </div>
 
           <Input
-            label="Note (optional)"
+            label={t('inventory.opening.note')}
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
@@ -119,10 +121,10 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
 
           <DialogFooter className="gap-2 sm:space-x-0">
             <Button variant="secondary" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Posting…' : 'Post opening stock'}
+              {mutation.isPending ? t('inventory.posting') : t('inventory.opening.post')}
             </Button>
           </DialogFooter>
         </form>
