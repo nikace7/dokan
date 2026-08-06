@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/ui/Input';
 import {
@@ -22,6 +23,7 @@ export function InvoiceAllocationPicker({
   values: Record<string, string>;
   onChange: (values: Record<string, string>) => void;
 }) {
+  const { t } = useTranslation();
   const query = useQuery({
     queryKey: ['payments', 'allocation-invoices', party, partyId],
     queryFn: () =>
@@ -40,21 +42,19 @@ export function InvoiceAllocationPicker({
 
   return (
     <div className="rounded-md border border-border bg-muted/50 p-3 sm:col-span-2">
-      <p className="text-sm font-medium">Allocate against invoices (optional)</p>
+      <p className="text-sm font-medium">{t('payments.allocation.title')}</p>
       {query.isFetching ? (
-        <p className="mt-1 text-xs text-muted-foreground">Loading open invoices…</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t('payments.allocation.loading')}</p>
       ) : null}
       {query.isError ? (
         <p role="alert" className="mt-1 text-xs text-destructive">
           {query.error instanceof ApiError || query.error instanceof Error
             ? query.error.message
-            : 'Could not load open invoices.'}
+            : t('payments.allocation.loadError')}
         </p>
       ) : null}
       {query.data && invoices.length === 0 ? (
-        <p className="mt-1 text-xs text-muted-foreground">
-          No open invoices. The payment can remain unallocated.
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{t('payments.allocation.empty')}</p>
       ) : null}
       {invoices.length > 0 ? (
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -69,7 +69,9 @@ export function InvoiceAllocationPicker({
         </div>
       ) : null}
       {total > 0 ? (
-        <p className="mt-2 text-xs text-muted-foreground">Allocated: {formatNpr(total)}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {t('payments.allocation.allocated', { amount: formatNpr(total) })}
+        </p>
       ) : null}
     </div>
   );
@@ -84,7 +86,8 @@ function AllocationField({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const label = `Allocation for invoice ${invoice.invoice_no ?? '—'}`;
+  const { t } = useTranslation();
+  const label = t('payments.allocation.fieldLabel', { invoice: invoice.invoice_no ?? '—' });
   return (
     <Input
       label={label}
@@ -94,7 +97,9 @@ function AllocationField({
       max={invoice.outstanding}
       step="0.01"
       value={value}
-      placeholder={`Open ${formatNpr(invoice.outstanding, { symbol: '' })}`}
+      placeholder={t('payments.allocation.openAmount', {
+        amount: formatNpr(invoice.outstanding, { symbol: '' }),
+      })}
       onChange={(event) => onChange(event.target.value)}
     />
   );

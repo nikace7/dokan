@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -34,6 +35,7 @@ function formForRole(role: Role): RoleForm {
 
 /** Owner-facing custom role editor; system roles remain read-only. */
 export function RoleManagementCard({ roles }: { roles: Role[] }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const permissionsQuery = useQuery({
     queryKey: ['tenant', 'permissions'],
@@ -65,18 +67,18 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
       setEditingId(null);
       setForm(EMPTY_FORM);
       setFormError(null);
-      setMessage(editingId ? 'Role updated.' : 'Role created.');
+      setMessage(editingId ? t('settings.roles.updated') : t('settings.roles.created'));
     },
-    onError: (error) => setFormError(errorMessage(error, 'Could not save the role.')),
+    onError: (error) => setFormError(errorMessage(error, t('settings.roles.saveError'))),
   });
   const deleteMutation = useMutation({
     mutationFn: deleteRole,
     onSuccess: () => {
       void refreshRoles();
-      setMessage('Role deleted.');
+      setMessage(t('settings.roles.deleted'));
       setFormError(null);
     },
-    onError: (error) => setMessage(errorMessage(error, 'Could not delete the role.')),
+    onError: (error) => setMessage(errorMessage(error, t('settings.roles.deleteError'))),
   });
 
   const permissions = permissionsQuery.data ?? [];
@@ -84,7 +86,9 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if ((!editingId && !form.code.trim()) || !form.name.trim()) {
-      setFormError(editingId ? 'Role name is required.' : 'Role code and name are required.');
+      setFormError(
+        editingId ? t('settings.roles.nameRequired') : t('settings.roles.codeNameRequired'),
+      );
       return;
     }
     setMessage(null);
@@ -103,7 +107,7 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
   }
 
   return (
-    <Card title="Custom roles / भूमिका">
+    <Card title={t('settings.roles.title')}>
       {message ? (
         <p
           role="status"
@@ -115,20 +119,20 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
       <form onSubmit={submit} className="flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
-            label="Role code"
+            label={t('settings.roles.code')}
             disabled={editingId !== null}
             value={form.code}
             onChange={(event) => setForm({ ...form, code: event.target.value })}
           />
           <Input
-            label="Role name"
+            label={t('settings.roles.name')}
             required
             value={form.name}
             onChange={(event) => setForm({ ...form, name: event.target.value })}
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="role-description">Description</Label>
+          <Label htmlFor="role-description">{t('settings.roles.description')}</Label>
           <textarea
             id="role-description"
             value={form.description}
@@ -137,9 +141,11 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
           />
         </div>
         <fieldset className="rounded-md border border-border p-3">
-          <legend className="px-1 text-sm font-medium">Permissions</legend>
+          <legend className="px-1 text-sm font-medium">{t('settings.roles.permissions')}</legend>
           {permissionsQuery.isPending ? (
-            <p className="text-sm text-muted-foreground">Loading permissions…</p>
+            <p className="text-sm text-muted-foreground">
+              {t('settings.roles.loadingPermissions')}
+            </p>
           ) : null}
           <div className="grid gap-2 sm:grid-cols-2">
             {permissions.map((permission: Permission) => (
@@ -165,7 +171,11 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
         ) : null}
         <div className="flex gap-2">
           <Button type="submit" disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? 'Saving…' : editingId ? 'Update role' : 'Create role'}
+            {saveMutation.isPending
+              ? t('common.saving')
+              : editingId
+                ? t('settings.roles.update')
+                : t('settings.roles.create')}
           </Button>
           {editingId ? (
             <Button
@@ -177,14 +187,14 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
                 setFormError(null);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
           ) : null}
         </div>
       </form>
 
       <div className="mt-5 border-t border-border pt-4">
-        <h3 className="text-sm font-semibold">Configured roles</h3>
+        <h3 className="text-sm font-semibold">{t('settings.roles.configured')}</h3>
         <ul className="mt-2 grid gap-2 sm:grid-cols-2">
           {roles.map((role) => (
             <li key={role.id} className="rounded-md border border-border p-3 text-sm">
@@ -194,11 +204,13 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
                     {role.name} <span className="text-muted-foreground">({role.code})</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {role.permission_codes.length} permission(s)
+                    {t('settings.roles.permissionCount', { count: role.permission_codes.length })}
                   </p>
                 </div>
                 {role.is_system ? (
-                  <span className="text-xs text-muted-foreground">System role</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t('settings.roles.systemRole')}
+                  </span>
                 ) : (
                   <div className="flex gap-1">
                     <Button
@@ -211,19 +223,19 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
                         setFormError(null);
                       }}
                     >
-                      Edit
+                      {t('settings.roles.edit')}
                     </Button>
                     <Button
                       size="sm"
                       variant="danger"
                       disabled={deleteMutation.isPending}
                       onClick={() => {
-                        if (window.confirm(`Delete the ${role.name} role?`)) {
+                        if (window.confirm(t('settings.roles.deleteConfirm', { name: role.name }))) {
                           deleteMutation.mutate(role.id);
                         }
                       }}
                     >
-                      Delete
+                      {t('settings.roles.delete')}
                     </Button>
                   </div>
                 )}

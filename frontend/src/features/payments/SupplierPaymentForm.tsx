@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -14,10 +15,8 @@ import { useWorkspace } from '@/features/settings/useWorkspace';
 
 const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
 
-function errorMessage(error: unknown): string {
-  return error instanceof ApiError || error instanceof Error
-    ? error.message
-    : 'Could not record the supplier payment.';
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError || error instanceof Error ? error.message : fallback;
 }
 
 function SupplierField({
@@ -33,6 +32,7 @@ function SupplierField({
   onSelect: (value: Supplier) => void;
   onClear: () => void;
 }) {
+  const { t } = useTranslation();
   const query = useQuery({
     queryKey: ['payments', 'suppliers', search],
     queryFn: () => listSuppliers(search),
@@ -46,10 +46,10 @@ function SupplierField({
       <div className="flex items-center justify-between rounded-md border border-primary/30 bg-accent px-3 py-2">
         <span className="text-sm">
           <strong>{supplier.name}</strong>{' '}
-          <span className="text-muted-foreground">{supplier.phone || 'No phone'}</span>
+          <span className="text-muted-foreground">{supplier.phone || t('common.noPhone')}</span>
         </span>
         <Button type="button" variant="secondary" size="sm" onClick={onClear}>
-          Change
+          {t('common.change')}
         </Button>
       </div>
     );
@@ -58,14 +58,16 @@ function SupplierField({
   return (
     <div>
       <Input
-        label="Supplier"
-        aria-label="Search supplier for payment"
+        label={t('payments.supplier')}
+        aria-label={t('payments.supplierSearchAria')}
         value={search}
         onChange={(event) => onSearch(event.target.value)}
-        placeholder="Search supplier by name…"
+        placeholder={t('payments.supplierSearchPlaceholder')}
         autoComplete="off"
       />
-      {query.isFetching ? <p className="mt-1 text-xs text-muted-foreground">Searching…</p> : null}
+      {query.isFetching ? (
+        <p className="mt-1 text-xs text-muted-foreground">{t('common.searching')}</p>
+      ) : null}
       {suppliers.length > 0 ? (
         <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-popover">
           {suppliers.map((result) => (
@@ -87,6 +89,7 @@ function SupplierField({
 }
 
 export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) {
+  const { t } = useTranslation();
   const workspace = useWorkspace();
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [search, setSearch] = useState('');
@@ -99,7 +102,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
   const mutation = useMutation({
     mutationFn: () => {
       if (!workspace.branchId || !supplier || !amount.trim()) {
-        throw new Error('Branch, supplier, and amount are required.');
+        throw new Error(t('payments.supplierRequiredFull'));
       }
       return recordSupplierPayment({
         branch: workspace.branchId,
@@ -123,17 +126,17 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
       setError(null);
       onRecorded();
     },
-    onError: (err) => setError(errorMessage(err)),
+    onError: (err) => setError(errorMessage(err, t('payments.supplierSaveError'))),
   });
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!workspace.branchId) {
-      setError('Select an active branch before recording payments.');
+      setError(t('payments.supplierBranch'));
       return;
     }
     if (!supplier || !amount.trim()) {
-      setError('Supplier and amount are required.');
+      setError(t('payments.supplierRequired'));
       return;
     }
     mutation.mutate();
@@ -166,7 +169,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
         />
       ) : null}
       <Input
-        label="Amount (NPR)"
+        label={t('common.amountNpr')}
         type="number"
         min="0.01"
         step="0.01"
@@ -174,7 +177,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
         onChange={(event) => setAmount(event.target.value)}
       />
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="supplier-payment-method">Method</Label>
+        <Label htmlFor="supplier-payment-method">{t('common.method')}</Label>
         <select
           id="supplier-payment-method"
           value={method}
@@ -189,11 +192,11 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
         </select>
       </div>
       <Input
-        label="Reference no."
+        label={t('payments.referenceNo')}
         value={refNo}
         onChange={(event) => setRefNo(event.target.value)}
       />
-      <Input label="Note" value={note} onChange={(event) => setNote(event.target.value)} />
+      <Input label={t('common.note')} value={note} onChange={(event) => setNote(event.target.value)} />
       {error ? (
         <p role="alert" className="text-sm text-destructive sm:col-span-2">
           {error}
@@ -201,7 +204,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
       ) : null}
       <div className="sm:col-span-2">
         <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Saving…' : 'Record supplier payment'}
+          {mutation.isPending ? t('common.saving') : t('payments.recordSupplierPayment')}
         </Button>
       </div>
     </form>

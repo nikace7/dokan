@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -57,6 +58,7 @@ const selectClasses =
  * display-only.
  */
 export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceFormProps) {
+  const { t } = useTranslation();
   const workspace = useWorkspace();
   const { user } = useAuth();
   const allowVatBill = hasPlanFeature(user, 'vat_module');
@@ -82,7 +84,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
       onCreated(invoice);
     },
     onError: (err) =>
-      setError(err instanceof ApiError ? err.message : 'Could not save the purchase invoice.'),
+      setError(err instanceof ApiError ? err.message : t('purchasing.form.saveError')),
   });
 
   const addVariant = (variant: PickedVariant) => {
@@ -107,15 +109,15 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
     event.preventDefault();
     setError(null);
     if (!supplier) {
-      setError('Pick a supplier.');
+      setError(t('purchasing.form.errSupplier'));
       return;
     }
     if (lines.length === 0 || lines.some((l) => l.qty.trim() === '' || l.unitCost.trim() === '')) {
-      setError('Every line needs a quantity and a unit cost.');
+      setError(t('purchasing.form.errLines'));
       return;
     }
     if (!workspace.branchId) {
-      setError('Select an active branch first.');
+      setError(t('purchasing.form.errBranch'));
       return;
     }
     createMutation.mutate({
@@ -141,14 +143,14 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="purchase-supplier">Supplier</Label>
+          <Label htmlFor="purchase-supplier">{t('purchasing.form.supplier')}</Label>
           <select
             id="purchase-supplier"
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
             className={selectClasses}
           >
-            <option value="">— pick —</option>
+            <option value="">{t('purchasing.form.pickSupplier')}</option>
             {(suppliersQuery.data?.data ?? [])
               .filter((s) => s.is_active)
               .map((s) => (
@@ -159,7 +161,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
           </select>
         </div>
         <Input
-          label="Bill date (AD)"
+          label={t('purchasing.form.billDate')}
           id="purchase-date"
           type="date"
           value={billDate}
@@ -174,12 +176,12 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
               onChange={(e) => setIsVatBill(e.target.checked)}
               className="h-4 w-4 accent-primary"
             />
-            VAT bill
+            {t('purchasing.form.vatBill')}
           </label>
         ) : null}
       </div>
 
-      <VariantPicker onPick={addVariant} placeholder="Add a line: search item…" />
+      <VariantPicker onPick={addVariant} placeholder={t('purchasing.form.addLinePlaceholder')} />
 
       {lines.length > 0 ? (
         <div className="rounded-md border border-border">
@@ -195,14 +197,14 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
                 </div>
                 <div className="flex items-end gap-2">
                   <Input
-                    aria-label={`Quantity for ${line.label}`}
+                    aria-label={t('purchasing.form.quantityFor', { label: line.label })}
                     value={line.qty}
                     onChange={(e) => updateLine(line.variantId, { qty: e.target.value })}
                     inputMode="decimal"
                     className="w-20 text-right"
                   />
                   <Input
-                    aria-label={`Unit cost for ${line.label}`}
+                    aria-label={t('purchasing.form.unitCostFor', { label: line.label })}
                     value={line.unitCost}
                     onChange={(e) => updateLine(line.variantId, { unitCost: e.target.value })}
                     inputMode="decimal"
@@ -215,7 +217,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
                 </p>
                 <button
                   type="button"
-                  aria-label={`Remove ${line.label}`}
+                  aria-label={t('purchasing.form.remove', { label: line.label })}
                   className="rounded p-1 text-destructive hover:bg-destructive/10"
                   onClick={() =>
                     setLines((current) => current.filter((l) => l.variantId !== line.variantId))
@@ -227,7 +229,9 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
             ))}
           </ul>
           <div className="flex items-center justify-between border-t border-border px-3 py-2 text-sm">
-            <span className="font-semibold text-muted-foreground">Total (display only)</span>
+            <span className="font-semibold text-muted-foreground">
+              {t('purchasing.form.totalDisplayOnly')}
+            </span>
             <span className="font-bold tabular-nums">
               {formatPaisa(totalPaisa, { symbol: 'रू ' })}
             </span>
@@ -237,7 +241,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Input
-          label="Other charges (रू)"
+          label={t('purchasing.form.otherCharges')}
           id="purchase-other"
           value={otherCharges}
           onChange={(e) => setOtherCharges(e.target.value)}
@@ -245,7 +249,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
           placeholder="0.00"
         />
         <Input
-          label="Paid now (रू)"
+          label={t('purchasing.form.paidNow')}
           id="purchase-paid"
           value={paidAmount}
           onChange={(e) => setPaidAmount(e.target.value)}
@@ -253,7 +257,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
           placeholder="0.00"
         />
         <Input
-          label="Note"
+          label={t('common.note')}
           id="purchase-note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -268,10 +272,10 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
 
       <div className="flex gap-2">
         <Button type="submit" disabled={createMutation.isPending || lines.length === 0}>
-          {createMutation.isPending ? 'Saving…' : 'Save draft'}
+          {createMutation.isPending ? t('common.saving') : t('purchasing.form.saveDraft')}
         </Button>
         <Button variant="secondary" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </form>

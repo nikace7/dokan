@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -18,6 +19,7 @@ import { ApiError } from '@/lib/api/client';
 
 /** Supplier list + quick create form (name is the only required field). */
 export function SuppliersPanel() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
@@ -43,7 +45,7 @@ export function SuppliersPanel() {
       void queryClient.invalidateQueries({ queryKey: ['purchasing', 'suppliers'] });
     },
     onError: (err) =>
-      setError(err instanceof ApiError ? err.message : 'Could not create the supplier.'),
+      setError(err instanceof ApiError ? err.message : t('purchasing.suppliers.createError')),
   });
 
   const onSubmit = (event: FormEvent) => {
@@ -60,10 +62,10 @@ export function SuppliersPanel() {
 
   return (
     <Card
-      title="Suppliers / सप्लायर"
+      title={t('purchasing.suppliers.title')}
       actions={
         <Button variant="secondary" size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Close' : 'New supplier'}
+          {showForm ? t('purchasing.suppliers.close') : t('purchasing.suppliers.new')}
         </Button>
       }
     >
@@ -73,33 +75,33 @@ export function SuppliersPanel() {
           className="mb-4 grid gap-2 rounded-md border border-border bg-muted/50 p-3 sm:grid-cols-4"
         >
           <Input
-            aria-label="Supplier name"
+            aria-label={t('purchasing.suppliers.nameAria')}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Name *"
+            placeholder={t('purchasing.suppliers.namePlaceholder')}
             required
           />
           <Input
-            aria-label="Supplier phone"
+            aria-label={t('purchasing.suppliers.phoneAria')}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="Phone"
+            placeholder={t('purchasing.suppliers.phonePlaceholder')}
           />
           <Input
-            aria-label="Supplier PAN"
+            aria-label={t('purchasing.suppliers.panAria')}
             value={panNo}
             onChange={(e) => setPanNo(e.target.value)}
-            placeholder="PAN no."
+            placeholder={t('purchasing.suppliers.panPlaceholder')}
           />
           <div className="flex items-start gap-2">
             <Input
-              aria-label="Supplier address"
+              aria-label={t('purchasing.suppliers.addressAria')}
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Address"
+              placeholder={t('purchasing.suppliers.addressPlaceholder')}
             />
             <Button type="submit" size="sm" disabled={createMutation.isPending || !name.trim()}>
-              {createMutation.isPending ? 'Saving…' : 'Add'}
+              {createMutation.isPending ? t('common.saving') : t('purchasing.suppliers.add')}
             </Button>
           </div>
           {error ? (
@@ -111,10 +113,12 @@ export function SuppliersPanel() {
       ) : null}
 
       {suppliersQuery.isFetching ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       ) : null}
       {suppliersQuery.data && suppliers.length === 0 ? (
-        <p className="py-4 text-center text-sm text-muted-foreground">No suppliers yet.</p>
+        <p className="py-4 text-center text-sm text-muted-foreground">
+          {t('purchasing.suppliers.empty')}
+        </p>
       ) : null}
       {suppliers.length > 0 ? (
         <>
@@ -124,15 +128,15 @@ export function SuppliersPanel() {
                 <p className="font-medium">{supplier.name}</p>
                 <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
                   <div className="flex gap-1">
-                    <dt className="text-muted-foreground">Phone</dt>
+                    <dt className="text-muted-foreground">{t('purchasing.suppliers.phone')}</dt>
                     <dd>{supplier.phone ?? '—'}</dd>
                   </div>
                   <div className="flex gap-1">
-                    <dt className="text-muted-foreground">PAN</dt>
+                    <dt className="text-muted-foreground">{t('purchasing.suppliers.pan')}</dt>
                     <dd>{supplier.pan_no ?? '—'}</dd>
                   </div>
                   <div className="col-span-2 flex gap-1">
-                    <dt className="text-muted-foreground">Address</dt>
+                    <dt className="text-muted-foreground">{t('purchasing.suppliers.address')}</dt>
                     <dd>{supplier.address ?? '—'}</dd>
                   </div>
                 </dl>
@@ -143,10 +147,10 @@ export function SuppliersPanel() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>PAN</TableHead>
-                  <TableHead>Address</TableHead>
+                  <TableHead>{t('purchasing.suppliers.name')}</TableHead>
+                  <TableHead>{t('purchasing.suppliers.phone')}</TableHead>
+                  <TableHead>{t('purchasing.suppliers.pan')}</TableHead>
+                  <TableHead>{t('purchasing.suppliers.address')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
