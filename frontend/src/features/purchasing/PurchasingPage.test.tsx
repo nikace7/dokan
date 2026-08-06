@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
@@ -111,8 +111,10 @@ describe('PurchasingPage draft → confirm', () => {
 
     // Invoice list renders with the DRAFT badge; expand the row.
     expect(await screen.findByText('PI-2083-0001')).toBeInTheDocument();
-    expect(screen.getByText('DRAFT')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /PI-2083-0001/ }));
+    const row = screen.getByRole('button', { name: /PI-2083-0001/ });
+    // The status filter also lists these words — scope badge checks to the row.
+    expect(within(row).getByText('Draft')).toBeInTheDocument();
+    fireEvent.click(row);
 
     // Lines render; the guarded confirm explains what it does.
     expect(screen.getByText('T-Shirt')).toBeInTheDocument();
@@ -132,7 +134,7 @@ describe('PurchasingPage draft → confirm', () => {
     });
 
     // After invalidation the refetched list shows the confirmed badge.
-    expect(await screen.findByText('CONFIRMED')).toBeInTheDocument();
-    expect(screen.queryByText('DRAFT')).not.toBeInTheDocument();
+    expect(await within(row).findByText('Confirmed')).toBeInTheDocument();
+    expect(within(row).queryByText('Draft')).not.toBeInTheDocument();
   });
 });

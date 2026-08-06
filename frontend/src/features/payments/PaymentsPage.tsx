@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -45,6 +46,7 @@ function CustomerField({
   onSelect: (value: Customer) => void;
   onClear: () => void;
 }) {
+  const { t } = useTranslation();
   const query = useQuery({
     queryKey: ['payments', 'customers', search],
     queryFn: () => searchCustomers(search),
@@ -60,7 +62,7 @@ function CustomerField({
           <span className="text-muted-foreground">{customer.phone}</span>
         </span>
         <Button type="button" variant="secondary" size="sm" onClick={onClear}>
-          Change
+          {t('common.change')}
         </Button>
       </div>
     );
@@ -69,15 +71,15 @@ function CustomerField({
   return (
     <div>
       <Input
-        label="Customer"
-        aria-label="Search customer for receipt"
+        label={t('payments.customer')}
+        aria-label={t('payments.customerSearchAria')}
         value={search}
         onChange={(event) => onSearch(event.target.value)}
-        placeholder="Search by name or phone…"
+        placeholder={t('common.searchByNameOrPhone')}
         autoComplete="off"
       />
       {query.isFetching ? (
-        <p className="mt-1 text-xs text-muted-foreground">Searching…</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t('common.searching')}</p>
       ) : null}
       {query.data && query.data.length > 0 ? (
         <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-popover">
@@ -100,6 +102,7 @@ function CustomerField({
 }
 
 function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
+  const { t } = useTranslation();
   const workspace = useWorkspace();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [search, setSearch] = useState('');
@@ -113,7 +116,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
   const mutation = useMutation({
     mutationFn: () => {
       if (!workspace.branchId || !customer || !amount.trim()) {
-        throw new Error('Branch, customer, and amount are required.');
+        throw new Error(t('payments.receiptRequiredFull'));
       }
       return recordReceipt({
         branch: workspace.branchId,
@@ -137,17 +140,17 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
       setError(null);
       onRecorded();
     },
-    onError: (err) => setError(message(err, 'Could not record the receipt.')),
+    onError: (err) => setError(message(err, t('payments.receiptSaveError'))),
   });
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!workspace.branchId) {
-      setError('Select an active branch before recording receipts.');
+      setError(t('payments.receiptBranch'));
       return;
     }
     if (!customer || !amount.trim()) {
-      setError('Customer and amount are required.');
+      setError(t('payments.receiptRequired'));
       return;
     }
     mutation.mutate();
@@ -180,7 +183,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         />
       ) : null}
       <Input
-        label="Amount (NPR)"
+        label={t('common.amountNpr')}
         type="number"
         min="0.01"
         step="0.01"
@@ -188,7 +191,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         onChange={(event) => setAmount(event.target.value)}
       />
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="receipt-method">Method</Label>
+        <Label htmlFor="receipt-method">{t('common.method')}</Label>
         <select
           id="receipt-method"
           value={method}
@@ -203,11 +206,11 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         </select>
       </div>
       <Input
-        label="Reference no."
+        label={t('payments.referenceNo')}
         value={refNo}
         onChange={(event) => setRefNo(event.target.value)}
       />
-      <Input label="Note" value={note} onChange={(event) => setNote(event.target.value)} />
+      <Input label={t('common.note')} value={note} onChange={(event) => setNote(event.target.value)} />
       {error ? (
         <p role="alert" className="text-sm text-destructive sm:col-span-2">
           {error}
@@ -215,7 +218,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
       ) : null}
       <div className="sm:col-span-2">
         <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Saving…' : 'Record receipt'}
+          {mutation.isPending ? t('common.saving') : t('payments.recordReceipt')}
         </Button>
       </div>
     </form>
@@ -224,6 +227,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
 
 /** Payment history: card list below `md`, full table from `md` up. */
 function PaymentList({ payments }: { payments: Payment[] }) {
+  const { t } = useTranslation();
   return (
     <>
       <ul className="divide-y divide-border md:hidden">
@@ -245,11 +249,11 @@ function PaymentList({ payments }: { payments: Payment[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>BS date</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Method</TableHead>
-              <TableHead>Note</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>{t('payments.bsDate')}</TableHead>
+              <TableHead>{t('payments.customer')}</TableHead>
+              <TableHead>{t('common.method')}</TableHead>
+              <TableHead>{t('common.note')}</TableHead>
+              <TableHead className="text-right">{t('payments.amount')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -273,6 +277,7 @@ function PaymentList({ payments }: { payments: Payment[] }) {
 
 /** Customer khata collection and append-only payment history. */
 export function PaymentsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [method, setMethod] = useState<ReceiptMethod | ''>('');
   const [page, setPage] = useState(1);
@@ -292,21 +297,21 @@ export function PaymentsPage() {
         </p>
       ) : null}
       <CashSessionPanel />
-      <Card title="Collect customer receipt / उधारो उठाउने">
+      <Card title={t('payments.receiptTitle')}>
         <ReceiptForm
           onRecorded={() => {
-            setStatusMessage('Receipt recorded.');
+            setStatusMessage(t('payments.receiptRecorded'));
             void queryClient.invalidateQueries({ queryKey: ['payments', 'list'] });
           }}
         />
       </Card>
-      <Card title="Pay supplier / सप्लायर भुक्तानी">
-        <SupplierPaymentForm onRecorded={() => setStatusMessage('Supplier payment recorded.')} />
+      <Card title={t('payments.supplierTitle')}>
+        <SupplierPaymentForm onRecorded={() => setStatusMessage(t('payments.supplierRecorded'))} />
       </Card>
-      <Card title="Payment history / भुक्तानी इतिहास">
+      <Card title={t('payments.historyTitle')}>
         <div className="mb-3 flex flex-wrap items-end gap-2">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="payment-method-filter">Filter by method</Label>
+            <Label htmlFor="payment-method-filter">{t('payments.filterByMethod')}</Label>
             <select
               id="payment-method-filter"
               value={method}
@@ -316,7 +321,7 @@ export function PaymentsPage() {
               }}
               className={selectClasses}
             >
-              <option value="">All methods</option>
+              <option value="">{t('payments.allMethods')}</option>
               {METHODS.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -326,23 +331,24 @@ export function PaymentsPage() {
           </div>
         </div>
         {paymentsQuery.isFetching ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+          <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : null}
         {paymentsQuery.isError ? (
           <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {message(paymentsQuery.error, 'Failed to load payment history.')}
+            {message(paymentsQuery.error, t('payments.historyLoadError'))}
           </p>
         ) : null}
         {paymentsQuery.data && payments.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No customer receipts yet.
+            {t('payments.historyEmpty')}
           </p>
         ) : null}
         {payments.length > 0 ? <PaymentList payments={payments} /> : null}
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              Page {meta.page} of {meta.total_pages} ({meta.count} receipts)
+              {t('common.pageOf', { page: meta.page, total: meta.total_pages })} (
+              {t('payments.historyCount', { count: meta.count })})
             </span>
             <div className="flex gap-2">
               <Button
@@ -351,7 +357,7 @@ export function PaymentsPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((current) => current - 1)}
               >
-                Previous
+                {t('common.previous')}
               </Button>
               <Button
                 variant="secondary"
@@ -359,7 +365,7 @@ export function PaymentsPage() {
                 disabled={meta.page >= meta.total_pages}
                 onClick={() => setPage((current) => current + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           </div>
