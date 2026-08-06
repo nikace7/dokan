@@ -7,6 +7,7 @@ import { fetchDashboard } from '@/features/dashboard/api';
 import type { DashboardBill, DashboardSalesDay } from '@/features/dashboard/api';
 import { formatNpr, toPaisa } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
+import { billingPath } from '@/lib/plans';
 
 const actionClass =
   'inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 font-semibold text-blue-800 shadow-sm hover:bg-blue-50';
@@ -85,7 +86,10 @@ export function DashboardPage() {
 
       <nav className="flex flex-wrap gap-3" aria-label="Quick actions">
         {hasPermission(user, 'sale.create') ? (
-          <Link to="/billing" className={`${actionClass} border-blue-700 bg-blue-700 text-white`}>
+          <Link
+            to={billingPath(user)}
+            className={`${actionClass} border-blue-700 bg-blue-700 text-white`}
+          >
             + नयाँ बिल / New bill
           </Link>
         ) : null}

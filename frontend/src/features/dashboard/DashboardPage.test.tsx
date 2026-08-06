@@ -15,7 +15,7 @@ function response(data: unknown): Response {
   });
 }
 
-function me(permissions: string[]) {
+function me(permissions: string[], features: Record<string, unknown> = {}) {
   return {
     id: 'user-1',
     phone: '9800000000',
@@ -24,7 +24,11 @@ function me(permissions: string[]) {
     must_change_password: false,
     is_owner: permissions.includes('report.profit'),
     permissions,
-    plan: { code: 'pro', name: 'Pro', features: { profit_reports: true } },
+    plan: {
+      code: 'pro',
+      name: 'Pro',
+      features: { profit_reports: true, advanced_pos: true, ...features },
+    },
   };
 }
 
@@ -142,5 +146,33 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('बाँकी रकम / Receivables')).not.toBeInTheDocument();
     expect(screen.getAllByRole('link')).toHaveLength(1);
     expect(screen.getByRole('link', { name: /new bill/i })).toBeInTheDocument();
+  });
+
+  it('points New bill at the simple sale screen without advanced_pos', async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/auth/me')) {
+        return Promise.resolve(
+          response(me(['sale.create', 'sale.view', 'stock.view'], { advanced_pos: false })),
+        );
+      }
+      if (url.includes('/v1/dashboard')) {
+        return Promise.resolve(
+          response({
+            shop_name: 'Shree Ganesh Vastralaya',
+            business_date_bs: '2083-04-20',
+            sales: { today_total: '8000.00', bill_count: 4, last_30_days: [] },
+            low_stock: { count: 2 },
+            recent_bills: [],
+          }),
+        );
+      }
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    renderPage();
+
+    const link = await screen.findByRole('link', { name: /new bill/i });
+    expect(link).toHaveAttribute('href', '/billing/simple');
   });
 });
