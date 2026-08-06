@@ -16,6 +16,8 @@ async function newGuestPage(browser: Browser) {
     baseURL: config.baseURL,
     ignoreHTTPSErrors: true,
   });
+  // Pin English — the app otherwise defaults to Nepali on first run.
+  await context.addInitScript(() => localStorage.setItem('dokan-lang', 'en'));
   const page = await context.newPage();
   return { context, page };
 }
@@ -66,7 +68,7 @@ test.describe('simple sale', () => {
       await expect(guest.page.getByRole('heading', { name: 'Demo Store' })).toBeVisible();
       await expect(guest.page.getByRole('heading', { name: invoice })).toBeVisible();
       await expect(guest.page.getByText(/Denim Jacket/)).toBeVisible();
-      await expect(guest.page.getByText('Total / जम्मा')).toBeVisible();
+      await expect(guest.page.getByText('Total', { exact: true }).first()).toBeVisible();
       // No login redirect — the link alone authorizes the read.
       await expect(guest.page).toHaveURL(new RegExp(escapeRegExp(sharePath)));
     } finally {
