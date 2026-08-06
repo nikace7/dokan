@@ -31,6 +31,9 @@ class PlanFactory(DjangoModelFactory):
         "sms_credits_per_month": 100,
     }
     features = {
+        # Both sale-mode features on so existing tests keep the classic POS.
+        "simple_sale": True,
+        "advanced_pos": True,
         "sms": True,
         "profit_reports": True,
         "custom_rate_types": True,

@@ -58,6 +58,10 @@ class Command(BaseCommand):
                     "sms_credits_per_month": 1000,
                 },
                 "features": {
+                    # Demo defaults to the simple sale screen; the advanced
+                    # barcode POS stays off until the shop asks for it.
+                    "simple_sale": True,
+                    "advanced_pos": False,
                     "sms": True,
                     "profit_reports": True,
                     "custom_rate_types": True,
