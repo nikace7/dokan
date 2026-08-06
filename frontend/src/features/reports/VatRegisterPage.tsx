@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/Card';
+import { TableCell, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { currentBsMonthRange } from '@/features/reports/api';
 import { fetchPurchaseVatRegister, fetchSalesVatRegister } from '@/features/reports/api';
 import type { BsRange, PurchaseVatRow, SalesVatRow, VatRegister } from '@/features/reports/api';
 import { BsRangeControls } from '@/features/reports/BsRangeControls';
+import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
+import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr } from '@/lib/money';
 
 type RegisterKind = 'sales' | 'purchase';
@@ -33,145 +38,169 @@ export function VatRegisterPage() {
   const activeQuery = kind === 'sales' ? salesQuery : purchaseQuery;
 
   return (
-    <main className="mx-auto max-w-6xl p-4">
+    <main className="mx-auto w-full max-w-6xl p-4">
       <Card title="VAT register / भ्याट दर्ता">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div role="tablist" aria-label="Register" className="flex gap-1">
-            {(
-              [
-                ['sales', 'Sales (बिजक)'],
-                ['purchase', 'Purchase (खरिद)'],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                role="tab"
-                aria-selected={kind === id}
-                onClick={() => setKind(id)}
-                className={[
-                  'rounded-md px-3 py-2 text-sm font-medium',
-                  kind === id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-300',
-                ].join(' ')}
-              >
-                {label}
-              </button>
-            ))}
+        <Tabs value={kind} onValueChange={(value) => setKind(value as RegisterKind)}>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <TabsList aria-label="Register">
+              <TabsTrigger value="sales">Sales (बिजक)</TabsTrigger>
+              <TabsTrigger value="purchase">Purchase (खरिद)</TabsTrigger>
+            </TabsList>
+            <BsRangeControls value={range} onApply={setRange} />
           </div>
-          <BsRangeControls value={range} onApply={setRange} />
-        </div>
 
-        {activeQuery.isFetching ? <p className="py-4 text-sm text-slate-500">Loading…</p> : null}
-        {activeQuery.isError ? (
-          <p role="alert" className="py-4 text-sm text-red-600">
-            {activeQuery.error instanceof Error
-              ? activeQuery.error.message
-              : 'Failed to load the register.'}
-          </p>
-        ) : null}
+          {activeQuery.isFetching ? <TableSkeleton /> : null}
+          {activeQuery.isError ? <ReportError error={activeQuery.error} /> : null}
 
-        {kind === 'sales' && salesQuery.data ? <SalesRegister data={salesQuery.data} /> : null}
-        {kind === 'purchase' && purchaseQuery.data ? (
-          <PurchaseRegister data={purchaseQuery.data} />
-        ) : null}
+          <TabsContent value="sales">
+            {salesQuery.data && !salesQuery.isFetching ? (
+              <SalesRegister data={salesQuery.data} />
+            ) : null}
+          </TabsContent>
+          <TabsContent value="purchase">
+            {purchaseQuery.data && !purchaseQuery.isFetching ? (
+              <PurchaseRegister data={purchaseQuery.data} />
+            ) : null}
+          </TabsContent>
+        </Tabs>
       </Card>
     </main>
   );
 }
 
-function TotalsRow({ totals, colSpan }: { totals: VatRegister<never>['totals']; colSpan: number }) {
+function TotalsFooter({ totals, colSpan }: { totals: VatRegister<never>['totals']; colSpan: number }) {
   return (
-    <tr className="border-t-2 border-slate-300 font-semibold">
-      <td colSpan={colSpan} className="py-2 pr-2">
+    <TableRow>
+      <TableCell colSpan={colSpan} className="font-semibold">
         Total
-      </td>
-      <td className="py-2 pr-2 text-right">{money(totals.taxable_amount)}</td>
-      <td className="py-2 pr-2 text-right">{money(totals.vat_amount)}</td>
-      <td className="py-2 text-right">{money(totals.total)}</td>
-    </tr>
+      </TableCell>
+      <MoneyCell>{money(totals.taxable_amount)}</MoneyCell>
+      <MoneyCell>{money(totals.vat_amount)}</MoneyCell>
+      <MoneyCell>{money(totals.total)}</MoneyCell>
+    </TableRow>
   );
 }
+
+function TotalsCard({ totals }: { totals: VatRegister<never>['totals'] }) {
+  return (
+    <dl className="mt-2 space-y-1 rounded-md bg-muted/50 p-3 text-sm">
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Taxable</dt>
+        <dd className="tabular-nums">{money(totals.taxable_amount)}</dd>
+      </div>
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">VAT</dt>
+        <dd className="tabular-nums">{money(totals.vat_amount)}</dd>
+      </div>
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Total</dt>
+        <dd className="font-semibold tabular-nums">{money(totals.total)}</dd>
+      </div>
+    </dl>
+  );
+}
+
+const SALES_COLUMNS: readonly ReportColumn[] = [
+  { header: 'Invoice' },
+  { header: 'Date (BS)' },
+  { header: 'Customer' },
+  { header: 'PAN' },
+  { header: 'Taxable', className: 'text-right' },
+  { header: 'VAT', className: 'text-right' },
+  { header: 'Total', className: 'text-right' },
+];
 
 function SalesRegister({ data }: { data: VatRegister<SalesVatRow> }) {
-  if (data.rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-slate-500">No VAT bills in this range.</p>;
-  }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-          <th className="py-2 pr-2 font-medium">Invoice</th>
-          <th className="py-2 pr-2 font-medium">Date (BS)</th>
-          <th className="py-2 pr-2 font-medium">Customer</th>
-          <th className="py-2 pr-2 font-medium">PAN</th>
-          <th className="py-2 pr-2 text-right font-medium">Taxable</th>
-          <th className="py-2 pr-2 text-right font-medium">VAT</th>
-          <th className="py-2 text-right font-medium">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.rows.map((row) => (
-          <tr key={`${row.doc_type}:${row.invoice_no}`} className="border-b border-slate-100">
-            <td className="py-2 pr-2 font-medium">
+    <ReportTable
+      columns={SALES_COLUMNS}
+      rows={data.rows}
+      rowKey={(row) => `${row.doc_type}:${row.invoice_no}`}
+      empty="No VAT bills in this range."
+      renderCells={(row) => (
+        <>
+          <TableCell className="font-medium">
+            {row.invoice_no}
+            {row.doc_type === 'RETURN' ? (
+              <Badge variant="secondary" className="ml-1">
+                CN
+              </Badge>
+            ) : null}
+          </TableCell>
+          <TableCell>{row.business_date_bs}</TableCell>
+          <TableCell className="text-muted-foreground">{row.customer_name ?? 'Walk-in'}</TableCell>
+          <TableCell className="text-muted-foreground">{row.customer_pan ?? '—'}</TableCell>
+          <MoneyCell>{money(row.taxable_amount)}</MoneyCell>
+          <MoneyCell>{money(row.vat_amount)}</MoneyCell>
+          <MoneyCell>{money(row.total)}</MoneyCell>
+        </>
+      )}
+      renderCard={(row) => (
+        <div className="flex items-start justify-between gap-3 text-sm">
+          <div className="min-w-0">
+            <p className="font-medium">
               {row.invoice_no}
               {row.doc_type === 'RETURN' ? (
-                <span className="ml-1 rounded bg-slate-200 px-1 text-xs text-slate-600">CN</span>
+                <Badge variant="secondary" className="ml-1">
+                  CN
+                </Badge>
               ) : null}
-            </td>
-            <td className="py-2 pr-2">{row.business_date_bs}</td>
-            <td className="py-2 pr-2 text-slate-600">{row.customer_name ?? 'Walk-in'}</td>
-            <td className="py-2 pr-2 text-slate-600">{row.customer_pan ?? '—'}</td>
-            <td className="py-2 pr-2 text-right">{money(row.taxable_amount)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.vat_amount)}</td>
-            <td className="py-2 text-right">{money(row.total)}</td>
-          </tr>
-        ))}
-      </tbody>
-      <tfoot>
-        <TotalsRow totals={data.totals} colSpan={4} />
-      </tfoot>
-    </table>
+            </p>
+            <p className="truncate text-muted-foreground">
+              {row.business_date_bs} · {row.customer_name ?? 'Walk-in'} · VAT{' '}
+              {money(row.vat_amount)}
+            </p>
+          </div>
+          <p className="text-right font-semibold tabular-nums">{money(row.total)}</p>
+        </div>
+      )}
+      footer={<TotalsFooter totals={data.totals} colSpan={4} />}
+      mobileFooter={<TotalsCard totals={data.totals} />}
+    />
   );
 }
 
+const PURCHASE_COLUMNS: readonly ReportColumn[] = [
+  { header: 'Invoice' },
+  { header: 'Date (BS)' },
+  { header: 'Supplier' },
+  { header: 'PAN' },
+  { header: 'Taxable', className: 'text-right' },
+  { header: 'VAT', className: 'text-right' },
+  { header: 'Total', className: 'text-right' },
+];
+
 function PurchaseRegister({ data }: { data: VatRegister<PurchaseVatRow> }) {
-  if (data.rows.length === 0) {
-    return (
-      <p className="py-8 text-center text-sm text-slate-500">
-        No purchase VAT bills in this range.
-      </p>
-    );
-  }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-          <th className="py-2 pr-2 font-medium">Invoice</th>
-          <th className="py-2 pr-2 font-medium">Date (BS)</th>
-          <th className="py-2 pr-2 font-medium">Supplier</th>
-          <th className="py-2 pr-2 font-medium">PAN</th>
-          <th className="py-2 pr-2 text-right font-medium">Taxable</th>
-          <th className="py-2 pr-2 text-right font-medium">VAT</th>
-          <th className="py-2 text-right font-medium">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.rows.map((row) => (
-          <tr key={row.invoice_no} className="border-b border-slate-100">
-            <td className="py-2 pr-2 font-medium">{row.invoice_no}</td>
-            <td className="py-2 pr-2">{row.bill_date_bs}</td>
-            <td className="py-2 pr-2 text-slate-600">{row.supplier_name}</td>
-            <td className="py-2 pr-2 text-slate-600">{row.supplier_pan ?? '—'}</td>
-            <td className="py-2 pr-2 text-right">{money(row.taxable_amount)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.vat_amount)}</td>
-            <td className="py-2 text-right">{money(row.total)}</td>
-          </tr>
-        ))}
-      </tbody>
-      <tfoot>
-        <TotalsRow totals={data.totals} colSpan={4} />
-      </tfoot>
-    </table>
+    <ReportTable
+      columns={PURCHASE_COLUMNS}
+      rows={data.rows}
+      rowKey={(row) => row.invoice_no}
+      empty="No purchase VAT bills in this range."
+      renderCells={(row) => (
+        <>
+          <TableCell className="font-medium">{row.invoice_no}</TableCell>
+          <TableCell>{row.bill_date_bs}</TableCell>
+          <TableCell className="text-muted-foreground">{row.supplier_name}</TableCell>
+          <TableCell className="text-muted-foreground">{row.supplier_pan ?? '—'}</TableCell>
+          <MoneyCell>{money(row.taxable_amount)}</MoneyCell>
+          <MoneyCell>{money(row.vat_amount)}</MoneyCell>
+          <MoneyCell>{money(row.total)}</MoneyCell>
+        </>
+      )}
+      renderCard={(row) => (
+        <div className="flex items-start justify-between gap-3 text-sm">
+          <div className="min-w-0">
+            <p className="font-medium">{row.invoice_no}</p>
+            <p className="truncate text-muted-foreground">
+              {row.bill_date_bs} · {row.supplier_name} · VAT {money(row.vat_amount)}
+            </p>
+          </div>
+          <p className="text-right font-semibold tabular-nums">{money(row.total)}</p>
+        </div>
+      )}
+      footer={<TotalsFooter totals={data.totals} colSpan={4} />}
+      mobileFooter={<TotalsCard totals={data.totals} />}
+    />
   );
 }

@@ -78,11 +78,13 @@ describe('ProfitReportPage', () => {
 
     renderProfit();
 
-    // Labels appear in both the stat cards and the table header.
+    // Labels appear in both the stat cards and the table header; amounts and
+    // months appear in the stat cards, the desktop table, and the mobile
+    // card list (the responsive pattern renders both views).
     expect((await screen.findAllByText('Revenue')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Cost of goods').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Gross profit').length).toBeGreaterThan(0);
-    expect(screen.getByText('रू 2,000.00')).toBeInTheDocument();
-    expect(screen.getByText('2083-04')).toBeInTheDocument();
+    expect(screen.getAllByText('रू 2,000.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2083-04').length).toBeGreaterThan(0);
   });
 });

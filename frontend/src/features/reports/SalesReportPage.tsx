@@ -2,10 +2,16 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { TableCell, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { currentBsMonthRange, currentFiscalYearBs } from '@/features/reports/api';
 import { fetchDailySales, fetchItemSales, fetchMonthlySales } from '@/features/reports/api';
 import type { BsRange, DailySalesRow, ItemSalesRow, MonthlySalesRow } from '@/features/reports/api';
 import { BsRangeControls } from '@/features/reports/BsRangeControls';
+import { ItemSalesChart } from '@/features/reports/ItemSalesChart';
+import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
+import type { ReportColumn } from '@/features/reports/ui';
 import { addPaisa, formatNpr, formatPaisa, toPaisa } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 
@@ -17,6 +23,11 @@ function sumMoney(amounts: readonly string[]): Paisa {
 
 function money(amount: string): string {
   return formatNpr(amount, { symbol: '' });
+}
+
+function qtyTotal(rows: readonly { qty: string }[]): string {
+  const total = rows.reduce((sum, row) => sum + Number(row.qty), 0);
+  return Number.isInteger(total) ? String(total) : total.toFixed(2);
 }
 
 /** Sales report — daily by BS date, monthly by fiscal year, top items. */
@@ -44,194 +55,252 @@ export function SalesReportPage() {
   const activeQuery = tab === 'daily' ? dailyQuery : tab === 'monthly' ? monthlyQuery : itemsQuery;
 
   return (
-    <main className="mx-auto max-w-6xl p-4">
+    <main className="mx-auto w-full max-w-6xl p-4">
       <Card title="Sales report / बिक्री प्रतिवेदन">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div role="tablist" aria-label="Sales view" className="flex gap-1">
-            {(
-              [
-                ['daily', 'Daily'],
-                ['monthly', 'Monthly'],
-                ['items', 'Top items'],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                role="tab"
-                aria-selected={tab === id}
-                onClick={() => setTab(id)}
-                className={[
-                  'rounded-md px-3 py-2 text-sm font-medium',
-                  tab === id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-300',
-                ].join(' ')}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {tab === 'monthly' ? (
-            <div className="flex items-center gap-2">
-              <label htmlFor="fy" className="text-sm font-medium text-slate-700">
-                Fiscal year (BS)
-              </label>
-              <input
+        <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <TabsList aria-label="Sales view">
+              <TabsTrigger value="daily">Daily</TabsTrigger>
+              <TabsTrigger value="monthly">Monthly</TabsTrigger>
+              <TabsTrigger value="items">Top items</TabsTrigger>
+            </TabsList>
+            {tab === 'monthly' ? (
+              <Input
                 id="fy"
+                label="Fiscal year (BS)"
                 value={fiscalYear}
                 onChange={(e) => setFiscalYear(e.target.value)}
                 placeholder="2083-84"
-                className="w-28 rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-28"
               />
-            </div>
-          ) : (
-            <BsRangeControls value={range} onApply={setRange} />
-          )}
-        </div>
+            ) : (
+              <BsRangeControls value={range} onApply={setRange} />
+            )}
+          </div>
 
-        {activeQuery.isFetching ? <p className="py-4 text-sm text-slate-500">Loading…</p> : null}
-        {activeQuery.isError ? (
-          <p role="alert" className="py-4 text-sm text-red-600">
-            {activeQuery.error instanceof Error
-              ? activeQuery.error.message
-              : 'Failed to load the report.'}
-          </p>
-        ) : null}
+          {activeQuery.isFetching ? <TableSkeleton /> : null}
+          {activeQuery.isError ? <ReportError error={activeQuery.error} /> : null}
 
-        {tab === 'daily' && dailyQuery.data ? <DailyTable rows={dailyQuery.data} /> : null}
-        {tab === 'monthly' && monthlyQuery.data ? <MonthlyTable rows={monthlyQuery.data} /> : null}
-        {tab === 'items' && itemsQuery.data ? <ItemsTable rows={itemsQuery.data.data} /> : null}
+          <TabsContent value="daily">
+            {dailyQuery.data && !dailyQuery.isFetching ? (
+              <DailyTable rows={dailyQuery.data} />
+            ) : null}
+          </TabsContent>
+          <TabsContent value="monthly">
+            {monthlyQuery.data && !monthlyQuery.isFetching ? (
+              <MonthlyTable rows={monthlyQuery.data} />
+            ) : null}
+          </TabsContent>
+          <TabsContent value="items">
+            {itemsQuery.data && !itemsQuery.isFetching ? (
+              <>
+                <ItemSalesChart rows={itemsQuery.data.data} />
+                <ItemsTable rows={itemsQuery.data.data} />
+              </>
+            ) : null}
+          </TabsContent>
+        </Tabs>
       </Card>
     </main>
   );
 }
 
+const DAILY_COLUMNS: readonly ReportColumn[] = [
+  { header: 'Date (BS)' },
+  { header: 'Bills', className: 'text-right' },
+  { header: 'Subtotal', className: 'text-right' },
+  { header: 'Discount', className: 'text-right' },
+  { header: 'VAT', className: 'text-right' },
+  { header: 'Total', className: 'text-right' },
+  { header: 'Paid', className: 'text-right' },
+  { header: 'Due', className: 'text-right' },
+  { header: 'Returns', className: 'text-right' },
+  { header: 'Net', className: 'text-right' },
+];
+
 function DailyTable({ rows }: { rows: DailySalesRow[] }) {
-  if (rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-slate-500">No sales in this range.</p>;
-  }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-          <th className="py-2 pr-2 font-medium">Date (BS)</th>
-          <th className="py-2 pr-2 text-right font-medium">Bills</th>
-          <th className="py-2 pr-2 text-right font-medium">Subtotal</th>
-          <th className="py-2 pr-2 text-right font-medium">Discount</th>
-          <th className="py-2 pr-2 text-right font-medium">VAT</th>
-          <th className="py-2 pr-2 text-right font-medium">Total</th>
-          <th className="py-2 pr-2 text-right font-medium">Paid</th>
-          <th className="py-2 pr-2 text-right font-medium">Due</th>
-          <th className="py-2 pr-2 text-right font-medium">Returns</th>
-          <th className="py-2 text-right font-medium">Net</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.business_date_bs} className="border-b border-slate-100">
-            <td className="py-2 pr-2 font-medium">{row.business_date_bs}</td>
-            <td className="py-2 pr-2 text-right">{row.bill_count}</td>
-            <td className="py-2 pr-2 text-right">{money(row.subtotal)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.discount)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.vat)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.total)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.paid)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.due)}</td>
-            <td className="py-2 pr-2 text-right">
-              {row.returns_count > 0 ? money(row.returns_total) : '—'}
-            </td>
-            <td className="py-2 text-right font-medium">{money(row.net_total)}</td>
-          </tr>
-        ))}
-      </tbody>
-      <tfoot>
-        <tr className="border-t-2 border-slate-300 font-semibold">
-          <td className="py-2 pr-2">Total</td>
-          <td className="py-2 pr-2 text-right">{rows.reduce((n, r) => n + r.bill_count, 0)}</td>
-          <td className="py-2 pr-2 text-right">
-            {formatPaisa(sumMoney(rows.map((r) => r.subtotal)))}
-          </td>
-          <td className="py-2 pr-2 text-right">
-            {formatPaisa(sumMoney(rows.map((r) => r.discount)))}
-          </td>
-          <td className="py-2 pr-2 text-right">{formatPaisa(sumMoney(rows.map((r) => r.vat)))}</td>
-          <td className="py-2 pr-2 text-right">
-            {formatPaisa(sumMoney(rows.map((r) => r.total)))}
-          </td>
-          <td className="py-2 pr-2 text-right">{formatPaisa(sumMoney(rows.map((r) => r.paid)))}</td>
-          <td className="py-2 pr-2 text-right">{formatPaisa(sumMoney(rows.map((r) => r.due)))}</td>
-          <td className="py-2 pr-2 text-right">
-            {formatPaisa(sumMoney(rows.map((r) => r.returns_total)))}
-          </td>
-          <td className="py-2 text-right">{formatPaisa(sumMoney(rows.map((r) => r.net_total)))}</td>
-        </tr>
-      </tfoot>
-    </table>
+    <ReportTable
+      columns={DAILY_COLUMNS}
+      rows={rows}
+      rowKey={(row) => row.business_date_bs}
+      empty="No sales in this range."
+      renderCells={(row) => (
+        <>
+          <TableCell className="font-medium">{row.business_date_bs}</TableCell>
+          <TableCell className="text-right tabular-nums">{row.bill_count}</TableCell>
+          <MoneyCell>{money(row.subtotal)}</MoneyCell>
+          <MoneyCell>{money(row.discount)}</MoneyCell>
+          <MoneyCell>{money(row.vat)}</MoneyCell>
+          <MoneyCell>{money(row.total)}</MoneyCell>
+          <MoneyCell>{money(row.paid)}</MoneyCell>
+          <MoneyCell>{money(row.due)}</MoneyCell>
+          <MoneyCell>{row.returns_count > 0 ? money(row.returns_total) : '—'}</MoneyCell>
+          <MoneyCell>
+            <span className="font-medium">{money(row.net_total)}</span>
+          </MoneyCell>
+        </>
+      )}
+      renderCard={(row) => (
+        <div className="flex items-start justify-between gap-3 text-sm">
+          <div>
+            <p className="font-medium">{row.business_date_bs}</p>
+            <p className="text-muted-foreground">
+              {row.bill_count} bills · paid {money(row.paid)}
+              {toPaisa(row.due) > 0 ? ` · due ${money(row.due)}` : ''}
+              {row.returns_count > 0 ? ` · returns ${money(row.returns_total)}` : ''}
+            </p>
+          </div>
+          <p className="text-right font-semibold tabular-nums">{money(row.net_total)}</p>
+        </div>
+      )}
+      footer={
+        <TableRow>
+          <TableCell className="font-semibold">Total</TableCell>
+          <TableCell className="text-right tabular-nums">
+            {rows.reduce((n, r) => n + r.bill_count, 0)}
+          </TableCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.subtotal)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.discount)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.vat)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.total)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.paid)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.due)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.returns_total)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.net_total)))}</MoneyCell>
+        </TableRow>
+      }
+      mobileFooter={
+        <dl className="mt-2 space-y-1 rounded-md bg-muted/50 p-3 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Bills</dt>
+            <dd className="font-medium tabular-nums">
+              {rows.reduce((n, r) => n + r.bill_count, 0)}
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Total</dt>
+            <dd className="font-medium tabular-nums">
+              {formatPaisa(sumMoney(rows.map((r) => r.total)))}
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Net</dt>
+            <dd className="font-semibold tabular-nums">
+              {formatPaisa(sumMoney(rows.map((r) => r.net_total)))}
+            </dd>
+          </div>
+        </dl>
+      }
+    />
   );
 }
+
+const MONTHLY_COLUMNS: readonly ReportColumn[] = [
+  { header: 'BS month' },
+  { header: 'Bills', className: 'text-right' },
+  { header: 'Total', className: 'text-right' },
+  { header: 'Discount', className: 'text-right' },
+  { header: 'VAT', className: 'text-right' },
+  { header: 'Returns', className: 'text-right' },
+  { header: 'Net', className: 'text-right' },
+];
 
 function MonthlyTable({ rows }: { rows: MonthlySalesRow[] }) {
-  if (rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-slate-500">No sales in this fiscal year.</p>;
-  }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-          <th className="py-2 pr-2 font-medium">BS month</th>
-          <th className="py-2 pr-2 text-right font-medium">Bills</th>
-          <th className="py-2 pr-2 text-right font-medium">Total</th>
-          <th className="py-2 pr-2 text-right font-medium">Discount</th>
-          <th className="py-2 pr-2 text-right font-medium">VAT</th>
-          <th className="py-2 pr-2 text-right font-medium">Returns</th>
-          <th className="py-2 text-right font-medium">Net</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.bs_month} className="border-b border-slate-100">
-            <td className="py-2 pr-2 font-medium">{row.bs_month}</td>
-            <td className="py-2 pr-2 text-right">{row.bill_count}</td>
-            <td className="py-2 pr-2 text-right">{money(row.total)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.discount)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.vat)}</td>
-            <td className="py-2 pr-2 text-right">{money(row.returns_total)}</td>
-            <td className="py-2 text-right font-medium">{money(row.net_total)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <ReportTable
+      columns={MONTHLY_COLUMNS}
+      rows={rows}
+      rowKey={(row) => row.bs_month}
+      empty="No sales in this fiscal year."
+      renderCells={(row) => (
+        <>
+          <TableCell className="font-medium">{row.bs_month}</TableCell>
+          <TableCell className="text-right tabular-nums">{row.bill_count}</TableCell>
+          <MoneyCell>{money(row.total)}</MoneyCell>
+          <MoneyCell>{money(row.discount)}</MoneyCell>
+          <MoneyCell>{money(row.vat)}</MoneyCell>
+          <MoneyCell>{money(row.returns_total)}</MoneyCell>
+          <MoneyCell>
+            <span className="font-medium">{money(row.net_total)}</span>
+          </MoneyCell>
+        </>
+      )}
+      renderCard={(row) => (
+        <div className="flex items-start justify-between gap-3 text-sm">
+          <div>
+            <p className="font-medium">{row.bs_month}</p>
+            <p className="text-muted-foreground">
+              {row.bill_count} bills
+              {toPaisa(row.returns_total) > 0 ? ` · returns ${money(row.returns_total)}` : ''}
+            </p>
+          </div>
+          <p className="text-right font-semibold tabular-nums">{money(row.net_total)}</p>
+        </div>
+      )}
+      footer={
+        <TableRow>
+          <TableCell className="font-semibold">Total</TableCell>
+          <TableCell className="text-right tabular-nums">
+            {rows.reduce((n, r) => n + r.bill_count, 0)}
+          </TableCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.total)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.discount)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.vat)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.returns_total)))}</MoneyCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.net_total)))}</MoneyCell>
+        </TableRow>
+      }
+    />
   );
 }
 
+const ITEM_COLUMNS: readonly ReportColumn[] = [
+  { header: 'SKU' },
+  { header: 'Item' },
+  { header: 'Size / Colour' },
+  { header: 'Qty sold', className: 'text-right' },
+  { header: 'Amount', className: 'text-right' },
+];
+
 function ItemsTable({ rows }: { rows: ItemSalesRow[] }) {
-  if (rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-slate-500">No items sold in this range.</p>;
-  }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-          <th className="py-2 pr-2 font-medium">SKU</th>
-          <th className="py-2 pr-2 font-medium">Item</th>
-          <th className="py-2 pr-2 font-medium">Size / Colour</th>
-          <th className="py-2 pr-2 text-right font-medium">Qty sold</th>
-          <th className="py-2 text-right font-medium">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.variant_id} className="border-b border-slate-100">
-            <td className="py-2 pr-2 font-medium">{row.sku}</td>
-            <td className="py-2 pr-2">{row.item_name}</td>
-            <td className="py-2 pr-2 text-slate-600">
-              {row.size} / {row.color}
-            </td>
-            <td className="py-2 pr-2 text-right">{row.qty}</td>
-            <td className="py-2 text-right">{money(row.amount)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <ReportTable
+      columns={ITEM_COLUMNS}
+      rows={rows}
+      rowKey={(row) => row.variant_id}
+      empty="No items sold in this range."
+      renderCells={(row) => (
+        <>
+          <TableCell className="font-medium">{row.sku}</TableCell>
+          <TableCell>{row.item_name}</TableCell>
+          <TableCell className="text-muted-foreground">
+            {row.size} / {row.color}
+          </TableCell>
+          <TableCell className="text-right tabular-nums">{row.qty}</TableCell>
+          <MoneyCell>{money(row.amount)}</MoneyCell>
+        </>
+      )}
+      renderCard={(row) => (
+        <div className="flex items-start justify-between gap-3 text-sm">
+          <div className="min-w-0">
+            <p className="font-medium">{row.item_name}</p>
+            <p className="truncate text-muted-foreground">
+              {row.sku} · {row.size} / {row.color} · qty {row.qty}
+            </p>
+          </div>
+          <p className="text-right font-semibold tabular-nums">{money(row.amount)}</p>
+        </div>
+      )}
+      footer={
+        <TableRow>
+          <TableCell colSpan={3} className="font-semibold">
+            Total
+          </TableCell>
+          <TableCell className="text-right tabular-nums">{qtyTotal(rows)}</TableCell>
+          <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.amount)))}</MoneyCell>
+        </TableRow>
+      }
+    />
   );
 }
