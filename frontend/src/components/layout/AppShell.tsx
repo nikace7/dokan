@@ -21,8 +21,10 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
 
+import { LanguageToggle } from '@/components/layout/LanguageToggle';
 import {
   Sheet,
   SheetContent,
@@ -42,7 +44,8 @@ import { cn } from '@/lib/utils';
 
 interface NavItem {
   to: string;
-  label: string;
+  /** Translation key under `nav.*` (see src/lib/i18n). */
+  labelKey: string;
   icon: LucideIcon;
   end?: boolean;
   /** Any one of these permissions suffices (UI visibility only). */
@@ -52,30 +55,30 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/billing', label: 'Billing / बिलिङ', icon: ScanLine },
-  { to: '/catalog', label: 'Catalog', icon: Package },
-  { to: '/pricing', label: 'Pricing', icon: Tag, anyOf: ['pricing.view'] },
-  { to: '/customers', label: 'Customers', icon: Users, anyOf: ['customer.view'] },
-  { to: '/stock', label: 'Stock', icon: Boxes, anyOf: ['stock.view'], end: true },
+  { to: '/', labelKey: 'dashboard', icon: LayoutDashboard, end: true },
+  { to: '/billing', labelKey: 'billing', icon: ScanLine },
+  { to: '/catalog', labelKey: 'catalog', icon: Package },
+  { to: '/pricing', labelKey: 'pricing', icon: Tag, anyOf: ['pricing.view'] },
+  { to: '/customers', labelKey: 'customers', icon: Users, anyOf: ['customer.view'] },
+  { to: '/stock', labelKey: 'stock', icon: Boxes, anyOf: ['stock.view'], end: true },
   {
     to: '/stock/transfers',
-    label: 'Transfers',
+    labelKey: 'transfers',
     icon: ArrowLeftRight,
     anyOf: ['stock.view'],
     feature: 'multi_branch',
   },
-  { to: '/purchasing', label: 'Purchasing', icon: Truck },
-  { to: '/expenses', label: 'Expenses', icon: Wallet },
-  { to: '/payments', label: 'Payments', icon: Banknote },
-  { to: '/ledgers', label: 'Ledgers', icon: BookOpen },
-  { to: '/returns', label: 'Returns', icon: Undo2 },
-  { to: '/exchanges', label: 'Exchanges', icon: Repeat },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/audit', label: 'Audit', icon: ScrollText, anyOf: ['settings.manage'] },
+  { to: '/purchasing', labelKey: 'purchasing', icon: Truck },
+  { to: '/expenses', labelKey: 'expenses', icon: Wallet },
+  { to: '/payments', labelKey: 'payments', icon: Banknote },
+  { to: '/ledgers', labelKey: 'ledgers', icon: BookOpen },
+  { to: '/returns', labelKey: 'returns', icon: Undo2 },
+  { to: '/exchanges', labelKey: 'exchanges', icon: Repeat },
+  { to: '/reports', labelKey: 'reports', icon: BarChart3 },
+  { to: '/audit', labelKey: 'audit', icon: ScrollText, anyOf: ['settings.manage'] },
   {
     to: '/settings',
-    label: 'Settings',
+    labelKey: 'settings',
     icon: SettingsIcon,
     anyOf: ['settings.manage', 'user.manage'],
   },
@@ -121,6 +124,7 @@ function BrandMark({ className }: { className?: string }) {
 }
 
 function SideNavLink({ item }: { item: NavItem }) {
+  const { t } = useTranslation();
   return (
     <NavLink
       to={item.to}
@@ -135,7 +139,7 @@ function SideNavLink({ item }: { item: NavItem }) {
       }
     >
       <item.icon className="h-4 w-4 shrink-0" />
-      {item.label}
+      {t(`nav.${item.labelKey}`)}
     </NavLink>
   );
 }
@@ -151,16 +155,17 @@ function MoreSheet({
   onSignOut: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button
           type="button"
           className="flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium text-muted-foreground"
-          aria-label="More navigation"
+          aria-label={t('nav.moreNavigation')}
         >
           <Menu className="h-5 w-5" />
-          More
+          {t('nav.more')}
         </button>
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
@@ -186,7 +191,7 @@ function MoreSheet({
               }
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
+              {t(`nav.${item.labelKey}`)}
             </NavLink>
           ))}
         </nav>
@@ -201,7 +206,7 @@ function MoreSheet({
             className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
           >
             <LogOut className="h-4 w-4" />
-            Sign out
+            {t('nav.signOut')}
           </button>
         </div>
       </SheetContent>
@@ -216,6 +221,7 @@ function MoreSheet({
  */
 export function AppShell() {
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
   const items = useVisibleNavItems();
   const tabs = items.filter((item) =>
     (MOBILE_TABS as readonly string[]).includes(item.to),
@@ -237,12 +243,13 @@ export function AppShell() {
         </nav>
         <div className="space-y-3 border-t p-3">
           <WorkspaceSelector />
+          <LanguageToggle />
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm text-muted-foreground">{user?.full_name}</span>
             <button
               type="button"
               onClick={signOut}
-              aria-label="Sign out"
+              aria-label={t('nav.signOut')}
               className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
@@ -254,9 +261,12 @@ export function AppShell() {
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
         <BrandMark />
-        <span className="max-w-40 truncate text-sm text-muted-foreground">
-          {user?.full_name}
-        </span>
+        <div className="flex items-center gap-2">
+          <LanguageToggle />
+          <span className="max-w-40 truncate text-sm text-muted-foreground">
+            {user?.full_name}
+          </span>
+        </div>
       </header>
 
       <main className="pb-20 md:pb-8 md:pl-60">
@@ -278,7 +288,7 @@ export function AppShell() {
             }
           >
             <item.icon className="h-5 w-5" />
-            {item.label.split(' / ')[0]}
+            {t(`nav.${item.labelKey}`)}
           </NavLink>
         ))}
         <MoreSheet items={items} userName={user?.full_name} onSignOut={signOut} />

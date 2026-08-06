@@ -131,7 +131,7 @@ describe('SharedBillPage', () => {
     renderSharedBill('tok-unknown');
 
     expect(
-      await screen.findByRole('heading', { name: 'Bill not found / बिल भेटिएन' }),
+      await screen.findByRole('heading', { name: 'Bill not found' }),
     ).toBeInTheDocument();
     expect(screen.getByText(/no longer valid/i)).toBeInTheDocument();
   });

@@ -1,9 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { endSupportSession, getCurrentSupportSession } from '@/features/support/api';
 import { getImpersonationClaims } from '@/lib/auth/tokens';
 
 export function SupportAccessBanner({ onEnded }: { onEnded: () => void }) {
+  const { t } = useTranslation();
   const claims = getImpersonationClaims();
   const query = useQuery({
     queryKey: ['support-access', 'current', claims?.jti],
@@ -23,9 +25,13 @@ export function SupportAccessBanner({ onEnded }: { onEnded: () => void }) {
   return (
     <aside role="alert" className="sticky top-0 z-50 bg-red-700 px-4 py-2 text-white shadow">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 text-sm">
-        <strong>Support session active</strong>
+        <strong>{t('support.banner.sessionActive')}</strong>
         <span>
-          {name} · {claims.scope === 'read_only' ? 'Read only' : 'Read/write'} · ends{' '}
+          {name} ·{' '}
+          {claims.scope === 'read_only'
+            ? t('support.banner.readOnly')
+            : t('support.banner.readWrite')}{' '}
+          · {t('support.banner.ends')}{' '}
           {new Date(expires).toLocaleTimeString('en-NP', {
             timeZone: 'Asia/Kathmandu',
             hour: '2-digit',
@@ -37,11 +43,11 @@ export function SupportAccessBanner({ onEnded }: { onEnded: () => void }) {
           className="ml-auto rounded bg-white px-3 py-1 font-medium text-red-700 disabled:opacity-60"
           disabled={mutation.isPending}
           onClick={() => mutation.mutate()}
-          aria-label="End support session"
+          aria-label={t('support.banner.endAria')}
         >
-          {mutation.isPending ? 'Ending…' : 'End now'}
+          {mutation.isPending ? t('support.banner.ending') : t('support.banner.endNow')}
         </button>
-        {mutation.isError ? <span>Could not end the session. Try again.</span> : null}
+        {mutation.isError ? <span>{t('support.banner.endFailed')}</span> : null}
       </div>
     </aside>
   );

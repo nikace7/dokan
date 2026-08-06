@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
+// Initialize i18n before first render (one language at a time; default नेपाली).
+import '@/lib/i18n';
 import App from './App';
 import '@/styles/index.css';
 import '@/styles/tokens.css';

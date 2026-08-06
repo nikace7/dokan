@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@/lib/api/client';
 import { lookupVariant } from '@/features/billing/api';
@@ -12,6 +13,7 @@ import { useCartStore } from '@/stores/cartStore';
  * never leaves the counter operator stranded.
  */
 export function ScanInput() {
+  const { t } = useTranslation();
   const addLine = useCartStore((s) => s.addLine);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +42,10 @@ export function ScanInput() {
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 404
-          ? `No item matches "${trimmed}".`
+          ? t('billing.noItemMatches', { code: trimmed })
           : err instanceof Error
             ? err.message
-            : 'Lookup failed.',
+            : t('billing.lookupFailed'),
       );
     } finally {
       setBusy(false);
@@ -54,7 +56,7 @@ export function ScanInput() {
   return (
     <form onSubmit={(e) => void onSubmit(e)}>
       <label htmlFor="scan-input" className="text-sm font-medium text-slate-700">
-        Scan barcode or type SKU
+        {t('billing.scanLabel')}
       </label>
       <input
         ref={inputRef}
@@ -63,7 +65,7 @@ export function ScanInput() {
         onChange={(e) => setCode(e.target.value)}
         autoFocus
         autoComplete="off"
-        placeholder="Scan / scan गर्नुहोस्…"
+        placeholder={t('billing.scanPlaceholder')}
         className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {error ? (

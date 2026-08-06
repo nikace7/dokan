@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
@@ -21,6 +23,7 @@ interface SimpleSaleLineCardProps {
  * as context, and just two inputs — price (default MRP) and quantity.
  */
 export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineCardProps) {
+  const { t } = useTranslation();
   const { variant } = line;
   const total = lineTotalPaisa(line);
   const hint = priceRangeHint(variant);
@@ -43,7 +46,7 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
             </span>
           </p>
           <p className="text-xs text-muted-foreground">
-            {variant.sku} · स्टक {variant.qty_on_hand}
+            {variant.sku} · {t('common.stock', { qty: variant.qty_on_hand })}
           </p>
         </div>
         <Button
@@ -53,14 +56,14 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
           aria-label={`Remove ${variant.item_name} ${variant.size} ${variant.color}`}
           onClick={() => onRemove(line.key)}
         >
-          हटाउनुहोस् ✕
+          {t('common.remove')}
         </Button>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
           <Input
-            label="मूल्य / Price"
+            label={t('simpleSale.line.price')}
             inputMode="decimal"
             value={line.price}
             error={priceIssue ?? undefined}
@@ -69,7 +72,7 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
           {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
         </div>
         <Input
-          label="परिमाण / Qty"
+          label={t('simpleSale.line.qty')}
           inputMode="numeric"
           type="number"
           min={1}
@@ -82,7 +85,7 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
       </div>
 
       <p className="mt-2 text-right text-sm">
-        <span className="text-muted-foreground">जम्मा / Line total: </span>
+        <span className="text-muted-foreground">{t('simpleSale.line.lineTotal')}: </span>
         <span className="font-semibold">{total === null ? '—' : formatPaisa(total, { symbol: 'रू ' })}</span>
       </p>
     </section>
