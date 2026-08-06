@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import i18n from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -25,12 +27,12 @@ function saleErrorMessage(err: unknown): string {
     if (err.code === 'CASH_SESSION_REQUIRED') {
       // Invariant 12: completion needs an open drawer. The cashier cannot
       // open one, so point them at the person who can.
-      return 'The day is not open yet — ask the owner/manager to open the cash session first. / दिन खुलेको छैन — पहिले क्यास सत्र खोल्न मालिक वा म्यानेजरलाई भन्नुहोस्।';
+      return i18n.t('simpleSale.cashSessionRequired');
     }
     // Bounds/stock rejections carry a counter-readable server message.
     return err.message;
   }
-  return 'Could not reach the server. Check your connection and try again.';
+  return i18n.t('common.networkError');
 }
 
 let lineCounter = 0;
@@ -53,6 +55,7 @@ function newLine(variant: VariantForSale): SimpleLine {
 export function SimpleSalePage() {
   const workspace = useWorkspace();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const online = useSyncStore((s) => s.online);
 
   const [lines, setLines] = useState<SimpleLine[]>([]);
@@ -103,9 +106,9 @@ export function SimpleSalePage() {
   if (user && !hasPermission(user, 'sale.create')) {
     return (
       <main className="mx-auto max-w-xl p-4">
-        <Card title="Simple sale / सरल बिक्री">
+        <Card title={t('simpleSale.title')}>
           <p role="alert" className="text-sm text-muted-foreground">
-            You do not have permission to create sales. / बिक्री गर्ने अनुमति छैन।
+            {t('simpleSale.noPermission')}
           </p>
         </Card>
       </main>
@@ -117,8 +120,10 @@ export function SimpleSalePage() {
       <main className="mx-auto max-w-2xl p-4">
         {planWarning ? (
           <p role="status" className="mb-4 rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
-            You have used {planWarning.usage} of {planWarning.limit} monthly bills. Billing remains
-            available; contact support if you need a higher plan.
+            {t('billing.planWarning', {
+              usage: planWarning.usage,
+              limit: planWarning.limit,
+            })}
           </p>
         ) : null}
         <ReceiptPanel
@@ -137,23 +142,21 @@ export function SimpleSalePage() {
 
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-2xl flex-col gap-3 p-4 pb-28">
-      <h1 className="text-xl font-semibold">Simple sale / सरल बिक्री</h1>
+      <h1 className="text-xl font-semibold">{t('simpleSale.title')}</h1>
 
       {!online ? (
         <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
-          You are offline — simple sale needs a connection. / इन्टरनेट छैन — सरल बिक्रीका लागि
-          कनेक्सन चाहिन्छ।
+          {t('simpleSale.offline')}
         </p>
       ) : null}
 
       {workspace.isLoading ? (
         <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
-          Loading branches and rate types…
+          {t('billing.workspaceLoading')}
         </p>
       ) : !workspace.isReady ? (
         <p role="alert" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
-          Billing needs an active branch and rate type. Configure them in the header or finish
-          tenant setup first.
+          {t('billing.workspaceNotReady')}
         </p>
       ) : null}
 
@@ -177,7 +180,7 @@ export function SimpleSalePage() {
         disabled={!workspace.isReady}
         onClick={() => setPickerOpen(true)}
       >
-        + वस्तु थप्नुहोस् / Add item
+        + {t('simpleSale.addItem')}
       </Button>
 
       <ItemPickerDialog
@@ -195,13 +198,13 @@ export function SimpleSalePage() {
         <div className="mx-auto flex max-w-2xl flex-col gap-2">
           <div
             role="group"
-            aria-label="Payment method / भुक्तानी विधि"
+            aria-label={t('simpleSale.paymentMethod')}
             className="grid grid-cols-2 gap-2"
           >
             {(
               [
-                ['CASH', 'नगद Cash'],
-                ['QR', 'QR'],
+                ['CASH', t('simpleSale.cash')],
+                ['QR', t('simpleSale.qr')],
               ] as const
             ).map(([method, label]) => (
               <button
@@ -226,8 +229,8 @@ export function SimpleSalePage() {
             onClick={() => saleMutation.mutate()}
           >
             {saleMutation.isPending
-              ? 'Saving…'
-              : `बिल बनाउनुहोस् Complete · ${formatPaisa(total, { symbol: 'रू ' })}`}
+              ? t('simpleSale.saving')
+              : `${t('simpleSale.complete')} · ${formatPaisa(total, { symbol: 'रू ' })}`}
           </Button>
           {saleError ? (
             <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">

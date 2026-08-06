@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { CustomerPicker } from '@/features/billing/CustomerPicker';
@@ -7,12 +8,12 @@ import { formatPaisa, toPaisa } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 import { cartTotalPaisa, useCartStore } from '@/stores/cartStore';
 
-const METHODS: Array<{ id: PaymentMethod; label: string }> = [
-  { id: 'CASH', label: 'Cash / नगद' },
-  { id: 'ESEWA', label: 'eSewa' },
-  { id: 'KHALTI', label: 'Khalti' },
-  { id: 'FONEPAY', label: 'Fonepay' },
-  { id: 'CREDIT', label: 'Udharo / उधारो' },
+const METHODS: Array<{ id: PaymentMethod; labelKey: string }> = [
+  { id: 'CASH', labelKey: 'billing.tender.cash' },
+  { id: 'ESEWA', labelKey: 'billing.tender.esewa' },
+  { id: 'KHALTI', labelKey: 'billing.tender.khalti' },
+  { id: 'FONEPAY', labelKey: 'billing.tender.fonepay' },
+  { id: 'CREDIT', labelKey: 'billing.tender.udharo' },
 ];
 
 export interface Tender {
@@ -39,6 +40,7 @@ export function PaymentPanel({
   allowVatBill,
   onComplete,
 }: PaymentPanelProps) {
+  const { t } = useTranslation();
   const lines = useCartStore((s) => s.lines);
   const customer = useCartStore((s) => s.customer);
   const [method, setMethod] = useState<PaymentMethod>('CASH');
@@ -62,19 +64,19 @@ export function PaymentPanel({
   const submit = useCallback(() => {
     setError(null);
     if (lines.length === 0) {
-      setError('Add at least one item to the bill.');
+      setError(t('billing.errors.addItem'));
       return;
     }
     if (tenderPaisa === null && amountRaw.trim() !== '') {
-      setError('Enter a valid amount (e.g. 1500.00).');
+      setError(t('billing.errors.invalidAmount'));
       return;
     }
     if (effectiveTender <= 0) {
-      setError('Amount must be greater than zero.');
+      setError(t('billing.errors.amountPositive'));
       return;
     }
     if (method === 'CREDIT' && !customer) {
-      setError('Udharo requires a customer — search and pick one above.');
+      setError(t('billing.errors.udharoCustomer'));
       return;
     }
     onComplete({ method, amountPaisa: effectiveTender, isVatBill: allowVatBill && isVatBill });
@@ -87,6 +89,7 @@ export function PaymentPanel({
     lines.length,
     method,
     onComplete,
+    t,
     tenderPaisa,
   ]);
 
@@ -102,7 +105,7 @@ export function PaymentPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="group" aria-label="Payment method" className="grid grid-cols-3 gap-2">
+      <div role="group" aria-label={t('simpleSale.paymentMethod')} className="grid grid-cols-3 gap-2">
         {METHODS.map((m) => (
           <button
             key={m.id}
@@ -116,7 +119,7 @@ export function PaymentPanel({
                 : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
             ].join(' ')}
           >
-            {m.label}
+            {t(m.labelKey)}
           </button>
         ))}
       </div>
@@ -125,7 +128,7 @@ export function PaymentPanel({
 
       <div>
         <label htmlFor="tender-amount" className="text-sm font-medium text-slate-700">
-          Amount (रू) — blank = full total
+          {t('billing.amountLabel')}
         </label>
         <input
           id="tender-amount"
@@ -140,15 +143,15 @@ export function PaymentPanel({
 
       <dl className="space-y-1 rounded-md bg-slate-50 px-3 py-2 text-sm">
         <div className="flex justify-between">
-          <dt className="text-slate-600">Bill total</dt>
+          <dt className="text-slate-600">{t('billing.billTotal')}</dt>
           <dd className="font-medium">{formatPaisa(totalPaisa, { symbol: 'रू ' })}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-slate-600">Paid</dt>
+          <dt className="text-slate-600">{t('billing.paid')}</dt>
           <dd className="font-medium">{formatPaisa(Math.max(0, paidPaisa), { symbol: 'रू ' })}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-slate-600">Due (udharo)</dt>
+          <dt className="text-slate-600">{t('billing.dueUdharo')}</dt>
           <dd className={duePaisa > 0 ? 'font-semibold text-red-600' : 'font-medium'}>
             {formatPaisa(Math.max(0, duePaisa), { symbol: 'रू ' })}
           </dd>
@@ -163,7 +166,7 @@ export function PaymentPanel({
             onChange={(e) => setIsVatBill(e.target.checked)}
             className="h-4 w-4"
           />
-          VAT bill / भ्याट बिजक
+          {t('billing.vatBill')}
         </label>
       ) : null}
 
@@ -179,7 +182,7 @@ export function PaymentPanel({
         disabled={busy || disabled || lines.length === 0}
         onClick={submit}
       >
-        {busy ? 'Completing…' : 'F9 Complete sale + print / बिल सेभ + प्रिन्ट'}
+        {busy ? t('billing.completing') : t('billing.completeSale')}
       </Button>
     </div>
   );

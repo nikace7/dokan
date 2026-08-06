@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import {
   Dialog,
@@ -29,6 +30,7 @@ interface ItemPickerDialogProps {
  * row hands the whole variant (with its price bounds) to the caller.
  */
 export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemPickerDialogProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
 
@@ -58,32 +60,30 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] flex-col">
         <DialogHeader>
-          <DialogTitle>वस्तु छान्नुहोस् / Choose item</DialogTitle>
-          <DialogDescription>
-            Only items in stock at this branch are shown. स्टकमा भएका मात्र देखिन्छन्।
-          </DialogDescription>
+          <DialogTitle>{t('simpleSale.picker.title')}</DialogTitle>
+          <DialogDescription>{t('simpleSale.picker.subtitle')}</DialogDescription>
         </DialogHeader>
         <Input
           autoFocus
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="नाम, SKU वा बारकोड खोज्नुहोस्… / Search name, SKU, barcode"
-          aria-label="Search items"
+          placeholder={t('simpleSale.picker.searchPlaceholder')}
+          aria-label={t('simpleSale.picker.searchAria')}
         />
         <div className="-mx-1 flex-1 overflow-y-auto px-1">
           {query.isPending ? (
-            <div className="space-y-2" role="status" aria-label="Loading items">
+            <div role="status" aria-label={t('simpleSale.picker.loadingAria')} className="space-y-2">
               <Skeleton className="h-14 w-full" />
               <Skeleton className="h-14 w-full" />
               <Skeleton className="h-14 w-full" />
             </div>
           ) : query.isError ? (
             <p role="alert" className="py-6 text-center text-sm text-destructive">
-              Could not load items. Check your connection and try again.
+              {t('simpleSale.picker.loadError')}
             </p>
           ) : rows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              कुनै वस्तु भेटिएन / No items in stock match that search.
+              {t('simpleSale.picker.empty')}
             </p>
           ) : (
             <ul className="divide-y divide-border rounded-md border border-border">
@@ -109,7 +109,7 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
                         <span className="block text-sm font-medium">{formatNpr(row.mrp)}</span>
                       ) : null}
                       <span className="block text-xs text-muted-foreground">
-                        स्टक {row.qty_on_hand}
+                        {t('common.stock', { qty: row.qty_on_hand })}
                       </span>
                     </span>
                   </button>

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 
 import { Card } from '@/components/ui/Card';
@@ -14,6 +15,7 @@ import { formatNpr } from '@/lib/money';
  * shared; nothing else on the tenant is reachable from here.
  */
 export function SharedBillPage() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const query = useQuery({
     queryKey: ['shared-bill', token],
@@ -42,12 +44,10 @@ export function SharedBillPage() {
       <Shell>
         <div className="text-center">
           <h1 className="text-lg font-semibold">
-            {notFound ? 'Bill not found / बिल भेटिएन' : 'Could not load this bill'}
+            {notFound ? t('sharedBill.notFound') : t('sharedBill.loadError')}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {notFound
-              ? 'This bill does not exist or the link is no longer valid. Please ask the shop to share it again. / यो बिल भेटिएन वा लिङ्क मिलेन। पसललाई फेरि पठाउन भन्नुहोस्।'
-              : 'Check your connection and open the link again. / इन्टरनेट जाँचेर फेरि खोल्नुहोस्।'}
+            {notFound ? t('sharedBill.notFoundHelp') : t('sharedBill.loadErrorHelp')}
           </p>
         </div>
       </Shell>
@@ -79,6 +79,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function BillCard({ bill }: { bill: SharedBill }) {
+  const { t } = useTranslation();
   const invoiceNumber = `${bill.doc_type === 'RETURN' ? 'RET' : bill.invoice_prefix}-${bill.invoice_no}`;
   return (
     <Card>
@@ -95,9 +96,9 @@ function BillCard({ bill }: { bill: SharedBill }) {
           <p className="text-xs text-muted-foreground">PAN/VAT: {bill.pan_vat_no}</p>
         ) : null}
         <p className="mt-2 text-xs font-semibold uppercase">
-          {bill.is_vat_bill ? 'Tax Invoice / कर बिजक' : 'Invoice / बिल'}
+          {bill.is_vat_bill ? t('sharedBill.taxInvoice') : t('sharedBill.invoice')}
         </p>
-        <h2 className="mt-1 text-2xl font-bold">Invoice {invoiceNumber}</h2>
+        <h2 className="mt-1 text-2xl font-bold">{t('sharedBill.invoiceNumber', { number: invoiceNumber })}</h2>
         <p className="mt-1 text-sm">
           BS {bill.business_date_bs} · FY {bill.fiscal_year_bs}
           {bill.customer_name ? ` · ${bill.customer_name}` : ''}
@@ -108,10 +109,10 @@ function BillCard({ bill }: { bill: SharedBill }) {
       <table className="mt-4 w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-            <th className="py-1 font-medium">Item / सामान</th>
-            <th className="py-1 text-right font-medium">Qty</th>
-            <th className="py-1 text-right font-medium">Rate</th>
-            <th className="py-1 text-right font-medium">Total</th>
+            <th className="py-1 font-medium">{t('sharedBill.item')}</th>
+            <th className="py-1 text-right font-medium">{t('sharedBill.qty')}</th>
+            <th className="py-1 text-right font-medium">{t('sharedBill.rate')}</th>
+            <th className="py-1 text-right font-medium">{t('sharedBill.total')}</th>
           </tr>
         </thead>
         <tbody>
@@ -133,33 +134,33 @@ function BillCard({ bill }: { bill: SharedBill }) {
       </table>
 
       <dl className="mt-3 space-y-1 text-sm">
-        <Row label="Subtotal / उप-जम्मा" value={bill.subtotal} />
+        <Row label={t('sharedBill.subtotal')} value={bill.subtotal} />
         {bill.discount_amount !== '0.00' ? (
-          <Row label="Discount / छूट" value={`-${bill.discount_amount}`} />
+          <Row label={t('sharedBill.discount')} value={`-${bill.discount_amount}`} />
         ) : null}
-        {bill.is_vat_bill ? <Row label="VAT / कर" value={bill.vat_amount} /> : null}
-        {bill.round_off !== '0.00' ? <Row label="Round off" value={bill.round_off} /> : null}
+        {bill.is_vat_bill ? <Row label={t('sharedBill.vat')} value={bill.vat_amount} /> : null}
+        {bill.round_off !== '0.00' ? <Row label={t('sharedBill.roundOff')} value={bill.round_off} /> : null}
         <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
-          <dt>Total / जम्मा</dt>
+          <dt>{t('sharedBill.total')}</dt>
           <dd>{formatNpr(bill.total)}</dd>
         </div>
-        <Row label="Paid / भुक्तानी" value={bill.paid_amount} />
+        <Row label={t('sharedBill.paid')} value={bill.paid_amount} />
         {bill.tenders.map((tender, index) => (
           <Row
             key={`${tender.method}-${index}`}
-            label={`Tender · ${tender.method}`}
+            label={`${t('sharedBill.tender')} · ${tender.method}`}
             value={tender.amount}
           />
         ))}
         {bill.due_amount !== '0.00' ? (
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Due (udharo) / उधारो</dt>
+            <dt className="text-muted-foreground">{t('sharedBill.dueUdharo')}</dt>
             <dd className="font-semibold text-destructive">{formatNpr(bill.due_amount)}</dd>
           </div>
         ) : null}
       </dl>
 
-      <p className="mt-4 text-center text-xs text-muted-foreground">Thank you / धन्यवाद</p>
+      <p className="mt-4 text-center text-xs text-muted-foreground">{t('sharedBill.thankYou')}</p>
     </Card>
   );
 }

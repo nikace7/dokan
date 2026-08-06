@@ -1,8 +1,10 @@
 import { Store } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
+import { LanguageToggle } from '@/components/layout/LanguageToggle';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -21,6 +23,7 @@ interface LocationState {
  */
 export function LoginPage() {
   const { isAuthenticated, isRestoring, isLoggingIn, loginError, signIn } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [phone, setPhone] = useState('');
@@ -43,6 +46,9 @@ export function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/40 p-6">
       <div className="flex w-full max-w-sm flex-col items-center">
+        <div className="mb-4 flex w-full justify-end">
+          <LanguageToggle />
+        </div>
         <div className="mb-6 flex flex-col items-center gap-2">
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <Store className="h-6 w-6" />
@@ -52,13 +58,13 @@ export function LoginPage() {
 
         <Card className="w-full">
           <CardHeader className="space-y-1 pb-4 text-center">
-            <CardTitle className="text-xl">Sign in</CardTitle>
-            <CardDescription>Sign in to your shop / आफ्नो पसलमा प्रवेश गर्नुहोस्</CardDescription>
+            <CardTitle className="text-xl">{t('auth.title')}</CardTitle>
+            <CardDescription>{t('auth.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="flex flex-col gap-4" onSubmit={onSubmit}>
               <Input
-                label="Phone / फोन"
+                label={t('auth.phone')}
                 name="phone"
                 inputMode="tel"
                 autoComplete="username"
@@ -69,7 +75,7 @@ export function LoginPage() {
                 placeholder="98XXXXXXXX"
               />
               <Input
-                label="Password / पासवर्ड"
+                label={t('auth.password')}
                 name="password"
                 type="password"
                 autoComplete="current-password"
@@ -93,7 +99,7 @@ export function LoginPage() {
                 className="w-full"
                 disabled={isLoggingIn || isRestoring}
               >
-                {isLoggingIn ? 'Signing in…' : 'Sign in / प्रवेश'}
+                {isLoggingIn ? t('auth.signingIn') : t('auth.signIn')}
               </Button>
             </form>
           </CardContent>
