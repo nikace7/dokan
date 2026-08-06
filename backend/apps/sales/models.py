@@ -107,6 +107,12 @@ class SalesInvoice(TenantScopedModel):
     fiscal_year_bs = models.CharField(max_length=7)
     device_id = models.TextField(null=True, blank=True)
     idempotency_key = models.TextField()
+    # Unguessable public-link token (GET /sales/shared/<token>). Written
+    # ONCE on a COMPLETED invoice by the share endpoint — the single
+    # sanctioned exception to "completed invoices are never updated" (#3):
+    # it changes no financial truth. Globally unique so the public route can
+    # resolve token → tenant without iterating tenants.
+    share_token = models.UUIDField(null=True, blank=True, unique=True)
     # Actual tender split used for cash-session reconciliation. CREDIT and
     # exchange credit may be present, but only CASH affects the drawer.
     tenders = models.JSONField(default=list)

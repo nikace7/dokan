@@ -18,6 +18,7 @@ from apps.sales.services.held_bills import (
 )
 from apps.sales.services.receipts import record_receipt_print
 from apps.sales.services.returns import REFUND_METHODS, ReturnLineInput, create_return
+from apps.sales.services.share import get_or_create_share_token
 
 __all__ = [
     "PAYMENT_METHODS",
@@ -31,6 +32,7 @@ __all__ = [
     "create_exchange",
     "create_return",
     "create_sale",
+    "get_or_create_share_token",
     "hold_bill",
     "record_receipt_print",
 ]
