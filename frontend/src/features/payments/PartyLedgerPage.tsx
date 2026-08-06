@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -23,13 +24,12 @@ import { formatNpr } from '@/lib/money';
 
 type Party = 'customer' | 'supplier';
 
-function errorMessage(error: unknown): string {
-  return error instanceof ApiError || error instanceof Error
-    ? error.message
-    : 'Could not load the ledger.';
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError || error instanceof Error ? error.message : fallback;
 }
 
 export function PartyLedgerPage() {
+  const { t } = useTranslation();
   const [party, setParty] = useState<Party>('customer');
   const [customerSearch, setCustomerSearch] = useState('');
   const [supplierSearch, setSupplierSearch] = useState('');
@@ -67,15 +67,15 @@ export function PartyLedgerPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
-      <Card title="Party ledgers / खाता">
-        <div role="tablist" aria-label="Ledger type" className="mb-4 flex gap-2">
+      <Card title={t('payments.ledger.title')}>
+        <div role="tablist" aria-label={t('payments.ledger.typeAria')} className="mb-4 flex gap-2">
           <Button
             role="tab"
             aria-selected={party === 'customer'}
             variant={party === 'customer' ? 'primary' : 'secondary'}
             onClick={() => selectParty('customer')}
           >
-            Customer ledger
+            {t('payments.ledger.customerTab')}
           </Button>
           <Button
             role="tab"
@@ -83,7 +83,7 @@ export function PartyLedgerPage() {
             variant={party === 'supplier' ? 'primary' : 'secondary'}
             onClick={() => selectParty('supplier')}
           >
-            Supplier ledger
+            {t('payments.ledger.supplierTab')}
           </Button>
         </div>
 
@@ -99,7 +99,7 @@ export function PartyLedgerPage() {
                 setSupplier(null);
               }}
             >
-              Change
+              {t('common.change')}
             </Button>
           </div>
         ) : (
@@ -123,14 +123,14 @@ export function PartyLedgerPage() {
         )}
 
         {ledgerQuery.isFetching ? (
-          <p className="mt-4 text-sm text-muted-foreground">Loading ledger…</p>
+          <p className="mt-4 text-sm text-muted-foreground">{t('payments.ledger.loading')}</p>
         ) : null}
         {ledgerQuery.isError ? (
           <p
             role="alert"
             className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
           >
-            {errorMessage(ledgerQuery.error)}
+            {errorMessage(ledgerQuery.error, t('payments.ledger.loadError'))}
           </p>
         ) : null}
         {ledgerQuery.data ? <LedgerTable rows={ledgerQuery.data} /> : null}
@@ -156,19 +156,26 @@ function PartySearch({
   results: Array<Customer | Supplier>;
   onSelect: (party: Customer | Supplier) => void;
 }) {
+  const { t } = useTranslation();
   const search = party === 'customer' ? customerSearch : supplierSearch;
   return (
     <div>
       <Input
-        label={party === 'customer' ? 'Customer' : 'Supplier'}
-        aria-label={`Search ${party} ledger`}
+        label={party === 'customer' ? t('payments.customer') : t('payments.supplier')}
+        aria-label={
+          party === 'customer' ? t('payments.ledger.customerAria') : t('payments.ledger.supplierAria')
+        }
         value={search}
         onChange={(event) =>
           party === 'customer'
             ? onCustomerSearch(event.target.value)
             : onSupplierSearch(event.target.value)
         }
-        placeholder={`Search ${party} by name or phone…`}
+        placeholder={
+          party === 'customer'
+            ? t('payments.ledger.customerPlaceholder')
+            : t('payments.ledger.supplierPlaceholder')
+        }
         autoComplete="off"
       />
       {results.length > 0 ? (
@@ -193,10 +200,11 @@ function PartySearch({
 
 /** Ledger rows: card list below `md`, full table from `md` up. */
 function LedgerTable({ rows }: { rows: LedgerRow[] }) {
+  const { t } = useTranslation();
   if (rows.length === 0) {
     return (
       <p className="mt-4 py-8 text-center text-sm text-muted-foreground">
-        No ledger entries yet.
+        {t('payments.ledger.empty')}
       </p>
     );
   }
@@ -204,7 +212,8 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
   return (
     <div className="mt-4">
       <p className="mb-2 text-sm text-muted-foreground">
-        Closing balance: <strong className="text-foreground">{formatNpr(balance)}</strong>
+        {t('payments.ledger.closingBalance')}{' '}
+        <strong className="text-foreground">{formatNpr(balance)}</strong>
       </p>
       <ul className="divide-y divide-border md:hidden">
         {rows.map((row, index) => (
@@ -218,8 +227,12 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
               <span>{row.kind}</span>
             </div>
             <div className="mt-1 flex gap-4 text-xs text-muted-foreground tabular-nums">
-              <span>Debit {formatNpr(row.debit, { symbol: '' })}</span>
-              <span>Credit {formatNpr(row.credit, { symbol: '' })}</span>
+              <span>
+                {t('payments.ledger.debit')} {formatNpr(row.debit, { symbol: '' })}
+              </span>
+              <span>
+                {t('payments.ledger.credit')} {formatNpr(row.credit, { symbol: '' })}
+              </span>
             </div>
           </li>
         ))}
@@ -228,12 +241,12 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Reference</TableHead>
-              <TableHead className="text-right">Debit</TableHead>
-              <TableHead className="text-right">Credit</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
+              <TableHead>{t('payments.ledger.date')}</TableHead>
+              <TableHead>{t('payments.ledger.type')}</TableHead>
+              <TableHead>{t('payments.ledger.reference')}</TableHead>
+              <TableHead className="text-right">{t('payments.ledger.debit')}</TableHead>
+              <TableHead className="text-right">{t('payments.ledger.credit')}</TableHead>
+              <TableHead className="text-right">{t('payments.ledger.balance')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

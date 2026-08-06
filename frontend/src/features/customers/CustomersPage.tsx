@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +34,7 @@ const selectClasses =
   'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 export function CustomersPage() {
+  const { t } = useTranslation();
   const { user, isRestoring } = useAuth();
   const canView = hasPermission(user, 'customer.view');
   const canManage = hasPermission(user, 'customer.manage');
@@ -66,10 +68,10 @@ export function CustomersPage() {
   });
 
   if (isRestoring) {
-    return <main className="p-6 text-sm text-muted-foreground">Loading customers…</main>;
+    return <main className="p-6 text-sm text-muted-foreground">{t('customers.loading')}</main>;
   }
   if (!canView) {
-    return <main className="p-6 text-sm text-warning">You cannot view customers.</main>;
+    return <main className="p-6 text-sm text-warning">{t('customers.noViewPermission')}</main>;
   }
 
   const rows = customers.data?.data ?? [];
@@ -77,8 +79,12 @@ export function CustomersPage() {
   return (
     <main className="mx-auto max-w-6xl p-4">
       <Card
-        title="Customers / ग्राहक"
-        actions={canManage ? <Button onClick={() => setEditing('new')}>New customer</Button> : null}
+        title={t('customers.title')}
+        actions={
+          canManage ? (
+            <Button onClick={() => setEditing('new')}>{t('customers.new')}</Button>
+          ) : null
+        }
       >
         {editing && canManage ? (
           <CustomerForm
@@ -91,16 +97,16 @@ export function CustomersPage() {
 
         <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px]">
           <Input
-            aria-label="Search customers"
+            aria-label={t('customers.searchAria')}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Search by name or phone…"
+            placeholder={t('common.searchByNameOrPhone')}
           />
           <select
-            aria-label="Filter customers by status"
+            aria-label={t('customers.statusFilterAria')}
             value={status}
             onChange={(event) => {
               setStatus(event.target.value as StatusFilter);
@@ -108,26 +114,24 @@ export function CustomersPage() {
             }}
             className={selectClasses}
           >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="all">All</option>
+            <option value="active">{t('customers.statusActive')}</option>
+            <option value="inactive">{t('customers.statusInactive')}</option>
+            <option value="all">{t('customers.statusAll')}</option>
           </select>
         </div>
 
         {customers.isPending ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+          <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : null}
         {customers.isError ? (
           <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {customers.error instanceof Error
               ? customers.error.message
-              : 'Could not load customers.'}
+              : t('customers.loadError')}
           </p>
         ) : null}
         {customers.data && rows.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No customers match this filter.
-          </p>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t('customers.empty')}</p>
         ) : null}
         {rows.length ? (
           <CustomerList
@@ -135,7 +139,7 @@ export function CustomersPage() {
             canManage={canManage}
             onEdit={setEditing}
             onDeactivate={(customer) => {
-              if (window.confirm(`Deactivate ${customer.name}?`)) {
+              if (window.confirm(t('customers.deactivateConfirm', { name: customer.name }))) {
                 deactivate.mutate(customer.id);
               }
             }}
@@ -159,10 +163,11 @@ function CustomerActions({
   onDeactivate: (customer: Customer) => void;
   deactivatePending: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-2">
       <Button size="sm" variant="secondary" onClick={() => onEdit(customer)}>
-        Edit
+        {t('customers.edit')}
       </Button>
       {customer.is_active ? (
         <Button
@@ -172,7 +177,7 @@ function CustomerActions({
           disabled={deactivatePending}
           onClick={() => onDeactivate(customer)}
         >
-          Deactivate
+          {t('customers.deactivate')}
         </Button>
       ) : null}
     </div>
@@ -193,6 +198,7 @@ function CustomerList({
   onDeactivate: (customer: Customer) => void;
   deactivatePending: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <ul className="divide-y divide-border md:hidden">
@@ -201,24 +207,26 @@ function CustomerList({
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-medium">{customer.name}</p>
-                <p className="text-sm text-muted-foreground">{customer.phone ?? 'No phone'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {customer.phone ?? t('common.noPhone')}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {customer.address ?? 'No address'}
+                  {customer.address ?? t('customers.noAddress')}
                 </p>
               </div>
               <Badge variant={customer.is_active ? 'success' : 'secondary'}>
-                {customer.is_active ? 'Active' : 'Inactive'}
+                {customer.is_active ? t('customers.statusActive') : t('customers.statusInactive')}
               </Badge>
             </div>
             <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
               <div className="flex gap-1">
-                <dt className="text-muted-foreground">Credit limit</dt>
+                <dt className="text-muted-foreground">{t('customers.creditLimit')}</dt>
                 <dd className="tabular-nums">
-                  {customer.credit_limit ? formatNpr(customer.credit_limit) : 'Unlimited'}
+                  {customer.credit_limit ? formatNpr(customer.credit_limit) : t('customers.unlimited')}
                 </dd>
               </div>
               <div className="flex gap-1">
-                <dt className="text-muted-foreground">Loyalty</dt>
+                <dt className="text-muted-foreground">{t('customers.loyalty')}</dt>
                 <dd className="tabular-nums">{customer.loyalty_points}</dd>
               </div>
             </dl>
@@ -239,12 +247,14 @@ function CustomerList({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Phone / address</TableHead>
-              <TableHead className="text-right">Credit limit</TableHead>
-              <TableHead className="text-right">Loyalty</TableHead>
-              <TableHead>Status</TableHead>
-              {canManage ? <TableHead className="text-right">Actions</TableHead> : null}
+              <TableHead>{t('customers.tableName')}</TableHead>
+              <TableHead>{t('customers.tablePhoneAddress')}</TableHead>
+              <TableHead className="text-right">{t('customers.creditLimit')}</TableHead>
+              <TableHead className="text-right">{t('customers.loyalty')}</TableHead>
+              <TableHead>{t('customers.tableStatus')}</TableHead>
+              {canManage ? (
+                <TableHead className="text-right">{t('customers.tableActions')}</TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -252,18 +262,18 @@ function CustomerList({
               <TableRow key={customer.id}>
                 <TableCell className="font-medium">{customer.name}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  <span className="block">{customer.phone ?? 'No phone'}</span>
-                  <span className="text-xs">{customer.address ?? 'No address'}</span>
+                  <span className="block">{customer.phone ?? t('common.noPhone')}</span>
+                  <span className="text-xs">{customer.address ?? t('customers.noAddress')}</span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {customer.credit_limit ? formatNpr(customer.credit_limit) : 'Unlimited'}
+                  {customer.credit_limit ? formatNpr(customer.credit_limit) : t('customers.unlimited')}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {customer.loyalty_points}
                 </TableCell>
                 <TableCell>
                   <Badge variant={customer.is_active ? 'success' : 'secondary'}>
-                    {customer.is_active ? 'Active' : 'Inactive'}
+                    {customer.is_active ? t('customers.statusActive') : t('customers.statusInactive')}
                   </Badge>
                 </TableCell>
                 {canManage ? (
@@ -312,6 +322,7 @@ function CustomerForm({
   rates: Array<{ id: string; name: string }>;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(() => initial(customer));
   const save = useMutation({
@@ -342,29 +353,29 @@ function CustomerForm({
       className="mb-5 grid gap-3 rounded-md border border-border bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3"
     >
       <Input
-        label="Customer name"
+        label={t('customers.form.name')}
         required
         value={form.name}
         onChange={(event) => setForm({ ...form, name: event.target.value })}
       />
       <Input
-        label="Phone"
+        label={t('customers.form.phone')}
         value={form.phone ?? ''}
         onChange={(event) => setForm({ ...form, phone: event.target.value })}
       />
       <Input
-        label="Address"
+        label={t('customers.form.address')}
         value={form.address ?? ''}
         onChange={(event) => setForm({ ...form, address: event.target.value })}
       />
       <label className="flex flex-col gap-1.5 text-sm font-medium">
-        Default rate
+        {t('customers.form.defaultRate')}
         <select
           value={form.default_rate_type ?? ''}
           onChange={(event) => setForm({ ...form, default_rate_type: event.target.value || null })}
           className={`${selectClasses} font-normal`}
         >
-          <option value="">Shop default</option>
+          <option value="">{t('customers.form.shopDefault')}</option>
           {rates.map((rate) => (
             <option key={rate.id} value={rate.id}>
               {rate.name}
@@ -374,40 +385,40 @@ function CustomerForm({
       </label>
       {canSetCredit ? (
         <Input
-          label="Credit limit"
+          label={t('customers.form.creditLimit')}
           inputMode="decimal"
           value={form.credit_limit ?? ''}
           onChange={(event) => setForm({ ...form, credit_limit: event.target.value || null })}
-          placeholder="Blank = unlimited"
+          placeholder={t('customers.form.creditUnlimited')}
         />
       ) : null}
       <Input
-        label="Opening balance"
+        label={t('customers.form.openingBalance')}
         inputMode="decimal"
         value={form.opening_balance ?? '0.00'}
         onChange={(event) => setForm({ ...form, opening_balance: event.target.value })}
       />
       <Input
-        label="Birthday (BS)"
+        label={t('customers.form.birthdayBs')}
         value={form.birthday_bs ?? ''}
         onChange={(event) => setForm({ ...form, birthday_bs: event.target.value })}
         placeholder="2082-04-12"
       />
       <label className="flex flex-col gap-1.5 text-sm font-medium">
-        Gender
+        {t('customers.form.gender')}
         <select
           value={form.gender ?? ''}
           onChange={(event) => setForm({ ...form, gender: event.target.value || null })}
           className={`${selectClasses} font-normal`}
         >
-          <option value="">Not specified</option>
-          <option value="F">Female</option>
-          <option value="M">Male</option>
-          <option value="OTHER">Other</option>
+          <option value="">{t('customers.form.genderUnspecified')}</option>
+          <option value="F">{t('customers.form.genderFemale')}</option>
+          <option value="M">{t('customers.form.genderMale')}</option>
+          <option value="OTHER">{t('customers.form.genderOther')}</option>
         </select>
       </label>
       <Input
-        label="Note"
+        label={t('common.note')}
         value={form.note ?? ''}
         onChange={(event) => setForm({ ...form, note: event.target.value })}
       />
@@ -416,15 +427,15 @@ function CustomerForm({
           role="alert"
           className="rounded-md bg-destructive/10 p-3 text-sm text-destructive sm:col-span-2 lg:col-span-3"
         >
-          {save.error instanceof ApiError ? save.error.message : 'Could not save customer.'}
+          {save.error instanceof ApiError ? save.error.message : t('customers.form.saveError')}
         </p>
       ) : null}
       <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
         <Button type="submit" disabled={save.isPending}>
-          Save customer
+          {t('customers.form.save')}
         </Button>
         <Button variant="secondary" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </form>
@@ -440,11 +451,12 @@ function Pager({
   totalPages: number;
   onPage: (page: number) => void;
 }) {
+  const { t } = useTranslation();
   if (totalPages <= 1) return null;
   return (
     <div className="mt-4 flex justify-end gap-2">
       <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        Previous
+        {t('common.previous')}
       </Button>
       <Button
         size="sm"
@@ -452,7 +464,7 @@ function Pager({
         disabled={page >= totalPages}
         onClick={() => onPage(page + 1)}
       >
-        Next
+        {t('common.next')}
       </Button>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -43,6 +44,7 @@ interface NewLine {
 }
 
 function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () => void }) {
+  const { t } = useTranslation();
   const linesQuery = useQuery({
     queryKey: ['exchange', 'returnable', sale.id],
     queryFn: () => getReturnableLines(sale.id),
@@ -62,7 +64,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
       setCode('');
       setError(null);
     },
-    onError: (err) => setError(errorMessage(err, 'Could not find that item.')),
+    onError: (err) => setError(errorMessage(err, t('exchange.editor.lookupError'))),
   });
 
   const exchangeMutation = useMutation({
@@ -85,7 +87,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
       });
     },
     onSuccess: onRecorded,
-    onError: (err) => setError(errorMessage(err, 'Could not record the exchange.')),
+    onError: (err) => setError(errorMessage(err, t('exchange.editor.saveError'))),
   });
 
   function addItem() {
@@ -96,7 +98,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
     event.preventDefault();
     const hasReturn = Object.values(returnQuantities).some((qty) => qty.trim() !== '');
     if (!hasReturn || newLines.length === 0 || !reason.trim()) {
-      setError('Select a returned quantity, add a new item, and enter a reason.');
+      setError(t('exchange.editor.required'));
       return;
     }
     exchangeMutation.mutate();
@@ -105,11 +107,11 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
   return (
     <form onSubmit={submit} className="border-t border-border px-2 py-3">
       {linesQuery.isFetching ? (
-        <p className="text-sm text-muted-foreground">Loading returned lines…</p>
+        <p className="text-sm text-muted-foreground">{t('exchange.editor.loadingLines')}</p>
       ) : null}
       {linesQuery.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {errorMessage(linesQuery.error, 'Could not load returnable lines.')}
+          {errorMessage(linesQuery.error, t('exchange.editor.loadLinesError'))}
         </p>
       ) : null}
       {linesQuery.data && linesQuery.data.length > 0 ? (
@@ -123,16 +125,16 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
       ) : null}
 
       <div className="mt-4 rounded-md border border-border p-3">
-        <h3 className="text-sm font-semibold">New item</h3>
+        <h3 className="text-sm font-semibold">{t('exchange.editor.newItem')}</h3>
         <div className="mt-2 flex flex-wrap items-end gap-2">
           <Input
-            label="New item code"
+            label={t('exchange.editor.newItemCode')}
             value={code}
             onChange={(event) => setCode(event.target.value)}
-            placeholder="Barcode or SKU"
+            placeholder={t('exchange.editor.codePlaceholder')}
           />
           <Button type="button" size="sm" onClick={addItem} disabled={lookupMutation.isPending}>
-            {lookupMutation.isPending ? 'Finding…' : 'Add item'}
+            {lookupMutation.isPending ? t('exchange.editor.finding') : t('exchange.editor.addItem')}
           </Button>
         </div>
         {newLines.length > 0 ? (
@@ -147,9 +149,11 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
                   <span className="text-xs text-muted-foreground">{line.variant.sku}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Qty</span>
+                  <span className="text-xs text-muted-foreground">{t('exchange.editor.qty')}</span>
                   <input
-                    aria-label={`New quantity for ${line.variant.item__name}`}
+                    aria-label={t('exchange.editor.newQtyAria', {
+                      name: line.variant.item__name,
+                    })}
                     type="number"
                     min="0.001"
                     step="0.001"
@@ -171,10 +175,14 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Input label="Reason" value={reason} onChange={(event) => setReason(event.target.value)} />
+        <Input
+          label={t('exchange.editor.reason')}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+        />
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={`exchange-payment-method-${sale.id}`}>
-            Extra payment method (optional)
+            {t('exchange.editor.paymentMethod')}
           </Label>
           <select
             id={`exchange-payment-method-${sale.id}`}
@@ -190,7 +198,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
           </select>
         </div>
         <Input
-          label="Extra payment (NPR, optional)"
+          label={t('exchange.editor.paymentAmount')}
           type="number"
           min="0.01"
           step="0.01"
@@ -198,17 +206,14 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
           onChange={(event) => setPaymentAmount(event.target.value)}
         />
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Prices and the difference are calculated by the server. Add extra payment only when the new
-        item total exceeds the return credit.
-      </p>
+      <p className="mt-2 text-xs text-muted-foreground">{t('exchange.editor.serverNote')}</p>
       {error ? (
         <p role="alert" className="mt-2 text-sm text-destructive">
           {error}
         </p>
       ) : null}
       <Button type="submit" className="mt-3" disabled={exchangeMutation.isPending}>
-        {exchangeMutation.isPending ? 'Saving…' : 'Record exchange'}
+        {exchangeMutation.isPending ? t('common.saving') : t('exchange.editor.submit')}
       </Button>
     </form>
   );
@@ -223,6 +228,7 @@ function LineList({
   quantities: Record<string, string>;
   onChange: (variant: string, value: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <ul className="divide-y divide-border rounded-md border border-border px-3">
       {lines.map((line) => (
@@ -234,13 +240,13 @@ function LineList({
             <span className="font-medium">{line.item_name}</span>{' '}
             <span className="text-xs text-muted-foreground">{line.sku}</span>
             <span className="block text-xs text-muted-foreground">
-              Remaining: {line.remaining}
+              {t('exchange.line.remaining', { remaining: line.remaining })}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Return qty</span>
+            <span className="text-xs text-muted-foreground">{t('exchange.line.returnQty')}</span>
             <input
-              aria-label={`Return quantity for ${line.item_name}`}
+              aria-label={t('exchange.line.qtyAria', { name: line.item_name })}
               type="number"
               min="0"
               max={line.remaining}
@@ -258,6 +264,7 @@ function LineList({
 
 /** One atomic return + replacement sale; totals remain server-authoritative. */
 export function ExchangePage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -276,22 +283,18 @@ export function ExchangePage() {
           {statusMessage}
         </p>
       ) : null}
-      <Card title="Exchanges / साटफेर">
-        <p className="mb-3 text-sm text-muted-foreground">
-          Select the original bill, choose returned quantities, and add the replacement items.
-        </p>
+      <Card title={t('exchange.title')}>
+        <p className="mb-3 text-sm text-muted-foreground">{t('exchange.help')}</p>
         {salesQuery.isFetching ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading sales…</p>
+          <p className="py-4 text-sm text-muted-foreground">{t('exchange.loading')}</p>
         ) : null}
         {salesQuery.isError ? (
           <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {errorMessage(salesQuery.error, 'Could not load completed sales.')}
+            {errorMessage(salesQuery.error, t('exchange.loadError'))}
           </p>
         ) : null}
         {salesQuery.data && sales.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No completed sales found.
-          </p>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t('exchange.empty')}</p>
         ) : null}
         {sales.map((sale) => (
           <div key={sale.id} className="border-b border-border last:border-0">
@@ -301,8 +304,12 @@ export function ExchangePage() {
               onClick={() => setExpandedId((current) => (current === sale.id ? null : sale.id))}
               className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
-              <span className="font-medium">Invoice {sale.invoice_no ?? '—'}</span>
-              <span className="text-muted-foreground">{sale.customer_name || 'Walk-in'}</span>
+              <span className="font-medium">
+                {t('exchange.invoice', { number: sale.invoice_no ?? '—' })}
+              </span>
+              <span className="text-muted-foreground">
+                {sale.customer_name || t('common.walkIn')}
+              </span>
               <span className="text-muted-foreground">{sale.business_date_bs}</span>
               <span className="tabular-nums">{formatNpr(sale.total)}</span>
             </button>
@@ -310,7 +317,7 @@ export function ExchangePage() {
               <ExchangeEditor
                 sale={sale}
                 onRecorded={() => {
-                  setStatusMessage('Exchange recorded.');
+                  setStatusMessage(t('exchange.recorded'));
                   setExpandedId(null);
                   void queryClient.invalidateQueries({ queryKey: ['exchange', 'sales'] });
                 }}
@@ -321,7 +328,8 @@ export function ExchangePage() {
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              Page {meta.page} of {meta.total_pages} ({meta.count} sales)
+              {t('common.pageOf', { page: meta.page, total: meta.total_pages })} (
+              {t('exchange.count', { count: meta.count })})
             </span>
             <div className="flex gap-2">
               <Button
@@ -330,7 +338,7 @@ export function ExchangePage() {
                 disabled={page <= 1}
                 onClick={() => setPage((current) => current - 1)}
               >
-                Previous
+                {t('common.previous')}
               </Button>
               <Button
                 variant="secondary"
@@ -338,7 +346,7 @@ export function ExchangePage() {
                 disabled={meta.page >= meta.total_pages}
                 onClick={() => setPage((current) => current + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           </div>

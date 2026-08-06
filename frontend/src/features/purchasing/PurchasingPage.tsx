@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
@@ -17,8 +18,15 @@ const STATUS_VARIANTS: Record<PurchaseInvoiceStatus, 'warning' | 'success' | 'se
   CANCELLED: 'secondary',
 };
 
+const STATUS_KEYS: Record<PurchaseInvoiceStatus, string> = {
+  DRAFT: 'purchasing.statusDraft',
+  CONFIRMED: 'purchasing.statusConfirmed',
+  CANCELLED: 'purchasing.statusCancelled',
+};
+
 function StatusBadge({ status }: { status: PurchaseInvoiceStatus }) {
-  return <Badge variant={STATUS_VARIANTS[status]}>{status}</Badge>;
+  const { t } = useTranslation();
+  return <Badge variant={STATUS_VARIANTS[status]}>{t(STATUS_KEYS[status])}</Badge>;
 }
 
 const selectClasses =
@@ -26,6 +34,7 @@ const selectClasses =
 
 /** Expanded invoice: lines, totals, and the guarded DRAFT→CONFIRMED action. */
 function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +47,7 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
       void queryClient.invalidateQueries({ queryKey: ['inventory', 'levels'] });
     },
     onError: (err) =>
-      setError(err instanceof ApiError ? err.message : 'Could not confirm the invoice.'),
+      setError(err instanceof ApiError ? err.message : t('purchasing.detail.confirmError')),
   });
 
   return (
@@ -64,25 +73,25 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
       </ul>
       <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
         <div className="flex gap-1">
-          <dt className="text-muted-foreground">Subtotal</dt>
+          <dt className="text-muted-foreground">{t('purchasing.detail.subtotal')}</dt>
           <dd>{formatNpr(invoice.subtotal)}</dd>
         </div>
         {invoice.is_vat_bill ? (
           <div className="flex gap-1">
-            <dt className="text-muted-foreground">VAT</dt>
+            <dt className="text-muted-foreground">{t('purchasing.detail.vat')}</dt>
             <dd>{formatNpr(invoice.vat_amount)}</dd>
           </div>
         ) : null}
         <div className="flex gap-1 font-semibold">
-          <dt>Total</dt>
+          <dt>{t('purchasing.detail.total')}</dt>
           <dd>{formatNpr(invoice.total)}</dd>
         </div>
         <div className="flex gap-1">
-          <dt className="text-muted-foreground">Paid</dt>
+          <dt className="text-muted-foreground">{t('purchasing.detail.paid')}</dt>
           <dd>{formatNpr(invoice.paid_amount)}</dd>
         </div>
         <div className="flex gap-1">
-          <dt className="text-muted-foreground">Due</dt>
+          <dt className="text-muted-foreground">{t('purchasing.detail.due')}</dt>
           <dd>{formatNpr(invoice.due_amount)}</dd>
         </div>
       </dl>
@@ -91,10 +100,7 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
         <div className="mt-3">
           {confirming ? (
             <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2">
-              <p className="text-sm text-warning">
-                Confirm this purchase? It posts the stock into the ledger and updates cost (weighted
-                average). This cannot be undone.
-              </p>
+              <p className="text-sm text-warning">{t('purchasing.detail.confirmBody')}</p>
               {error ? (
                 <p role="alert" className="mt-1 text-sm text-destructive">
                   {error}
@@ -106,16 +112,18 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
                   disabled={confirmMutation.isPending}
                   onClick={() => confirmMutation.mutate()}
                 >
-                  {confirmMutation.isPending ? 'Confirming…' : 'Yes, confirm'}
+                  {confirmMutation.isPending
+                    ? t('purchasing.detail.confirming')
+                    : t('purchasing.detail.confirmYes')}
                 </Button>
                 <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
-                  Back
+                  {t('purchasing.detail.back')}
                 </Button>
               </div>
             </div>
           ) : (
             <Button size="sm" onClick={() => setConfirming(true)}>
-              Confirm — post stock
+              {t('purchasing.detail.confirm')}
             </Button>
           )}
         </div>
@@ -129,6 +137,7 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
  * flow, the new-invoice form, and supplier management.
  */
 export function PurchasingPage() {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -145,10 +154,10 @@ export function PurchasingPage() {
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       <Card
-        title="Purchase invoices / खरिद"
+        title={t('purchasing.title')}
         actions={
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-            {showForm ? 'Close form' : 'New purchase'}
+            {showForm ? t('common.closeForm') : t('purchasing.new')}
           </Button>
         }
       >
@@ -166,7 +175,7 @@ export function PurchasingPage() {
 
         <div className="mb-3">
           <select
-            aria-label="Filter by status"
+            aria-label={t('purchasing.filterStatusAria')}
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
@@ -174,20 +183,18 @@ export function PurchasingPage() {
             }}
             className={selectClasses}
           >
-            <option value="">All statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="CANCELLED">Cancelled</option>
+            <option value="">{t('purchasing.allStatuses')}</option>
+            <option value="DRAFT">{t('purchasing.statusDraft')}</option>
+            <option value="CONFIRMED">{t('purchasing.statusConfirmed')}</option>
+            <option value="CANCELLED">{t('purchasing.statusCancelled')}</option>
           </select>
         </div>
 
         {invoicesQuery.isFetching ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+          <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : null}
         {invoicesQuery.data && invoices.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No purchase invoices yet.
-          </p>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t('purchasing.empty')}</p>
         ) : null}
 
         {invoices.map((invoice) => (
@@ -211,7 +218,8 @@ export function PurchasingPage() {
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              Page {meta.page} of {meta.total_pages} ({meta.count} invoices)
+              {t('common.pageOf', { page: meta.page, total: meta.total_pages })} (
+              {t('purchasing.count', { count: meta.count })})
             </span>
             <div className="flex gap-2">
               <Button
@@ -220,7 +228,7 @@ export function PurchasingPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Previous
+                {t('common.previous')}
               </Button>
               <Button
                 variant="secondary"
@@ -228,7 +236,7 @@ export function PurchasingPage() {
                 disabled={meta.page >= meta.total_pages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           </div>

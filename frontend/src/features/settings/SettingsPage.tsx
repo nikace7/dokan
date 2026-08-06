@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -34,10 +35,8 @@ function toForm(settings: TenantSettings): SettingsForm {
   };
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof ApiError || error instanceof Error
-    ? error.message
-    : 'Could not save shop settings.';
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError || error instanceof Error ? error.message : fallback;
 }
 
 const selectClasses =
@@ -45,6 +44,7 @@ const selectClasses =
 
 /** Owner-facing tenant profile and presentation settings. */
 export function SettingsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const canManage = hasPermission(user, 'settings.manage');
   const queryClient = useQueryClient();
@@ -68,16 +68,16 @@ export function SettingsPage() {
       queryClient.setQueryData(['tenant', 'settings'], settings);
       setForm(toForm(settings));
       setFormError(null);
-      setStatusMessage('Shop settings saved.');
+      setStatusMessage(t('settings.saved'));
     },
-    onError: (error) => setFormError(errorMessage(error)),
+    onError: (error) => setFormError(errorMessage(error, t('settings.saveError'))),
   });
 
   if (!canManage) {
     return (
       <main className="mx-auto max-w-3xl p-4">
-        <Card title="Settings / सेटिङ">
-          <p className="text-sm text-muted-foreground">Only the shop owner can manage settings.</p>
+        <Card title={t('settings.title')}>
+          <p className="text-sm text-muted-foreground">{t('settings.ownerOnly')}</p>
         </Card>
       </main>
     );
@@ -86,7 +86,7 @@ export function SettingsPage() {
   if (query.isPending) {
     return (
       <main className="mx-auto max-w-3xl p-4 text-sm text-muted-foreground">
-        Loading shop settings…
+        {t('settings.loading')}
       </main>
     );
   }
@@ -95,7 +95,7 @@ export function SettingsPage() {
     return (
       <main className="mx-auto max-w-3xl p-4">
         <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {errorMessage(query.error)}
+          {errorMessage(query.error, t('settings.saveError'))}
         </p>
       </main>
     );
@@ -106,7 +106,7 @@ export function SettingsPage() {
     const currentForm = form;
     if (!currentForm) return;
     if (!currentForm.name.trim()) {
-      setFormError('Shop name is required.');
+      setFormError(t('settings.nameRequired'));
       return;
     }
     setStatusMessage(null);
@@ -127,18 +127,22 @@ export function SettingsPage() {
           {statusMessage}
         </p>
       ) : null}
-      <Card title="Shop profile / पसल विवरण">
+      <Card title={t('settings.profile.title')}>
         <div className="mb-4 grid gap-3 rounded-md bg-muted/50 p-3 text-sm sm:grid-cols-3">
           <div>
-            <span className="block text-xs text-muted-foreground">Subdomain</span>
+            <span className="block text-xs text-muted-foreground">
+              {t('settings.profile.subdomain')}
+            </span>
             <span className="font-medium">{query.data.slug}</span>
           </div>
           <div>
-            <span className="block text-xs text-muted-foreground">Plan</span>
+            <span className="block text-xs text-muted-foreground">{t('settings.profile.plan')}</span>
             <span className="font-medium">{query.data.plan_code}</span>
           </div>
           <div>
-            <span className="block text-xs text-muted-foreground">Timezone</span>
+            <span className="block text-xs text-muted-foreground">
+              {t('settings.profile.timezone')}
+            </span>
             <span className="font-medium">{query.data.timezone}</span>
           </div>
         </div>
@@ -146,23 +150,23 @@ export function SettingsPage() {
         <form onSubmit={submit} className="flex flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
-              label="Shop name"
+              label={t('settings.profile.shopName')}
               required
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
             />
             <Input
-              label="Shop name (नेपाली)"
+              label={t('settings.profile.shopNameNp')}
               value={form.name_np}
               onChange={(event) => setForm({ ...form, name_np: event.target.value })}
             />
             <Input
-              label="Legal name"
+              label={t('settings.profile.legalName')}
               value={form.legal_name}
               onChange={(event) => setForm({ ...form, legal_name: event.target.value })}
             />
             <Input
-              label="PAN / VAT number"
+              label={t('settings.profile.panVat')}
               value={form.pan_vat_no}
               onChange={(event) => setForm({ ...form, pan_vat_no: event.target.value })}
             />
@@ -175,12 +179,12 @@ export function SettingsPage() {
               onChange={(event) => setForm({ ...form, vat_registered: event.target.checked })}
               className="accent-primary"
             />
-            VAT registered shop
+            {t('settings.profile.vatRegistered')}
           </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Calendar preference
+              {t('settings.profile.calendarPref')}
               <select
                 value={form.calendar_pref}
                 onChange={(event) =>
@@ -191,13 +195,13 @@ export function SettingsPage() {
                 }
                 className={`${selectClasses} font-normal`}
               >
-                <option value="BS">Bikram Sambat (BS)</option>
-                <option value="AD">Gregorian (AD)</option>
-                <option value="BOTH">Both calendars</option>
+                <option value="BS">{t('settings.profile.calBs')}</option>
+                <option value="AD">{t('settings.profile.calAd')}</option>
+                <option value="BOTH">{t('settings.profile.calBoth')}</option>
               </select>
             </label>
             <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Interface language
+              {t('settings.profile.locale')}
               <select
                 value={form.locale}
                 onChange={(event) =>
@@ -205,8 +209,8 @@ export function SettingsPage() {
                 }
                 className={`${selectClasses} font-normal`}
               >
-                <option value="np">Nepali</option>
-                <option value="en">English</option>
+                <option value="np">{t('settings.profile.localeNp')}</option>
+                <option value="en">{t('settings.profile.localeEn')}</option>
               </select>
             </label>
           </div>
@@ -218,28 +222,24 @@ export function SettingsPage() {
           ) : null}
           <div>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Saving…' : 'Save settings'}
+              {mutation.isPending ? t('common.saving') : t('settings.profile.save')}
             </Button>
           </div>
         </form>
       </Card>
       {hasPermission(user, 'user.manage') ? (
-        <Card title="Staff & roles / कर्मचारी">
-          <p className="mb-3 text-sm text-muted-foreground">
-            Create staff accounts and assign the roles already configured for this shop.
-          </p>
+        <Card title={t('settings.staffCard.title')}>
+          <p className="mb-3 text-sm text-muted-foreground">{t('settings.staffCard.help')}</p>
           <Button asChild>
-            <Link to="/settings/staff">Manage staff</Link>
+            <Link to="/settings/staff">{t('settings.staffCard.manage')}</Link>
           </Button>
         </Card>
       ) : null}
       {user?.is_owner ? (
-        <Card title="Support access / सहायता पहुँच">
-          <p className="mb-3 text-sm text-muted-foreground">
-            Review every time Dokan support entered this shop and who ended the session.
-          </p>
+        <Card title={t('settings.supportCard.title')}>
+          <p className="mb-3 text-sm text-muted-foreground">{t('settings.supportCard.help')}</p>
           <Button asChild variant="secondary">
-            <Link to="/settings/support-access">View support access log</Link>
+            <Link to="/settings/support-access">{t('settings.supportCard.viewLog')}</Link>
           </Button>
         </Card>
       ) : null}

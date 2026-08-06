@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -25,6 +26,7 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () => void }) {
+  const { t } = useTranslation();
   const linesQuery = useQuery({
     queryKey: ['returns', 'returnable', sale.id],
     queryFn: () => getReturnableLines(sale.id),
@@ -50,14 +52,14 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
       });
     },
     onSuccess: onRecorded,
-    onError: (err) => setError(errorMessage(err, 'Could not record the return.')),
+    onError: (err) => setError(errorMessage(err, t('returns.editor.saveError'))),
   });
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const hasLine = Object.values(quantities).some((qty) => qty.trim() !== '');
     if (!hasLine || !reason.trim()) {
-      setError('Select a return quantity and enter a reason.');
+      setError(t('returns.editor.required'));
       return;
     }
     mutation.mutate();
@@ -66,17 +68,15 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
   return (
     <form onSubmit={submit} className="border-t border-border px-2 py-3">
       {linesQuery.isFetching ? (
-        <p className="text-sm text-muted-foreground">Loading returnable lines…</p>
+        <p className="text-sm text-muted-foreground">{t('returns.editor.loadingLines')}</p>
       ) : null}
       {linesQuery.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {errorMessage(linesQuery.error, 'Could not load returnable lines.')}
+          {errorMessage(linesQuery.error, t('returns.editor.loadLinesError'))}
         </p>
       ) : null}
       {linesQuery.data && linesQuery.data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          All lines on this bill have already been returned.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('returns.editor.allReturned')}</p>
       ) : null}
       {linesQuery.data && linesQuery.data.length > 0 ? (
         <>
@@ -94,12 +94,12 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
           </ul>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <Input
-              label="Reason"
+              label={t('returns.editor.reason')}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
             />
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor={`refund-method-${sale.id}`}>Refund method (optional)</Label>
+              <Label htmlFor={`refund-method-${sale.id}`}>{t('returns.editor.refundMethod')}</Label>
               <select
                 id={`refund-method-${sale.id}`}
                 value={refundMethod}
@@ -114,7 +114,7 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
               </select>
             </div>
             <Input
-              label="Refund amount (NPR, optional)"
+              label={t('returns.editor.refundAmount')}
               type="number"
               min="0.01"
               step="0.01"
@@ -122,16 +122,14 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
               onChange={(event) => setRefundAmount(event.target.value)}
             />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            The server calculates the return credit from the original bill and validates any refund.
-          </p>
+          <p className="mt-2 text-xs text-muted-foreground">{t('returns.editor.serverNote')}</p>
           {error ? (
             <p role="alert" className="mt-2 text-sm text-destructive">
               {error}
             </p>
           ) : null}
           <Button type="submit" className="mt-3" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Saving…' : 'Record return'}
+            {mutation.isPending ? t('common.saving') : t('returns.editor.submit')}
           </Button>
         </>
       ) : null}
@@ -148,17 +146,20 @@ function ReturnLineField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-sm">
       <div className="min-w-0">
         <span className="font-medium">{line.item_name}</span>{' '}
         <span className="text-xs text-muted-foreground">{line.sku}</span>
-        <span className="block text-xs text-muted-foreground">Remaining: {line.remaining}</span>
+        <span className="block text-xs text-muted-foreground">
+          {t('returns.line.remaining', { remaining: line.remaining })}
+        </span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Return qty</span>
+        <span className="text-xs text-muted-foreground">{t('returns.line.returnQty')}</span>
         <input
-          aria-label={`Return quantity for ${line.item_name}`}
+          aria-label={t('returns.line.qtyAria', { name: line.item_name })}
           type="number"
           min="0"
           max={line.remaining}
@@ -174,6 +175,7 @@ function ReturnLineField({
 
 /** Return completed sale lines as immutable credit-note documents. */
 export function ReturnsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -192,22 +194,18 @@ export function ReturnsPage() {
           {statusMessage}
         </p>
       ) : null}
-      <Card title="Returns / फिर्ता">
-        <p className="mb-3 text-sm text-muted-foreground">
-          Select a completed sale, choose the returned quantities, and record the reason.
-        </p>
+      <Card title={t('returns.title')}>
+        <p className="mb-3 text-sm text-muted-foreground">{t('returns.help')}</p>
         {salesQuery.isFetching ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading sales…</p>
+          <p className="py-4 text-sm text-muted-foreground">{t('returns.loading')}</p>
         ) : null}
         {salesQuery.isError ? (
           <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {errorMessage(salesQuery.error, 'Could not load completed sales.')}
+            {errorMessage(salesQuery.error, t('returns.loadError'))}
           </p>
         ) : null}
         {salesQuery.data && sales.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No completed sales found.
-          </p>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t('returns.empty')}</p>
         ) : null}
         {sales.map((sale) => (
           <div key={sale.id} className="border-b border-border last:border-0">
@@ -217,8 +215,12 @@ export function ReturnsPage() {
               onClick={() => setExpandedId((current) => (current === sale.id ? null : sale.id))}
               className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
-              <span className="font-medium">Invoice {sale.invoice_no ?? '—'}</span>
-              <span className="text-muted-foreground">{sale.customer_name || 'Walk-in'}</span>
+              <span className="font-medium">
+                {t('returns.invoice', { number: sale.invoice_no ?? '—' })}
+              </span>
+              <span className="text-muted-foreground">
+                {sale.customer_name || t('common.walkIn')}
+              </span>
               <span className="text-muted-foreground">{sale.business_date_bs}</span>
               <span className="tabular-nums">{formatNpr(sale.total)}</span>
             </button>
@@ -226,7 +228,7 @@ export function ReturnsPage() {
               <ReturnEditor
                 sale={sale}
                 onRecorded={() => {
-                  setStatusMessage('Return recorded.');
+                  setStatusMessage(t('returns.recorded'));
                   setExpandedId(null);
                   void queryClient.invalidateQueries({ queryKey: ['returns', 'sales'] });
                 }}
@@ -237,7 +239,8 @@ export function ReturnsPage() {
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              Page {meta.page} of {meta.total_pages} ({meta.count} sales)
+              {t('common.pageOf', { page: meta.page, total: meta.total_pages })} (
+              {t('returns.count', { count: meta.count })})
             </span>
             <div className="flex gap-2">
               <Button
@@ -246,7 +249,7 @@ export function ReturnsPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((current) => current - 1)}
               >
-                Previous
+                {t('common.previous')}
               </Button>
               <Button
                 variant="secondary"
@@ -254,7 +257,7 @@ export function ReturnsPage() {
                 disabled={meta.page >= meta.total_pages}
                 onClick={() => setPage((current) => current + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           </div>
