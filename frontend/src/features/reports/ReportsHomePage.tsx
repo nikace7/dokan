@@ -46,18 +46,18 @@ export function ReportsHomePage() {
   const { user } = useAuth();
 
   return (
-    <main className="mx-auto max-w-6xl p-4">
-      <h1 className="mb-4 text-2xl font-semibold">Reports / प्रतिवेदन</h1>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <main className="mx-auto w-full max-w-6xl p-4">
+      <h1 className="mb-4 text-xl font-semibold sm:text-2xl">Reports / प्रतिवेदन</h1>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {REPORTS.filter((report) => !report.feature || hasPlanFeature(user, report.feature)).map(
           (report) => (
             <Link
               key={report.to}
               to={report.to}
-              className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+              className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm transition-shadow hover:shadow-md sm:p-5"
             >
-              <h2 className="text-base font-semibold text-blue-800">{report.title}</h2>
-              <p className="mt-1 text-sm text-slate-600">{report.description}</p>
+              <h2 className="text-base font-semibold text-primary">{report.title}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{report.description}</p>
             </Link>
           ),
         )}

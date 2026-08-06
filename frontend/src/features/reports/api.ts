@@ -95,13 +95,22 @@ export interface ProfitRow {
   revenue: string;
   cogs: string;
   gross_profit: string;
+  /** Net figures exist only on backends that subtract expenses. */
+  expenses?: string;
+  net_profit?: string;
 }
 
 export interface ProfitReport {
   date_from_bs: string;
   date_to_bs: string;
   rows: ProfitRow[];
-  totals: { revenue: string; cogs: string; gross_profit: string };
+  totals: {
+    revenue: string;
+    cogs: string;
+    gross_profit: string;
+    expenses?: string;
+    net_profit?: string;
+  };
 }
 
 export type AgingBucketLabel = '0-30' | '31-60' | '61-90' | '90+';

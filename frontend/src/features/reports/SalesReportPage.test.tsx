@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SalesReportPage } from '@/features/reports/SalesReportPage';
@@ -70,9 +70,14 @@ describe('SalesReportPage', () => {
       </QueryClientProvider>,
     );
 
-    // Both daily rows render, keyed by BS date.
-    expect(await screen.findByText('2083-04-14')).toBeInTheDocument();
-    expect(screen.getByText('2083-04-15')).toBeInTheDocument();
+    // Both daily rows render (mobile card list + desktop table show the
+    // same rows; scope to the desktop table for the structural checks).
+    expect((await screen.findAllByText('2083-04-14')).length).toBeGreaterThan(0);
+    const table = container.querySelector('table');
+    expect(table).not.toBeNull();
+    const desktop = within(table as HTMLTableElement);
+    expect(desktop.getByText('2083-04-14')).toBeInTheDocument();
+    expect(desktop.getByText('2083-04-15')).toBeInTheDocument();
 
     // Totals row: bills 3+5=8, total 1450+2500=3,950.00, due 0+500=500.00,
     // net 1450+2200=3,650.00 (lakh/crore grouping, no symbol).
@@ -84,7 +89,7 @@ describe('SalesReportPage', () => {
     expect(totalsRow).toHaveTextContent('500.00');
     expect(totalsRow).toHaveTextContent('3,650.00');
     // Returns: the day with a credit note shows its amount in its own row.
-    const returnsDay = screen.getByText('2083-04-15').closest('tr');
+    const returnsDay = desktop.getByText('2083-04-15').closest('tr');
     expect(returnsDay).toHaveTextContent('300.00');
     expect(totalsRow).toHaveTextContent('300.00');
   });
