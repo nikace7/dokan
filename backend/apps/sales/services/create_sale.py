@@ -47,9 +47,12 @@ if TYPE_CHECKING:
 VAT_RATE: Final = Decimal("0.13")
 
 #: Tender methods (docs/DATABASE_SCHEMA.md §8.4). CREDIT means udharo — it
-#: is not part of paid_amount; it is exactly the due.
+#: is not part of paid_amount; it is exactly the due. QR is a wallet/QR
+#: scan tender: cash-equivalent (counts toward paid) but NOT physical cash,
+#: so — like ESEWA/KHALTI/FONEPAY — it never enters cash-session expected
+#: cash.
 PAYMENT_METHODS = frozenset(
-    {"CASH", "ESEWA", "KHALTI", "FONEPAY", "CARD", "BANK", "CREDIT", "POINTS"}
+    {"CASH", "ESEWA", "KHALTI", "FONEPAY", "QR", "CARD", "BANK", "CREDIT", "POINTS"}
 )
 
 _ZERO = Decimal("0")
