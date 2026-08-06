@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { TableCell } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/useAuth';
 import {
   cancelCount,
@@ -13,9 +15,13 @@ import {
   startCount,
 } from '@/features/inventory/api';
 import type { StockCount } from '@/features/inventory/api';
+import { cellInputClasses } from '@/features/inventory/ui';
+import { ReportTable } from '@/features/reports/ui';
+import type { ReportColumn } from '@/features/reports/ui';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { ApiError } from '@/lib/api/client';
 import type { Page } from '@/lib/api/client';
+import { cn } from '@/lib/utils';
 import { hasPermission } from '@/lib/permissions';
 
 export function CountsPage() {
@@ -64,11 +70,11 @@ export function CountsPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Physical counts / भौतिक गणना</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Snapshot, count every line, review variance, then finalize once.
           </p>
         </div>
-        <Link className="text-sm text-blue-700 underline" to="/stock">
+        <Link className="text-sm text-primary hover:underline" to="/stock">
           Back to stock
         </Link>
       </div>
@@ -86,25 +92,27 @@ export function CountsPage() {
           ) : undefined
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-muted-foreground">
           Starting snapshots every stocked variant in the selected branch. Only one count can be
           open per branch.
         </p>
       </Card>
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </p>
       ) : null}
-      {countsQuery.isPending ? <p className="text-sm text-slate-500">Loading…</p> : null}
+      {countsQuery.isPending ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : null}
       {countsQuery.isError ? (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {message(countsQuery.error, 'Could not load counts.')}
         </p>
       ) : null}
       {countsQuery.data && counts.length === 0 ? (
         <Card>
-          <p className="text-sm text-slate-500">No physical counts for this branch yet.</p>
+          <p className="text-sm text-muted-foreground">No physical counts for this branch yet.</p>
         </Card>
       ) : null}
       {counts.map((count) => (
@@ -113,6 +121,15 @@ export function CountsPage() {
     </main>
   );
 }
+
+const COUNT_COLUMNS: readonly ReportColumn[] = [
+  { header: 'Item' },
+  { header: 'SKU' },
+  { header: 'System', className: 'text-right' },
+  { header: 'Counted', className: 'text-right' },
+  { header: 'Variance', className: 'text-right' },
+  { header: 'Note' },
+];
 
 function CountCard({
   count,
@@ -156,77 +173,90 @@ function CountCard({
     onError: (reason) => setError(message(reason, 'Could not update the count.')),
   });
   const complete = count.items.every((item) => item.counted_qty !== null);
+  const counting = count.status === 'OPEN' && canAdjust;
+
+  const countedInput = (variant: string, sku: string) => (
+    <input
+      aria-label={`Counted quantity ${sku}`}
+      type="number"
+      min="0"
+      step="0.001"
+      value={values[variant] ?? ''}
+      onChange={(event) =>
+        setValues((current) => ({ ...current, [variant]: event.target.value }))
+      }
+      className={cn(cellInputClasses, 'w-28 text-right')}
+    />
+  );
+  const noteInput = (variant: string, sku: string) => (
+    <input
+      aria-label={`Count note ${sku}`}
+      value={notes[variant] ?? ''}
+      onChange={(event) =>
+        setNotes((current) => ({ ...current, [variant]: event.target.value }))
+      }
+      className={cn(cellInputClasses, 'w-44')}
+    />
+  );
 
   return (
     <Card
       title={`${count.status} · ${count.branch_code}`}
       actions={
-        <span className="text-xs text-slate-500">
+        <Badge variant="secondary" className="font-medium">
           Started by {count.created_by_name ?? 'System'}
-        </span>
+        </Badge>
       }
     >
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs uppercase text-slate-500">
-              <th className="py-2">Item</th>
-              <th>SKU</th>
-              <th className="text-right">System</th>
-              <th className="pl-3 text-right">Counted</th>
-              <th className="pl-3 text-right">Variance</th>
-              <th className="pl-3">Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            {count.items.map((item) => (
-              <tr key={item.id} className="border-b border-slate-100">
-                <td className="py-2">{item.item_name}</td>
-                <td>{item.variant_sku}</td>
-                <td className="text-right">{item.system_qty}</td>
-                <td className="pl-3 text-right">
-                  {count.status === 'OPEN' && canAdjust ? (
-                    <input
-                      aria-label={`Counted quantity ${item.variant_sku}`}
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={values[item.variant] ?? ''}
-                      onChange={(event) =>
-                        setValues((current) => ({ ...current, [item.variant]: event.target.value }))
-                      }
-                      className="w-28 rounded border px-2 py-1 text-right"
-                    />
-                  ) : (
-                    (item.counted_qty ?? '—')
-                  )}
-                </td>
-                <td className="pl-3 text-right">{item.variance ?? '—'}</td>
-                <td className="pl-3">
-                  {count.status === 'OPEN' && canAdjust ? (
-                    <input
-                      aria-label={`Count note ${item.variant_sku}`}
-                      value={notes[item.variant] ?? ''}
-                      onChange={(event) =>
-                        setNotes((current) => ({ ...current, [item.variant]: event.target.value }))
-                      }
-                      className="w-44 rounded border px-2 py-1"
-                    />
-                  ) : (
-                    (item.note ?? '—')
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ReportTable
+        columns={COUNT_COLUMNS}
+        rows={count.items}
+        rowKey={(item) => item.id}
+        empty="No lines on this count."
+        renderCells={(item) => (
+          <>
+            <TableCell className="font-medium">{item.item_name}</TableCell>
+            <TableCell className="text-muted-foreground">{item.variant_sku}</TableCell>
+            <TableCell className="text-right tabular-nums">{item.system_qty}</TableCell>
+            <TableCell className="text-right tabular-nums">
+              {counting ? countedInput(item.variant, item.variant_sku) : (item.counted_qty ?? '—')}
+            </TableCell>
+            <TableCell className="text-right tabular-nums">{item.variance ?? '—'}</TableCell>
+            <TableCell>
+              {counting ? noteInput(item.variant, item.variant_sku) : (item.note ?? '—')}
+            </TableCell>
+          </>
+        )}
+        renderCard={(item) => (
+          <div className="text-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium">{item.item_name}</p>
+                <p className="text-muted-foreground">{item.variant_sku}</p>
+              </div>
+              <p className="shrink-0 text-right tabular-nums">
+                System {item.system_qty} · variance {item.variance ?? '—'}
+              </p>
+            </div>
+            {counting ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {countedInput(item.variant, item.variant_sku)}
+                {noteInput(item.variant, item.variant_sku)}
+              </div>
+            ) : (
+              <p className="mt-1 text-muted-foreground">
+                Counted {item.counted_qty ?? '—'} · {item.note ?? '—'}
+              </p>
+            )}
+          </div>
+        )}
+      />
       {error ? (
-        <p role="alert" className="mt-3 text-sm text-red-700">
+        <p role="alert" className="mt-3 text-sm text-destructive">
           {error}
         </p>
       ) : null}
-      {count.status === 'OPEN' && canAdjust ? (
+      {counting ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             disabled={mutation.isPending}

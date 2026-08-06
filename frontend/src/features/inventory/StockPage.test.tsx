@@ -140,8 +140,9 @@ describe('StockPage', () => {
     mockBase(['stock.view']);
     renderPage();
 
-    expect(await screen.findByText('Oxford Shirt')).toBeInTheDocument();
-    expect(screen.getByText('Opening stock')).toBeInTheDocument();
+    // Rows render twice (mobile card + desktop table).
+    expect((await screen.findAllByText('Oxford Shirt')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Opening stock').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Adjust stock' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Write off damage' })).not.toBeInTheDocument();
   });
