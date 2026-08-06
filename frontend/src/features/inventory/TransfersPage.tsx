@@ -3,8 +3,12 @@ import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
+import { TableCell } from '@/components/ui/table';
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { VariantPicker } from '@/features/catalog/VariantPicker';
 import { useAuth } from '@/features/auth/useAuth';
@@ -18,9 +22,13 @@ import {
   sendTransfer,
 } from '@/features/inventory/api';
 import type { StockTransfer, TransferLinePayload } from '@/features/inventory/api';
+import { cellInputClasses, selectClasses } from '@/features/inventory/ui';
+import { ReportTable } from '@/features/reports/ui';
+import type { ReportColumn } from '@/features/reports/ui';
 import type { Branch } from '@/features/settings/api';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { ApiError } from '@/lib/api/client';
+import { cn } from '@/lib/utils';
 import { hasPermission } from '@/lib/permissions';
 import { hasPlanFeature } from '@/lib/plans';
 export function TransfersPage() {
@@ -74,11 +82,11 @@ export function TransfersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Stock transfers / स्टक स्थानान्तरण</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Stock leaves the source when sent and remains in transit until received.
           </p>
         </div>
-        <Link className="text-sm text-blue-700 underline" to="/stock">
+        <Link className="text-sm text-primary hover:underline" to="/stock">
           Back to stock
         </Link>
       </div>
@@ -92,34 +100,33 @@ export function TransfersPage() {
         />
       ) : null}
       <Card title="Currently in transit">
-        {transitQuery.isPending ? <p className="text-sm text-slate-500">Loading…</p> : null}
+        {transitQuery.isPending ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : null}
         {transitQuery.data?.length === 0 ? (
-          <p className="text-sm text-slate-500">No stock is currently in transit.</p>
+          <p className="text-sm text-muted-foreground">No stock is currently in transit.</p>
         ) : null}
         <div className="flex flex-wrap gap-2">
           {transitQuery.data?.map((row) => (
-            <span
-              key={row.variant_id}
-              className="rounded bg-amber-100 px-2 py-1 text-sm text-amber-900"
-            >
+            <Badge key={row.variant_id} variant="warning" className="text-sm font-medium">
               {row.sku}: {row.qty_in_transit}
-            </span>
+            </Badge>
           ))}
         </div>
       </Card>
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </p>
       ) : null}
       {transfersQuery.isError ? (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {message(transfersQuery.error, 'Could not load transfers.')}
         </p>
       ) : null}
       {transfersQuery.data && transfers.length === 0 ? (
         <Card>
-          <p className="text-sm text-slate-500">No transfers yet.</p>
+          <p className="text-sm text-muted-foreground">No transfers yet.</p>
         </Card>
       ) : null}
       {transfers.map((transfer) => (
@@ -203,11 +210,11 @@ function TransferCreateCard({
           />
         </div>
         {variant ? (
-          <p className="rounded bg-blue-50 p-2 text-sm">
+          <p className="rounded-md border border-primary/40 bg-primary/5 p-2 text-sm">
             {variant.itemName} — {variant.sku}{' '}
             <button
               type="button"
-              className="ml-2 text-blue-700 underline"
+              className="ml-2 text-primary underline"
               onClick={() => setVariant(null)}
             >
               Change
@@ -217,14 +224,14 @@ function TransferCreateCard({
           <VariantPicker onPick={setVariant} />
         )}
         <div className="flex gap-2">
-          <input
+          <Input
             aria-label="Transfer quantity"
             type="number"
             min="0.001"
             step="0.001"
             value={qty}
             onChange={(event) => setQty(event.target.value)}
-            className="w-40 rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-40"
           />
           <Button variant="secondary" onClick={addLine}>
             Add transfer line
@@ -233,22 +240,26 @@ function TransferCreateCard({
         {lines.map((line) => (
           <div
             key={line.variant}
-            className="flex justify-between rounded bg-slate-50 px-3 py-2 text-sm"
+            className="flex justify-between rounded-md bg-muted/50 px-3 py-2 text-sm"
           >
             <span>{line.label}</span>
-            <span>{line.qty}</span>
+            <span className="tabular-nums">{line.qty}</span>
           </div>
         ))}
-        <textarea
-          aria-label="Transfer note"
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          placeholder="Note (optional)"
-          rows={2}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-        />
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="transfer-note">Note (optional)</Label>
+          <textarea
+            id="transfer-note"
+            aria-label="Transfer note"
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Note (optional)"
+            rows={2}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </div>
         {error ? (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="text-sm text-destructive">
             {error}
           </p>
         ) : null}
@@ -271,13 +282,13 @@ function SelectBranch({
   onChange: (id: string) => void;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm font-medium">
-      {label}
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
       <select
         aria-label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2"
+        className={selectClasses}
       >
         {branches.map((branch) => (
           <option key={branch.id} value={branch.id}>
@@ -285,7 +296,7 @@ function SelectBranch({
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 function TransferCard({
@@ -305,54 +316,72 @@ function TransferCard({
       ? [{ variant: item.variant, qty: receipts[item.variant] }]
       : [],
   );
+  const receiving = transfer.status === 'SENT' && canAdjust;
+  const columns: readonly ReportColumn[] = [
+    { header: 'Item' },
+    { header: 'SKU' },
+    { header: 'Sent', className: 'text-right' },
+    { header: 'Received', className: 'text-right' },
+    ...(receiving ? [{ header: 'Receive now' }] : []),
+  ];
+  const receiptInput = (variant: string, sku: string) => (
+    <input
+      aria-label={`Receive ${sku}`}
+      type="number"
+      min="0"
+      step="0.001"
+      value={receipts[variant] ?? ''}
+      onChange={(event) =>
+        setReceipts((current) => ({
+          ...current,
+          [variant]: event.target.value,
+        }))
+      }
+      className={cn(cellInputClasses, 'w-28')}
+    />
+  );
   return (
     <Card title={`${transfer.status} · ${transfer.created_by_name ?? 'System'}`}>
       <h2 className="text-lg font-semibold">
         {transfer.from_branch_code} → {transfer.to_branch_code}
       </h2>
-      {transfer.note ? <p className="text-sm text-slate-500">{transfer.note}</p> : null}
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs uppercase text-slate-500">
-              <th className="py-2">Item</th>
-              <th>SKU</th>
-              <th className="text-right">Sent</th>
-              <th className="text-right">Received</th>
-              {transfer.status === 'SENT' && canAdjust ? (
-                <th className="pl-3">Receive now</th>
+      {transfer.note ? (
+        <p className="text-sm text-muted-foreground">{transfer.note}</p>
+      ) : null}
+      <div className="mt-3">
+        <ReportTable
+          columns={columns}
+          rows={transfer.items}
+          rowKey={(item) => item.id}
+          empty="No lines on this transfer."
+          renderCells={(item) => (
+            <>
+              <TableCell className="font-medium">{item.item_name}</TableCell>
+              <TableCell className="text-muted-foreground">{item.variant_sku}</TableCell>
+              <TableCell className="text-right tabular-nums">{item.qty_sent}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {item.qty_received ?? '0'}
+              </TableCell>
+              {receiving ? (
+                <TableCell>{receiptInput(item.variant, item.variant_sku)}</TableCell>
               ) : null}
-            </tr>
-          </thead>
-          <tbody>
-            {transfer.items.map((item) => (
-              <tr key={item.id} className="border-b border-slate-100">
-                <td className="py-2">{item.item_name}</td>
-                <td>{item.variant_sku}</td>
-                <td className="text-right">{item.qty_sent}</td>
-                <td className="text-right">{item.qty_received ?? '0'}</td>
-                {transfer.status === 'SENT' && canAdjust ? (
-                  <td className="pl-3">
-                    <input
-                      aria-label={`Receive ${item.variant_sku}`}
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={receipts[item.variant] ?? ''}
-                      onChange={(event) =>
-                        setReceipts((current) => ({
-                          ...current,
-                          [item.variant]: event.target.value,
-                        }))
-                      }
-                      className="w-28 rounded border px-2 py-1"
-                    />
-                  </td>
-                ) : null}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </>
+          )}
+          renderCard={(item) => (
+            <div className="flex items-start justify-between gap-3 text-sm">
+              <div className="min-w-0">
+                <p className="font-medium">{item.item_name}</p>
+                <p className="text-muted-foreground">{item.variant_sku}</p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                <p className="tabular-nums">
+                  Sent {item.qty_sent} · received {item.qty_received ?? '0'}
+                </p>
+                {receiving ? receiptInput(item.variant, item.variant_sku) : null}
+              </div>
+            </div>
+          )}
+        />
       </div>
       {canAdjust ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -377,7 +406,7 @@ function TransferCard({
               <Button variant="secondary" disabled={pending} onClick={() => onAction('complete')}>
                 Complete transfer
               </Button>
-              <span className="text-xs text-amber-700">
+              <span className="text-xs text-warning">
                 Completing writes any remaining quantity off as a transfer shortage.
               </span>
             </>
