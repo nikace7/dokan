@@ -1,12 +1,48 @@
 /*
- * Design tokens for the app (colors, spacing scale overrides, typography).
- * Kept separate from the Tailwind config so runtime theming (e.g. per-tenant
- * accent color) can swap CSS custom properties later.
+ * Design tokens — the single source of truth for the visual theme.
  *
- * TODO(Phase 1): agree the initial palette with the billing-screen design
- * (docs/SYSTEM_DESIGN.md §7.3) before any feature UI is built.
+ * HSL channel triplets (no `hsl()` wrapper) so Tailwind can apply opacity
+ * modifiers: `hsl(var(--primary) / 0.5)`. Neutral zinc base with a single
+ * indigo accent, per the retail aesthetic in docs/SYSTEM_DESIGN.md §7.
+ *
+ * Kept as CSS custom properties (not hard-coded in tailwind.config.js) so a
+ * per-tenant accent override can later swap a handful of variables at runtime.
  */
 :root {
-  --color-surface: #ffffff;
-  --color-ink: #0f172a;
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+
+  /* Indigo-600 family — the ONE accent. */
+  --primary: 243 75% 59%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 240 6% 10%;
+
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+
+  --accent: 243 94% 96%;
+  --accent-foreground: 243 75% 40%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 142 71% 35%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 32 95% 44%;
+  --warning-foreground: 0 0% 100%;
+
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 243 75% 59%;
+
+  --radius: 0.5rem;
 }
