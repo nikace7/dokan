@@ -3,6 +3,8 @@ import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/useAuth';
 import { createInvoice, listSuppliers } from '@/features/purchasing/api';
 import type { PurchaseInvoice } from '@/features/purchasing/api';
@@ -45,6 +47,9 @@ function todayIso(): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
+
+const selectClasses =
+  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 /**
  * New purchase invoice — saved as DRAFT (nothing moves until Confirm).
@@ -135,15 +140,13 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="purchase-supplier" className="text-sm font-medium text-slate-700">
-            Supplier
-          </label>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="purchase-supplier">Supplier</Label>
           <select
             id="purchase-supplier"
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className={selectClasses}
           >
             <option value="">— pick —</option>
             {(suppliersQuery.data?.data ?? [])
@@ -155,26 +158,21 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
               ))}
           </select>
         </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="purchase-date" className="text-sm font-medium text-slate-700">
-            Bill date (AD)
-          </label>
-          <input
-            id="purchase-date"
-            type="date"
-            value={billDate}
-            onChange={(e) => setBillDate(e.target.value)}
-            required
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
+        <Input
+          label="Bill date (AD)"
+          id="purchase-date"
+          type="date"
+          value={billDate}
+          onChange={(e) => setBillDate(e.target.value)}
+          required
+        />
         {allowVatBill ? (
-          <label className="flex items-end gap-2 pb-2 text-sm text-slate-700">
+          <label className="flex items-end gap-2 pb-2 text-sm">
             <input
               type="checkbox"
               checked={isVatBill}
               onChange={(e) => setIsVatBill(e.target.checked)}
-              className="h-4 w-4"
+              className="h-4 w-4 accent-primary"
             />
             VAT bill
           </label>
@@ -184,116 +182,86 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
       <VariantPicker onPick={addVariant} placeholder="Add a line: search item…" />
 
       {lines.length > 0 ? (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-              <th className="py-2 pr-2 font-medium">Variant</th>
-              <th className="py-2 pr-2 font-medium">Qty</th>
-              <th className="py-2 pr-2 font-medium">Unit cost (रू)</th>
-              <th className="py-2 pr-2 text-right font-medium">Total</th>
-              <th className="py-2 font-medium" aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody>
+        <div className="rounded-md border border-border">
+          <ul className="divide-y divide-border">
             {lines.map((line) => (
-              <tr key={line.variantId} className="border-b border-slate-100">
-                <td className="py-2 pr-2">
-                  <div className="font-medium text-slate-900">{line.label}</div>
-                  <div className="text-xs text-slate-500">{line.sku}</div>
-                </td>
-                <td className="py-2 pr-2">
-                  <input
+              <li
+                key={line.variantId}
+                className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 px-3 py-3"
+              >
+                <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
+                  <p className="text-sm font-medium">{line.label}</p>
+                  <p className="text-xs text-muted-foreground">{line.sku}</p>
+                </div>
+                <div className="flex items-end gap-2">
+                  <Input
                     aria-label={`Quantity for ${line.label}`}
                     value={line.qty}
                     onChange={(e) => updateLine(line.variantId, { qty: e.target.value })}
                     inputMode="decimal"
-                    className="w-20 rounded border border-slate-300 px-2 py-1 text-right"
+                    className="w-20 text-right"
                   />
-                </td>
-                <td className="py-2 pr-2">
-                  <input
+                  <Input
                     aria-label={`Unit cost for ${line.label}`}
                     value={line.unitCost}
                     onChange={(e) => updateLine(line.variantId, { unitCost: e.target.value })}
                     inputMode="decimal"
                     placeholder="0.00"
-                    className="w-28 rounded border border-slate-300 px-2 py-1 text-right"
+                    className="w-28 text-right"
                   />
-                </td>
-                <td className="py-2 pr-2 text-right">
+                </div>
+                <p className="text-sm tabular-nums">
                   {formatPaisa(draftLineTotalPaisa(line), { symbol: 'रू ' })}
-                </td>
-                <td className="py-2 text-right">
-                  <button
-                    type="button"
-                    aria-label={`Remove ${line.label}`}
-                    className="rounded px-2 py-1 text-red-600 hover:bg-red-50"
-                    onClick={() =>
-                      setLines((current) => current.filter((l) => l.variantId !== line.variantId))
-                    }
-                  >
-                    ✕
-                  </button>
-                </td>
-              </tr>
+                </p>
+                <button
+                  type="button"
+                  aria-label={`Remove ${line.label}`}
+                  className="rounded p-1 text-destructive hover:bg-destructive/10"
+                  onClick={() =>
+                    setLines((current) => current.filter((l) => l.variantId !== line.variantId))
+                  }
+                >
+                  ✕
+                </button>
+              </li>
             ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={3} className="pt-2 text-right text-sm font-semibold text-slate-700">
-                Total (display only)
-              </td>
-              <td className="pt-2 pr-2 text-right font-bold">
-                {formatPaisa(totalPaisa, { symbol: 'रू ' })}
-              </td>
-              <td />
-            </tr>
-          </tfoot>
-        </table>
+          </ul>
+          <div className="flex items-center justify-between border-t border-border px-3 py-2 text-sm">
+            <span className="font-semibold text-muted-foreground">Total (display only)</span>
+            <span className="font-bold tabular-nums">
+              {formatPaisa(totalPaisa, { symbol: 'रू ' })}
+            </span>
+          </div>
+        </div>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="purchase-other" className="text-sm font-medium text-slate-700">
-            Other charges (रू)
-          </label>
-          <input
-            id="purchase-other"
-            value={otherCharges}
-            onChange={(e) => setOtherCharges(e.target.value)}
-            inputMode="decimal"
-            placeholder="0.00"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="purchase-paid" className="text-sm font-medium text-slate-700">
-            Paid now (रू)
-          </label>
-          <input
-            id="purchase-paid"
-            value={paidAmount}
-            onChange={(e) => setPaidAmount(e.target.value)}
-            inputMode="decimal"
-            placeholder="0.00"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="purchase-note" className="text-sm font-medium text-slate-700">
-            Note
-          </label>
-          <input
-            id="purchase-note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
+        <Input
+          label="Other charges (रू)"
+          id="purchase-other"
+          value={otherCharges}
+          onChange={(e) => setOtherCharges(e.target.value)}
+          inputMode="decimal"
+          placeholder="0.00"
+        />
+        <Input
+          label="Paid now (रू)"
+          id="purchase-paid"
+          value={paidAmount}
+          onChange={(e) => setPaidAmount(e.target.value)}
+          inputMode="decimal"
+          placeholder="0.00"
+        />
+        <Input
+          label="Note"
+          id="purchase-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
       </div>
 
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       ) : null}

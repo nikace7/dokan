@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { listSuppliers } from '@/features/purchasing/api';
 import type { Supplier } from '@/features/purchasing/api';
 import { recordSupplierPayment } from '@/features/payments/api';
@@ -42,10 +43,10 @@ function SupplierField({
 
   if (supplier) {
     return (
-      <div className="flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 px-3 py-2">
+      <div className="flex items-center justify-between rounded-md border border-primary/30 bg-accent px-3 py-2">
         <span className="text-sm">
           <strong>{supplier.name}</strong>{' '}
-          <span className="text-slate-500">{supplier.phone || 'No phone'}</span>
+          <span className="text-muted-foreground">{supplier.phone || 'No phone'}</span>
         </span>
         <Button type="button" variant="secondary" size="sm" onClick={onClear}>
           Change
@@ -64,18 +65,18 @@ function SupplierField({
         placeholder="Search supplier by name…"
         autoComplete="off"
       />
-      {query.isFetching ? <p className="mt-1 text-xs text-slate-500">Searching…</p> : null}
+      {query.isFetching ? <p className="mt-1 text-xs text-muted-foreground">Searching…</p> : null}
       {suppliers.length > 0 ? (
-        <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-white">
+        <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-popover">
           {suppliers.map((result) => (
             <li key={result.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => onSelect(result)}
               >
                 <span className="font-medium">{result.name}</span>
-                <span className="text-slate-500">{result.phone || '—'}</span>
+                <span className="text-muted-foreground">{result.phone || '—'}</span>
               </button>
             </li>
           ))}
@@ -172,15 +173,13 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
         value={amount}
         onChange={(event) => setAmount(event.target.value)}
       />
-      <div className="flex flex-col gap-1">
-        <label htmlFor="supplier-payment-method" className="text-sm font-medium text-slate-700">
-          Method
-        </label>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="supplier-payment-method">Method</Label>
         <select
           id="supplier-payment-method"
           value={method}
           onChange={(event) => setMethod(event.target.value as ReceiptMethod)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
           {METHODS.map((option) => (
             <option key={option} value={option}>
@@ -196,7 +195,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
       />
       <Input label="Note" value={note} onChange={(event) => setNote(event.target.value)} />
       {error ? (
-        <p role="alert" className="sm:col-span-2 text-sm text-red-600">
+        <p role="alert" className="text-sm text-destructive sm:col-span-2">
           {error}
         </p>
       ) : null}

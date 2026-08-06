@@ -2,9 +2,18 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAuth } from '@/features/auth/useAuth';
 import {
   createCustomer,
@@ -19,6 +28,9 @@ import { formatNpr } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 
 type StatusFilter = 'active' | 'inactive' | 'all';
+
+const selectClasses =
+  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 export function CustomersPage() {
   const { user, isRestoring } = useAuth();
@@ -53,10 +65,14 @@ export function CustomersPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
   });
 
-  if (isRestoring) return <main className="p-6 text-sm text-slate-500">Loading customers…</main>;
-  if (!canView) {
-    return <main className="p-6 text-sm text-amber-800">You cannot view customers.</main>;
+  if (isRestoring) {
+    return <main className="p-6 text-sm text-muted-foreground">Loading customers…</main>;
   }
+  if (!canView) {
+    return <main className="p-6 text-sm text-warning">You cannot view customers.</main>;
+  }
+
+  const rows = customers.data?.data ?? [];
 
   return (
     <main className="mx-auto max-w-6xl p-4">
@@ -74,7 +90,7 @@ export function CustomersPage() {
         ) : null}
 
         <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px]">
-          <input
+          <Input
             aria-label="Search customers"
             value={search}
             onChange={(event) => {
@@ -82,7 +98,6 @@ export function CustomersPage() {
               setPage(1);
             }}
             placeholder="Search by name or phone…"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
           <select
             aria-label="Filter customers by status"
@@ -91,7 +106,7 @@ export function CustomersPage() {
               setStatus(event.target.value as StatusFilter);
               setPage(1);
             }}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className={selectClasses}
           >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
@@ -99,71 +114,176 @@ export function CustomersPage() {
           </select>
         </div>
 
-        {customers.isPending ? <p className="py-4 text-sm text-slate-500">Loading…</p> : null}
+        {customers.isPending ? (
+          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+        ) : null}
         {customers.isError ? (
-          <p role="alert" className="py-4 text-sm text-red-700">
+          <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {customers.error instanceof Error
               ? customers.error.message
               : 'Could not load customers.'}
           </p>
         ) : null}
-        {customers.data?.data.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">No customers match this filter.</p>
+        {customers.data && rows.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No customers match this filter.
+          </p>
         ) : null}
-        {customers.data?.data.length ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs uppercase text-slate-500">
-                <th className="py-2">Name</th>
-                <th className="py-2">Phone / address</th>
-                <th className="py-2 text-right">Credit limit</th>
-                <th className="py-2 text-right">Loyalty</th>
-                <th className="py-2">Status</th>
-                {canManage ? <th className="py-2 text-right">Actions</th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {customers.data.data.map((customer) => (
-                <tr key={customer.id} className="border-b border-slate-100">
-                  <td className="py-2 font-medium">{customer.name}</td>
-                  <td className="py-2 text-slate-600">
-                    <span className="block">{customer.phone ?? 'No phone'}</span>
-                    <span className="text-xs">{customer.address ?? 'No address'}</span>
-                  </td>
-                  <td className="py-2 text-right">
-                    {customer.credit_limit ? formatNpr(customer.credit_limit) : 'Unlimited'}
-                  </td>
-                  <td className="py-2 text-right">{customer.loyalty_points}</td>
-                  <td className="py-2">{customer.is_active ? 'Active' : 'Inactive'}</td>
-                  {canManage ? (
-                    <td className="py-2 text-right">
-                      <Button size="sm" variant="secondary" onClick={() => setEditing(customer)}>
-                        Edit
-                      </Button>{' '}
-                      {customer.is_active ? (
-                        <button
-                          type="button"
-                          className="ml-2 text-sm text-red-700 underline"
-                          disabled={deactivate.isPending}
-                          onClick={() => {
-                            if (window.confirm(`Deactivate ${customer.name}?`)) {
-                              deactivate.mutate(customer.id);
-                            }
-                          }}
-                        >
-                          Deactivate
-                        </button>
-                      ) : null}
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {rows.length ? (
+          <CustomerList
+            customers={rows}
+            canManage={canManage}
+            onEdit={setEditing}
+            onDeactivate={(customer) => {
+              if (window.confirm(`Deactivate ${customer.name}?`)) {
+                deactivate.mutate(customer.id);
+              }
+            }}
+            deactivatePending={deactivate.isPending}
+          />
         ) : null}
         <Pager page={page} totalPages={customers.data?.meta?.total_pages ?? 1} onPage={setPage} />
       </Card>
     </main>
+  );
+}
+
+function CustomerActions({
+  customer,
+  onEdit,
+  onDeactivate,
+  deactivatePending,
+}: {
+  customer: Customer;
+  onEdit: (customer: Customer) => void;
+  onDeactivate: (customer: Customer) => void;
+  deactivatePending: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Button size="sm" variant="secondary" onClick={() => onEdit(customer)}>
+        Edit
+      </Button>
+      {customer.is_active ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive"
+          disabled={deactivatePending}
+          onClick={() => onDeactivate(customer)}
+        >
+          Deactivate
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/** Card list below `md`, full table from `md` up — both render the same rows. */
+function CustomerList({
+  customers,
+  canManage,
+  onEdit,
+  onDeactivate,
+  deactivatePending,
+}: {
+  customers: Customer[];
+  canManage: boolean;
+  onEdit: (customer: Customer) => void;
+  onDeactivate: (customer: Customer) => void;
+  deactivatePending: boolean;
+}) {
+  return (
+    <>
+      <ul className="divide-y divide-border md:hidden">
+        {customers.map((customer) => (
+          <li key={customer.id} className="py-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium">{customer.name}</p>
+                <p className="text-sm text-muted-foreground">{customer.phone ?? 'No phone'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {customer.address ?? 'No address'}
+                </p>
+              </div>
+              <Badge variant={customer.is_active ? 'success' : 'secondary'}>
+                {customer.is_active ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+              <div className="flex gap-1">
+                <dt className="text-muted-foreground">Credit limit</dt>
+                <dd className="tabular-nums">
+                  {customer.credit_limit ? formatNpr(customer.credit_limit) : 'Unlimited'}
+                </dd>
+              </div>
+              <div className="flex gap-1">
+                <dt className="text-muted-foreground">Loyalty</dt>
+                <dd className="tabular-nums">{customer.loyalty_points}</dd>
+              </div>
+            </dl>
+            {canManage ? (
+              <div className="mt-2">
+                <CustomerActions
+                  customer={customer}
+                  onEdit={onEdit}
+                  onDeactivate={onDeactivate}
+                  deactivatePending={deactivatePending}
+                />
+              </div>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Phone / address</TableHead>
+              <TableHead className="text-right">Credit limit</TableHead>
+              <TableHead className="text-right">Loyalty</TableHead>
+              <TableHead>Status</TableHead>
+              {canManage ? <TableHead className="text-right">Actions</TableHead> : null}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {customers.map((customer) => (
+              <TableRow key={customer.id}>
+                <TableCell className="font-medium">{customer.name}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  <span className="block">{customer.phone ?? 'No phone'}</span>
+                  <span className="text-xs">{customer.address ?? 'No address'}</span>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {customer.credit_limit ? formatNpr(customer.credit_limit) : 'Unlimited'}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {customer.loyalty_points}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={customer.is_active ? 'success' : 'secondary'}>
+                    {customer.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </TableCell>
+                {canManage ? (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end">
+                      <CustomerActions
+                        customer={customer}
+                        onEdit={onEdit}
+                        onDeactivate={onDeactivate}
+                        deactivatePending={deactivatePending}
+                      />
+                    </div>
+                  </TableCell>
+                ) : null}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }
 
@@ -219,7 +339,7 @@ function CustomerForm({
   return (
     <form
       onSubmit={submit}
-      className="mb-5 grid gap-3 rounded-md bg-blue-50 p-4 sm:grid-cols-2 lg:grid-cols-3"
+      className="mb-5 grid gap-3 rounded-md border border-border bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3"
     >
       <Input
         label="Customer name"
@@ -237,12 +357,12 @@ function CustomerForm({
         value={form.address ?? ''}
         onChange={(event) => setForm({ ...form, address: event.target.value })}
       />
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1.5 text-sm font-medium">
         Default rate
         <select
           value={form.default_rate_type ?? ''}
           onChange={(event) => setForm({ ...form, default_rate_type: event.target.value || null })}
-          className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+          className={`${selectClasses} font-normal`}
         >
           <option value="">Shop default</option>
           {rates.map((rate) => (
@@ -273,12 +393,12 @@ function CustomerForm({
         onChange={(event) => setForm({ ...form, birthday_bs: event.target.value })}
         placeholder="2082-04-12"
       />
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1.5 text-sm font-medium">
         Gender
         <select
           value={form.gender ?? ''}
           onChange={(event) => setForm({ ...form, gender: event.target.value || null })}
-          className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+          className={`${selectClasses} font-normal`}
         >
           <option value="">Not specified</option>
           <option value="F">Female</option>
@@ -292,7 +412,10 @@ function CustomerForm({
         onChange={(event) => setForm({ ...form, note: event.target.value })}
       />
       {save.isError ? (
-        <p role="alert" className="text-sm text-red-700 sm:col-span-2 lg:col-span-3">
+        <p
+          role="alert"
+          className="rounded-md bg-destructive/10 p-3 text-sm text-destructive sm:col-span-2 lg:col-span-3"
+        >
           {save.error instanceof ApiError ? save.error.message : 'Could not save customer.'}
         </p>
       ) : null}
