@@ -4,7 +4,12 @@ from typing import Any
 
 import pytest
 
-from apps.tenants.selectors import get_tenant_by_slug, invalidate_tenant_cache
+from apps.tenants.models import TenantFeatureOverride
+from apps.tenants.selectors import (
+    get_effective_plan_features,
+    get_tenant_by_slug,
+    invalidate_tenant_cache,
+)
 from tests.factories import TenantFactory
 
 pytestmark = pytest.mark.django_db
@@ -38,3 +43,22 @@ def test_invalidate_drops_cache(django_assert_num_queries: Any) -> None:
     invalidate_tenant_cache("cachedshop")
     with django_assert_num_queries(1):
         get_tenant_by_slug("cachedshop")
+
+
+def test_effective_plan_features_surface_override() -> None:
+    from django.utils import timezone
+
+    tenant = TenantFactory()
+    # PlanFactory defaults advanced_pos on.
+    assert get_effective_plan_features(tenant)["advanced_pos"] is True
+
+    TenantFeatureOverride.objects.create(
+        tenant=tenant, key="features.advanced_pos", value=False
+    )
+    assert get_effective_plan_features(tenant)["advanced_pos"] is False
+
+    # An expired override no longer applies.
+    override = TenantFeatureOverride.objects.get(tenant=tenant, key="features.advanced_pos")
+    override.expires_at = timezone.now() - timezone.timedelta(minutes=1)
+    override.save(update_fields=["expires_at"])
+    assert get_effective_plan_features(tenant)["advanced_pos"] is True
