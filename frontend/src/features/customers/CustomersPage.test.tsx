@@ -84,8 +84,9 @@ describe('CustomersPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('Sita Rai')).toBeInTheDocument();
-    expect(screen.getByText('रू 50,000.00')).toBeInTheDocument();
+    // Rows render in both the mobile card list and the desktop table.
+    expect((await screen.findAllByText('Sita Rai')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('रू 50,000.00').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'New customer' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
   });
@@ -143,9 +144,11 @@ describe('CustomersPage', () => {
     fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '9800000001' } });
     fireEvent.change(screen.getByLabelText('Credit limit'), { target: { value: '25000.00' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save customer' }));
-    expect(await screen.findByText('Hari Thapa')).toBeInTheDocument();
+    expect((await screen.findAllByText('Hari Thapa')).length).toBeGreaterThan(0);
 
-    const row = screen.getByText('Sita Rai').closest('tr');
+    // Scope to the desktop table row (the mobile card list renders the same row).
+    const table = screen.getByRole('table');
+    const row = within(table).getByText('Sita Rai').closest('tr');
     expect(row).not.toBeNull();
     fireEvent.click(within(row!).getByRole('button', { name: 'Edit' }));
     fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'Pokhara' } });

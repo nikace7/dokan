@@ -4,6 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { searchCustomers } from '@/features/billing/api';
 import type { Customer } from '@/features/billing/api';
 import { getCustomerLedger, getSupplierLedger } from '@/features/payments/api';
@@ -80,7 +88,7 @@ export function PartyLedgerPage() {
         </div>
 
         {selectedId ? (
-          <div className="flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 px-3 py-2">
+          <div className="flex items-center justify-between rounded-md border border-primary/30 bg-accent px-3 py-2">
             <strong className="text-sm">{selectedName}</strong>
             <Button
               type="button"
@@ -115,10 +123,13 @@ export function PartyLedgerPage() {
         )}
 
         {ledgerQuery.isFetching ? (
-          <p className="mt-4 text-sm text-slate-500">Loading ledger…</p>
+          <p className="mt-4 text-sm text-muted-foreground">Loading ledger…</p>
         ) : null}
         {ledgerQuery.isError ? (
-          <p role="alert" className="mt-4 text-sm text-red-600">
+          <p
+            role="alert"
+            className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+          >
             {errorMessage(ledgerQuery.error)}
           </p>
         ) : null}
@@ -161,16 +172,16 @@ function PartySearch({
         autoComplete="off"
       />
       {results.length > 0 ? (
-        <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-white">
+        <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-popover">
           {results.map((result) => (
             <li key={result.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => onSelect(result)}
               >
                 <span className="font-medium">{result.name}</span>
-                <span className="text-slate-500">{result.phone || '—'}</span>
+                <span className="text-muted-foreground">{result.phone || '—'}</span>
               </button>
             </li>
           ))}
@@ -180,44 +191,70 @@ function PartySearch({
   );
 }
 
+/** Ledger rows: card list below `md`, full table from `md` up. */
 function LedgerTable({ rows }: { rows: LedgerRow[] }) {
   if (rows.length === 0) {
-    return <p className="mt-4 py-8 text-center text-sm text-slate-500">No ledger entries yet.</p>;
+    return (
+      <p className="mt-4 py-8 text-center text-sm text-muted-foreground">
+        No ledger entries yet.
+      </p>
+    );
   }
   const balance = rows[rows.length - 1].balance;
   return (
     <div className="mt-4">
-      <p className="mb-2 text-sm text-slate-600">
-        Closing balance: <strong>{formatNpr(balance)}</strong>
+      <p className="mb-2 text-sm text-muted-foreground">
+        Closing balance: <strong className="text-foreground">{formatNpr(balance)}</strong>
       </p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-              <th className="py-2 pr-2 font-medium">Date</th>
-              <th className="py-2 pr-2 font-medium">Type</th>
-              <th className="py-2 pr-2 font-medium">Reference</th>
-              <th className="py-2 pr-2 text-right font-medium">Debit</th>
-              <th className="py-2 pr-2 text-right font-medium">Credit</th>
-              <th className="py-2 text-right font-medium">Balance</th>
-            </tr>
-          </thead>
-          <tbody>
+      <ul className="divide-y divide-border md:hidden">
+        {rows.map((row, index) => (
+          <li key={`${row.date}-${row.kind}-${row.ref}-${index}`} className="py-3 text-sm">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-medium">{row.ref}</span>
+              <span className="font-semibold tabular-nums">{formatNpr(row.balance)}</span>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
+              <span>{row.date}</span>
+              <span>{row.kind}</span>
+            </div>
+            <div className="mt-1 flex gap-4 text-xs text-muted-foreground tabular-nums">
+              <span>Debit {formatNpr(row.debit, { symbol: '' })}</span>
+              <span>Credit {formatNpr(row.credit, { symbol: '' })}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Reference</TableHead>
+              <TableHead className="text-right">Debit</TableHead>
+              <TableHead className="text-right">Credit</TableHead>
+              <TableHead className="text-right">Balance</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((row, index) => (
-              <tr
-                key={`${row.date}-${row.kind}-${row.ref}-${index}`}
-                className="border-b border-slate-100"
-              >
-                <td className="whitespace-nowrap py-2 pr-2">{row.date}</td>
-                <td className="py-2 pr-2">{row.kind}</td>
-                <td className="py-2 pr-2">{row.ref}</td>
-                <td className="py-2 pr-2 text-right">{formatNpr(row.debit, { symbol: '' })}</td>
-                <td className="py-2 pr-2 text-right">{formatNpr(row.credit, { symbol: '' })}</td>
-                <td className="py-2 text-right font-semibold">{formatNpr(row.balance)}</td>
-              </tr>
+              <TableRow key={`${row.date}-${row.kind}-${row.ref}-${index}`}>
+                <TableCell className="whitespace-nowrap">{row.date}</TableCell>
+                <TableCell>{row.kind}</TableCell>
+                <TableCell>{row.ref}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatNpr(row.debit, { symbol: '' })}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatNpr(row.credit, { symbol: '' })}
+                </TableCell>
+                <TableCell className="text-right font-semibold tabular-nums">
+                  {formatNpr(row.balance)}
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

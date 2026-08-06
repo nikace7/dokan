@@ -56,7 +56,7 @@ export function CashSessionPanel() {
   if (!workspace.branchId) {
     return (
       <Card title="Cash session / क्यास सेसन">
-        <p className="text-sm text-amber-800">
+        <p className="text-sm text-warning">
           Select an active branch before managing the cash drawer.
         </p>
       </Card>
@@ -83,26 +83,26 @@ export function CashSessionPanel() {
 
   return (
     <Card title="Cash session / क्यास सेसन">
-      {query.isFetching ? <p className="text-sm text-slate-500">Loading drawer…</p> : null}
+      {query.isFetching ? <p className="text-sm text-muted-foreground">Loading drawer…</p> : null}
       {query.isError ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-destructive">
           {message(query.error, 'Could not load the cash session.')}
         </p>
       ) : null}
-      {messageText ? <p className="mb-3 text-sm text-green-700">{messageText}</p> : null}
+      {messageText ? <p className="mb-3 text-sm text-success">{messageText}</p> : null}
       {session ? (
         <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
           <dl className="grid gap-1 text-sm sm:grid-cols-3">
             <div>
-              <dt className="text-slate-500">Opened</dt>
+              <dt className="text-muted-foreground">Opened</dt>
               <dd>{session.opened_by_name || '—'}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Opening float</dt>
+              <dt className="text-muted-foreground">Opening float</dt>
               <dd>{formatNpr(session.opening_float)}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Expected cash</dt>
+              <dt className="text-muted-foreground">Expected cash</dt>
               <dd>{session.expected_cash == null ? '—' : formatNpr(session.expected_cash)}</dd>
             </div>
           </dl>
@@ -141,7 +141,7 @@ export function CashSessionPanel() {
         </form>
       )}
       {error ? (
-        <p role="alert" className="mt-2 text-sm text-red-600">
+        <p role="alert" className="mt-2 text-sm text-destructive">
           {error}
         </p>
       ) : null}

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { createRole, deleteRole, listPermissions, updateRole } from '@/features/settings/api';
 import type { Permission, Role } from '@/features/settings/api';
 import { ApiError } from '@/lib/api/client';
@@ -104,7 +105,10 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
   return (
     <Card title="Custom roles / भूमिका">
       {message ? (
-        <p role="status" className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p
+          role="status"
+          className="mb-3 rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground"
+        >
           {message}
         </p>
       ) : null}
@@ -123,18 +127,19 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
             onChange={(event) => setForm({ ...form, name: event.target.value })}
           />
         </div>
-        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-          Description
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="role-description">Description</Label>
           <textarea
+            id="role-description"
             value={form.description}
             onChange={(event) => setForm({ ...form, description: event.target.value })}
-            className="min-h-20 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="min-h-20 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
-        </label>
-        <fieldset className="rounded-md border border-slate-200 p-3">
-          <legend className="px-1 text-sm font-medium text-slate-700">Permissions</legend>
+        </div>
+        <fieldset className="rounded-md border border-border p-3">
+          <legend className="px-1 text-sm font-medium">Permissions</legend>
           {permissionsQuery.isPending ? (
-            <p className="text-sm text-slate-500">Loading permissions…</p>
+            <p className="text-sm text-muted-foreground">Loading permissions…</p>
           ) : null}
           <div className="grid gap-2 sm:grid-cols-2">
             {permissions.map((permission: Permission) => (
@@ -143,17 +148,18 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
                   type="checkbox"
                   checked={form.permission_codes.includes(permission.code)}
                   onChange={() => togglePermission(permission.code)}
+                  className="mt-0.5 accent-primary"
                 />
                 <span>
                   <span className="block font-medium">{permission.name}</span>
-                  <span className="text-xs text-slate-500">{permission.code}</span>
+                  <span className="text-xs text-muted-foreground">{permission.code}</span>
                 </span>
               </label>
             ))}
           </div>
         </fieldset>
         {formError ? (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-sm text-destructive">
             {formError}
           </p>
         ) : null}
@@ -177,22 +183,22 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
         </div>
       </form>
 
-      <div className="mt-5 border-t border-slate-200 pt-4">
+      <div className="mt-5 border-t border-border pt-4">
         <h3 className="text-sm font-semibold">Configured roles</h3>
         <ul className="mt-2 grid gap-2 sm:grid-cols-2">
           {roles.map((role) => (
-            <li key={role.id} className="rounded-md border border-slate-200 p-3 text-sm">
+            <li key={role.id} className="rounded-md border border-border p-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium">
-                    {role.name} <span className="text-slate-500">({role.code})</span>
+                    {role.name} <span className="text-muted-foreground">({role.code})</span>
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     {role.permission_codes.length} permission(s)
                   </p>
                 </div>
                 {role.is_system ? (
-                  <span className="text-xs text-slate-500">System role</span>
+                  <span className="text-xs text-muted-foreground">System role</span>
                 ) : (
                   <div className="flex gap-1">
                     <Button
