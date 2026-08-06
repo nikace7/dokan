@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+import { Input } from '@/components/ui/Input';
 import { listVariants, searchItems } from '@/features/catalog/api';
 import type { Item, ItemVariant } from '@/features/catalog/api';
 import { formatNpr } from '@/lib/money';
@@ -47,14 +48,14 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
   if (item) {
     const variants = variantsQuery.data?.data ?? [];
     return (
-      <div className="rounded-md border border-slate-300">
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-          <span className="font-medium text-slate-900">
-            {item.name} <span className="text-slate-500">({item.code})</span>
+      <div className="rounded-md border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border bg-muted/50 px-3 py-2 text-sm">
+          <span className="font-medium">
+            {item.name} <span className="text-muted-foreground">({item.code})</span>
           </span>
           <button
             type="button"
-            className="text-blue-700 hover:underline"
+            className="text-primary hover:underline"
             onClick={() => {
               setItem(null);
               setSearch('');
@@ -64,17 +65,19 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
           </button>
         </div>
         {variantsQuery.isFetching ? (
-          <p className="px-3 py-2 text-sm text-slate-500">Loading variants…</p>
+          <p className="px-3 py-2 text-sm text-muted-foreground">Loading variants…</p>
         ) : null}
         {variantsQuery.data && variants.length === 0 ? (
-          <p className="px-3 py-2 text-sm text-slate-500">No active variants for this item.</p>
+          <p className="px-3 py-2 text-sm text-muted-foreground">
+            No active variants for this item.
+          </p>
         ) : null}
-        <ul className="max-h-48 divide-y divide-slate-100 overflow-y-auto">
+        <ul className="max-h-48 divide-y divide-border overflow-y-auto">
           {variants.map((variant: ItemVariant) => (
             <li key={variant.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-blue-50"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => {
                   onPick({
                     id: variant.id,
@@ -90,9 +93,11 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
               >
                 <span>
                   {variant.size} / {variant.color}{' '}
-                  <span className="text-xs text-slate-500">{variant.sku}</span>
+                  <span className="text-xs text-muted-foreground">{variant.sku}</span>
                 </span>
-                <span className="text-slate-600">{formatNpr(variant.mrp)}</span>
+                <span className="text-muted-foreground tabular-nums">
+                  {formatNpr(variant.mrp)}
+                </span>
               </button>
             </li>
           ))}
@@ -103,29 +108,30 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
 
   return (
     <div>
-      <input
+      <Input
         aria-label="Search items"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={placeholder ?? 'Search item by name or code…'}
         autoComplete="off"
-        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      {itemsQuery.isFetching ? <p className="mt-1 text-xs text-slate-500">Searching…</p> : null}
+      {itemsQuery.isFetching ? (
+        <p className="mt-1 text-xs text-muted-foreground">Searching…</p>
+      ) : null}
       {itemsQuery.data && itemsQuery.data.data.length === 0 ? (
-        <p className="mt-1 text-xs text-slate-500">No items match.</p>
+        <p className="mt-1 text-xs text-muted-foreground">No items match.</p>
       ) : null}
       {itemsQuery.data && itemsQuery.data.data.length > 0 ? (
-        <ul className="mt-1 max-h-48 divide-y divide-slate-100 overflow-y-auto rounded-md border border-slate-200 bg-white">
+        <ul className="mt-1 max-h-48 divide-y divide-border overflow-y-auto rounded-md border border-border bg-card">
           {itemsQuery.data.data.map((found) => (
             <li key={found.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => setItem(found)}
               >
-                <span className="font-medium text-slate-900">{found.name}</span>
-                <span className="text-slate-500">{found.code}</span>
+                <span className="font-medium">{found.name}</span>
+                <span className="text-muted-foreground">{found.code}</span>
               </button>
             </li>
           ))}

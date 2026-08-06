@@ -5,9 +5,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { listCategories, listItems, listVariants } from '@/features/catalog/api';
 import { setPrice, setPriceBounds } from '@/features/pricing/api';
 import type { PriceScope } from '@/features/pricing/api';
+import { selectClasses } from '@/features/pricing/ui';
 import type { RateType } from '@/features/settings/api';
 import { ApiError } from '@/lib/api/client';
 
@@ -98,13 +100,14 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
   return (
     <Card title="Set effective selling price">
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-          Rate type
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="price-rate-type">Rate type</Label>
           <select
+            id="price-rate-type"
             required
             value={selectedRate}
             onChange={(event) => setRateType(event.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+            className={selectClasses}
           >
             {rates
               .filter((rate) => rate.is_active)
@@ -114,27 +117,29 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
                 </option>
               ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-          Price scope
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="price-scope">Price scope</Label>
           <select
+            id="price-scope"
             value={scope}
             onChange={(event) => changeScope(event.target.value as PriceScope)}
-            className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+            className={selectClasses}
           >
             <option value="VARIANT">Variant</option>
             <option value="ITEM">Item</option>
             <option value="CATEGORY">Category</option>
           </select>
-        </label>
+        </div>
         {scope === 'CATEGORY' ? (
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 lg:col-span-2">
-            Category target
+          <div className="flex flex-col gap-1.5 lg:col-span-2">
+            <Label htmlFor="price-category-target">Category target</Label>
             <select
+              id="price-category-target"
               required
               value={targetId}
               onChange={(event) => setTargetId(event.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+              className={selectClasses}
             >
               <option value="">Select category</option>
               {categories.data?.data
@@ -145,19 +150,20 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
                   </option>
                 ))}
             </select>
-          </label>
+          </div>
         ) : (
           <>
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Item target
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="price-item-target">Item target</Label>
               <select
+                id="price-item-target"
                 required
                 value={itemId}
                 onChange={(event) => {
                   setItemId(event.target.value);
                   setTargetId('');
                 }}
-                className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+                className={selectClasses}
               >
                 <option value="">Select item</option>
                 {items.data?.data.map((item) => (
@@ -166,16 +172,17 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
             {scope === 'VARIANT' ? (
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                Variant target
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="price-variant-target">Variant target</Label>
                 <select
+                  id="price-variant-target"
                   required
                   value={targetId}
                   onChange={(event) => setTargetId(event.target.value)}
                   disabled={!itemId}
-                  className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+                  className={selectClasses}
                 >
                   <option value="">Select variant</option>
                   {variants.data?.data.map((variant) => (
@@ -184,7 +191,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
             ) : null}
           </>
         )}
@@ -224,9 +231,11 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
       </form>
 
       {canSetBounds && (scope === 'ITEM' || scope === 'VARIANT') ? (
-        <section className="mt-5 border-t border-slate-200 pt-4">
+        <section className="mt-5 border-t border-border pt-4">
           <h3 className="mb-2 text-sm font-semibold">Optional selling-price guardrails</h3>
-          <p className="mb-3 text-xs text-slate-500">Leave both blank to clear the guardrails.</p>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Leave both blank to clear the guardrails.
+          </p>
           <div className="flex flex-wrap items-end gap-3">
             <Input
               label="Minimum selling price"
@@ -252,12 +261,12 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
       ) : null}
 
       {error ? (
-        <p role="alert" className="mt-3 text-sm text-red-700">
+        <p role="alert" className="mt-3 text-sm text-destructive">
           {error instanceof ApiError ? error.message : 'Could not save pricing.'}
         </p>
       ) : null}
       {status ? (
-        <p role="status" className="mt-3 text-sm text-green-700">
+        <p role="status" className="mt-3 text-sm text-success">
           {status}
         </p>
       ) : null}

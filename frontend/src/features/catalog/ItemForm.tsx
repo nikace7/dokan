@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import {
   createBrand,
   createCategory,
@@ -16,6 +17,7 @@ import {
 } from '@/features/catalog/api';
 import type { Gender, Item, ItemPayload } from '@/features/catalog/api';
 import { QuickAddSelect } from '@/features/catalog/QuickAddSelect';
+import { selectClasses } from '@/features/catalog/ui';
 import { ApiError } from '@/lib/api/client';
 
 const GENDERS: Array<{ id: Gender; label: string }> = [
@@ -162,15 +164,13 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
         }}
       />
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="gender" className="text-sm font-medium text-slate-700">
-          Gender
-        </label>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="gender">Gender</Label>
         <select
           id="gender"
           value={gender}
           onChange={(e) => setGender(e.target.value as Gender | '')}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className={selectClasses}
         >
           <option value="">— none —</option>
           {GENDERS.map((g) => (
@@ -207,12 +207,12 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
         inputMode="decimal"
       />
 
-      <label className="flex items-center gap-2 self-end pb-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 self-end pb-2 text-sm text-foreground">
         <input
           type="checkbox"
           checked={isVatApplicable}
           onChange={(e) => setIsVatApplicable(e.target.checked)}
-          className="h-4 w-4"
+          className="h-4 w-4 accent-primary"
         />
         VAT applicable
       </label>
@@ -220,7 +220,7 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
       {error ? (
         <p
           role="alert"
-          className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 sm:col-span-2"
+          className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive sm:col-span-2"
         >
           {error}
         </p>

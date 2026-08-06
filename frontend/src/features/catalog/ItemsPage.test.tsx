@@ -75,9 +75,9 @@ describe('ItemsPage', () => {
   it('lists items and refetches with the search term', async () => {
     renderItems();
 
-    // Initial load renders the row.
-    expect(await screen.findByText('T-Shirt')).toBeInTheDocument();
-    expect(screen.getByText('TS')).toBeInTheDocument();
+    // Initial load renders the row (mobile card + desktop table).
+    expect((await screen.findAllByText('T-Shirt')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('TS').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Active').length).toBeGreaterThan(0);
 
     // Typing a search term refetches with `search=` on the query string.
@@ -91,12 +91,12 @@ describe('ItemsPage', () => {
       expect(searched).toBe(true);
     });
     // Row still renders from the (mocked) filtered response.
-    expect(await screen.findByText('T-Shirt')).toBeInTheDocument();
+    expect((await screen.findAllByText('T-Shirt')).length).toBeGreaterThan(0);
   });
 
   it('filters by status through the is_active query param', async () => {
     renderItems();
-    await screen.findByText('T-Shirt');
+    await screen.findAllByText('T-Shirt');
 
     fetchMock.mockClear();
     fireEvent.change(screen.getByLabelText('Filter by status'), { target: { value: 'inactive' } });
