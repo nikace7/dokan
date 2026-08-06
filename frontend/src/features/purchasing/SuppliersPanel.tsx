@@ -4,10 +4,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { createSupplier, listSuppliers } from '@/features/purchasing/api';
 import { ApiError } from '@/lib/api/client';
 
-/** Supplier table + quick create form (name is the only required field). */
+/** Supplier list + quick create form (name is the only required field). */
 export function SuppliersPanel() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -61,75 +70,104 @@ export function SuppliersPanel() {
       {showForm ? (
         <form
           onSubmit={onSubmit}
-          className="mb-4 grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 sm:grid-cols-4"
+          className="mb-4 grid gap-2 rounded-md border border-border bg-muted/50 p-3 sm:grid-cols-4"
         >
-          <input
+          <Input
             aria-label="Supplier name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name *"
             required
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
-          <input
+          <Input
             aria-label="Supplier phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="Phone"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
-          <input
+          <Input
             aria-label="Supplier PAN"
             value={panNo}
             onChange={(e) => setPanNo(e.target.value)}
             placeholder="PAN no."
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
-          <div className="flex gap-2">
-            <input
+          <div className="flex items-start gap-2">
+            <Input
               aria-label="Supplier address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Address"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             />
             <Button type="submit" size="sm" disabled={createMutation.isPending || !name.trim()}>
               {createMutation.isPending ? 'Saving…' : 'Add'}
             </Button>
           </div>
           {error ? (
-            <p role="alert" className="text-sm text-red-600 sm:col-span-4">
+            <p role="alert" className="text-sm text-destructive sm:col-span-4">
               {error}
             </p>
           ) : null}
         </form>
       ) : null}
 
-      {suppliersQuery.isFetching ? <p className="text-sm text-slate-500">Loading…</p> : null}
+      {suppliersQuery.isFetching ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : null}
       {suppliersQuery.data && suppliers.length === 0 ? (
-        <p className="py-4 text-center text-sm text-slate-500">No suppliers yet.</p>
+        <p className="py-4 text-center text-sm text-muted-foreground">No suppliers yet.</p>
       ) : null}
       {suppliers.length > 0 ? (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-              <th className="py-2 pr-2 font-medium">Name</th>
-              <th className="py-2 pr-2 font-medium">Phone</th>
-              <th className="py-2 pr-2 font-medium">PAN</th>
-              <th className="py-2 font-medium">Address</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          <ul className="divide-y divide-border md:hidden">
             {suppliers.map((supplier) => (
-              <tr key={supplier.id} className="border-b border-slate-100">
-                <td className="py-2 pr-2 font-medium">{supplier.name}</td>
-                <td className="py-2 pr-2 text-slate-600">{supplier.phone ?? '—'}</td>
-                <td className="py-2 pr-2 text-slate-600">{supplier.pan_no ?? '—'}</td>
-                <td className="py-2 text-slate-600">{supplier.address ?? '—'}</td>
-              </tr>
+              <li key={supplier.id} className="py-3 text-sm">
+                <p className="font-medium">{supplier.name}</p>
+                <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div className="flex gap-1">
+                    <dt className="text-muted-foreground">Phone</dt>
+                    <dd>{supplier.phone ?? '—'}</dd>
+                  </div>
+                  <div className="flex gap-1">
+                    <dt className="text-muted-foreground">PAN</dt>
+                    <dd>{supplier.pan_no ?? '—'}</dd>
+                  </div>
+                  <div className="col-span-2 flex gap-1">
+                    <dt className="text-muted-foreground">Address</dt>
+                    <dd>{supplier.address ?? '—'}</dd>
+                  </div>
+                </dl>
+              </li>
             ))}
-          </tbody>
-        </table>
+          </ul>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>PAN</TableHead>
+                  <TableHead>Address</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {suppliers.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {supplier.phone ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {supplier.pan_no ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {supplier.address ?? '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       ) : null}
     </Card>
   );

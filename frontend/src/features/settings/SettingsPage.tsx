@@ -40,6 +40,9 @@ function errorMessage(error: unknown): string {
     : 'Could not save shop settings.';
 }
 
+const selectClasses =
+  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
+
 /** Owner-facing tenant profile and presentation settings. */
 export function SettingsPage() {
   const { user } = useAuth();
@@ -74,20 +77,24 @@ export function SettingsPage() {
     return (
       <main className="mx-auto max-w-3xl p-4">
         <Card title="Settings / सेटिङ">
-          <p className="text-sm text-slate-600">Only the shop owner can manage settings.</p>
+          <p className="text-sm text-muted-foreground">Only the shop owner can manage settings.</p>
         </Card>
       </main>
     );
   }
 
   if (query.isPending) {
-    return <main className="mx-auto max-w-3xl p-4">Loading shop settings…</main>;
+    return (
+      <main className="mx-auto max-w-3xl p-4 text-sm text-muted-foreground">
+        Loading shop settings…
+      </main>
+    );
   }
 
   if (query.isError || !query.data || !form) {
     return (
       <main className="mx-auto max-w-3xl p-4">
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {errorMessage(query.error)}
         </p>
       </main>
@@ -116,22 +123,22 @@ export function SettingsPage() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4">
       {statusMessage ? (
-        <p role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}
         </p>
       ) : null}
       <Card title="Shop profile / पसल विवरण">
-        <div className="mb-4 grid gap-3 rounded-md bg-slate-50 p-3 text-sm sm:grid-cols-3">
+        <div className="mb-4 grid gap-3 rounded-md bg-muted/50 p-3 text-sm sm:grid-cols-3">
           <div>
-            <span className="block text-xs text-slate-500">Subdomain</span>
+            <span className="block text-xs text-muted-foreground">Subdomain</span>
             <span className="font-medium">{query.data.slug}</span>
           </div>
           <div>
-            <span className="block text-xs text-slate-500">Plan</span>
+            <span className="block text-xs text-muted-foreground">Plan</span>
             <span className="font-medium">{query.data.plan_code}</span>
           </div>
           <div>
-            <span className="block text-xs text-slate-500">Timezone</span>
+            <span className="block text-xs text-muted-foreground">Timezone</span>
             <span className="font-medium">{query.data.timezone}</span>
           </div>
         </div>
@@ -161,17 +168,18 @@ export function SettingsPage() {
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={form.vat_registered}
               onChange={(event) => setForm({ ...form, vat_registered: event.target.checked })}
+              className="accent-primary"
             />
             VAT registered shop
           </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
               Calendar preference
               <select
                 value={form.calendar_pref}
@@ -181,21 +189,21 @@ export function SettingsPage() {
                     calendar_pref: event.target.value as SettingsForm['calendar_pref'],
                   })
                 }
-                className="rounded-md border border-slate-300 px-3 py-2 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`${selectClasses} font-normal`}
               >
                 <option value="BS">Bikram Sambat (BS)</option>
                 <option value="AD">Gregorian (AD)</option>
                 <option value="BOTH">Both calendars</option>
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
               Interface language
               <select
                 value={form.locale}
                 onChange={(event) =>
                   setForm({ ...form, locale: event.target.value as SettingsForm['locale'] })
                 }
-                className="rounded-md border border-slate-300 px-3 py-2 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`${selectClasses} font-normal`}
               >
                 <option value="np">Nepali</option>
                 <option value="en">English</option>
@@ -204,7 +212,7 @@ export function SettingsPage() {
           </div>
 
           {formError ? (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="text-sm text-destructive">
               {formError}
             </p>
           ) : null}
@@ -217,28 +225,22 @@ export function SettingsPage() {
       </Card>
       {hasPermission(user, 'user.manage') ? (
         <Card title="Staff & roles / कर्मचारी">
-          <p className="mb-3 text-sm text-slate-600">
+          <p className="mb-3 text-sm text-muted-foreground">
             Create staff accounts and assign the roles already configured for this shop.
           </p>
-          <Link
-            to="/settings/staff"
-            className="inline-flex rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Manage staff
-          </Link>
+          <Button asChild>
+            <Link to="/settings/staff">Manage staff</Link>
+          </Button>
         </Card>
       ) : null}
       {user?.is_owner ? (
         <Card title="Support access / सहायता पहुँच">
-          <p className="mb-3 text-sm text-slate-600">
+          <p className="mb-3 text-sm text-muted-foreground">
             Review every time Dokan support entered this shop and who ended the session.
           </p>
-          <Link
-            to="/settings/support-access"
-            className="inline-flex rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            View support access log
-          </Link>
+          <Button asChild variant="secondary">
+            <Link to="/settings/support-access">View support access log</Link>
+          </Button>
         </Card>
       ) : null}
     </main>

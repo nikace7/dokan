@@ -4,17 +4,29 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import type { Customer } from '@/features/billing/api';
 import { listPayments, recordReceipt, searchCustomers } from '@/features/payments/api';
 import { CashSessionPanel } from '@/features/payments/CashSessionPanel';
 import { InvoiceAllocationPicker } from '@/features/payments/InvoiceAllocationPicker';
 import { SupplierPaymentForm } from '@/features/payments/SupplierPaymentForm';
-import type { ReceiptMethod } from '@/features/payments/api';
+import type { Payment, ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 
 const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
+
+const selectClasses =
+  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 function message(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
@@ -42,9 +54,10 @@ function CustomerField({
 
   if (customer) {
     return (
-      <div className="flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 px-3 py-2">
+      <div className="flex items-center justify-between rounded-md border border-primary/30 bg-accent px-3 py-2">
         <span className="text-sm">
-          <strong>{customer.name}</strong> <span className="text-slate-500">{customer.phone}</span>
+          <strong>{customer.name}</strong>{' '}
+          <span className="text-muted-foreground">{customer.phone}</span>
         </span>
         <Button type="button" variant="secondary" size="sm" onClick={onClear}>
           Change
@@ -63,18 +76,20 @@ function CustomerField({
         placeholder="Search by name or phone…"
         autoComplete="off"
       />
-      {query.isFetching ? <p className="mt-1 text-xs text-slate-500">Searching…</p> : null}
+      {query.isFetching ? (
+        <p className="mt-1 text-xs text-muted-foreground">Searching…</p>
+      ) : null}
       {query.data && query.data.length > 0 ? (
-        <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-white">
+        <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-popover">
           {query.data.map((result) => (
             <li key={result.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => onSelect(result)}
               >
                 <span className="font-medium">{result.name}</span>
-                <span className="text-slate-500">{result.phone}</span>
+                <span className="text-muted-foreground">{result.phone}</span>
               </button>
             </li>
           ))}
@@ -172,15 +187,13 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         value={amount}
         onChange={(event) => setAmount(event.target.value)}
       />
-      <div className="flex flex-col gap-1">
-        <label htmlFor="receipt-method" className="text-sm font-medium text-slate-700">
-          Method
-        </label>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="receipt-method">Method</Label>
         <select
           id="receipt-method"
           value={method}
           onChange={(event) => setMethod(event.target.value as ReceiptMethod)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={selectClasses}
         >
           {METHODS.map((option) => (
             <option key={option} value={option}>
@@ -196,7 +209,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
       />
       <Input label="Note" value={note} onChange={(event) => setNote(event.target.value)} />
       {error ? (
-        <p role="alert" className="sm:col-span-2 text-sm text-red-600">
+        <p role="alert" className="text-sm text-destructive sm:col-span-2">
           {error}
         </p>
       ) : null}
@@ -206,6 +219,55 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         </Button>
       </div>
     </form>
+  );
+}
+
+/** Payment history: card list below `md`, full table from `md` up. */
+function PaymentList({ payments }: { payments: Payment[] }) {
+  return (
+    <>
+      <ul className="divide-y divide-border md:hidden">
+        {payments.map((payment) => (
+          <li key={payment.id} className="py-3 text-sm">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-medium">{payment.customer_name || '—'}</span>
+              <span className="font-semibold tabular-nums">{formatNpr(payment.amount)}</span>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
+              <span>{payment.business_date_bs}</span>
+              <span>{payment.method}</span>
+              <span>{payment.note || '—'}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>BS date</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead>Note</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {payments.map((payment) => (
+              <TableRow key={payment.id}>
+                <TableCell className="whitespace-nowrap">{payment.business_date_bs}</TableCell>
+                <TableCell className="font-medium">{payment.customer_name || '—'}</TableCell>
+                <TableCell>{payment.method}</TableCell>
+                <TableCell className="text-muted-foreground">{payment.note || '—'}</TableCell>
+                <TableCell className="text-right font-semibold tabular-nums">
+                  {formatNpr(payment.amount)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }
 
@@ -225,7 +287,7 @@ export function PaymentsPage() {
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       {statusMessage ? (
-        <p role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}
         </p>
       ) : null}
@@ -243,10 +305,8 @@ export function PaymentsPage() {
       </Card>
       <Card title="Payment history / भुक्तानी इतिहास">
         <div className="mb-3 flex flex-wrap items-end gap-2">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="payment-method-filter" className="text-sm font-medium text-slate-700">
-              Filter by method
-            </label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="payment-method-filter">Filter by method</Label>
             <select
               id="payment-method-filter"
               value={method}
@@ -254,7 +314,7 @@ export function PaymentsPage() {
                 setMethod(event.target.value as ReceiptMethod | '');
                 setPage(1);
               }}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className={selectClasses}
             >
               <option value="">All methods</option>
               {METHODS.map((option) => (
@@ -265,44 +325,23 @@ export function PaymentsPage() {
             </select>
           </div>
         </div>
-        {paymentsQuery.isFetching ? <p className="py-4 text-sm text-slate-500">Loading…</p> : null}
+        {paymentsQuery.isFetching ? (
+          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+        ) : null}
         {paymentsQuery.isError ? (
-          <p role="alert" className="py-4 text-sm text-red-600">
+          <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {message(paymentsQuery.error, 'Failed to load payment history.')}
           </p>
         ) : null}
         {paymentsQuery.data && payments.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">No customer receipts yet.</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No customer receipts yet.
+          </p>
         ) : null}
-        {payments.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-                  <th className="py-2 pr-2 font-medium">BS date</th>
-                  <th className="py-2 pr-2 font-medium">Customer</th>
-                  <th className="py-2 pr-2 font-medium">Method</th>
-                  <th className="py-2 pr-2 font-medium">Note</th>
-                  <th className="py-2 text-right font-medium">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.map((payment) => (
-                  <tr key={payment.id} className="border-b border-slate-100">
-                    <td className="whitespace-nowrap py-2 pr-2">{payment.business_date_bs}</td>
-                    <td className="py-2 pr-2 font-medium">{payment.customer_name || '—'}</td>
-                    <td className="py-2 pr-2">{payment.method}</td>
-                    <td className="py-2 pr-2 text-slate-600">{payment.note || '—'}</td>
-                    <td className="py-2 text-right font-semibold">{formatNpr(payment.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
+        {payments.length > 0 ? <PaymentList payments={payments} /> : null}
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-slate-500">
+            <span className="text-muted-foreground">
               Page {meta.page} of {meta.total_pages} ({meta.count} receipts)
             </span>
             <div className="flex gap-2">

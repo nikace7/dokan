@@ -20,7 +20,7 @@ function formatCreatedAt(value: string): string {
 
 function JsonBlock({ value }: { value: Record<string, unknown> | null }) {
   return (
-    <pre className="overflow-x-auto rounded bg-slate-900 p-2 text-xs text-slate-100">
+    <pre className="overflow-x-auto rounded bg-foreground p-2 text-xs text-background">
       {value ? JSON.stringify(value, null, 2) : '—'}
     </pre>
   );
@@ -28,26 +28,26 @@ function JsonBlock({ value }: { value: Record<string, unknown> | null }) {
 
 function AuditDetail({ row }: { row: AuditLog }) {
   return (
-    <div className="grid gap-3 border-t border-slate-200 bg-slate-50 px-3 py-3 sm:grid-cols-2">
+    <div className="grid gap-3 border-t border-border bg-muted/50 px-3 py-3 sm:grid-cols-2">
       <div>
-        <h3 className="mb-1 text-xs font-semibold uppercase text-slate-500">Before</h3>
+        <h3 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Before</h3>
         <JsonBlock value={row.before} />
       </div>
       <div>
-        <h3 className="mb-1 text-xs font-semibold uppercase text-slate-500">After</h3>
+        <h3 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">After</h3>
         <JsonBlock value={row.after} />
       </div>
-      <dl className="grid gap-1 text-xs text-slate-600 sm:col-span-2 sm:grid-cols-3">
+      <dl className="grid gap-1 text-xs text-muted-foreground sm:col-span-2 sm:grid-cols-3">
         <div>
-          <dt className="font-medium">Target ID</dt>
+          <dt className="font-medium text-foreground">Target ID</dt>
           <dd className="break-all">{row.target_id || '—'}</dd>
         </div>
         <div>
-          <dt className="font-medium">IP</dt>
+          <dt className="font-medium text-foreground">IP</dt>
           <dd>{row.ip || '—'}</dd>
         </div>
         <div>
-          <dt className="font-medium">Impersonated by</dt>
+          <dt className="font-medium text-foreground">Impersonated by</dt>
           <dd>{row.impersonated_by || '—'}</dd>
         </div>
       </dl>
@@ -111,27 +111,27 @@ export function AuditPage() {
             onChange={(event) => resetPage(setDateTo, event.target.value)}
           />
         </div>
-        {query.isFetching ? <p className="py-4 text-sm text-slate-500">Loading…</p> : null}
+        {query.isFetching ? <p className="py-4 text-sm text-muted-foreground">Loading…</p> : null}
         {query.isError ? (
-          <p role="alert" className="py-4 text-sm text-red-600">
+          <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {errorMessage(query.error)}
           </p>
         ) : null}
         {query.data && rows.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">No audit events found.</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">No audit events found.</p>
         ) : null}
         {rows.map((row) => (
-          <div key={row.id} className="border-b border-slate-100 last:border-0">
+          <div key={row.id} className="border-b border-border last:border-0">
             <button
               type="button"
               aria-expanded={expandedId === row.id}
               onClick={() => setExpandedId((current) => (current === row.id ? null : row.id))}
-              className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-2 py-3 text-left text-sm hover:bg-slate-50"
+              className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
               <span className="font-medium">{row.action}</span>
-              <span className="text-slate-600">{row.target_type}</span>
-              <span className="text-slate-500">{row.actor_name || 'System'}</span>
-              <span className="ml-auto text-xs text-slate-500">
+              <span className="text-muted-foreground">{row.target_type}</span>
+              <span className="text-muted-foreground">{row.actor_name || 'System'}</span>
+              <span className="ml-auto text-xs text-muted-foreground">
                 {formatCreatedAt(row.created_at)}
               </span>
             </button>
@@ -140,7 +140,7 @@ export function AuditPage() {
         ))}
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-slate-500">
+            <span className="text-muted-foreground">
               Page {meta.page} of {meta.total_pages} ({meta.count} events)
             </span>
             <div className="flex gap-2">

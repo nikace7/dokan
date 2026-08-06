@@ -26,6 +26,12 @@ function emptyForm(): CreateStaffPayload {
   return { phone: '', full_name: '', email: '', password: '', role: '' };
 }
 
+const selectClasses =
+  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
+
+const inlineSelectClasses =
+  'rounded-md border border-input bg-background px-2 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
+
 /** Owner-facing staff account and existing-role assignment screen. */
 export function StaffPage() {
   const { user } = useAuth();
@@ -79,7 +85,9 @@ export function StaffPage() {
     return (
       <main className="mx-auto max-w-5xl p-4">
         <Card title="Staff & roles / कर्मचारी">
-          <p className="text-sm text-slate-600">Only the shop owner can manage staff accounts.</p>
+          <p className="text-sm text-muted-foreground">
+            Only the shop owner can manage staff accounts.
+          </p>
         </Card>
       </main>
     );
@@ -109,12 +117,12 @@ export function StaffPage() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
       {statusMessage ? (
-        <p role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}
         </p>
       ) : null}
       {queryError ? (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {errorMessage(queryError, 'Could not load staff settings.')}
         </p>
       ) : null}
@@ -147,13 +155,13 @@ export function StaffPage() {
             />
           </div>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex min-w-52 flex-col gap-1 text-sm font-medium text-slate-700">
+            <label className="flex min-w-52 flex-col gap-1.5 text-sm font-medium">
               Role
               <select
                 aria-label="Role"
                 value={form.role}
                 onChange={(event) => setForm({ ...form, role: event.target.value })}
-                className="rounded-md border border-slate-300 px-3 py-2 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`${selectClasses} font-normal`}
               >
                 <option value="">Select a role</option>
                 {roles.map((role) => (
@@ -163,13 +171,13 @@ export function StaffPage() {
                 ))}
               </select>
             </label>
-            <label className="flex min-w-52 flex-col gap-1 text-sm font-medium text-slate-700">
+            <label className="flex min-w-52 flex-col gap-1.5 text-sm font-medium">
               Initial branch
               <select
                 aria-label="Initial branch"
                 value={form.branch ?? ''}
                 onChange={(event) => setForm({ ...form, branch: event.target.value || null })}
-                className="rounded-md border border-slate-300 px-3 py-2 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`${selectClasses} font-normal`}
               >
                 <option value="">All branches</option>
                 {branches.map((branch) => (
@@ -183,122 +191,112 @@ export function StaffPage() {
               {createMutation.isPending ? 'Creating…' : 'Create staff'}
             </Button>
           </div>
-          {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+          {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
           {roles.length === 0 && !rolesQuery.isPending ? (
-            <p className="text-sm text-amber-700">Create a role before adding staff.</p>
+            <p className="text-sm text-warning">Create a role before adding staff.</p>
           ) : null}
         </form>
       </Card>
       {branchesQuery.error ? (
-        <p role="status" className="text-sm text-amber-700">
+        <p role="status" className="text-sm text-warning">
           Branches could not be loaded; role assignments will apply to all branches.
         </p>
       ) : null}
 
       <Card title="Staff accounts">
-        {staffQuery.isPending ? <p className="text-sm text-slate-500">Loading staff…</p> : null}
+        {staffQuery.isPending ? (
+          <p className="text-sm text-muted-foreground">Loading staff…</p>
+        ) : null}
         {!staffQuery.isPending && staff.length === 0 ? (
-          <p className="text-sm text-slate-500">No staff accounts yet.</p>
+          <p className="text-sm text-muted-foreground">No staff accounts yet.</p>
         ) : null}
         {staff.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-                  <th className="py-2 pr-3 font-medium">Name</th>
-                  <th className="py-2 pr-3 font-medium">Phone</th>
-                  <th className="py-2 pr-3 font-medium">Roles / branches</th>
-                  <th className="py-2 font-medium">Assign role and branch</th>
-                </tr>
-              </thead>
-              <tbody>
-                {staff.map((member) => {
-                  const selectedRole = roleSelections[member.id] ?? '';
-                  const selectedBranch = branchSelections[member.id] ?? '';
-                  return (
-                    <tr key={member.id} className="border-b border-slate-100 align-top">
-                      <td className="py-3 pr-3 font-medium">{member.full_name}</td>
-                      <td className="py-3 pr-3">{member.phone}</td>
-                      <td className="py-3 pr-3">
-                        {member.roles.length > 0
-                          ? member.roles
-                              .map((role) => `${role.code} @ ${role.branch_code ?? 'all branches'}`)
-                              .join(', ')
-                          : 'No role'}
-                      </td>
-                      <td className="py-3">
-                        <div className="flex flex-wrap gap-2">
-                          <select
-                            aria-label={`Role for ${member.full_name}`}
-                            value={selectedRole}
-                            onChange={(event) =>
-                              setRoleSelections({
-                                ...roleSelections,
-                                [member.id]: event.target.value,
-                              })
-                            }
-                            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-                          >
-                            <option value="">Select</option>
-                            {roles.map((role) => (
-                              <option key={role.id} value={role.id}>
-                                {role.code}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            aria-label={`Branch for ${member.full_name}`}
-                            value={selectedBranch}
-                            onChange={(event) =>
-                              setBranchSelections({
-                                ...branchSelections,
-                                [member.id]: event.target.value,
-                              })
-                            }
-                            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-                          >
-                            <option value="">All branches</option>
-                            {branches.map((branch) => (
-                              <option key={branch.id} value={branch.id}>
-                                {branch.code}
-                              </option>
-                            ))}
-                          </select>
-                          <Button
-                            size="sm"
-                            disabled={!selectedRole || assignMutation.isPending}
-                            onClick={() =>
-                              assignMutation.mutate({
-                                userId: member.id,
-                                role: selectedRole,
-                                branch: selectedBranch,
-                              })
-                            }
-                          >
-                            Assign
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ul className="flex flex-col gap-3">
+            {staff.map((member) => {
+              const selectedRole = roleSelections[member.id] ?? '';
+              const selectedBranch = branchSelections[member.id] ?? '';
+              return (
+                <li key={member.id} className="rounded-md border border-border p-3">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <p className="text-sm font-medium">{member.full_name}</p>
+                    <p className="text-sm text-muted-foreground">{member.phone}</p>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {member.roles.length > 0
+                      ? member.roles
+                          .map((role) => `${role.code} @ ${role.branch_code ?? 'all branches'}`)
+                          .join(', ')
+                      : 'No role'}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <select
+                      aria-label={`Role for ${member.full_name}`}
+                      value={selectedRole}
+                      onChange={(event) =>
+                        setRoleSelections({
+                          ...roleSelections,
+                          [member.id]: event.target.value,
+                        })
+                      }
+                      className={inlineSelectClasses}
+                    >
+                      <option value="">Select</option>
+                      {roles.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.code}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label={`Branch for ${member.full_name}`}
+                      value={selectedBranch}
+                      onChange={(event) =>
+                        setBranchSelections({
+                          ...branchSelections,
+                          [member.id]: event.target.value,
+                        })
+                      }
+                      className={inlineSelectClasses}
+                    >
+                      <option value="">All branches</option>
+                      {branches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.code}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      size="sm"
+                      disabled={!selectedRole || assignMutation.isPending}
+                      onClick={() =>
+                        assignMutation.mutate({
+                          userId: member.id,
+                          role: selectedRole,
+                          branch: selectedBranch,
+                        })
+                      }
+                    >
+                      Assign
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         ) : null}
       </Card>
 
       <Card title="Available roles">
         {roles.length === 0 ? (
-          <p className="text-sm text-slate-500">No roles configured.</p>
+          <p className="text-sm text-muted-foreground">No roles configured.</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {roles.map((role) => (
-              <li key={role.id} className="rounded-md border border-slate-200 p-3 text-sm">
+              <li key={role.id} className="rounded-md border border-border p-3 text-sm">
                 <p className="font-medium">
-                  {role.name} <span className="text-slate-500">({role.code})</span>
+                  {role.name} <span className="text-muted-foreground">({role.code})</span>
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {role.permission_codes.length > 0
                     ? role.permission_codes.join(', ')
                     : 'No permissions'}

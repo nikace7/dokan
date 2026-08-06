@@ -164,9 +164,10 @@ describe('PaymentsPage', () => {
   it('renders recent customer receipts', async () => {
     renderPayments();
 
-    expect(await screen.findByText('Khata collection')).toBeInTheDocument();
-    expect(screen.getByText('Sita Rai')).toBeInTheDocument();
-    expect(screen.getByText('रू 2,500.00')).toBeInTheDocument();
+    // Rows render in both the mobile card list and the desktop table.
+    expect((await screen.findAllByText('Khata collection')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Sita Rai').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('रू 2,500.00').length).toBeGreaterThan(0);
   });
 
   it('searches for a customer and records a receipt', async () => {
