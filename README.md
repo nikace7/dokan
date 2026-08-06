@@ -52,7 +52,8 @@ python manage.py runserver
 ```
 
 Then open **http://demo.localhost:8000/api/docs/** (browsers resolve
-`*.localhost` to loopback — no hosts-file edits) and log in via
+`*.localhost` to loopback; if Windows tries IPv6 `::1` first and fails, apply
+the `hosts`-file pin described in "Run locally (full Docker stack)" below) and log in via
 `POST /api/v1/auth/token` with phone `9800000000`, password `demo1234`.
 Every tenant endpoint must be called on the `demo.localhost` host — the
 tenant comes from the subdomain, never from a header. `seed_demo` creates
@@ -89,6 +90,50 @@ delivery state is persisted without sending real messages. Use
 `POST /api/v1/notifications/sms/receipt`; owners can inspect status at
 `GET /api/v1/notifications/sms`. A real provider adapter is required before
 enabling SMS in production.
+
+## Run locally (full Docker stack)
+
+This is the production-like local setup — one command, no local Python/Node
+needed:
+
+```bash
+cp .env.example .env          # fill in the change-me values
+docker compose up --build -d  # db, redis, backend, frontend, celery, beat, caddy
+
+# Apply migrations as the dedicated migrator role (NOT the superuser —
+# superuser-created tables miss the GRANTs the app role needs):
+docker compose exec backend sh -c 'DATABASE_USER=dokan_migrator DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" python manage.py migrate'
+
+# Seed the demo shop (idempotent):
+docker compose exec backend sh -c 'DATABASE_USER=postgres DATABASE_PASSWORD="$POSTGRES_PASSWORD" python manage.py seed_demo'
+```
+
+Then open:
+
+| URL | What | Login |
+|---|---|---|
+| `https://demo.localhost` | Tenant app (demo shop) | phone `9800000000`, password `demo1234` |
+| `https://admin.localhost` | Platform control plane | create with `python manage.py create_platform_user …`, TOTP required |
+
+Two platform gotchas:
+
+- **Windows `hosts` pin.** Browsers resolve `*.localhost` to loopback, but
+  Windows may try IPv6 `::1` first, where nothing (or the wrong Windows
+  service) answers. Force IPv4 by adding this line to
+  `C:\Windows\System32\drivers\etc\hosts` (edit as Administrator):
+  `127.0.0.1 demo.localhost admin.localhost app.localhost www.localhost`
+  (one line, space-separated), then `ipconfig /flushdns`.
+- **Certificate warning.** Local Caddy issues certs from its own dev CA. Either
+  accept the browser warning once, or trust it permanently:
+  `docker cp shop_system-caddy-1:/data/caddy/pki/authorities/local/root.crt .`
+  then import `root.crt` into the OS Trusted Root store.
+
+The `frontend` container intentionally publishes **no host port** (`docker ps`
+shows bare `8080/tcp`): all public traffic enters through Caddy, which forwards
+`/api` to Django with the original `Host` intact. For hot-reload frontend
+development instead, run `npm install && npm run dev` in `frontend/` and use
+http://localhost:5173 (Vite proxies `/api` to the backend).
+
 
 Useful commands (from `backend/`):
 
