@@ -1,6 +1,6 @@
 import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 
-import { AppLayout } from '@/app/AppLayout';
+import { AppShell } from '@/components/layout/AppShell';
 import { AuditPage } from '@/features/audit/AuditPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
@@ -59,7 +59,7 @@ function getRouter() {
     {
       element: (
         <RequireAuth>
-          <AppLayout />
+          <AppShell />
         </RequireAuth>
       ),
       children: [
