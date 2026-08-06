@@ -148,6 +148,50 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('link', { name: /new bill/i })).toBeInTheDocument();
   });
 
+  it('shows sales and dues tiles but never the profit tile without cost authority', async () => {
+    // Manager-style account: ledger + sales reports, but no report.profit /
+    // pricing.view_cost — the server omits `profit` and the tile must not
+    // render (invariant 10: cost data never leaks, not even as a label).
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/auth/me')) {
+        return Promise.resolve(
+          response(
+            me(['customer.view', 'report.ledger', 'report.sales', 'sale.view', 'stock.view']),
+          ),
+        );
+      }
+      if (url.includes('/v1/dashboard')) {
+        return Promise.resolve(
+          response({
+            shop_name: 'Shree Ganesh Vastralaya',
+            business_date_bs: '2083-04-20',
+            sales: {
+              today_total: '12000.00',
+              bill_count: 7,
+              last_30_days: [{ business_date_bs: '2083-04-20', net_total: '12000.00' }],
+            },
+            dues: { total_receivable: '30000.00', customer_count: 5 },
+            low_stock: { count: 3 },
+            recent_bills: [],
+          }),
+        );
+      }
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('आजको बिक्री / Today sales')).toBeInTheDocument();
+    expect(screen.getByText('बाँकी रकम / Receivables')).toBeInTheDocument();
+    expect(screen.getByText('5 customers')).toBeInTheDocument();
+    expect(screen.queryByText('आजको नाफा / Today profit')).not.toBeInTheDocument();
+    expect(screen.queryByText(/cost/i)).not.toBeInTheDocument();
+    // Sales-report permission still surfaces the trend and reports shortcut.
+    expect(screen.getByLabelText('Last 30 days sales')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /reports/i })).toHaveAttribute('href', '/reports');
+  });
+
   it('points New bill at the simple sale screen without advanced_pos', async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
