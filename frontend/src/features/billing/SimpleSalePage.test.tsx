@@ -227,14 +227,14 @@ describe('SimpleSalePage', () => {
     renderPage();
     await pickItem('T-Shirt');
 
-    const priceInput = screen.getByLabelText(/मूल्य \/ Price/);
+    const priceInput = screen.getByLabelText(/^price$/i);
 
     fireEvent.change(priceInput, { target: { value: '2000' } });
-    expect(await screen.findByText(/अधिकतम मूल्य/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Max /)).toBeInTheDocument();
     expect(completeButton()).toBeDisabled();
 
     fireEvent.change(priceInput, { target: { value: '1000' } });
-    expect(await screen.findByText(/न्यूनतम मूल्य/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Min /)).toBeInTheDocument();
     expect(completeButton()).toBeDisabled();
 
     // Back inside the range the sale can go through again.
@@ -290,7 +290,7 @@ describe('SimpleSalePage', () => {
     fireEvent.click(completeButton());
 
     expect(await screen.findByText(/day is not open yet/i)).toBeInTheDocument();
-    expect(screen.getByText(/मालिक वा म्यानेजर/)).toBeInTheDocument();
+    expect(screen.getByText(/owner\/manager/)).toBeInTheDocument();
     // The raw server message is not what the cashier sees.
     expect(screen.queryByText('Open a cash session first.')).not.toBeInTheDocument();
     // No receipt; the bill stays editable.

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { searchCustomers } from '@/features/billing/api';
 import { useCartStore } from '@/stores/cartStore';
@@ -9,6 +10,7 @@ import { useCartStore } from '@/stores/cartStore';
  * it rides along with hold/resume and is cleared with the bill.
  */
 export function CustomerPicker() {
+  const { t } = useTranslation();
   const customer = useCartStore((s) => s.customer);
   const setCustomer = useCartStore((s) => s.setCustomer);
   const [search, setSearch] = useState('');
@@ -32,7 +34,7 @@ export function CustomerPicker() {
           className="rounded px-2 py-1 text-sm text-blue-700 hover:bg-blue-100"
           onClick={() => setCustomer(null)}
         >
-          Change
+          {t('billing.change')}
         </button>
       </div>
     );
@@ -44,11 +46,13 @@ export function CustomerPicker() {
         aria-label="Search customers"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search customer by name or phone…"
+        placeholder={t('billing.customerSearchPlaceholder')}
         autoComplete="off"
         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      {query.isFetching ? <p className="mt-1 text-xs text-slate-500">Searching…</p> : null}
+      {query.isFetching ? (
+        <p className="mt-1 text-xs text-slate-500">{t('billing.searching')}</p>
+      ) : null}
       {query.data && query.data.length > 0 ? (
         <ul className="mt-1 max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white">
           {query.data.map((c) => (
@@ -69,7 +73,7 @@ export function CustomerPicker() {
         </ul>
       ) : null}
       {query.data && query.data.length === 0 ? (
-        <p className="mt-1 text-xs text-slate-500">No customers match.</p>
+        <p className="mt-1 text-xs text-slate-500">{t('billing.noCustomersMatch')}</p>
       ) : null}
     </div>
   );

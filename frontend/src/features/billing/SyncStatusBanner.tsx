@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { discardException, summarizeOp } from '@/lib/offline/conflicts';
@@ -11,6 +12,7 @@ import { useSyncStore } from '@/lib/offline/sync';
  * that need a human decision (server rejected them at sync time).
  */
 export function SyncStatusBanner() {
+  const { t } = useTranslation();
   const { online, syncing, pendingCount, failed } = useSyncStore();
   const [showExceptions, setShowExceptions] = useState(false);
 
@@ -24,9 +26,9 @@ export function SyncStatusBanner() {
         <p role="status" className="mb-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
           {online
             ? syncing
-              ? `Syncing ${pendingCount} queued bill${pendingCount === 1 ? '' : 's'}…`
-              : `${pendingCount} bill${pendingCount === 1 ? '' : 's'} queued for sync.`
-            : `No connection — ${pendingCount} bill${pendingCount === 1 ? '' : 's'} queued; they sync automatically when the connection returns.`}
+              ? t('billing.sync.syncing', { count: pendingCount })
+              : t('billing.sync.queued', { count: pendingCount })
+            : t('billing.sync.offlineQueued', { count: pendingCount })}
         </p>
       ) : null}
 
@@ -34,11 +36,10 @@ export function SyncStatusBanner() {
         <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-amber-900">
-              {failed.length} bill{failed.length === 1 ? '' : 's'} could not be synced — the server
-              rejected {failed.length === 1 ? 'it' : 'them'}.
+              {t('billing.sync.failed', { count: failed.length })}
             </p>
             <Button variant="secondary" size="sm" onClick={() => setShowExceptions((s) => !s)}>
-              {showExceptions ? 'Hide' : 'Review'}
+              {showExceptions ? t('billing.sync.hide') : t('billing.sync.review')}
             </Button>
           </div>
           {showExceptions ? (
@@ -55,6 +56,7 @@ export function SyncStatusBanner() {
 }
 
 function ExceptionRow({ op }: { op: QueuedSaleOp }) {
+  const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
   const [discarding, setDiscarding] = useState(false);
 
@@ -69,30 +71,30 @@ function ExceptionRow({ op }: { op: QueuedSaleOp }) {
         <div>
           <span className="font-medium">{op.localRef}</span>
           <span className="ml-2 text-slate-500">
-            {summarizeOp(op)} · queued {new Date(op.enqueuedAt).toLocaleString()}
+            {summarizeOp(op)} ·{' '}
+            {t('billing.sync.queuedAt', { time: new Date(op.enqueuedAt).toLocaleString() })}
           </span>
         </div>
         {confirming ? (
           <span className="flex items-center gap-2">
-            <span className="text-xs text-slate-600">Discard this bill locally?</span>
+            <span className="text-xs text-slate-600">{t('billing.sync.discardConfirm')}</span>
             <Button variant="danger" size="sm" disabled={discarding} onClick={() => void discard()}>
-              {discarding ? 'Discarding…' : 'Discard'}
+              {discarding ? t('billing.sync.discarding') : t('billing.sync.discard')}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
-              Keep
+              {t('billing.sync.keep')}
             </Button>
           </span>
         ) : (
           <Button variant="secondary" size="sm" onClick={() => setConfirming(true)}>
-            Discard…
+            {t('billing.sync.discardEllipsis')}
           </Button>
         )}
       </div>
-      <p className="mt-1 text-xs text-red-700">Server said: {op.lastError}</p>
-      <p className="mt-0.5 text-xs text-slate-500">
-        The sale never happened server-side. Discard it here and re-ring it at the counter if the
-        customer still wants it.
+      <p className="mt-1 text-xs text-red-700">
+        {t('billing.sync.serverSaid', { message: op.lastError })}
       </p>
+      <p className="mt-0.5 text-xs text-slate-500">{t('billing.sync.failedExplain')}</p>
     </li>
   );
 }

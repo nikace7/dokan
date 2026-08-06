@@ -1,0 +1,209 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "networkError": "Could not reach the server. Check your connection and try again.",
+    "remove": "Remove ✕",
+    "stock": "Stock {{qty}}"
+  },
+  "language": {
+    "label": "Language",
+    "english": "EN",
+    "nepali": "ने"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "billing": "Billing",
+    "catalog": "Catalog",
+    "pricing": "Pricing",
+    "customers": "Customers",
+    "stock": "Stock",
+    "transfers": "Transfers",
+    "purchasing": "Purchasing",
+    "expenses": "Expenses",
+    "payments": "Payments",
+    "ledgers": "Ledgers",
+    "returns": "Returns",
+    "exchanges": "Exchanges",
+    "reports": "Reports",
+    "audit": "Audit",
+    "settings": "Settings",
+    "more": "More",
+    "moreNavigation": "More navigation",
+    "signOut": "Sign out"
+  },
+  "auth": {
+    "title": "Sign in",
+    "subtitle": "Sign in to your shop",
+    "phone": "Phone",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…"
+  },
+  "billing": {
+    "scanLabel": "Scan barcode or type SKU",
+    "scanPlaceholder": "Scan…",
+    "noItemMatches": "No item matches \"{{code}}\".",
+    "lookupFailed": "Lookup failed.",
+    "cartEmpty": "Cart is empty — scan an item to start a bill.",
+    "bill": "Bill",
+    "billResumed": "Bill (resumed from held)",
+    "item": "Item",
+    "qty": "Qty",
+    "rate": "Rate",
+    "discount": "Discount",
+    "total": "Total",
+    "totalDisplayOnly": "Total (display only)",
+    "payment": "Payment",
+    "tender": {
+      "cash": "Cash",
+      "esewa": "eSewa",
+      "khalti": "Khalti",
+      "fonepay": "Fonepay",
+      "udharo": "Udharo"
+    },
+    "amountLabel": "Amount (रू) — blank = full total",
+    "billTotal": "Bill total",
+    "paid": "Paid",
+    "dueUdharo": "Due (udharo)",
+    "vatBill": "VAT bill",
+    "completeSale": "F9 Complete sale + print",
+    "completing": "Completing…",
+    "holdBill": "Park this bill (hold)",
+    "parking": "Parking…",
+    "heldBills": "Held bills",
+    "walkIn": "Walk-in",
+    "resume": "Resume",
+    "change": "Change",
+    "customerSearchPlaceholder": "Search customer by name or phone…",
+    "searching": "Searching…",
+    "noCustomersMatch": "No customers match.",
+    "workspaceLoading": "Loading branches and rate types…",
+    "workspaceNotReady": "Billing needs an active branch and rate type. Configure them in the header or finish tenant setup first.",
+    "queuedTitle": "No connection — bill queued",
+    "queuedRef": "Reference {{ref}}",
+    "queuedBody": "The bill is stored on this device and syncs automatically when the connection returns. The invoice number is assigned by the server at sync time — quote this reference, never an invoice number.",
+    "planWarning": "You have used {{usage}} of {{limit}} monthly bills. Billing remains available; contact support if you need a higher plan.",
+    "errors": {
+      "addItem": "Add at least one item to the bill.",
+      "invalidAmount": "Enter a valid amount (e.g. 1500.00).",
+      "amountPositive": "Amount must be greater than zero.",
+      "udharoCustomer": "Udharo requires a customer — search and pick one above."
+    },
+    "receipt": {
+      "saleCompleted": "Sale completed",
+      "reprint": "Reprint",
+      "printing": "Printing…",
+      "newBill": "New bill",
+      "printHistoryError": "Receipt opened, but its print history could not be saved."
+    },
+    "sync": {
+      "syncing_one": "Syncing {{count}} queued bill…",
+      "syncing_other": "Syncing {{count}} queued bills…",
+      "queued_one": "{{count}} bill queued for sync.",
+      "queued_other": "{{count}} bills queued for sync.",
+      "offlineQueued_one": "No connection — {{count}} bill queued; it syncs automatically when the connection returns.",
+      "offlineQueued_other": "No connection — {{count}} bills queued; they sync automatically when the connection returns.",
+      "failed_one": "{{count}} bill could not be synced — the server rejected it.",
+      "failed_other": "{{count}} bills could not be synced — the server rejected them.",
+      "review": "Review",
+      "hide": "Hide",
+      "discardConfirm": "Discard this bill locally?",
+      "discard": "Discard",
+      "discardEllipsis": "Discard…",
+      "discarding": "Discarding…",
+      "keep": "Keep",
+      "queuedAt": "queued {{time}}",
+      "serverSaid": "Server said: {{message}}",
+      "failedExplain": "The sale never happened server-side. Discard it here and re-ring it at the counter if the customer still wants it."
+    }
+  },
+  "simpleSale": {
+    "title": "Simple sale",
+    "noPermission": "You do not have permission to create sales.",
+    "offline": "You are offline — simple sale needs a connection.",
+    "addItem": "Add item",
+    "paymentMethod": "Payment method",
+    "cash": "Cash",
+    "qr": "QR",
+    "complete": "Complete",
+    "saving": "Saving…",
+    "cashSessionRequired": "The day is not open yet — ask the owner/manager to open the cash session first.",
+    "picker": {
+      "title": "Choose item",
+      "subtitle": "Only items in stock at this branch are shown.",
+      "searchPlaceholder": "Search name, SKU, barcode…",
+      "searchAria": "Search items",
+      "loadingAria": "Loading items",
+      "loadError": "Could not load items. Check your connection and try again.",
+      "empty": "No items in stock match that search."
+    },
+    "line": {
+      "price": "Price",
+      "qty": "Qty",
+      "lineTotal": "Line total"
+    },
+    "validation": {
+      "enterPrice": "Enter a price",
+      "minPrice": "Min {{price}}",
+      "maxPrice": "Max {{price}}",
+      "enterQty": "Enter a quantity",
+      "onlyInStock": "Only {{count}} in stock",
+      "priceRange": "Price range: {{min}} – {{max}}",
+      "minOnly": "Min: {{price}}",
+      "maxOnly": "Max: {{price}}"
+    }
+  },
+  "share": {
+    "title": "Share bill",
+    "shareLink": "Share link",
+    "creatingLink": "Creating link…",
+    "linkCopied": "Link copied",
+    "copyFailed": "Copy failed — long-press the link instead.",
+    "createFirst": "Create the link first, then send it on WhatsApp.",
+    "permissionDenied": "You do not have permission to share bills.",
+    "createFailed": "Could not create the share link. Try again.",
+    "billTitle": "Bill {{number}}"
+  },
+  "sharedBill": {
+    "notFound": "Bill not found",
+    "notFoundHelp": "This bill does not exist or the link is no longer valid. Please ask the shop to share it again.",
+    "loadError": "Could not load this bill",
+    "loadErrorHelp": "Check your connection and open the link again.",
+    "taxInvoice": "Tax Invoice",
+    "invoice": "Invoice",
+    "invoiceNumber": "Invoice {{number}}",
+    "item": "Item",
+    "qty": "Qty",
+    "rate": "Rate",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "vat": "VAT",
+    "roundOff": "Round off",
+    "paid": "Paid",
+    "dueUdharo": "Due (udharo)",
+    "tender": "Tender",
+    "thankYou": "Thank you"
+  },
+  "support": {
+    "banner": {
+      "sessionActive": "Support session active",
+      "readOnly": "Read only",
+      "readWrite": "Read/write",
+      "ends": "ends",
+      "endNow": "End now",
+      "ending": "Ending…",
+      "endFailed": "Could not end the session. Try again.",
+      "endAria": "End support session"
+    },
+    "login": {
+      "invalid": "Support link is invalid or expired.",
+      "opening": "Opening the audited support session…"
+    },
+    "page": {
+      "title": "Support access log",
+      "error": "Could not load support access.",
+      "empty": "No support sessions have been opened."
+    }
+  }
+}

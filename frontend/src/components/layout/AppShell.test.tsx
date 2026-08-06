@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import i18n from 'i18next';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -61,6 +62,7 @@ describe('AppShell billing nav', () => {
     fetchMock.mockReset();
     clearTokens();
     features = {};
+    void i18n.changeLanguage('en');
   });
 
   it('points Billing at the classic POS with advanced_pos', async () => {
@@ -91,5 +93,19 @@ describe('AppShell billing nav', () => {
         expect(link).toHaveAttribute('href', '/billing/simple');
       }
     });
+  });
+
+  it('switches nav labels to Nepali from the language toggle', async () => {
+    features = { simple_sale: true, advanced_pos: true };
+    renderShell();
+
+    await screen.findAllByRole('link', { name: /billing/i });
+    // The toggle renders twice (sidebar + mobile header); either works.
+    fireEvent.click(screen.getAllByRole('button', { name: 'ने' })[0]);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('link', { name: 'बिलिङ' }).length).toBeGreaterThan(0);
+    });
+    expect(i18n.language).toBe('ne');
   });
 });

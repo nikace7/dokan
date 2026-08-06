@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { formatPaisa, MoneyError, toPaisa } from '@/lib/money';
 import type { CartLine } from '@/stores/cartStore';
 import { cartTotalPaisa, lineTotalPaisa, useCartStore } from '@/stores/cartStore';
@@ -7,6 +9,7 @@ import { cartTotalPaisa, lineTotalPaisa, useCartStore } from '@/stores/cartStore
  * everything when the sale posts.
  */
 export function CartTable() {
+  const { t } = useTranslation();
   const lines = useCartStore((s) => s.lines);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const setDiscount = useCartStore((s) => s.setDiscount);
@@ -14,9 +17,7 @@ export function CartTable() {
 
   if (lines.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-slate-500">
-        Cart is empty — scan an item to start a bill.
-      </p>
+      <p className="py-8 text-center text-sm text-slate-500">{t('billing.cartEmpty')}</p>
     );
   }
 
@@ -39,11 +40,11 @@ export function CartTable() {
     <table className="w-full text-sm">
       <thead>
         <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-          <th className="py-2 pr-2 font-medium">Item</th>
-          <th className="py-2 pr-2 font-medium">Qty</th>
-          <th className="py-2 pr-2 text-right font-medium">Rate</th>
-          <th className="py-2 pr-2 text-right font-medium">Discount</th>
-          <th className="py-2 pr-2 text-right font-medium">Total</th>
+          <th className="py-2 pr-2 font-medium">{t('billing.item')}</th>
+          <th className="py-2 pr-2 font-medium">{t('billing.qty')}</th>
+          <th className="py-2 pr-2 text-right font-medium">{t('billing.rate')}</th>
+          <th className="py-2 pr-2 text-right font-medium">{t('billing.discount')}</th>
+          <th className="py-2 pr-2 text-right font-medium">{t('billing.total')}</th>
           <th className="py-2 font-medium" aria-label="Actions" />
         </tr>
       </thead>
@@ -110,7 +111,7 @@ export function CartTable() {
       <tfoot>
         <tr>
           <td colSpan={4} className="pt-3 text-right text-sm font-semibold text-slate-700">
-            Total (display only)
+            {t('billing.totalDisplayOnly')}
           </td>
           <td className="pt-3 pr-2 text-right text-lg font-bold whitespace-nowrap">
             {formatPaisa(cartTotalPaisa(lines), { symbol: 'रू ' })}
