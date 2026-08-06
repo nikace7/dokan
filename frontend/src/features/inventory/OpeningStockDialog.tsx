@@ -3,6 +3,14 @@ import type { FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/Input';
 import { postOpeningStock } from '@/features/inventory/api';
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { VariantPicker } from '@/features/catalog/VariantPicker';
@@ -54,24 +62,21 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Add opening stock"
-      className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4"
-    >
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="text-lg font-semibold">Add opening stock</h2>
-        <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent aria-label="Add opening stock" className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add opening stock</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="flex flex-col gap-3">
           {variant ? (
-            <div className="flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
+            <div className="flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
               <span className="font-medium">
                 {variant.itemName} — {variant.size} / {variant.color}
-                <span className="ml-1 text-xs text-slate-500">{variant.sku}</span>
+                <span className="ml-1 text-xs text-muted-foreground">{variant.sku}</span>
               </span>
               <button
                 type="button"
-                className="text-blue-700 hover:underline"
+                className="text-primary hover:underline"
                 onClick={() => setVariant(null)}
               >
                 Change
@@ -82,64 +87,46 @@ export function OpeningStockDialog({ onClose, onPosted }: OpeningStockDialogProp
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="opening-qty" className="text-sm font-medium text-slate-700">
-                Quantity
-              </label>
-              <input
-                id="opening-qty"
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                inputMode="decimal"
-                required
-                placeholder="20"
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="opening-cost" className="text-sm font-medium text-slate-700">
-                Unit cost (रू)
-              </label>
-              <input
-                id="opening-cost"
-                value={unitCost}
-                onChange={(e) => setUnitCost(e.target.value)}
-                inputMode="decimal"
-                required
-                placeholder="450.00"
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="opening-note" className="text-sm font-medium text-slate-700">
-              Note (optional)
-            </label>
-            <input
-              id="opening-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            <Input
+              label="Quantity"
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              inputMode="decimal"
+              required
+              placeholder="20"
+            />
+            <Input
+              label="Unit cost (रू)"
+              value={unitCost}
+              onChange={(e) => setUnitCost(e.target.value)}
+              inputMode="decimal"
+              required
+              placeholder="450.00"
             />
           </div>
 
+          <Input
+            label="Note (optional)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+
           {error ? (
-            <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </p>
           ) : null}
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter className="gap-2 sm:space-x-0">
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? 'Posting…' : 'Post opening stock'}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

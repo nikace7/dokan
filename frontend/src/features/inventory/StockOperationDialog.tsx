@@ -3,6 +3,15 @@ import type { FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { VariantPicker } from '@/features/catalog/VariantPicker';
 import { postAdjustment, postWriteOff } from '@/features/inventory/api';
@@ -51,24 +60,21 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
 
   const title = isAdjustment ? 'Adjust stock' : 'Write off damage';
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4"
-    >
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent aria-label={title} className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="flex flex-col gap-3">
           {variant ? (
-            <div className="flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
+            <div className="flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
               <span className="font-medium">
                 {variant.itemName} — {variant.size} / {variant.color}
-                <span className="ml-1 text-xs text-slate-500">{variant.sku}</span>
+                <span className="ml-1 text-xs text-muted-foreground">{variant.sku}</span>
               </span>
               <button
                 type="button"
-                className="text-blue-700 hover:underline"
+                className="text-primary hover:underline"
                 onClick={() => setVariant(null)}
               >
                 Change
@@ -78,9 +84,12 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
             <VariantPicker onPick={setVariant} />
           )}
 
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-            {isAdjustment ? 'Quantity change' : 'Quantity damaged'}
-            <input
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="stock-op-qty">
+              {isAdjustment ? 'Quantity change' : 'Quantity damaged'}
+            </Label>
+            <Input
+              id="stock-op-qty"
               aria-label={isAdjustment ? 'Quantity change' : 'Quantity damaged'}
               type="number"
               step="0.001"
@@ -88,30 +97,30 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
               value={qty}
               onChange={(event) => setQty(event.target.value)}
               required
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
             />
-          </label>
+          </div>
 
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-            Reason
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="stock-op-reason">Reason</Label>
             <textarea
+              id="stock-op-reason"
               aria-label="Reason"
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               required
               maxLength={500}
               rows={3}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
-          </label>
+          </div>
 
           {error ? (
-            <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </p>
           ) : null}
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter className="gap-2 sm:space-x-0">
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
@@ -122,9 +131,9 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
                   ? 'Post adjustment'
                   : 'Post write-off'}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

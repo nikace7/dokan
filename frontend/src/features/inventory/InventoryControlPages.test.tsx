@@ -232,7 +232,8 @@ describe('TransfersPage', () => {
     mockApi(['stock.view', 'stock.adjust'], true, 'SENT');
     renderPage('transfers');
 
-    fireEvent.change(await screen.findByLabelText('Receive SHIRT-M'), {
+    // The receive input renders in both the mobile card and the desktop table.
+    fireEvent.change((await screen.findAllByLabelText('Receive SHIRT-M'))[0], {
       target: { value: '2' },
     });
     expect(screen.getByText(/remaining quantity off as a transfer shortage/i)).toBeInTheDocument();
@@ -278,7 +279,8 @@ describe('CountsPage', () => {
       ),
     );
 
-    fireEvent.change(screen.getByLabelText('Counted quantity SHIRT-M'), {
+    // The counted-quantity input renders in both the mobile card and the desktop table.
+    fireEvent.change(screen.getAllByLabelText('Counted quantity SHIRT-M')[0], {
       target: { value: '9' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save counted quantities' }));
