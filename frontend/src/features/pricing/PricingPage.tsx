@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { PriceEditor } from '@/features/pricing/PriceEditor';
 import { PriceTables } from '@/features/pricing/PriceTables';
@@ -8,6 +9,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { hasPermission } from '@/lib/permissions';
 
 export function PricingPage() {
+  const { t } = useTranslation();
   const { user, isRestoring } = useAuth();
   const canView = hasPermission(user, 'pricing.view');
   const canEdit = hasPermission(user, 'pricing.edit');
@@ -19,15 +21,15 @@ export function PricingPage() {
   });
 
   if (isRestoring) {
-    return <main className="p-6 text-sm text-muted-foreground">Loading pricing…</main>;
+    return <main className="p-6 text-sm text-muted-foreground">{t('pricing.loading')}</main>;
   }
 
   if (!canView) {
     return (
       <main className="mx-auto max-w-xl p-6">
-        <h1 className="text-2xl font-semibold">Pricing</h1>
+        <h1 className="text-2xl font-semibold">{t('pricing.title')}</h1>
         <p role="alert" className="mt-3 rounded-md bg-warning/10 p-3 text-sm text-warning">
-          You do not have permission to view pricing.
+          {t('pricing.noPermission')}
         </p>
       </main>
     );
@@ -36,14 +38,14 @@ export function PricingPage() {
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       <div>
-        <h1 className="text-2xl font-semibold">Pricing / बिक्री मूल्य</h1>
+        <h1 className="text-2xl font-semibold">{t('pricing.title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Variant prices override item and category prices; MRP is the final fallback.
+          {t('pricing.subtitle')}
         </p>
       </div>
       {rateTypes.isError ? (
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {rateTypes.error instanceof Error ? rateTypes.error.message : 'Could not load pricing.'}
+          {rateTypes.error instanceof Error ? rateTypes.error.message : t('pricing.loadError')}
         </p>
       ) : null}
       <RateTypesPanel rates={rateTypes.data?.data ?? []} canEdit={canEdit} />

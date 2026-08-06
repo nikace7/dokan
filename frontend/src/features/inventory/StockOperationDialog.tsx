@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import {
@@ -25,6 +26,7 @@ interface StockOperationDialogProps {
 }
 
 export function StockOperationDialog({ kind, onClose, onPosted }: StockOperationDialogProps) {
+  const { t } = useTranslation();
   const workspace = useWorkspace();
   const [variant, setVariant] = useState<PickedVariant | null>(null);
   const [qty, setQty] = useState('');
@@ -42,23 +44,25 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
     },
     onSuccess: onPosted,
     onError: (err) =>
-      setError(err instanceof ApiError ? err.message : 'Could not post the stock operation.'),
+      setError(err instanceof ApiError ? err.message : t('inventory.operation.postError')),
   });
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (!variant) return setError('Pick a variant first.');
-    if (!workspace.branchId) return setError('Select an active branch first.');
+    if (!variant) return setError(t('inventory.operation.pickVariant'));
+    if (!workspace.branchId) return setError(t('inventory.operation.selectBranch'));
     if (Number(qty) === 0 || (!isAdjustment && Number(qty) < 0)) {
       return setError(
-        isAdjustment ? 'Quantity change cannot be zero.' : 'Quantity must be positive.',
+        isAdjustment ? t('inventory.operation.qtyZero') : t('inventory.operation.qtyPositive'),
       );
     }
     mutation.mutate();
   };
 
-  const title = isAdjustment ? 'Adjust stock' : 'Write off damage';
+  const title = isAdjustment
+    ? t('inventory.operation.adjustTitle')
+    : t('inventory.operation.writeOffTitle');
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
       <DialogContent aria-label={title} className="max-w-md">
@@ -77,7 +81,7 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
                 className="text-primary hover:underline"
                 onClick={() => setVariant(null)}
               >
-                Change
+                {t('catalog.picker.change')}
               </button>
             </div>
           ) : (
@@ -86,11 +90,17 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="stock-op-qty">
-              {isAdjustment ? 'Quantity change' : 'Quantity damaged'}
+              {isAdjustment
+                ? t('inventory.operation.qtyChange')
+                : t('inventory.operation.qtyDamaged')}
             </Label>
             <Input
               id="stock-op-qty"
-              aria-label={isAdjustment ? 'Quantity change' : 'Quantity damaged'}
+              aria-label={
+                isAdjustment
+                  ? t('inventory.operation.qtyChange')
+                  : t('inventory.operation.qtyDamaged')
+              }
               type="number"
               step="0.001"
               min={isAdjustment ? undefined : '0.001'}
@@ -101,10 +111,10 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="stock-op-reason">Reason</Label>
+            <Label htmlFor="stock-op-reason">{t('inventory.operation.reason')}</Label>
             <textarea
               id="stock-op-reason"
-              aria-label="Reason"
+              aria-label={t('inventory.operation.reason')}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               required
@@ -122,14 +132,14 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
 
           <DialogFooter className="gap-2 sm:space-x-0">
             <Button variant="secondary" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending
-                ? 'Posting…'
+                ? t('inventory.posting')
                 : isAdjustment
-                  ? 'Post adjustment'
-                  : 'Post write-off'}
+                  ? t('inventory.operation.postAdjustment')
+                  : t('inventory.operation.postWriteOff')}
             </Button>
           </DialogFooter>
         </form>

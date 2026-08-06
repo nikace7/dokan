@@ -140,10 +140,10 @@ describe('DashboardPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('आजको बिक्री / Today sales')).toBeInTheDocument();
-    expect(screen.getByText('कम स्टक / Low stock')).toBeInTheDocument();
-    expect(screen.queryByText('आजको नाफा / Today profit')).not.toBeInTheDocument();
-    expect(screen.queryByText('बाँकी रकम / Receivables')).not.toBeInTheDocument();
+    expect(await screen.findByText('Today sales')).toBeInTheDocument();
+    expect(screen.getByText('Low stock')).toBeInTheDocument();
+    expect(screen.queryByText('Today profit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Receivables')).not.toBeInTheDocument();
     expect(screen.getAllByRole('link')).toHaveLength(1);
     expect(screen.getByRole('link', { name: /new bill/i })).toBeInTheDocument();
   });
@@ -182,10 +182,10 @@ describe('DashboardPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('आजको बिक्री / Today sales')).toBeInTheDocument();
-    expect(screen.getByText('बाँकी रकम / Receivables')).toBeInTheDocument();
+    expect(await screen.findByText('Today sales')).toBeInTheDocument();
+    expect(screen.getByText('Receivables')).toBeInTheDocument();
     expect(screen.getByText('5 customers')).toBeInTheDocument();
-    expect(screen.queryByText('आजको नाफा / Today profit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Today profit')).not.toBeInTheDocument();
     expect(screen.queryByText(/cost/i)).not.toBeInTheDocument();
     // Sales-report permission still surfaces the trend and reports shortcut.
     expect(screen.getByLabelText('Last 30 days sales')).toBeInTheDocument();

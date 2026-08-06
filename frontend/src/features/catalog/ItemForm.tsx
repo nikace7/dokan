@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -20,11 +21,11 @@ import { QuickAddSelect } from '@/features/catalog/QuickAddSelect';
 import { selectClasses } from '@/features/catalog/ui';
 import { ApiError } from '@/lib/api/client';
 
-const GENDERS: Array<{ id: Gender; label: string }> = [
-  { id: 'M', label: 'Men' },
-  { id: 'F', label: 'Women' },
-  { id: 'U', label: 'Unisex' },
-  { id: 'KIDS', label: 'Kids' },
+const GENDERS: Array<{ id: Gender; labelKey: string }> = [
+  { id: 'M', labelKey: 'catalog.form.genderOptions.men' },
+  { id: 'F', labelKey: 'catalog.form.genderOptions.women' },
+  { id: 'U', labelKey: 'catalog.form.genderOptions.unisex' },
+  { id: 'KIDS', labelKey: 'catalog.form.genderOptions.kids' },
 ];
 
 interface ItemFormProps {
@@ -43,6 +44,7 @@ function blankToNull(value: string): string | null {
  * inline quick-add so a missing option never blocks the entry flow.
  */
 export function ItemForm({ initial, onSaved }: ItemFormProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [code, setCode] = useState(initial?.code ?? '');
   const [name, setName] = useState(initial?.name ?? '');
@@ -85,7 +87,8 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'items'] });
       onSaved(item);
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Could not save the item.'),
+    onError: (err) =>
+      setError(err instanceof ApiError ? err.message : t('catalog.form.saveError')),
   });
 
   const onSubmit = (event: FormEvent) => {
@@ -115,17 +118,35 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-      <Input label="Code" value={code} onChange={(e) => setCode(e.target.value)} required />
-      <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-      <Input label="Name (Nepali)" value={nameNp} onChange={(e) => setNameNp(e.target.value)} />
-      <Input label="Unit" value={unit} onChange={(e) => setUnit(e.target.value)} />
+      <Input
+        label={t('catalog.form.code')}
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        required
+      />
+      <Input
+        label={t('catalog.form.name')}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        required
+      />
+      <Input
+        label={t('catalog.form.nameNp')}
+        value={nameNp}
+        onChange={(e) => setNameNp(e.target.value)}
+      />
+      <Input
+        label={t('catalog.form.unit')}
+        value={unit}
+        onChange={(e) => setUnit(e.target.value)}
+      />
 
       <QuickAddSelect
-        label="Category"
+        label={t('catalog.form.category')}
         options={taxonomies.data?.categories ?? []}
         value={category}
         onChange={setCategory}
-        addLabel="+ New"
+        addLabel={t('catalog.form.quickAdd')}
         onCreate={async (catName) => {
           const created = await createCategory({ name: catName });
           await refreshTaxonomies();
@@ -133,11 +154,11 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
         }}
       />
       <QuickAddSelect
-        label="Brand"
+        label={t('catalog.form.brand')}
         options={taxonomies.data?.brands ?? []}
         value={brand}
         onChange={setBrand}
-        addLabel="+ New"
+        addLabel={t('catalog.form.quickAdd')}
         onCreate={async (brandName) => {
           const created = await createBrand({ name: brandName });
           await refreshTaxonomies();
@@ -145,12 +166,12 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
         }}
       />
       <QuickAddSelect
-        label="Size chart"
+        label={t('catalog.form.sizeChart')}
         options={taxonomies.data?.sizeCharts ?? []}
         value={sizeChart}
         onChange={setSizeChart}
-        addLabel="+ New"
-        extraField={{ label: 'Size values', placeholder: 'S, M, L, XL' }}
+        addLabel={t('catalog.form.quickAdd')}
+        extraField={{ label: t('catalog.form.sizeValues'), placeholder: 'S, M, L, XL' }}
         onCreate={async (chartName, values) => {
           const created = await createSizeChart({
             name: chartName,
@@ -165,43 +186,51 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
       />
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="gender">Gender</Label>
+        <Label htmlFor="gender">{t('catalog.form.gender')}</Label>
         <select
           id="gender"
           value={gender}
           onChange={(e) => setGender(e.target.value as Gender | '')}
           className={selectClasses}
         >
-          <option value="">— none —</option>
+          <option value="">{t('catalog.form.none')}</option>
           {GENDERS.map((g) => (
             <option key={g.id} value={g.id}>
-              {g.label}
+              {t(g.labelKey)}
             </option>
           ))}
         </select>
       </div>
 
-      <Input label="Season" value={season} onChange={(e) => setSeason(e.target.value)} />
       <Input
-        label="Collection tag"
+        label={t('catalog.form.season')}
+        value={season}
+        onChange={(e) => setSeason(e.target.value)}
+      />
+      <Input
+        label={t('catalog.form.collectionTag')}
         value={collectionTag}
         onChange={(e) => setCollectionTag(e.target.value)}
       />
-      <Input label="HSN code" value={hsnCode} onChange={(e) => setHsnCode(e.target.value)} />
       <Input
-        label="Min selling price (रू)"
+        label={t('catalog.form.hsnCode')}
+        value={hsnCode}
+        onChange={(e) => setHsnCode(e.target.value)}
+      />
+      <Input
+        label={t('catalog.form.minPrice')}
         value={minPrice}
         onChange={(e) => setMinPrice(e.target.value)}
         inputMode="decimal"
       />
       <Input
-        label="Max selling price (रू)"
+        label={t('catalog.form.maxPrice')}
         value={maxPrice}
         onChange={(e) => setMaxPrice(e.target.value)}
         inputMode="decimal"
       />
       <Input
-        label="Reorder level"
+        label={t('catalog.form.reorderLevel')}
         value={reorderLevel}
         onChange={(e) => setReorderLevel(e.target.value)}
         inputMode="decimal"
@@ -214,7 +243,7 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
           onChange={(e) => setIsVatApplicable(e.target.checked)}
           className="h-4 w-4 accent-primary"
         />
-        VAT applicable
+        {t('catalog.form.vatApplicable')}
       </label>
 
       {error ? (
@@ -228,7 +257,11 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
 
       <div className="sm:col-span-2">
         <Button type="submit" size="lg" disabled={saveMutation.isPending}>
-          {saveMutation.isPending ? 'Saving…' : initial ? 'Save changes' : 'Create item'}
+          {saveMutation.isPending
+            ? t('catalog.form.saving')
+            : initial
+              ? t('catalog.form.saveChanges')
+              : t('catalog.form.create')}
         </Button>
       </div>
     </form>
