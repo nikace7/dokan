@@ -369,7 +369,7 @@ sales_invoice_item(id, sales_invoice_id, variant_id, qty,
 
 payment(id, tenant_id, branch_id, direction[IN|OUT],
         party_type[CUSTOMER|SUPPLIER|NONE], party_id NULL,
-        method[CASH|ESEWA|KHALTI|FONEPAY|CARD|BANK|CREDIT|POINTS],
+        method[CASH|ESEWA|KHALTI|FONEPAY|QR|CARD|BANK|CREDIT|POINTS],
         amount, ref_no, sales_invoice_id NULL, purchase_invoice_id NULL,
         business_date_ad, business_date_bs, fiscal_year_bs, created_by, created_at)
 

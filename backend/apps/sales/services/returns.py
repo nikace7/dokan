@@ -50,7 +50,7 @@ _ZERO = Decimal("0")
 
 #: Refund settlement methods for the refunds JSON list.
 REFUND_METHODS = frozenset(
-    {"CASH", "ESEWA", "KHALTI", "FONEPAY", "CARD", "BANK", "CREDIT_NOTE", "EXCHANGE_APPLIED"}
+    {"CASH", "ESEWA", "KHALTI", "FONEPAY", "QR", "CARD", "BANK", "CREDIT_NOTE", "EXCHANGE_APPLIED"}
 )
 
 

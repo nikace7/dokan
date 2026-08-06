@@ -688,6 +688,7 @@ documents referencing the original.
 | device_id | text | yes | POS device, for offline reconciliation |
 | idempotency_key | text | no | UNIQUE `(tenant_id, idempotency_key)`; mandatory on `POST /sales` |
 | tenders | jsonb | no | Actual tender split (`[{method, amount}]`); only `CASH` affects drawer reconciliation |
+| share_token | uuid | yes | globally UNIQUE; write-once public-bill token for `GET /sales/shared/<token>` |
 | created_by | uuid FK → user | yes | |
 | created_at | timestamptz | no | default now() |
 
@@ -731,7 +732,7 @@ All money in/out. `POST /payments` requires `Idempotency-Key`.
 | direction | text | no | CHECK IN (`IN`,`OUT`) |
 | party_type | text | no | CHECK IN (`CUSTOMER`,`SUPPLIER`,`NONE`) |
 | party_id | uuid | yes | NULL when `party_type = NONE` |
-| method | text | no | CHECK IN (`CASH`,`ESEWA`,`KHALTI`,`FONEPAY`,`CARD`,`BANK`,`CREDIT`,`POINTS`) |
+| method | text | no | CHECK IN (`CASH`,`ESEWA`,`KHALTI`,`FONEPAY`,`QR`,`CARD`,`BANK`,`CREDIT`,`POINTS`) |
 | amount | numeric(14,2) | no | positive for originals, negative when `reversal_of` is set |
 | ref_no | text | yes | gateway/QR reference |
 | sales_invoice_id | uuid FK → sales_invoice | yes | |

@@ -5,7 +5,7 @@ Permissions: ``catalog.view`` for reads, ``catalog.manage`` for writes
 the API envelope; list endpoints paginate via EnvelopePageNumberPagination.
 """
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 from uuid import UUID
 
 from rest_framework import status
@@ -23,6 +23,7 @@ from apps.catalog.serializers import (
     SizeChartSerializer,
     VariantBulkSerializer,
 )
+from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
@@ -336,3 +337,30 @@ class VariantLookupView(_CatalogAPIView):
         if found is None:
             return error(404, "VARIANT_NOT_FOUND", "No variant matches that code.")
         return ok(found)
+
+
+class VariantForSaleView(_CatalogAPIView):
+    """GET /catalog/variants/for-sale?branch_id=&search= — the sale dropdown.
+
+    Gated on ``sale.create`` (not stock.view): a cashier builds bills but
+    may not see stock reports. Returns only sellable rows (qty_on_hand > 0)
+    with price bounds — never any cost figure (#10).
+    """
+
+    method_permissions: ClassVar[dict[str, str]] = {"GET": "sale.create"}
+
+    def get(self, request: Request) -> Response:
+        tenant = require_request_tenant(request)
+        branch_id = _uuid_param(request, "branch_id")
+        if branch_id is None:
+            return error(400, "BRANCH_REQUIRED", "Provide a branch_id query parameter.")
+        _get_or_404(tenant, Branch, branch_id, "Branch")
+        rows: Any = selectors.list_variants_for_sale(  # a plain list, not a QuerySet
+            tenant,
+            _user(request),
+            branch_id=branch_id,
+            search=request.query_params.get("search", "").strip(),
+        )
+        paginator = EnvelopePageNumberPagination()
+        page = cast("list[Any]", paginator.paginate_queryset(rows, request, view=self))
+        return paginator.get_paginated_response(page)

@@ -183,7 +183,7 @@ class RefundSerializer(serializers.Serializer):
     """One refund settlement entry for a return's refunds list."""
 
     method = serializers.ChoiceField(
-        choices=["CASH", "ESEWA", "KHALTI", "FONEPAY", "CARD", "BANK", "CREDIT_NOTE"]
+        choices=["CASH", "ESEWA", "KHALTI", "FONEPAY", "QR", "CARD", "BANK", "CREDIT_NOTE"]
     )
     amount = serializers.DecimalField(max_digits=14, decimal_places=2)
 
@@ -206,3 +206,93 @@ class ExchangeCreateSerializer(serializers.Serializer):
     payments = PaymentSerializer(many=True, required=False, default=list)
     reason = serializers.CharField(max_length=500, trim_whitespace=False)
     override_reason = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class SharedBillItemSerializer(serializers.ModelSerializer):
+    """One public receipt line — exactly what the printed receipt shows."""
+
+    variant_sku = serializers.CharField(source="variant.sku", read_only=True)
+    item_name = serializers.CharField(source="variant.item.name", read_only=True)
+    item_name_np = serializers.CharField(
+        source="variant.item.name_np", read_only=True, allow_null=True
+    )
+
+    class Meta:
+        model = SalesInvoiceItem
+        fields = (
+            "id",
+            "variant",
+            "variant_sku",
+            "item_name",
+            "item_name_np",
+            "qty",
+            "unit_price",
+            "discount",
+            "line_total",
+        )
+        read_only_fields = fields
+
+
+class SharedBillSerializer(serializers.ModelSerializer):
+    """Public receipt payload (GET /sales/shared/<token>).
+
+    Exactly the shape the frontend ReceiptPanel renders — shop/branch/
+    customer identity, totals, tenders, lines. NO cost columns (#10) and NO
+    staff PII beyond what the receipt prints (no created_by / device_id /
+    idempotency_key / customer PAN).
+    """
+
+    tenant_name = serializers.CharField(source="tenant.name", read_only=True)
+    tenant_name_np = serializers.CharField(source="tenant.name_np", read_only=True, allow_null=True)
+    legal_name = serializers.CharField(source="tenant.legal_name", read_only=True, allow_null=True)
+    pan_vat_no = serializers.CharField(source="tenant.pan_vat_no", read_only=True, allow_null=True)
+    vat_registered = serializers.BooleanField(source="tenant.vat_registered", read_only=True)
+    invoice_prefix = serializers.CharField(source="branch.invoice_prefix", read_only=True)
+    branch_name = serializers.CharField(source="branch.name", read_only=True)
+    branch_name_np = serializers.CharField(source="branch.name_np", read_only=True, allow_null=True)
+    branch_address = serializers.CharField(source="branch.address", read_only=True, allow_null=True)
+    branch_phone = serializers.CharField(source="branch.phone", read_only=True, allow_null=True)
+    customer_name = serializers.CharField(source="customer.name", read_only=True, allow_null=True)
+    print_count = serializers.SerializerMethodField()
+    items = SharedBillItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SalesInvoice
+        fields = (
+            "id",
+            "tenant_name",
+            "tenant_name_np",
+            "legal_name",
+            "pan_vat_no",
+            "vat_registered",
+            "invoice_prefix",
+            "branch_name",
+            "branch_name_np",
+            "branch_address",
+            "branch_phone",
+            "invoice_no",
+            "doc_type",
+            "customer_name",
+            "subtotal",
+            "discount_amount",
+            "taxable_amount",
+            "vat_amount",
+            "round_off",
+            "total",
+            "paid_amount",
+            "due_amount",
+            "status",
+            "is_vat_bill",
+            "print_count",
+            "tenders",
+            "datetime_ad",
+            "business_date_ad",
+            "business_date_bs",
+            "fiscal_year_bs",
+            "created_at",
+            "items",
+        )
+        read_only_fields = fields
+
+    def get_print_count(self, obj: SalesInvoice) -> int:
+        return int(getattr(obj, "receipt_print_count", obj.print_count))

@@ -36,6 +36,7 @@ class Payment(TenantScopedModel):
         ESEWA = "ESEWA"
         KHALTI = "KHALTI"
         FONEPAY = "FONEPAY"
+        QR = "QR"
         CARD = "CARD"
         BANK = "BANK"
 
