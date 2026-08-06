@@ -5,6 +5,7 @@ import { AuditPage } from '@/features/audit/AuditPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { BillingPage } from '@/features/billing/BillingPage';
+import { SharedBillPage } from '@/features/billing/SharedBillPage';
 import { SimpleSalePage } from '@/features/billing/SimpleSalePage';
 import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
 import { ItemFormPage } from '@/features/catalog/ItemFormPage';
@@ -57,6 +58,9 @@ function getRouter() {
   router ??= createBrowserRouter([
     { path: '/login', element: <LoginPage /> },
     { path: '/support-login', element: <SupportLoginPage /> },
+    // Public online bill: the share token is the capability, so this route
+    // deliberately sits OUTSIDE RequireAuth (no login redirect for customers).
+    { path: '/bill/:token', element: <SharedBillPage /> },
     {
       element: (
         <RequireAuth>
