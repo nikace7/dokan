@@ -11,6 +11,7 @@ from typing import Any, ClassVar
 from uuid import UUID
 
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -28,9 +29,11 @@ from apps.sales.serializers import (
     SaleCreateSerializer,
     SalesInvoiceDetailSerializer,
     SalesInvoiceSerializer,
+    SharedBillSerializer,
 )
+from apps.sales.throttles import SharedBillThrottle
 from apps.tenants.models import Branch
-from core.middleware.tenant import require_request_tenant
+from core.middleware.tenant import get_request_tenant, require_request_tenant
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -363,3 +366,47 @@ class ReturnableLinesView(_SalesAPIView):
         if lines is None:
             return error(404, "INVOICE_NOT_FOUND", "Invoice not found.")
         return ok(lines)
+
+
+class SaleShareView(_SalesAPIView):
+    """POST /sales/<id>/share — idempotent public-link token (sale.view)."""
+
+    method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.view"}
+
+    def post(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        invoice = _get_or_404(tenant, SalesInvoice, pk, "Invoice")
+        shared = services.get_or_create_share_token(tenant, invoice=invoice, actor=_user(request))
+        assert shared.share_token is not None  # set by the service
+        return ok(
+            {
+                "share_token": str(shared.share_token),
+                "share_url_path": f"/bill/{shared.share_token}",
+            }
+        )
+
+
+class SharedBillView(APIView):
+    """GET /sales/shared/<token> — the public online bill (no auth).
+
+    The token is the capability: an unguessable UUID authorizing read of the
+    receipt payload only. When the request arrives on a shop subdomain, a
+    token minted by ANOTHER tenant is a 404 — never a cross-tenant read.
+    """
+
+    permission_classes = (AllowAny,)
+    throttle_classes = (SharedBillThrottle,)
+
+    def handle_exception(self, exc: Exception) -> Response:
+        if isinstance(exc, ServiceError):
+            return error(exc.http_status, exc.code, exc.message)
+        return super().handle_exception(exc)
+
+    def get(self, request: Request, token: UUID) -> Response:
+        invoice = selectors.get_shared_invoice(token)
+        request_tenant = get_request_tenant(request)
+        if invoice is None or (
+            request_tenant is not None and invoice.tenant_id != request_tenant.pk
+        ):
+            return error(404, "BILL_NOT_FOUND", "We could not find this bill.")
+        return ok(SharedBillSerializer(invoice).data)

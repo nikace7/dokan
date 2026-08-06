@@ -8,11 +8,13 @@ from datetime import date
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from django.db import connection, transaction
 from django.db.models import Count, IntegerField, OuterRef, Prefetch, QuerySet, Subquery, Value
 from django.db.models.functions import Coalesce
 
 from apps.audit.models import AuditLog
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
+from core.db.rls import set_local_tenant
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -84,6 +86,40 @@ def get_invoice(tenant: "Tenant", user: "User", pk: UUID) -> SalesInvoice | None
         .prefetch_related(Prefetch("items", queryset=items_qs))
         .first()
     )
+
+
+def get_shared_invoice(token: UUID) -> SalesInvoice | None:
+    """Public share-link lookup — the ONLY deliberate cross-tenant read.
+
+    Step 1 finds the invoice's tenant from the globally-unique token. Step 2
+    re-reads the invoice (lines prefetched, cost columns deferred) inside a
+    transaction with ``SET LOCAL app.tenant_id`` pinned to THAT tenant — the
+    same explicit-RLS pattern platformadmin uses for cross-tenant reads
+    (core/db/rls.py ``set_local_tenant``).
+
+    RLS note: under the production app role, step 1 only returns a row when
+    the request already carries the right tenant context (the share URL is
+    opened on the shop's own subdomain) — anywhere else it fails closed and
+    the view answers 404. Line cost columns are NEVER selected (#10).
+    """
+    tenant_id = (
+        SalesInvoice.objects.filter(share_token=token).values_list("tenant_id", flat=True).first()
+    )
+    if tenant_id is None:
+        return None
+    with transaction.atomic():
+        set_local_tenant(connection, tenant_id)
+        items_qs = SalesInvoiceItem.objects.select_related("variant", "variant__item").defer(
+            "cost_at_sale"
+        )
+        return (
+            _with_receipt_print_count(
+                SalesInvoice.objects.filter(tenant_id=tenant_id, share_token=token)
+            )
+            .select_related("tenant", "branch", "customer", "rate_type")
+            .prefetch_related(Prefetch("items", queryset=items_qs))
+            .first()
+        )
 
 
 def get_returnable_lines(
