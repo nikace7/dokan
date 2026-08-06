@@ -8,7 +8,7 @@ enters application memory for them, on success or error paths.
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 
@@ -119,3 +119,51 @@ def get_variant_for_lookup(
         # coercion (COERCE_DECIMAL_TO_STRING) — never as a JSON float.
         row["avg_cost"] = str(row["avg_cost"])
     return row
+
+
+def list_variants_for_sale(
+    tenant: "Tenant", user: "User", *, branch_id: UUID, search: str = ""
+) -> list[dict[str, Any]]:
+    """POS dropdown rows: variants with stock on hand at one branch.
+
+    Only rows with ``qty_on_hand > 0`` are sellable right now. Price bounds
+    come from the pricing chain (variant → item → category pct-of-MRP);
+    either side is None when unset. Cost NEVER appears here (#10): the
+    selector reads no cost column and the bounds chain is MRP/selling-price
+    based. Money crosses the API as strings, never JSON floats.
+    """
+    from apps.inventory.models import StockLevel
+    from apps.pricing.services import effective_price_bounds
+
+    del user  # the route permission (sale.create) already gated this read
+    qs = (
+        StockLevel.objects.filter(tenant=tenant, branch_id=branch_id, qty_on_hand__gt=0)
+        .select_related("variant", "variant__item", "variant__item__category")
+        .order_by("variant__item__name", "variant__size", "variant__color")
+    )
+    if search:
+        qs = qs.filter(
+            Q(variant__item__name__icontains=search)
+            | Q(variant__sku__icontains=search)
+            | Q(variant__barcode__icontains=search)
+        )
+    rows: list[dict[str, Any]] = []
+    for level in qs:
+        variant = level.variant
+        min_price, max_price = effective_price_bounds(tenant, variant=variant)
+        rows.append(
+            {
+                "id": str(variant.pk),
+                "item": str(variant.item_id),
+                "item_name": variant.item.name,
+                "size": variant.size,
+                "color": variant.color,
+                "sku": variant.sku,
+                "barcode": variant.barcode,
+                "mrp": str(variant.mrp) if variant.mrp is not None else None,
+                "qty_on_hand": str(level.qty_on_hand),
+                "min_selling_price": str(min_price) if min_price is not None else None,
+                "max_selling_price": str(max_price) if max_price is not None else None,
+            }
+        )
+    return rows

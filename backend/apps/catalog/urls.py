@@ -13,6 +13,7 @@ from apps.catalog.views import (
     SizeChartListView,
     VariantBulkView,
     VariantDetailView,
+    VariantForSaleView,
     VariantListView,
     VariantLookupView,
 )
@@ -31,5 +32,6 @@ urlpatterns = [
     path("catalog/items/<uuid:pk>/variants/bulk", VariantBulkView.as_view(), name="variant-bulk"),
     path("catalog/variants", VariantListView.as_view(), name="variant-list"),
     path("catalog/variants/lookup", VariantLookupView.as_view(), name="variant-lookup"),
+    path("catalog/variants/for-sale", VariantForSaleView.as_view(), name="variant-for-sale"),
     path("catalog/variants/<uuid:pk>", VariantDetailView.as_view(), name="variant-detail"),
 ]
