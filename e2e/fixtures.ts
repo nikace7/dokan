@@ -27,6 +27,9 @@ export const test = base.extend<Fixtures>({
       ([access, refresh]) => {
         localStorage.setItem('dokan.access', access);
         localStorage.setItem('dokan.refresh', refresh);
+        // Pin UI language to English so selectors match en.json strings
+        // (the app otherwise defaults to Nepali on first run).
+        localStorage.setItem('dokan-lang', 'en');
       },
       [api.accessToken, api.refreshToken],
     );

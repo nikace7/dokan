@@ -13,10 +13,10 @@ export class SimpleSalePage {
 
   /** Open Billing via the app nav and land on the simple sale screen. */
   async gotoViaNav() {
-    await this.page.getByRole('link', { name: 'Billing / बिलिङ' }).click();
+    await this.page.getByRole('link', { name: 'Billing', exact: true }).first().click();
     await expect(this.page).toHaveURL(/\/billing\/simple$/);
     await expect(
-      this.page.getByRole('heading', { name: 'Simple sale / सरल बिक्री' }),
+      this.page.getByRole('heading', { name: 'Simple sale' }),
     ).toBeVisible();
   }
 
@@ -37,7 +37,7 @@ export class SimpleSalePage {
   /** The Cash/QR segmented tender toggle above the Complete button. */
   async payWith(method: 'CASH' | 'QR') {
     await this.page
-      .getByRole('button', { name: method === 'CASH' ? 'नगद Cash' : 'QR', exact: true })
+      .getByRole('button', { name: method === 'CASH' ? 'Cash' : 'QR', exact: true })
       .click();
   }
 
@@ -69,7 +69,7 @@ export class SimpleSalePage {
           res.request().method() === 'POST' &&
           /\/api\/v1\/sales\/[^/]+\/share$/.test(new URL(res.url()).pathname),
       ),
-      this.page.getByRole('button', { name: 'Share link / लिङ्क सेयर' }).click(),
+      this.page.getByRole('button', { name: 'Share link' }).click(),
     ]);
     const body = (await response.json()) as { data: { share_url_path: string } };
     const path = body.data.share_url_path;

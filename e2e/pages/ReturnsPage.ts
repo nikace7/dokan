@@ -8,7 +8,7 @@ export class ReturnsPage {
   async goto() {
     await this.page.goto('/returns');
     await expect(
-      this.page.getByRole('heading', { name: 'Returns / फिर्ता' }),
+      this.page.getByRole('heading', { name: 'Returns', exact: true }),
     ).toBeVisible();
   }
 

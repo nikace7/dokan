@@ -32,7 +32,7 @@ export class BillingPage {
   /** Blank tender amount = full total; default method is CASH. */
   async completeCashSale() {
     await this.page
-      .getByRole('button', { name: 'F9 Complete sale + print / बिल सेभ + प्रिन्ट' })
+      .getByRole('button', { name: 'F9 Complete sale + print' })
       .click();
   }
 
@@ -49,7 +49,7 @@ export class BillingPage {
   }
 
   async startNewBill() {
-    await this.page.getByRole('button', { name: 'New bill / नयाँ बिल' }).click();
+    await this.page.getByRole('button', { name: 'New bill' }).click();
     await expect(this.scanInput).toBeVisible();
   }
 }
