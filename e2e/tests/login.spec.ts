@@ -29,6 +29,6 @@ test.describe('login', () => {
 
     const billing = new BillingPage(page);
     await billing.goto();
-    await expect(page.getByRole('heading', { name: 'Payment / भुक्तानी' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();
   });
 });
