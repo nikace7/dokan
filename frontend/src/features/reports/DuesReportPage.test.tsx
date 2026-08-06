@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DuesReportPage } from '@/features/reports/DuesReportPage';
@@ -61,28 +61,36 @@ describe('DuesReportPage', () => {
       </QueryClientProvider>,
     );
 
+    // Customer names render in both the mobile card list and the desktop
+    // table; scope structural checks to the desktop tables.
+    expect((await screen.findAllByText('Ram Sharma')).length).toBeGreaterThan(0);
+    const tables = container.querySelectorAll('table');
+    expect(tables).toHaveLength(2);
+    const receivables = within(tables[0] as HTMLTableElement);
+    const payables = within(tables[1] as HTMLTableElement);
+
     // Customer rows with their bucket values.
-    expect(await screen.findByText('Ram Sharma')).toBeInTheDocument();
-    expect(screen.getByText('Sita Thapa')).toBeInTheDocument();
-    const ramRow = screen.getByText('Ram Sharma').closest('tr');
+    expect(receivables.getByText('Ram Sharma')).toBeInTheDocument();
+    expect(receivables.getByText('Sita Thapa')).toBeInTheDocument();
+    const ramRow = receivables.getByText('Ram Sharma').closest('tr');
     expect(ramRow).toHaveTextContent('1,000.00');
     expect(ramRow).toHaveTextContent('500.00');
     expect(ramRow).toHaveTextContent('250.00');
     expect(ramRow).toHaveTextContent('रू 1,750.00');
 
     // Bucket headers.
-    expect(screen.getByText('0-30 days')).toBeInTheDocument();
-    expect(screen.getByText('90+ days')).toBeInTheDocument();
+    expect(receivables.getByText('0-30 days')).toBeInTheDocument();
+    expect(receivables.getByText('90+ days')).toBeInTheDocument();
 
     // Totals footer: 0-30 bucket 1000+2000=3,000.00; grand 1750+2000=रू 3,750.00.
     // The tfoot totals row of the receivables table.
-    const totalsRow = container.querySelector('tfoot tr');
+    const totalsRow = tables[0]?.querySelector('tfoot tr');
     expect(totalsRow).not.toBeNull();
     expect(totalsRow).toHaveTextContent('3,000.00');
     expect(totalsRow).toHaveTextContent('रू 3,750.00');
 
-    // Payables section.
-    expect(screen.getByText('KTM Textiles')).toBeInTheDocument();
-    expect(screen.getByText('रू 4,500.00')).toBeInTheDocument();
+    // Payables section (the payable also appears in the table totals row).
+    expect(payables.getByText('KTM Textiles')).toBeInTheDocument();
+    expect(payables.getAllByText('रू 4,500.00').length).toBeGreaterThan(0);
   });
 });

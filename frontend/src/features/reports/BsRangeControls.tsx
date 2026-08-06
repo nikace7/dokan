@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import type { BsRange } from '@/features/reports/api';
 
 const BS_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -34,36 +35,30 @@ export function BsRangeControls({ value, onApply }: BsRangeControlsProps) {
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="bs-from" className="text-sm font-medium text-slate-700">
-          From (BS)
-        </label>
-        <input
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <Input
           id="bs-from"
+          label="From (BS)"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
           placeholder="2083-04-01"
-          className="w-36 rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-36"
         />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="bs-to" className="text-sm font-medium text-slate-700">
-          To (BS)
-        </label>
-        <input
+        <Input
           id="bs-to"
+          label="To (BS)"
           value={to}
           onChange={(e) => setTo(e.target.value)}
           placeholder="2083-04-32"
-          className="w-36 rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-36"
         />
+        <Button size="md" onClick={apply}>
+          Apply
+        </Button>
       </div>
-      <Button size="md" onClick={apply}>
-        Apply
-      </Button>
       {error ? (
-        <p role="alert" className="self-center text-sm text-red-600">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       ) : null}
