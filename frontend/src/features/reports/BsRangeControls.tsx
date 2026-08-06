@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,17 +18,18 @@ interface BsRangeControlsProps {
  * server validates actual BS calendar dates.
  */
 export function BsRangeControls({ value, onApply }: BsRangeControlsProps) {
+  const { t } = useTranslation();
   const [from, setFrom] = useState(value.dateFromBs);
   const [to, setTo] = useState(value.dateToBs);
   const [error, setError] = useState<string | null>(null);
 
   const apply = () => {
     if (!BS_DATE_RE.test(from.trim()) || !BS_DATE_RE.test(to.trim())) {
-      setError('Use BS dates as YYYY-MM-DD (e.g. 2083-04-01).');
+      setError(t('reports.range.invalidFormat'));
       return;
     }
     if (from.trim() > to.trim()) {
-      setError('From date cannot be after the to date.');
+      setError(t('reports.range.fromAfterTo'));
       return;
     }
     setError(null);
@@ -39,7 +41,7 @@ export function BsRangeControls({ value, onApply }: BsRangeControlsProps) {
       <div className="flex flex-wrap items-end gap-2">
         <Input
           id="bs-from"
-          label="From (BS)"
+          label={t('reports.range.from')}
           value={from}
           onChange={(e) => setFrom(e.target.value)}
           placeholder="2083-04-01"
@@ -47,14 +49,14 @@ export function BsRangeControls({ value, onApply }: BsRangeControlsProps) {
         />
         <Input
           id="bs-to"
-          label="To (BS)"
+          label={t('reports.range.to')}
           value={to}
           onChange={(e) => setTo(e.target.value)}
           placeholder="2083-04-32"
           className="w-36"
         />
         <Button size="md" onClick={apply}>
-          Apply
+          {t('reports.range.apply')}
         </Button>
       </div>
       {error ? (

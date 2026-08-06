@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/ui/Input';
 import { listVariants, searchItems } from '@/features/catalog/api';
@@ -28,6 +29,7 @@ interface VariantPickerProps {
  * (the variant list has no search param).
  */
 export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [item, setItem] = useState<Item | null>(null);
 
@@ -61,15 +63,15 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
               setSearch('');
             }}
           >
-            Change
+            {t('catalog.picker.change')}
           </button>
         </div>
         {variantsQuery.isFetching ? (
-          <p className="px-3 py-2 text-sm text-muted-foreground">Loading variants…</p>
+          <p className="px-3 py-2 text-sm text-muted-foreground">{t('catalog.picker.loading')}</p>
         ) : null}
         {variantsQuery.data && variants.length === 0 ? (
           <p className="px-3 py-2 text-sm text-muted-foreground">
-            No active variants for this item.
+            {t('catalog.picker.empty')}
           </p>
         ) : null}
         <ul className="max-h-48 divide-y divide-border overflow-y-auto">
@@ -109,17 +111,17 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
   return (
     <div>
       <Input
-        aria-label="Search items"
+        aria-label={t('catalog.items.searchAria')}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder={placeholder ?? 'Search item by name or code…'}
+        placeholder={placeholder ?? t('catalog.picker.searchPlaceholder')}
         autoComplete="off"
       />
       {itemsQuery.isFetching ? (
-        <p className="mt-1 text-xs text-muted-foreground">Searching…</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t('billing.searching')}</p>
       ) : null}
       {itemsQuery.data && itemsQuery.data.data.length === 0 ? (
-        <p className="mt-1 text-xs text-muted-foreground">No items match.</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t('catalog.picker.noMatch')}</p>
       ) : null}
       {itemsQuery.data && itemsQuery.data.data.length > 0 ? (
         <ul className="mt-1 max-h-48 divide-y divide-border overflow-y-auto rounded-md border border-border bg-card">

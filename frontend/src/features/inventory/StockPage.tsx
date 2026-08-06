@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -20,26 +21,8 @@ import { cn } from '@/lib/utils';
 
 type Dialog = 'opening' | 'adjustment' | 'write-off' | null;
 
-const LEVEL_COLUMNS: readonly ReportColumn[] = [
-  { header: 'Item' },
-  { header: 'SKU' },
-  { header: 'Branch' },
-  { header: 'On hand', className: 'text-right' },
-  { header: 'Reserved', className: 'text-right' },
-];
-
-const MOVEMENT_COLUMNS: readonly ReportColumn[] = [
-  { header: 'BS date' },
-  { header: 'Type' },
-  { header: 'SKU' },
-  { header: 'Branch' },
-  { header: 'Change', className: 'text-right' },
-  { header: 'Balance', className: 'text-right' },
-  { header: 'Reason / note' },
-  { header: 'By' },
-];
-
 export function StockPage() {
+  const { t } = useTranslation();
   const { user, isRestoring } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -63,13 +46,15 @@ export function StockPage() {
 
   if (isRestoring || !user) {
     return (
-      <main className="mx-auto max-w-6xl p-4 text-sm text-muted-foreground">Loading…</main>
+      <main className="mx-auto max-w-6xl p-4 text-sm text-muted-foreground">
+        {t('common.loading')}
+      </main>
     );
   }
   if (!canView) {
     return (
       <main className="mx-auto max-w-6xl p-4">
-        <p role="alert">You do not have permission to view stock.</p>
+        <p role="alert">{t('inventory.noPermission')}</p>
       </main>
     );
   }
@@ -77,9 +62,30 @@ export function StockPage() {
   const levels = levelsQuery.data?.data ?? [];
   const movements = movementsQuery.data?.data ?? [];
   const showCost = levels.some((level) => level.avg_cost !== undefined);
+  const baseLevelColumns: readonly ReportColumn[] = [
+    { header: t('inventory.stock.columns.item') },
+    { header: t('inventory.stock.columns.sku') },
+    { header: t('inventory.stock.columns.branch') },
+    { header: t('inventory.stock.columns.onHand'), className: 'text-right' },
+    { header: t('inventory.stock.columns.reserved'), className: 'text-right' },
+  ];
   const levelColumns: readonly ReportColumn[] = showCost
-    ? [...LEVEL_COLUMNS, { header: 'Avg cost', className: 'text-right' }, { header: 'Flag' }]
-    : [...LEVEL_COLUMNS, { header: 'Flag' }];
+    ? [
+        ...baseLevelColumns,
+        { header: t('inventory.stock.columns.avgCost'), className: 'text-right' },
+        { header: t('inventory.stock.columns.flag') },
+      ]
+    : [...baseLevelColumns, { header: t('inventory.stock.columns.flag') }];
+  const movementColumns: readonly ReportColumn[] = [
+    { header: t('inventory.movements.columns.bsDate') },
+    { header: t('inventory.movements.columns.type') },
+    { header: t('inventory.movements.columns.sku') },
+    { header: t('inventory.movements.columns.branch') },
+    { header: t('inventory.movements.columns.change'), className: 'text-right' },
+    { header: t('inventory.movements.columns.balance'), className: 'text-right' },
+    { header: t('inventory.movements.columns.reasonNote') },
+    { header: t('inventory.movements.columns.by') },
+  ];
   const posted = () => {
     setDialog(null);
     void queryClient.invalidateQueries({ queryKey: ['inventory', 'levels'] });
@@ -89,27 +95,27 @@ export function StockPage() {
   return (
     <main className="mx-auto max-w-6xl space-y-4 p-4">
       <Card
-        title="Stock / स्टक"
+        title={t('inventory.stock.title')}
         actions={
           <div className="flex flex-wrap gap-2">
             {canTransfer ? (
               <Button asChild variant="outline" size="sm">
-                <Link to="/stock/transfers">Transfers</Link>
+                <Link to="/stock/transfers">{t('nav.transfers')}</Link>
               </Button>
             ) : null}
             <Button asChild variant="outline" size="sm">
-              <Link to="/stock/counts">Physical counts</Link>
+              <Link to="/stock/counts">{t('inventory.stock.physicalCounts')}</Link>
             </Button>
             {canAdjust ? (
               <>
                 <Button size="sm" variant="secondary" onClick={() => setDialog('adjustment')}>
-                  Adjust stock
+                  {t('inventory.stock.adjust')}
                 </Button>
                 <Button size="sm" variant="secondary" onClick={() => setDialog('write-off')}>
-                  Write off damage
+                  {t('inventory.stock.writeOff')}
                 </Button>
                 <Button size="sm" onClick={() => setDialog('opening')}>
-                  Add opening stock
+                  {t('inventory.stock.addOpening')}
                 </Button>
               </>
             ) : null}
@@ -117,21 +123,21 @@ export function StockPage() {
         }
       >
         <Input
-          aria-label="Search stock"
+          aria-label={t('inventory.stock.searchAria')}
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
             setPage(1);
           }}
-          placeholder="Search by item name or SKU…"
+          placeholder={t('inventory.stock.searchPlaceholder')}
           className="mb-4 sm:max-w-sm"
         />
 
         {levelsQuery.isFetching ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+          <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : null}
         {levelsQuery.isError ? (
-          <QueryError error={levelsQuery.error} fallback="Failed to load stock levels." />
+          <QueryError error={levelsQuery.error} fallback={t('inventory.stock.levelsError')} />
         ) : null}
 
         {levelsQuery.data ? (
@@ -139,7 +145,7 @@ export function StockPage() {
             columns={levelColumns}
             rows={levels}
             rowKey={(level) => level.id}
-            empty="No stock yet."
+            empty={t('inventory.stock.emptyLevels')}
             renderCells={(level) => (
               <>
                 <TableCell className="font-medium">{level.item_name}</TableCell>
@@ -156,7 +162,7 @@ export function StockPage() {
                 ) : null}
                 <TableCell>
                   {Number(level.qty_on_hand) <= 0 ? (
-                    <Badge variant="destructive">Out of stock</Badge>
+                    <Badge variant="destructive">{t('inventory.stock.outOfStock')}</Badge>
                   ) : null}
                 </TableCell>
               </>
@@ -170,19 +176,19 @@ export function StockPage() {
                   </p>
                   {showCost && level.avg_cost !== undefined ? (
                     <p className="text-xs text-muted-foreground tabular-nums">
-                      Cost {formatNpr(level.avg_cost)}
+                      {t('inventory.stock.costAmount', { amount: formatNpr(level.avg_cost) })}
                     </p>
                   ) : null}
                   {Number(level.qty_on_hand) <= 0 ? (
                     <Badge variant="destructive" className="mt-1">
-                      Out of stock
+                      {t('inventory.stock.outOfStock')}
                     </Badge>
                   ) : null}
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="font-semibold tabular-nums">{level.qty_on_hand}</p>
                   <p className="text-xs text-muted-foreground tabular-nums">
-                    Reserved {level.qty_reserved}
+                    {t('inventory.stock.reserved', { qty: level.qty_reserved })}
                   </p>
                 </div>
               </div>
@@ -192,22 +198,22 @@ export function StockPage() {
         <Pagination meta={levelsQuery.data?.meta} page={page} setPage={setPage} />
       </Card>
 
-      <Card title="Movement ledger / मौज्दात गतिविधि">
+      <Card title={t('inventory.movements.title')}>
         <p className="mb-3 text-sm text-muted-foreground">
-          Immutable history of every stock change.
+          {t('inventory.movements.subtitle')}
         </p>
         {movementsQuery.isFetching ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+          <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : null}
         {movementsQuery.isError ? (
-          <QueryError error={movementsQuery.error} fallback="Failed to load stock movements." />
+          <QueryError error={movementsQuery.error} fallback={t('inventory.stock.movementsError')} />
         ) : null}
         {movementsQuery.data ? (
           <ReportTable
-            columns={MOVEMENT_COLUMNS}
+            columns={movementColumns}
             rows={movements}
             rowKey={(movement) => movement.id}
-            empty="No stock movements yet."
+            empty={t('inventory.movements.empty')}
             renderCells={(movement) => (
               <>
                 <TableCell>{movement.business_date_bs}</TableCell>
@@ -226,7 +232,7 @@ export function StockPage() {
                   {movement.balance_after}
                 </TableCell>
                 <TableCell>{movement.note || '—'}</TableCell>
-                <TableCell>{movement.created_by_name || 'System'}</TableCell>
+                <TableCell>{movement.created_by_name || t('inventory.system')}</TableCell>
               </>
             )}
             renderCard={(movement) => (
@@ -246,8 +252,8 @@ export function StockPage() {
                   {movement.business_date_bs} · {movement.variant_sku} · {movement.branch_code}
                 </p>
                 <p className="text-muted-foreground">
-                  Balance {movement.balance_after} · {movement.note || '—'} ·{' '}
-                  {movement.created_by_name || 'System'}
+                  {t('inventory.movements.balance', { qty: movement.balance_after })} ·{' '}
+                  {movement.note || '—'} · {movement.created_by_name || t('inventory.system')}
                 </p>
               </div>
             )}
@@ -285,11 +291,12 @@ interface PaginationProps {
 }
 
 function Pagination({ meta, page, setPage }: PaginationProps) {
+  const { t } = useTranslation();
   if (!meta || meta.total_pages <= 1) return null;
   return (
     <div className="mt-4 flex items-center justify-between text-sm">
       <span className="text-muted-foreground">
-        Page {meta.page} of {meta.total_pages} ({meta.count} rows)
+        {t('reports.pageInfo', { page: meta.page, pages: meta.total_pages, count: meta.count })}
       </span>
       <div className="flex gap-2">
         <Button
@@ -298,7 +305,7 @@ function Pagination({ meta, page, setPage }: PaginationProps) {
           disabled={page <= 1}
           onClick={() => setPage((current) => current - 1)}
         >
-          Previous
+          {t('common.previous')}
         </Button>
         <Button
           variant="secondary"
@@ -306,7 +313,7 @@ function Pagination({ meta, page, setPage }: PaginationProps) {
           disabled={meta.page >= meta.total_pages}
           onClick={() => setPage((current) => current + 1)}
         >
-          Next
+          {t('common.next')}
         </Button>
       </div>
     </div>

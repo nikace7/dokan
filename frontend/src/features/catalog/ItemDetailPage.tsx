@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
@@ -15,6 +16,7 @@ import { formatNpr } from '@/lib/money';
  * entry — the natural next step after creating an item.
  */
 export function ItemDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
 
@@ -38,7 +40,7 @@ export function ItemDetailPage() {
   if (itemQuery.isPending) {
     return (
       <main className="mx-auto max-w-4xl p-4">
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       </main>
     );
   }
@@ -46,10 +48,10 @@ export function ItemDetailPage() {
     return (
       <main className="mx-auto max-w-4xl p-4">
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {itemQuery.error instanceof Error ? itemQuery.error.message : 'Item not found.'}
+          {itemQuery.error instanceof Error ? itemQuery.error.message : t('catalog.detail.notFound')}
         </p>
         <Link className="mt-2 inline-block text-primary hover:underline" to="/catalog">
-          Back to items
+          {t('catalog.detail.back')}
         </Link>
       </main>
     );
@@ -62,12 +64,12 @@ export function ItemDetailPage() {
   const showCost = variants.some((v) => v.avg_cost !== undefined);
 
   const columns: readonly ReportColumn[] = [
-    { header: 'SKU' },
-    { header: 'Size' },
-    { header: 'Colour' },
-    { header: 'Barcode' },
-    { header: 'MRP', className: 'text-right' },
-    ...(showCost ? [{ header: 'Avg cost', className: 'text-right' }] : []),
+    { header: t('catalog.detail.sku') },
+    { header: t('catalog.detail.size') },
+    { header: t('catalog.detail.colour') },
+    { header: t('catalog.detail.barcode') },
+    { header: t('catalog.detail.mrp'), className: 'text-right' },
+    ...(showCost ? [{ header: t('catalog.detail.avgCost'), className: 'text-right' }] : []),
   ];
 
   return (
@@ -76,39 +78,39 @@ export function ItemDetailPage() {
         title={`${item.name} (${item.code})`}
         actions={
           <Button asChild variant="secondary" size="sm">
-            <Link to={`/catalog/items/${item.id}/edit`}>Edit item</Link>
+            <Link to={`/catalog/items/${item.id}/edit`}>{t('catalog.detail.edit')}</Link>
           </Button>
         }
       >
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted-foreground">Name (Nepali)</dt>
+            <dt className="text-muted-foreground">{t('catalog.detail.nameNp')}</dt>
             <dd>{item.name_np ?? '—'}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Unit</dt>
+            <dt className="text-muted-foreground">{t('catalog.detail.unit')}</dt>
             <dd>{item.unit}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">VAT applicable</dt>
-            <dd>{item.is_vat_applicable ? 'Yes' : 'No'}</dd>
+            <dt className="text-muted-foreground">{t('catalog.detail.vatApplicable')}</dt>
+            <dd>{item.is_vat_applicable ? t('catalog.detail.yes') : t('catalog.detail.no')}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Reorder level</dt>
+            <dt className="text-muted-foreground">{t('catalog.detail.reorderLevel')}</dt>
             <dd>{item.reorder_level ?? '—'}</dd>
           </div>
         </dl>
       </Card>
 
-      <Card title={`Variants (${variants.length})`}>
+      <Card title={t('catalog.detail.variantsTitle', { count: variants.length })}>
         {variantsQuery.isFetching ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : (
           <ReportTable
             columns={columns}
             rows={variants}
             rowKey={(variant) => variant.id}
-            empty="No variants yet — use the matrix below to create the whole size × colour grid in one go."
+            empty={t('catalog.detail.emptyVariants')}
             renderCells={(variant) => (
               <>
                 <TableCell className="font-medium">{variant.sku}</TableCell>
@@ -130,14 +132,15 @@ export function ItemDetailPage() {
                 <div className="min-w-0">
                   <p className="font-medium">{variant.sku}</p>
                   <p className="text-muted-foreground">
-                    {variant.size} / {variant.color} · {variant.barcode ?? 'no barcode'}
+                    {variant.size} / {variant.color} ·{' '}
+                    {variant.barcode ?? t('catalog.detail.noBarcode')}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="font-medium tabular-nums">{formatNpr(variant.mrp)}</p>
                   {showCost && variant.avg_cost !== undefined ? (
                     <p className="text-xs text-muted-foreground tabular-nums">
-                      Cost {formatNpr(variant.avg_cost)}
+                      {t('catalog.detail.costAmount', { amount: formatNpr(variant.avg_cost) })}
                     </p>
                   ) : null}
                 </div>
@@ -147,7 +150,7 @@ export function ItemDetailPage() {
         )}
       </Card>
 
-      <Card title="Add variants — size × colour matrix">
+      <Card title={t('catalog.detail.matrixTitle')}>
         <VariantMatrix
           itemId={item.id}
           sizeChartValues={sizeChartValues}
