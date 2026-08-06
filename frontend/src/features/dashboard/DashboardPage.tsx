@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ const money = (value: string) => formatNpr(value).replace(/\.00$/, '');
  * simply not shown (never rendered as empty or "hidden" data, invariant 10).
  */
 export function DashboardPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const dashboard = useQuery({
     queryKey: ['dashboard'],
@@ -41,7 +43,7 @@ export function DashboardPage() {
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {dashboard.error instanceof Error
             ? dashboard.error.message
-            : 'Could not load the dashboard.'}
+            : t('dashboard.loadError')}
         </p>
       </main>
     );
@@ -52,7 +54,9 @@ export function DashboardPage() {
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold sm:text-2xl">{data.shop_name}</h1>
-          <p className="text-sm text-muted-foreground">Welcome, {user?.full_name}</p>
+          <p className="text-sm text-muted-foreground">
+            {t('dashboard.welcome', { name: user?.full_name })}
+          </p>
         </div>
         <Badge variant="secondary" className="text-sm font-medium">
           BS {data.business_date_bs}
@@ -61,57 +65,57 @@ export function DashboardPage() {
 
       <section
         className="grid grid-cols-2 gap-3 lg:grid-cols-4"
-        aria-label="Today summary"
+        aria-label={t('dashboard.todaySummary')}
       >
         {data.sales ? (
           <SummaryTile
-            title="आजको बिक्री / Today sales"
+            title={t('dashboard.todaySales')}
             value={money(data.sales.today_total)}
-            detail={`${data.sales.bill_count} bills`}
+            detail={t('dashboard.billsCount', { count: data.sales.bill_count })}
           />
         ) : null}
         {data.profit ? (
           <SummaryTile
-            title="आजको नाफा / Today profit"
+            title={t('dashboard.todayProfit')}
             value={money(data.profit.today_net_profit)}
-            detail="Cost-authorized only"
+            detail={t('dashboard.costAuthorizedOnly')}
           />
         ) : null}
         {data.dues ? (
           <SummaryTile
-            title="बाँकी रकम / Receivables"
+            title={t('dashboard.receivables')}
             value={money(data.dues.total_receivable)}
-            detail={`${data.dues.customer_count} customers`}
+            detail={t('dashboard.customersCount', { count: data.dues.customer_count })}
           />
         ) : null}
         {data.low_stock ? (
           <SummaryTile
-            title="कम स्टक / Low stock"
-            value={`${data.low_stock.count} items`}
-            detail="At or below reorder level"
+            title={t('dashboard.lowStock')}
+            value={t('dashboard.itemsCount', { count: data.low_stock.count })}
+            detail={t('dashboard.atOrBelowReorder')}
           />
         ) : null}
       </section>
 
-      <nav className="flex flex-wrap gap-2" aria-label="Quick actions">
+      <nav className="flex flex-wrap gap-2" aria-label={t('dashboard.quickActions')}>
         {hasPermission(user, 'sale.create') ? (
           <Button asChild size="lg">
-            <Link to={billingPath(user)}>+ नयाँ बिल / New bill</Link>
+            <Link to={billingPath(user)}>+ {t('dashboard.newBill')}</Link>
           </Button>
         ) : null}
         {hasPermission(user, 'stock.adjust') ? (
           <Button asChild variant="outline" size="lg">
-            <Link to="/stock">Stock / स्टक</Link>
+            <Link to="/stock">{t('nav.stock')}</Link>
           </Button>
         ) : null}
         {canViewReports ? (
           <Button asChild variant="outline" size="lg">
-            <Link to="/reports">Reports / रिपोर्ट</Link>
+            <Link to="/reports">{t('nav.reports')}</Link>
           </Button>
         ) : null}
         {hasPermission(user, 'report.ledger') ? (
           <Button asChild variant="outline" size="lg">
-            <Link to="/customers">Customers / ग्राहक</Link>
+            <Link to="/customers">{t('nav.customers')}</Link>
           </Button>
         ) : null}
       </nav>
@@ -168,19 +172,22 @@ function RecentBills({
   bills: DashboardBill[];
   canViewSalesReport: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Card
-      title="Recent bills / भर्खरका बिल"
+      title={t('dashboard.recentBills')}
       actions={
         canViewSalesReport ? (
           <Link to="/reports/sales" className="text-sm font-medium text-primary hover:underline">
-            View sales
+            {t('dashboard.viewSales')}
           </Link>
         ) : null
       }
     >
       {bills.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">No completed bills yet.</p>
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          {t('dashboard.noBills')}
+        </p>
       ) : (
         <ul className="divide-y divide-border">
           {bills.map((bill) => (
@@ -191,13 +198,13 @@ function RecentBills({
               <div className="min-w-0">
                 <p className="font-mono font-medium">{bill.invoice_no}</p>
                 <p className="truncate text-muted-foreground">
-                  {bill.customer_name ?? 'Walk-in'}
+                  {bill.customer_name ?? t('billing.walkIn')}
                 </p>
               </div>
               <div className="text-right">
                 <p className="font-medium">{money(bill.total)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {bill.tender_methods.join(' + ') || 'Credit'} ·{' '}
+                  {bill.tender_methods.join(' + ') || t('dashboard.credit')} ·{' '}
                   <time dateTime={bill.created_at}>
                     {new Date(bill.created_at).toLocaleString()}
                   </time>

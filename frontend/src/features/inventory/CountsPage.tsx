@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { hasPermission } from '@/lib/permissions';
 
 export function CountsPage() {
+  const { t } = useTranslation();
   const { user, isRestoring } = useAuth();
   const workspace = useWorkspace();
   const queryClient = useQueryClient();
@@ -49,19 +51,18 @@ export function CountsPage() {
   };
   const start = useMutation({
     mutationFn: () => {
-      if (!workspace.branchId) throw new Error('Select an active branch first.');
+      if (!workspace.branchId) throw new Error(t('inventory.operation.selectBranch'));
       return startCount(workspace.branchId);
     },
     onSuccess: () => {
       setError(null);
       void queryClient.invalidateQueries({ queryKey: ['inventory', 'counts'] });
     },
-    onError: (reason) => setError(message(reason, 'Could not start the count.')),
+    onError: (reason) => setError(message(reason, t('inventory.counts.startError'))),
   });
 
-  if (isRestoring || !user) return <PageMessage>Loading…</PageMessage>;
-  if (!canView)
-    return <PageMessage>You do not have permission to view physical counts.</PageMessage>;
+  if (isRestoring || !user) return <PageMessage>{t('common.loading')}</PageMessage>;
+  if (!canView) return <PageMessage>{t('inventory.counts.noPermission')}</PageMessage>;
 
   const counts = countsQuery.data?.data ?? [];
   const branch = workspace.branches.find((item) => item.id === workspace.branchId);
@@ -69,17 +70,17 @@ export function CountsPage() {
     <main className="mx-auto max-w-6xl space-y-4 p-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Physical counts / भौतिक गणना</h1>
+          <h1 className="text-2xl font-semibold">{t('inventory.counts.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Snapshot, count every line, review variance, then finalize once.
+            {t('inventory.counts.subtitle')}
           </p>
         </div>
         <Link className="text-sm text-primary hover:underline" to="/stock">
-          Back to stock
+          {t('inventory.backToStock')}
         </Link>
       </div>
       <Card
-        title={`Branch: ${branch?.code ?? 'Loading…'}`}
+        title={`${t('inventory.counts.branch')}: ${branch?.code ?? t('common.loading')}`}
         actions={
           canAdjust ? (
             <Button
@@ -87,14 +88,13 @@ export function CountsPage() {
               onClick={() => start.mutate()}
               disabled={!workspace.branchId || start.isPending}
             >
-              Start physical count
+              {t('inventory.counts.start')}
             </Button>
           ) : undefined
         }
       >
         <p className="text-sm text-muted-foreground">
-          Starting snapshots every stocked variant in the selected branch. Only one count can be
-          open per branch.
+          {t('inventory.counts.startBody')}
         </p>
       </Card>
       {error ? (
@@ -103,16 +103,16 @@ export function CountsPage() {
         </p>
       ) : null}
       {countsQuery.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       ) : null}
       {countsQuery.isError ? (
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {message(countsQuery.error, 'Could not load counts.')}
+          {message(countsQuery.error, t('inventory.counts.loadError'))}
         </p>
       ) : null}
       {countsQuery.data && counts.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">No physical counts for this branch yet.</p>
+          <p className="text-sm text-muted-foreground">{t('inventory.counts.empty')}</p>
         </Card>
       ) : null}
       {counts.map((count) => (
@@ -121,15 +121,6 @@ export function CountsPage() {
     </main>
   );
 }
-
-const COUNT_COLUMNS: readonly ReportColumn[] = [
-  { header: 'Item' },
-  { header: 'SKU' },
-  { header: 'System', className: 'text-right' },
-  { header: 'Counted', className: 'text-right' },
-  { header: 'Variance', className: 'text-right' },
-  { header: 'Note' },
-];
 
 function CountCard({
   count,
@@ -140,6 +131,7 @@ function CountCard({
   canAdjust: boolean;
   onUpdated: (count: StockCount) => void;
 }) {
+  const { t } = useTranslation();
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(count.items.map((item) => [item.variant, item.counted_qty ?? ''])),
   );
@@ -163,21 +155,30 @@ function CountCard({
               },
             ],
       );
-      if (rows.length === 0) throw new Error('Enter at least one counted quantity.');
+      if (rows.length === 0) throw new Error(t('inventory.counts.needQty'));
       return recordCounts(count.id, rows);
     },
     onSuccess: (updated) => {
       setError(null);
       onUpdated(updated);
     },
-    onError: (reason) => setError(message(reason, 'Could not update the count.')),
+    onError: (reason) => setError(message(reason, t('inventory.counts.updateError'))),
   });
   const complete = count.items.every((item) => item.counted_qty !== null);
   const counting = count.status === 'OPEN' && canAdjust;
 
+  const columns: readonly ReportColumn[] = [
+    { header: t('inventory.counts.columns.item') },
+    { header: t('inventory.counts.columns.sku') },
+    { header: t('inventory.counts.columns.system'), className: 'text-right' },
+    { header: t('inventory.counts.columns.counted'), className: 'text-right' },
+    { header: t('inventory.counts.columns.variance'), className: 'text-right' },
+    { header: t('inventory.counts.columns.note') },
+  ];
+
   const countedInput = (variant: string, sku: string) => (
     <input
-      aria-label={`Counted quantity ${sku}`}
+      aria-label={t('inventory.counts.countedQtyAria', { sku })}
       type="number"
       min="0"
       step="0.001"
@@ -190,7 +191,7 @@ function CountCard({
   );
   const noteInput = (variant: string, sku: string) => (
     <input
-      aria-label={`Count note ${sku}`}
+      aria-label={t('inventory.counts.noteAria', { sku })}
       value={notes[variant] ?? ''}
       onChange={(event) =>
         setNotes((current) => ({ ...current, [variant]: event.target.value }))
@@ -204,15 +205,17 @@ function CountCard({
       title={`${count.status} · ${count.branch_code}`}
       actions={
         <Badge variant="secondary" className="font-medium">
-          Started by {count.created_by_name ?? 'System'}
+          {t('inventory.counts.startedBy', {
+            name: count.created_by_name ?? t('inventory.system'),
+          })}
         </Badge>
       }
     >
       <ReportTable
-        columns={COUNT_COLUMNS}
+        columns={columns}
         rows={count.items}
         rowKey={(item) => item.id}
-        empty="No lines on this count."
+        empty={t('inventory.counts.emptyLines')}
         renderCells={(item) => (
           <>
             <TableCell className="font-medium">{item.item_name}</TableCell>
@@ -235,7 +238,10 @@ function CountCard({
                 <p className="text-muted-foreground">{item.variant_sku}</p>
               </div>
               <p className="shrink-0 text-right tabular-nums">
-                System {item.system_qty} · variance {item.variance ?? '—'}
+                {t('inventory.counts.systemVariance', {
+                  qty: item.system_qty,
+                  variance: item.variance ?? '—',
+                })}
               </p>
             </div>
             {counting ? (
@@ -245,7 +251,8 @@ function CountCard({
               </div>
             ) : (
               <p className="mt-1 text-muted-foreground">
-                Counted {item.counted_qty ?? '—'} · {item.note ?? '—'}
+                {t('inventory.counts.counted', { qty: item.counted_qty ?? '—' })} ·{' '}
+                {item.note ?? '—'}
               </p>
             )}
           </div>
@@ -262,21 +269,21 @@ function CountCard({
             disabled={mutation.isPending}
             onClick={() => mutation.mutate({ action: 'record' })}
           >
-            Save counted quantities
+            {t('inventory.counts.saveCounted')}
           </Button>
           <Button
             variant="secondary"
             disabled={mutation.isPending || !complete}
             onClick={() => mutation.mutate({ action: 'finalize' })}
           >
-            Finalize count
+            {t('inventory.counts.finalize')}
           </Button>
           <Button
             variant="danger"
             disabled={mutation.isPending}
             onClick={() => mutation.mutate({ action: 'cancel' })}
           >
-            Cancel count
+            {t('inventory.counts.cancel')}
           </Button>
         </div>
       ) : null}

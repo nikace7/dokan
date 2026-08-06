@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/Card';
 import { TableCell } from '@/components/ui/table';
@@ -18,6 +19,7 @@ import { formatNpr } from '@/lib/money';
  * error dump (invariant 10).
  */
 export function ProfitReportPage() {
+  const { t } = useTranslation();
   const [range, setRange] = useState<BsRange>(currentBsMonthRange);
 
   const query = useQuery({
@@ -30,17 +32,16 @@ export function ProfitReportPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl p-4">
-      <Card title="Profit report / नाफा प्रतिवेदन">
+      <Card title={t('reports.profit.title')}>
         <div className="mb-4">
           <BsRangeControls value={range} onApply={setRange} />
         </div>
 
         {forbidden ? (
           <div className="rounded-md border bg-muted/50 px-4 py-8 text-center">
-            <p className="text-base font-medium">Owner only</p>
+            <p className="text-base font-medium">{t('reports.profit.ownerOnly')}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              The profit report contains cost data and is only available to accounts with the profit
-              and cost-visibility permissions. Ask the shop owner to run it.
+              {t('reports.profit.ownerOnlyBody')}
             </p>
           </div>
         ) : null}
@@ -55,15 +56,20 @@ export function ProfitReportPage() {
 }
 
 function ProfitResults({ data }: { data: ProfitReport }) {
+  const { t } = useTranslation();
   const hasNet = data.totals.net_profit !== undefined;
   return (
     <>
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Revenue" value={data.totals.revenue} />
-        <StatCard label="Cost of goods" value={data.totals.cogs} />
-        <StatCard label="Gross profit" value={data.totals.gross_profit} highlight />
+        <StatCard label={t('reports.profit.revenue')} value={data.totals.revenue} />
+        <StatCard label={t('reports.profit.costOfGoods')} value={data.totals.cogs} />
+        <StatCard label={t('reports.profit.grossProfit')} value={data.totals.gross_profit} highlight />
         {hasNet ? (
-          <StatCard label="Net profit" value={data.totals.net_profit ?? '0.00'} highlight />
+          <StatCard
+            label={t('reports.profit.netProfit')}
+            value={data.totals.net_profit ?? '0.00'}
+            highlight
+          />
         ) : null}
       </div>
       <ProfitTable rows={data.rows} hasNet={hasNet} />
@@ -94,32 +100,29 @@ function StatCard({
   );
 }
 
-function profitColumns(hasNet: boolean): readonly ReportColumn[] {
+function ProfitTable({ rows, hasNet }: { rows: ProfitRow[]; hasNet: boolean }) {
+  const { t } = useTranslation();
+  const money = (amount: string | undefined) => formatNpr(amount ?? '0.00', { symbol: '' });
   const columns: ReportColumn[] = [
-    { header: 'BS month' },
-    { header: 'Sales', className: 'text-right' },
-    { header: 'Returns', className: 'text-right' },
-    { header: 'Revenue', className: 'text-right' },
-    { header: 'COGS', className: 'text-right' },
-    { header: 'Gross profit', className: 'text-right' },
+    { header: t('reports.columns.bsMonth') },
+    { header: t('reports.columns.sales'), className: 'text-right' },
+    { header: t('reports.columns.returns'), className: 'text-right' },
+    { header: t('reports.columns.revenue'), className: 'text-right' },
+    { header: t('reports.columns.cogs'), className: 'text-right' },
+    { header: t('reports.profit.grossProfit'), className: 'text-right' },
   ];
   if (hasNet) {
     columns.push(
-      { header: 'Expenses', className: 'text-right' },
-      { header: 'Net profit', className: 'text-right' },
+      { header: t('reports.columns.expenses'), className: 'text-right' },
+      { header: t('reports.profit.netProfit'), className: 'text-right' },
     );
   }
-  return columns;
-}
-
-function ProfitTable({ rows, hasNet }: { rows: ProfitRow[]; hasNet: boolean }) {
-  const money = (amount: string | undefined) => formatNpr(amount ?? '0.00', { symbol: '' });
   return (
     <ReportTable
-      columns={profitColumns(hasNet)}
+      columns={columns}
       rows={rows}
       rowKey={(row) => row.bs_month}
-      empty="No sales in this range."
+      empty={t('reports.noSalesInRange')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.bs_month}</TableCell>
@@ -147,8 +150,9 @@ function ProfitTable({ rows, hasNet }: { rows: ProfitRow[]; hasNet: boolean }) {
             </p>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Revenue {money(row.revenue)} · COGS {money(row.cogs)}
-            {hasNet ? ` · expenses ${money(row.expenses)}` : ''}
+            {t('reports.profit.cardRevenue', { amount: money(row.revenue) })} ·{' '}
+            {t('reports.profit.cardCogs', { amount: money(row.cogs) })}
+            {hasNet ? ` · ${t('reports.profit.cardExpenses', { amount: money(row.expenses) })}` : ''}
           </p>
         </div>
       )}

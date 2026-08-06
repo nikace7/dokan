@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -14,6 +15,7 @@ import type { RateType } from '@/features/settings/api';
 import { ApiError } from '@/lib/api/client';
 
 export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit: boolean }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<RateType | 'new' | null>(null);
   const deactivate = useMutation({
@@ -23,11 +25,11 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
 
   return (
     <Card
-      title="Rate types / बिक्री दर"
+      title={t('pricing.rateTypes.title')}
       actions={
         canEdit ? (
           <Button size="sm" onClick={() => setEditing('new')}>
-            New rate type
+            {t('pricing.rateTypes.new')}
           </Button>
         ) : null
       }
@@ -39,7 +41,7 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
         />
       ) : null}
       {rates.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No rate types configured.</p>
+        <p className="text-sm text-muted-foreground">{t('pricing.rateTypes.empty')}</p>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rates.map((rate) => (
@@ -54,24 +56,24 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   {rate.code}
-                  {rate.is_default ? ' · Default' : ''}
-                  {!rate.is_active ? ' · Inactive' : ''}
+                  {rate.is_default ? ` · ${t('pricing.rateTypes.default')}` : ''}
+                  {!rate.is_active ? ` · ${t('pricing.rateTypes.inactive')}` : ''}
                 </p>
               </div>
               {canEdit ? (
                 <Button size="sm" variant="secondary" onClick={() => setEditing(rate)}>
-                  Edit
+                  {t('pricing.rateTypes.edit')}
                 </Button>
               ) : null}
             </div>
             <dl className="mt-2 text-xs text-muted-foreground">
               <div className="flex justify-between">
-                <dt>Default margin</dt>
+                <dt>{t('pricing.rateTypes.defaultMargin')}</dt>
                 <dd>{rate.default_margin_pct ? `${rate.default_margin_pct}%` : '—'}</dd>
               </div>
               <div className="flex justify-between">
-                <dt>Required permission</dt>
-                <dd>{rate.required_permission ?? 'None'}</dd>
+                <dt>{t('pricing.rateTypes.requiredPermission')}</dt>
+                <dd>{rate.required_permission ?? t('pricing.rateTypes.none')}</dd>
               </div>
             </dl>
             {canEdit && rate.is_active && !rate.is_default ? (
@@ -81,7 +83,7 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
                 disabled={deactivate.isPending}
                 onClick={() => deactivate.mutate(rate.id)}
               >
-                Deactivate
+                {t('pricing.rateTypes.deactivate')}
               </button>
             ) : null}
           </section>
@@ -91,7 +93,7 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
         <p role="alert" className="mt-3 text-sm text-destructive">
           {deactivate.error instanceof ApiError
             ? deactivate.error.message
-            : 'Could not deactivate the rate type.'}
+            : t('pricing.rateTypes.deactivateError')}
         </p>
       ) : null}
     </Card>
@@ -121,6 +123,7 @@ function initial(rate?: RateType): RateTypePayload {
 }
 
 function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const permissions = useQuery({
     queryKey: ['permissions'],
@@ -154,30 +157,32 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
       className="mb-4 grid gap-3 rounded-md border border-primary/40 bg-primary/5 p-3 sm:grid-cols-2"
     >
       <Input
-        label="Rate code"
+        label={t('pricing.rateTypes.rateCode')}
         required
         value={form.code}
         onChange={(event) => setForm({ ...form, code: event.target.value })}
       />
       <Input
-        label="Rate name"
+        label={t('pricing.rateTypes.rateName')}
         required
         value={form.name}
         onChange={(event) => setForm({ ...form, name: event.target.value })}
       />
       <Input
-        label="Rate name (नेपाली)"
+        label={t('pricing.rateTypes.rateNameNp')}
         value={form.name_np ?? ''}
         onChange={(event) => setForm({ ...form, name_np: event.target.value })}
       />
       <Input
-        label="Default margin %"
+        label={t('pricing.rateTypes.defaultMarginPct')}
         inputMode="decimal"
         value={form.default_margin_pct ?? ''}
         onChange={(event) => setForm({ ...form, default_margin_pct: event.target.value })}
       />
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="rate-required-permission">Required permission</Label>
+        <Label htmlFor="rate-required-permission">
+          {t('pricing.rateTypes.requiredPermission')}
+        </Label>
         <select
           id="rate-required-permission"
           value={form.required_permission ?? ''}
@@ -186,7 +191,7 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
           }
           className={selectClasses}
         >
-          <option value="">Anyone allowed to bill</option>
+          <option value="">{t('pricing.rateTypes.anyoneBilling')}</option>
           {permissions.data?.map((permission) => (
             <option key={permission.code} value={permission.code}>
               {permission.code} — {permission.name}
@@ -195,7 +200,7 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
         </select>
       </div>
       <Input
-        label="Sort order"
+        label={t('pricing.rateTypes.sortOrder')}
         type="number"
         value={form.sort_order}
         onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })}
@@ -207,21 +212,21 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
           onChange={(event) => setForm({ ...form, is_default: event.target.checked })}
           className="h-4 w-4 accent-primary"
         />
-        Make this the default selling rate
+        {t('pricing.rateTypes.makeDefault')}
       </label>
       {mutation.isError ? (
         <p role="alert" className="text-sm text-destructive sm:col-span-2">
           {mutation.error instanceof ApiError
             ? mutation.error.message
-            : 'Could not save rate type.'}
+            : t('pricing.rateTypes.saveError')}
         </p>
       ) : null}
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" disabled={mutation.isPending}>
-          Save rate type
+          {t('pricing.rateTypes.save')}
         </Button>
         <Button variant="secondary" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </form>

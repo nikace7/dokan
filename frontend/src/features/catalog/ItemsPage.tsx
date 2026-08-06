@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import type { ReportColumn } from '@/features/reports/ui';
  * Deactivate is a soft delete (DELETE flips `is_active` server-side).
  */
 export function ItemsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -54,18 +56,18 @@ export function ItemsPage() {
   const meta = itemsQuery.data?.meta ?? null;
 
   const columns: readonly ReportColumn[] = [
-    { header: 'Code' },
-    { header: 'Name' },
-    { header: 'Category' },
-    { header: 'Unit' },
-    { header: 'Status' },
-    { header: 'Actions', className: 'text-right' },
+    { header: t('catalog.items.columns.code') },
+    { header: t('catalog.items.columns.name') },
+    { header: t('catalog.items.columns.category') },
+    { header: t('catalog.items.columns.unit') },
+    { header: t('catalog.items.columns.status') },
+    { header: t('catalog.items.columns.actions'), className: 'text-right' },
   ];
 
   const itemActions = (item: Item) => (
     <div className="flex items-center justify-end gap-3 whitespace-nowrap">
       <Link to={`/catalog/items/${item.id}`} className="text-sm text-primary hover:underline">
-        Open
+        {t('catalog.items.open')}
       </Link>
       {item.is_active ? (
         <button
@@ -74,7 +76,7 @@ export function ItemsPage() {
           disabled={deactivateMutation.isPending}
           onClick={() => deactivateMutation.mutate(item.id)}
         >
-          Deactivate
+          {t('catalog.items.deactivate')}
         </button>
       ) : null}
     </div>
@@ -83,25 +85,25 @@ export function ItemsPage() {
   return (
     <main className="mx-auto max-w-6xl p-4">
       <Card
-        title="Items / सामान"
+        title={t('catalog.items.title')}
         actions={
           <Button asChild size="sm">
-            <Link to="/catalog/items/new">New item</Link>
+            <Link to="/catalog/items/new">{t('catalog.items.new')}</Link>
           </Button>
         }
       >
         <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_200px_160px]">
           <Input
-            aria-label="Search items"
+            aria-label={t('catalog.items.searchAria')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Search by name or code…"
+            placeholder={t('catalog.items.searchPlaceholder')}
           />
           <select
-            aria-label="Filter by category"
+            aria-label={t('catalog.items.filterCategory')}
             value={category}
             onChange={(e) => {
               setCategory(e.target.value);
@@ -109,7 +111,7 @@ export function ItemsPage() {
             }}
             className={selectClasses}
           >
-            <option value="">All categories</option>
+            <option value="">{t('catalog.items.allCategories')}</option>
             {(categoriesQuery.data?.data ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -117,7 +119,7 @@ export function ItemsPage() {
             ))}
           </select>
           <select
-            aria-label="Filter by status"
+            aria-label={t('catalog.items.filterStatus')}
             value={status}
             onChange={(e) => {
               setStatus(e.target.value as typeof status);
@@ -125,21 +127,23 @@ export function ItemsPage() {
             }}
             className={selectClasses}
           >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="all">All</option>
+            <option value="active">{t('catalog.items.active')}</option>
+            <option value="inactive">{t('catalog.items.inactive')}</option>
+            <option value="all">{t('catalog.items.all')}</option>
           </select>
         </div>
 
         {itemsQuery.isFetching ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+          <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : null}
         {itemsQuery.isError ? (
           <p
             role="alert"
             className="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
           >
-            {itemsQuery.error instanceof Error ? itemsQuery.error.message : 'Failed to load items.'}
+            {itemsQuery.error instanceof Error
+              ? itemsQuery.error.message
+              : t('catalog.items.loadError')}
           </p>
         ) : null}
 
@@ -148,7 +152,7 @@ export function ItemsPage() {
             columns={columns}
             rows={items}
             rowKey={(item) => item.id}
-            empty="No items yet — create the first one."
+            empty={t('catalog.items.empty')}
             renderCells={(item) => (
               <>
                 <TableCell className="font-medium">
@@ -171,7 +175,7 @@ export function ItemsPage() {
                 <TableCell className="text-muted-foreground">{item.unit}</TableCell>
                 <TableCell>
                   <Badge variant={item.is_active ? 'success' : 'secondary'}>
-                    {item.is_active ? 'Active' : 'Inactive'}
+                    {item.is_active ? t('catalog.items.active') : t('catalog.items.inactive')}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">{itemActions(item)}</TableCell>
@@ -198,7 +202,7 @@ export function ItemsPage() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
                   <Badge variant={item.is_active ? 'success' : 'secondary'}>
-                    {item.is_active ? 'Active' : 'Inactive'}
+                    {item.is_active ? t('catalog.items.active') : t('catalog.items.inactive')}
                   </Badge>
                   {itemActions(item)}
                 </div>
@@ -210,7 +214,11 @@ export function ItemsPage() {
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              Page {meta.page} of {meta.total_pages} ({meta.count} items)
+              {t('catalog.items.pageInfo', {
+                page: meta.page,
+                pages: meta.total_pages,
+                count: meta.count,
+              })}
             </span>
             <div className="flex gap-2">
               <Button
@@ -219,7 +227,7 @@ export function ItemsPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Previous
+                {t('common.previous')}
               </Button>
               <Button
                 variant="secondary"
@@ -227,7 +235,7 @@ export function ItemsPage() {
                 disabled={meta.page >= meta.total_pages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           </div>

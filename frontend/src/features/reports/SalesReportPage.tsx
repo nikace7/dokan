@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -32,6 +33,7 @@ function qtyTotal(rows: readonly { qty: string }[]): string {
 
 /** Sales report — daily by BS date, monthly by fiscal year, top items. */
 export function SalesReportPage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('daily');
   const [range, setRange] = useState<BsRange>(currentBsMonthRange);
   const [fiscalYear, setFiscalYear] = useState(currentFiscalYearBs);
@@ -56,18 +58,18 @@ export function SalesReportPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl p-4">
-      <Card title="Sales report / बिक्री प्रतिवेदन">
+      <Card title={t('reports.sales.title')}>
         <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <TabsList aria-label="Sales view">
-              <TabsTrigger value="daily">Daily</TabsTrigger>
-              <TabsTrigger value="monthly">Monthly</TabsTrigger>
-              <TabsTrigger value="items">Top items</TabsTrigger>
+            <TabsList aria-label={t('reports.sales.viewAria')}>
+              <TabsTrigger value="daily">{t('reports.sales.daily')}</TabsTrigger>
+              <TabsTrigger value="monthly">{t('reports.sales.monthly')}</TabsTrigger>
+              <TabsTrigger value="items">{t('reports.sales.topItems')}</TabsTrigger>
             </TabsList>
             {tab === 'monthly' ? (
               <Input
                 id="fy"
-                label="Fiscal year (BS)"
+                label={t('reports.fiscalYearBs')}
                 value={fiscalYear}
                 onChange={(e) => setFiscalYear(e.target.value)}
                 placeholder="2083-84"
@@ -105,26 +107,26 @@ export function SalesReportPage() {
   );
 }
 
-const DAILY_COLUMNS: readonly ReportColumn[] = [
-  { header: 'Date (BS)' },
-  { header: 'Bills', className: 'text-right' },
-  { header: 'Subtotal', className: 'text-right' },
-  { header: 'Discount', className: 'text-right' },
-  { header: 'VAT', className: 'text-right' },
-  { header: 'Total', className: 'text-right' },
-  { header: 'Paid', className: 'text-right' },
-  { header: 'Due', className: 'text-right' },
-  { header: 'Returns', className: 'text-right' },
-  { header: 'Net', className: 'text-right' },
-];
-
 function DailyTable({ rows }: { rows: DailySalesRow[] }) {
+  const { t } = useTranslation();
+  const columns: readonly ReportColumn[] = [
+    { header: t('reports.columns.dateBs') },
+    { header: t('reports.columns.bills'), className: 'text-right' },
+    { header: t('reports.columns.subtotal'), className: 'text-right' },
+    { header: t('reports.columns.discount'), className: 'text-right' },
+    { header: t('reports.columns.vat'), className: 'text-right' },
+    { header: t('reports.total'), className: 'text-right' },
+    { header: t('reports.columns.paid'), className: 'text-right' },
+    { header: t('reports.columns.due'), className: 'text-right' },
+    { header: t('reports.columns.returns'), className: 'text-right' },
+    { header: t('reports.columns.net'), className: 'text-right' },
+  ];
   return (
     <ReportTable
-      columns={DAILY_COLUMNS}
+      columns={columns}
       rows={rows}
       rowKey={(row) => row.business_date_bs}
-      empty="No sales in this range."
+      empty={t('reports.noSalesInRange')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.business_date_bs}</TableCell>
@@ -146,9 +148,14 @@ function DailyTable({ rows }: { rows: DailySalesRow[] }) {
           <div>
             <p className="font-medium">{row.business_date_bs}</p>
             <p className="text-muted-foreground">
-              {row.bill_count} bills · paid {money(row.paid)}
-              {toPaisa(row.due) > 0 ? ` · due ${money(row.due)}` : ''}
-              {row.returns_count > 0 ? ` · returns ${money(row.returns_total)}` : ''}
+              {t('reports.sales.billsCount', { count: row.bill_count })} ·{' '}
+              {t('reports.sales.paidAmount', { amount: money(row.paid) })}
+              {toPaisa(row.due) > 0
+                ? ` · ${t('reports.sales.dueAmount', { amount: money(row.due) })}`
+                : ''}
+              {row.returns_count > 0
+                ? ` · ${t('reports.sales.returnsAmount', { amount: money(row.returns_total) })}`
+                : ''}
             </p>
           </div>
           <p className="text-right font-semibold tabular-nums">{money(row.net_total)}</p>
@@ -156,7 +163,7 @@ function DailyTable({ rows }: { rows: DailySalesRow[] }) {
       )}
       footer={
         <TableRow>
-          <TableCell className="font-semibold">Total</TableCell>
+          <TableCell className="font-semibold">{t('reports.total')}</TableCell>
           <TableCell className="text-right tabular-nums">
             {rows.reduce((n, r) => n + r.bill_count, 0)}
           </TableCell>
@@ -173,19 +180,19 @@ function DailyTable({ rows }: { rows: DailySalesRow[] }) {
       mobileFooter={
         <dl className="mt-2 space-y-1 rounded-md bg-muted/50 p-3 text-sm">
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Bills</dt>
+            <dt className="text-muted-foreground">{t('reports.columns.bills')}</dt>
             <dd className="font-medium tabular-nums">
               {rows.reduce((n, r) => n + r.bill_count, 0)}
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Total</dt>
+            <dt className="text-muted-foreground">{t('reports.total')}</dt>
             <dd className="font-medium tabular-nums">
               {formatPaisa(sumMoney(rows.map((r) => r.total)))}
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Net</dt>
+            <dt className="text-muted-foreground">{t('reports.columns.net')}</dt>
             <dd className="font-semibold tabular-nums">
               {formatPaisa(sumMoney(rows.map((r) => r.net_total)))}
             </dd>
@@ -196,23 +203,23 @@ function DailyTable({ rows }: { rows: DailySalesRow[] }) {
   );
 }
 
-const MONTHLY_COLUMNS: readonly ReportColumn[] = [
-  { header: 'BS month' },
-  { header: 'Bills', className: 'text-right' },
-  { header: 'Total', className: 'text-right' },
-  { header: 'Discount', className: 'text-right' },
-  { header: 'VAT', className: 'text-right' },
-  { header: 'Returns', className: 'text-right' },
-  { header: 'Net', className: 'text-right' },
-];
-
 function MonthlyTable({ rows }: { rows: MonthlySalesRow[] }) {
+  const { t } = useTranslation();
+  const columns: readonly ReportColumn[] = [
+    { header: t('reports.columns.bsMonth') },
+    { header: t('reports.columns.bills'), className: 'text-right' },
+    { header: t('reports.total'), className: 'text-right' },
+    { header: t('reports.columns.discount'), className: 'text-right' },
+    { header: t('reports.columns.vat'), className: 'text-right' },
+    { header: t('reports.columns.returns'), className: 'text-right' },
+    { header: t('reports.columns.net'), className: 'text-right' },
+  ];
   return (
     <ReportTable
-      columns={MONTHLY_COLUMNS}
+      columns={columns}
       rows={rows}
       rowKey={(row) => row.bs_month}
-      empty="No sales in this fiscal year."
+      empty={t('reports.sales.emptyFiscalYear')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.bs_month}</TableCell>
@@ -231,8 +238,10 @@ function MonthlyTable({ rows }: { rows: MonthlySalesRow[] }) {
           <div>
             <p className="font-medium">{row.bs_month}</p>
             <p className="text-muted-foreground">
-              {row.bill_count} bills
-              {toPaisa(row.returns_total) > 0 ? ` · returns ${money(row.returns_total)}` : ''}
+              {t('reports.sales.billsCount', { count: row.bill_count })}
+              {toPaisa(row.returns_total) > 0
+                ? ` · ${t('reports.sales.returnsAmount', { amount: money(row.returns_total) })}`
+                : ''}
             </p>
           </div>
           <p className="text-right font-semibold tabular-nums">{money(row.net_total)}</p>
@@ -240,7 +249,7 @@ function MonthlyTable({ rows }: { rows: MonthlySalesRow[] }) {
       )}
       footer={
         <TableRow>
-          <TableCell className="font-semibold">Total</TableCell>
+          <TableCell className="font-semibold">{t('reports.total')}</TableCell>
           <TableCell className="text-right tabular-nums">
             {rows.reduce((n, r) => n + r.bill_count, 0)}
           </TableCell>
@@ -255,21 +264,21 @@ function MonthlyTable({ rows }: { rows: MonthlySalesRow[] }) {
   );
 }
 
-const ITEM_COLUMNS: readonly ReportColumn[] = [
-  { header: 'SKU' },
-  { header: 'Item' },
-  { header: 'Size / Colour' },
-  { header: 'Qty sold', className: 'text-right' },
-  { header: 'Amount', className: 'text-right' },
-];
-
 function ItemsTable({ rows }: { rows: ItemSalesRow[] }) {
+  const { t } = useTranslation();
+  const columns: readonly ReportColumn[] = [
+    { header: t('reports.columns.sku') },
+    { header: t('reports.columns.item') },
+    { header: t('reports.columns.sizeColour') },
+    { header: t('reports.columns.qtySold'), className: 'text-right' },
+    { header: t('reports.columns.amount'), className: 'text-right' },
+  ];
   return (
     <ReportTable
-      columns={ITEM_COLUMNS}
+      columns={columns}
       rows={rows}
       rowKey={(row) => row.variant_id}
-      empty="No items sold in this range."
+      empty={t('reports.sales.emptyItems')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.sku}</TableCell>
@@ -286,7 +295,8 @@ function ItemsTable({ rows }: { rows: ItemSalesRow[] }) {
           <div className="min-w-0">
             <p className="font-medium">{row.item_name}</p>
             <p className="truncate text-muted-foreground">
-              {row.sku} · {row.size} / {row.color} · qty {row.qty}
+              {row.sku} · {row.size} / {row.color} ·{' '}
+              {t('reports.sales.qtyShort', { count: row.qty })}
             </p>
           </div>
           <p className="text-right font-semibold tabular-nums">{money(row.amount)}</p>
@@ -295,7 +305,7 @@ function ItemsTable({ rows }: { rows: ItemSalesRow[] }) {
       footer={
         <TableRow>
           <TableCell colSpan={3} className="font-semibold">
-            Total
+            {t('reports.total')}
           </TableCell>
           <TableCell className="text-right tabular-nums">{qtyTotal(rows)}</TableCell>
           <MoneyCell>{formatPaisa(sumMoney(rows.map((r) => r.amount)))}</MoneyCell>

@@ -54,7 +54,7 @@ describe('ReportsHomePage plan visibility', () => {
 
     renderReports();
 
-    expect(await screen.findByRole('link', { name: /^sales \/ बिक्री/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /^sales/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /profit/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /vat register/i })).not.toBeInTheDocument();
   });

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -13,17 +14,19 @@ import {
 
 /** Inline error banner shared by every report screen. */
 export function ReportError({ error }: { error: unknown }) {
+  const { t } = useTranslation();
   return (
     <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-      {error instanceof Error ? error.message : 'Failed to load the report.'}
+      {error instanceof Error ? error.message : t('reports.loadError')}
     </p>
   );
 }
 
 /** Placeholder skeleton matching the report-table shape. */
 export function TableSkeleton({ rows = 6 }: { rows?: number }) {
+  const { t } = useTranslation();
   return (
-    <div className="flex flex-col gap-2" aria-busy="true" aria-label="Loading report">
+    <div className="flex flex-col gap-2" aria-busy="true" aria-label={t('reports.loading')}>
       <Skeleton className="h-9 w-full" />
       {Array.from({ length: rows }, (_, i) => (
         <Skeleton key={i} className="h-8 w-full" />

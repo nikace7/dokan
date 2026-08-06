@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -30,6 +31,7 @@ export function QuickAddSelect<T extends { id: string; name: string }>({
   addLabel,
   extraField,
 }: QuickAddSelectProps<T>) {
+  const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [extra, setExtra] = useState('');
@@ -49,7 +51,7 @@ export function QuickAddSelect<T extends { id: string; name: string }>({
       setName('');
       setExtra('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create.');
+      setError(err instanceof Error ? err.message : t('catalog.quickAdd.createError'));
     } finally {
       setBusy(false);
     }
@@ -65,7 +67,7 @@ export function QuickAddSelect<T extends { id: string; name: string }>({
           onChange={(e) => onChange(e.target.value)}
           className={selectClasses}
         >
-          <option value="">— none —</option>
+          <option value="">{t('catalog.form.none')}</option>
           {options.map((option) => (
             <option key={option.id} value={option.id}>
               {option.name}
@@ -78,16 +80,16 @@ export function QuickAddSelect<T extends { id: string; name: string }>({
           className="h-9 whitespace-nowrap"
           onClick={() => setAdding((a) => !a)}
         >
-          {adding ? 'Cancel' : addLabel}
+          {adding ? t('common.cancel') : addLabel}
         </Button>
       </div>
       {adding ? (
         <div className="mt-1 flex flex-col gap-2 rounded-md border border-border bg-muted/50 p-2">
           <Input
-            aria-label={`New ${label} name`}
+            aria-label={t('catalog.quickAdd.newName', { label })}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
+            placeholder={t('catalog.quickAdd.namePlaceholder')}
           />
           {extraField ? (
             <Input
@@ -103,7 +105,7 @@ export function QuickAddSelect<T extends { id: string; name: string }>({
             </p>
           ) : null}
           <Button size="sm" disabled={busy || !name.trim()} onClick={() => void create()}>
-            {busy ? 'Adding…' : 'Add'}
+            {busy ? t('catalog.quickAdd.adding') : t('catalog.quickAdd.add')}
           </Button>
         </div>
       ) : null}

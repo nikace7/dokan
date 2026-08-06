@@ -1,4 +1,5 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/Card';
 import type { DashboardSalesDay } from '@/features/dashboard/api';
@@ -30,21 +31,22 @@ interface TrendPoint {
  * only — invariant 9); amounts are converted to integer paisa for the chart.
  */
 export function SalesTrendChart({ rows }: { rows: DashboardSalesDay[] }) {
+  const { t } = useTranslation();
   const points: TrendPoint[] = rows.map((row) => ({
     date: row.business_date_bs,
     paisa: toPaisa(row.net_total),
   }));
 
   return (
-    <Card title="Last 30 days sales / पछिल्लो ३० दिनको बिक्री">
+    <Card title={t('dashboard.trend.title')}>
       {points.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          No completed sales in the last 30 days.
+          {t('dashboard.trend.empty')}
         </p>
       ) : (
         <div
           role="img"
-          aria-label="Last 30 days sales"
+          aria-label={t('dashboard.trend.title')}
           className="h-48 w-full sm:h-56"
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -67,7 +69,10 @@ export function SalesTrendChart({ rows }: { rows: DashboardSalesDay[] }) {
                 tickFormatter={axisMoney}
               />
               <Tooltip
-                formatter={(value) => [money(String((Number(value) / 100).toFixed(2))), 'Net sales']}
+                formatter={(value) => [
+                  money(String((Number(value) / 100).toFixed(2))),
+                  t('dashboard.trend.netSales'),
+                ]}
                 labelFormatter={(date) => `BS ${String(date)}`}
               />
               <Area

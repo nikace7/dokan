@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +25,7 @@ function money(amount: string | null | undefined): string {
  * cost), low stock against reorder levels, and dead stock.
  */
 export function StockReportsPage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('summary');
   const [days, setDays] = useState(90);
   const [page, setPage] = useState(1);
@@ -49,7 +51,7 @@ export function StockReportsPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl p-4">
-      <Card title="Stock reports / स्टक प्रतिवेदन">
+      <Card title={t('reports.stock.title')}>
         <Tabs
           value={tab}
           onValueChange={(value) => {
@@ -58,15 +60,15 @@ export function StockReportsPage() {
           }}
         >
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <TabsList aria-label="Stock report type">
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="low">Low stock</TabsTrigger>
-              <TabsTrigger value="dead">Dead stock</TabsTrigger>
+            <TabsList aria-label={t('reports.stock.typeAria')}>
+              <TabsTrigger value="summary">{t('reports.stock.summary')}</TabsTrigger>
+              <TabsTrigger value="low">{t('reports.stock.low')}</TabsTrigger>
+              <TabsTrigger value="dead">{t('reports.stock.dead')}</TabsTrigger>
             </TabsList>
             {tab === 'dead' ? (
               <Input
                 id="dead-days"
-                label="No sale in (days)"
+                label={t('reports.stock.noSaleDays')}
                 type="number"
                 min={1}
                 value={days}
@@ -100,7 +102,11 @@ export function StockReportsPage() {
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              Page {meta.page} of {meta.total_pages} ({meta.count} rows)
+              {t('reports.pageInfo', {
+                page: meta.page,
+                pages: meta.total_pages,
+                count: meta.count,
+              })}
             </span>
             <div className="flex gap-2">
               <Button
@@ -109,7 +115,7 @@ export function StockReportsPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Previous
+                {t('common.previous')}
               </Button>
               <Button
                 variant="secondary"
@@ -117,7 +123,7 @@ export function StockReportsPage() {
                 disabled={meta.page >= meta.total_pages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           </div>
@@ -127,33 +133,30 @@ export function StockReportsPage() {
   );
 }
 
-function summaryColumns(showCost: boolean): readonly ReportColumn[] {
+function SummaryTable({ rows }: { rows: StockSummaryRow[] }) {
+  const { t } = useTranslation();
+  // The backend includes cost columns only for pricing.view_cost users.
+  const showCost = rows.some((row) => row.avg_cost !== undefined);
   const columns: ReportColumn[] = [
-    { header: 'SKU' },
-    { header: 'Item' },
-    { header: 'Branch' },
-    { header: 'On hand', className: 'text-right' },
-    { header: 'MRP', className: 'text-right' },
-    { header: 'MRP value', className: 'text-right' },
+    { header: t('reports.columns.sku') },
+    { header: t('reports.columns.item') },
+    { header: t('reports.columns.branch') },
+    { header: t('reports.columns.onHand'), className: 'text-right' },
+    { header: t('reports.columns.mrp'), className: 'text-right' },
+    { header: t('reports.columns.mrpValue'), className: 'text-right' },
   ];
   if (showCost) {
     columns.push(
-      { header: 'Avg cost', className: 'text-right' },
-      { header: 'Cost value', className: 'text-right' },
+      { header: t('reports.columns.avgCost'), className: 'text-right' },
+      { header: t('reports.columns.costValue'), className: 'text-right' },
     );
   }
-  return columns;
-}
-
-function SummaryTable({ rows }: { rows: StockSummaryRow[] }) {
-  // The backend includes cost columns only for pricing.view_cost users.
-  const showCost = rows.some((row) => row.avg_cost !== undefined);
   return (
     <ReportTable
-      columns={summaryColumns(showCost)}
+      columns={columns}
       rows={rows}
       rowKey={(row) => `${row.variant_id}:${row.branch_id}`}
-      empty="No stock on hand."
+      empty={t('reports.stock.emptySummary')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.sku}</TableCell>
@@ -173,7 +176,7 @@ function SummaryTable({ rows }: { rows: StockSummaryRow[] }) {
             <p className="truncate text-muted-foreground">
               {row.sku} · {row.branch_code}
               {showCost && row.avg_cost !== undefined
-                ? ` · cost value ${money(row.cost_valuation)}`
+                ? ` · ${t('reports.stock.costValue', { amount: money(row.cost_valuation) })}`
                 : ''}
             </p>
           </div>
@@ -187,20 +190,20 @@ function SummaryTable({ rows }: { rows: StockSummaryRow[] }) {
   );
 }
 
-const LOW_COLUMNS: readonly ReportColumn[] = [
-  { header: 'SKU' },
-  { header: 'Item' },
-  { header: 'On hand', className: 'text-right' },
-  { header: 'Reorder level', className: 'text-right' },
-];
-
 function LowTable({ rows }: { rows: LowStockRow[] }) {
+  const { t } = useTranslation();
+  const columns: readonly ReportColumn[] = [
+    { header: t('reports.columns.sku') },
+    { header: t('reports.columns.item') },
+    { header: t('reports.columns.onHand'), className: 'text-right' },
+    { header: t('reports.columns.reorderLevel'), className: 'text-right' },
+  ];
   return (
     <ReportTable
-      columns={LOW_COLUMNS}
+      columns={columns}
       rows={rows}
       rowKey={(row) => `${row.variant_id}:${row.branch_id}`}
-      empty="Nothing below its reorder level."
+      empty={t('reports.stock.emptyLow')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.sku}</TableCell>
@@ -216,29 +219,29 @@ function LowTable({ rows }: { rows: LowStockRow[] }) {
           <div className="min-w-0">
             <p className="font-medium">{row.item_name}</p>
             <p className="truncate text-muted-foreground">
-              {row.sku} · reorder at {row.reorder_level}
+              {row.sku} · {t('reports.stock.reorderAt', { level: row.reorder_level })}
             </p>
           </div>
-          <Badge variant="warning">{row.qty_on_hand} left</Badge>
+          <Badge variant="warning">{t('reports.stock.qtyLeft', { count: row.qty_on_hand })}</Badge>
         </div>
       )}
     />
   );
 }
 
-const DEAD_COLUMNS: readonly ReportColumn[] = [
-  { header: 'SKU' },
-  { header: 'Item' },
-  { header: 'On hand', className: 'text-right' },
-];
-
 function DeadTable({ rows }: { rows: DeadStockRow[] }) {
+  const { t } = useTranslation();
+  const columns: readonly ReportColumn[] = [
+    { header: t('reports.columns.sku') },
+    { header: t('reports.columns.item') },
+    { header: t('reports.columns.onHand'), className: 'text-right' },
+  ];
   return (
     <ReportTable
-      columns={DEAD_COLUMNS}
+      columns={columns}
       rows={rows}
       rowKey={(row) => `${row.variant_id}:${row.branch_id}`}
-      empty="No dead stock."
+      empty={t('reports.stock.emptyDead')}
       renderCells={(row) => (
         <>
           <TableCell className="font-medium">{row.sku}</TableCell>
@@ -252,7 +255,9 @@ function DeadTable({ rows }: { rows: DeadStockRow[] }) {
             <p className="font-medium">{row.item_name}</p>
             <p className="truncate text-muted-foreground">{row.sku}</p>
           </div>
-          <p className="font-semibold tabular-nums">{row.qty_on_hand} on hand</p>
+          <p className="font-semibold tabular-nums">
+            {t('reports.stock.qtyOnHand', { count: row.qty_on_hand })}
+          </p>
         </div>
       )}
     />
