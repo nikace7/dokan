@@ -52,9 +52,7 @@ def test_effective_plan_features_surface_override() -> None:
     # PlanFactory defaults advanced_pos on.
     assert get_effective_plan_features(tenant)["advanced_pos"] is True
 
-    TenantFeatureOverride.objects.create(
-        tenant=tenant, key="features.advanced_pos", value=False
-    )
+    TenantFeatureOverride.objects.create(tenant=tenant, key="features.advanced_pos", value=False)
     assert get_effective_plan_features(tenant)["advanced_pos"] is False
 
     # An expired override no longer applies.
