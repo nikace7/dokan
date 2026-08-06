@@ -122,8 +122,23 @@ POS (Phase 3) is implemented per ADR 0006: a Dexie-backed queue
 existing idempotent `POST /sales` (invoice numbers are assigned server-side at
 sync time — gapless numbering is an IRD invariant), server-wins conflicts with a
 visible exception list, offline barcode/SKU lookup cache, sync-status UI, and a
-hand-rolled app-shell service worker. E2E and load testing live in `e2e/`
-(standalone Playwright package — login, billing, returns smoke; 6/6 green against
+hand-rolled app-shell service worker. A simplified **Simple Sale** flow is the
+default counter experience: `GET /catalog/variants/for-sale` (in-stock variants
+with effective min/max SP, gated on `sale.create`, never exposes cost) feeds a
+mobile-first form (item picker → price-range hint → manual sold price →
+Cash/QR tender — `QR` is a cash-equivalent digital tender label, no gateway);
+completed bills can be shared via `POST /sales/<id>/share` (idempotent token,
+`sale.share` audit event) and read unauthenticated at `GET /sales/shared/<token>`
++ the public `/bill/<token>` page (host-tenant checked, throttled, cost-free
+payload). Visibility of the classic barcode POS is a per-tenant plan feature
+(`advanced_pos`; `simple_sale` is its counterpart), toggled by the platform
+admin from the tenant detail screen; the demo tenant runs simple-only. The
+tenant frontend is built on a token-based design system (shadcn-style
+primitives in `frontend/src/components/ui/`, semantic Tailwind tokens, mobile
+bottom-tab `AppShell`) — every feature screen uses it; do not add raw palette
+classes. E2E and load testing live in `e2e/`
+(standalone Playwright package — login, billing, returns, simple-sale and
+public-shared-bill smoke; 9/9 green against
 the local Compose stack; deliberately not in CI) and `loadtests/` (k6: POST
 /sales at 50 rps, variant lookup at 200 rps). Docs now also include
 `docs/RATE_RULES.md`, `docs/NEPALI_LOCALIZATION.md`, `docs/GIT_WORKFLOW.md`,
