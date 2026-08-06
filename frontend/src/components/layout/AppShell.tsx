@@ -36,6 +36,7 @@ import { SupportAccessBanner } from '@/features/support/SupportAccessBanner';
 import { hasPermission } from '@/lib/permissions';
 import type { PermissionCodename } from '@/lib/permissions';
 import { hasPlanFeature } from '@/lib/plans';
+import { billingPath } from '@/lib/plans';
 import type { PlanFeature } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
@@ -81,7 +82,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 /** Mobile bottom tab bar: the four counter-critical screens + a More sheet. */
-const MOBILE_TABS = ['/', '/billing', '/stock', '/reports'] as const;
+const MOBILE_TABS = ['/', '/billing', '/billing/simple', '/stock', '/reports'] as const;
 
 function useVisibleNavItems(): NavItem[] {
   const { user } = useAuth();
@@ -93,13 +94,19 @@ function useVisibleNavItems(): NavItem[] {
       return false;
     }
     return true;
-  }).map((item) =>
+  }).map((item) => {
     // Staff managers without settings.manage land on the staff screen
     // directly (matches the old header nav behavior).
-    item.to === '/settings' && !hasPermission(user, 'settings.manage')
-      ? { ...item, to: '/settings/staff' }
-      : item,
-  );
+    if (item.to === '/settings' && !hasPermission(user, 'settings.manage')) {
+      return { ...item, to: '/settings/staff' };
+    }
+    // The classic barcode POS exists only with advanced_pos; otherwise the
+    // Billing entry opens the simple sale screen.
+    if (item.to === '/billing') {
+      return { ...item, to: billingPath(user) };
+    }
+    return item;
+  });
 }
 
 function BrandMark({ className }: { className?: string }) {
