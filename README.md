@@ -122,7 +122,10 @@ Two platform gotchas:
   service) answers. Force IPv4 by adding this line to
   `C:\Windows\System32\drivers\etc\hosts` (edit as Administrator):
   `127.0.0.1 demo.localhost admin.localhost app.localhost www.localhost`
-  (one line, space-separated), then `ipconfig /flushdns`.
+  (one line, space-separated), then `ipconfig /flushdns`. Or run
+  `scripts/fix-local-access.ps1` as Administrator (right-click → Run with
+  PowerShell) — it adds the hosts line, flushes DNS, and trusts the Caddy
+  dev CA in one step.
 - **Certificate warning.** Local Caddy issues certs from its own dev CA. Either
   accept the browser warning once, or trust it permanently:
   `docker cp shop_system-caddy-1:/data/caddy/pki/authorities/local/root.crt .`
