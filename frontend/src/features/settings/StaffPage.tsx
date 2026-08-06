@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -34,6 +35,7 @@ const inlineSelectClasses =
 
 /** Owner-facing staff account and existing-role assignment screen. */
 export function StaffPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const canManage = hasPermission(user, 'user.manage');
   const queryClient = useQueryClient();
@@ -66,9 +68,9 @@ export function StaffPage() {
       void queryClient.invalidateQueries({ queryKey: ['tenant', 'staff'] });
       setForm(emptyForm());
       setFormError(null);
-      setStatusMessage('Staff account created.');
+      setStatusMessage(t('settings.staff.created'));
     },
-    onError: (error) => setFormError(errorMessage(error, 'Could not create the staff account.')),
+    onError: (error) => setFormError(errorMessage(error, t('settings.staff.createError'))),
   });
 
   const assignMutation = useMutation({
@@ -76,18 +78,16 @@ export function StaffPage() {
       assignStaffRole(userId, role, branch || null),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tenant', 'staff'] });
-      setStatusMessage('Role assigned.');
+      setStatusMessage(t('settings.staff.assigned'));
     },
-    onError: (error) => setStatusMessage(errorMessage(error, 'Could not assign the role.')),
+    onError: (error) => setStatusMessage(errorMessage(error, t('settings.staff.assignError'))),
   });
 
   if (!canManage) {
     return (
       <main className="mx-auto max-w-5xl p-4">
-        <Card title="Staff & roles / कर्मचारी">
-          <p className="text-sm text-muted-foreground">
-            Only the shop owner can manage staff accounts.
-          </p>
+        <Card title={t('settings.staff.title')}>
+          <p className="text-sm text-muted-foreground">{t('settings.staff.ownerOnly')}</p>
         </Card>
       </main>
     );
@@ -101,7 +101,7 @@ export function StaffPage() {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!form.phone.trim() || !form.full_name.trim() || !form.password || !form.role) {
-      setFormError('Phone, full name, password, and role are required.');
+      setFormError(t('settings.staff.required'));
       return;
     }
     setStatusMessage(null);
@@ -123,31 +123,31 @@ export function StaffPage() {
       ) : null}
       {queryError ? (
         <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {errorMessage(queryError, 'Could not load staff settings.')}
+          {errorMessage(queryError, t('settings.staff.loadError'))}
         </p>
       ) : null}
 
-      <Card title="Add staff / कर्मचारी थप्नुहोस्">
+      <Card title={t('settings.staff.addTitle')}>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Input
-              label="Full name"
+              label={t('settings.staff.fullName')}
               value={form.full_name}
               onChange={(event) => setForm({ ...form, full_name: event.target.value })}
             />
             <Input
-              label="Phone"
+              label={t('settings.staff.phone')}
               value={form.phone}
               onChange={(event) => setForm({ ...form, phone: event.target.value })}
             />
             <Input
-              label="Email"
+              label={t('settings.staff.email')}
               type="email"
               value={form.email}
               onChange={(event) => setForm({ ...form, email: event.target.value })}
             />
             <Input
-              label="Initial password"
+              label={t('settings.staff.initialPassword')}
               type="password"
               minLength={8}
               value={form.password}
@@ -156,14 +156,14 @@ export function StaffPage() {
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex min-w-52 flex-col gap-1.5 text-sm font-medium">
-              Role
+              {t('settings.staff.role')}
               <select
-                aria-label="Role"
+                aria-label={t('settings.staff.role')}
                 value={form.role}
                 onChange={(event) => setForm({ ...form, role: event.target.value })}
                 className={`${selectClasses} font-normal`}
               >
-                <option value="">Select a role</option>
+                <option value="">{t('settings.staff.selectRole')}</option>
                 {roles.map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name} ({role.code})
@@ -172,14 +172,14 @@ export function StaffPage() {
               </select>
             </label>
             <label className="flex min-w-52 flex-col gap-1.5 text-sm font-medium">
-              Initial branch
+              {t('settings.staff.initialBranch')}
               <select
-                aria-label="Initial branch"
+                aria-label={t('settings.staff.initialBranch')}
                 value={form.branch ?? ''}
                 onChange={(event) => setForm({ ...form, branch: event.target.value || null })}
                 className={`${selectClasses} font-normal`}
               >
-                <option value="">All branches</option>
+                <option value="">{t('settings.staff.allBranches')}</option>
                 {branches.map((branch) => (
                   <option key={branch.id} value={branch.id}>
                     {branch.name} ({branch.code})
@@ -188,27 +188,27 @@ export function StaffPage() {
               </select>
             </label>
             <Button type="submit" disabled={createMutation.isPending || roles.length === 0}>
-              {createMutation.isPending ? 'Creating…' : 'Create staff'}
+              {createMutation.isPending ? t('settings.staff.creating') : t('settings.staff.create')}
             </Button>
           </div>
           {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
           {roles.length === 0 && !rolesQuery.isPending ? (
-            <p className="text-sm text-warning">Create a role before adding staff.</p>
+            <p className="text-sm text-warning">{t('settings.staff.needRole')}</p>
           ) : null}
         </form>
       </Card>
       {branchesQuery.error ? (
         <p role="status" className="text-sm text-warning">
-          Branches could not be loaded; role assignments will apply to all branches.
+          {t('settings.staff.branchesUnavailable')}
         </p>
       ) : null}
 
-      <Card title="Staff accounts">
+      <Card title={t('settings.staff.listTitle')}>
         {staffQuery.isPending ? (
-          <p className="text-sm text-muted-foreground">Loading staff…</p>
+          <p className="text-sm text-muted-foreground">{t('settings.staff.loading')}</p>
         ) : null}
         {!staffQuery.isPending && staff.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No staff accounts yet.</p>
+          <p className="text-sm text-muted-foreground">{t('settings.staff.empty')}</p>
         ) : null}
         {staff.length > 0 ? (
           <ul className="flex flex-col gap-3">
@@ -224,13 +224,16 @@ export function StaffPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {member.roles.length > 0
                       ? member.roles
-                          .map((role) => `${role.code} @ ${role.branch_code ?? 'all branches'}`)
+                          .map(
+                            (role) =>
+                              `${role.code} @ ${role.branch_code ?? t('settings.staff.allBranchesInline')}`,
+                          )
                           .join(', ')
-                      : 'No role'}
+                      : t('settings.staff.noRole')}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <select
-                      aria-label={`Role for ${member.full_name}`}
+                      aria-label={t('settings.staff.roleFor', { name: member.full_name })}
                       value={selectedRole}
                       onChange={(event) =>
                         setRoleSelections({
@@ -240,7 +243,7 @@ export function StaffPage() {
                       }
                       className={inlineSelectClasses}
                     >
-                      <option value="">Select</option>
+                      <option value="">{t('settings.staff.select')}</option>
                       {roles.map((role) => (
                         <option key={role.id} value={role.id}>
                           {role.code}
@@ -248,7 +251,7 @@ export function StaffPage() {
                       ))}
                     </select>
                     <select
-                      aria-label={`Branch for ${member.full_name}`}
+                      aria-label={t('settings.staff.branchFor', { name: member.full_name })}
                       value={selectedBranch}
                       onChange={(event) =>
                         setBranchSelections({
@@ -258,7 +261,7 @@ export function StaffPage() {
                       }
                       className={inlineSelectClasses}
                     >
-                      <option value="">All branches</option>
+                      <option value="">{t('settings.staff.allBranches')}</option>
                       {branches.map((branch) => (
                         <option key={branch.id} value={branch.id}>
                           {branch.code}
@@ -276,7 +279,7 @@ export function StaffPage() {
                         })
                       }
                     >
-                      Assign
+                      {t('settings.staff.assign')}
                     </Button>
                   </div>
                 </li>
@@ -286,9 +289,9 @@ export function StaffPage() {
         ) : null}
       </Card>
 
-      <Card title="Available roles">
+      <Card title={t('settings.staff.rolesTitle')}>
         {roles.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No roles configured.</p>
+          <p className="text-sm text-muted-foreground">{t('settings.staff.noRoles')}</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {roles.map((role) => (
@@ -299,7 +302,7 @@ export function StaffPage() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {role.permission_codes.length > 0
                     ? role.permission_codes.join(', ')
-                    : 'No permissions'}
+                    : t('settings.staff.noPermissions')}
                 </p>
               </li>
             ))}

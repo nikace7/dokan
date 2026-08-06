@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { cn } from '@/lib/utils';
 
@@ -8,26 +10,29 @@ const selectClasses = cn(
 
 /** Compact branch/rate selector shared by the authenticated app shell. */
 export function WorkspaceSelector() {
+  const { t } = useTranslation();
   const workspace = useWorkspace();
 
   if (workspace.isLoading) {
-    return <span className="text-xs text-muted-foreground">Loading shop…</span>;
+    return <span className="text-xs text-muted-foreground">{t('settings.workspace.loading')}</span>;
   }
   if (workspace.error) {
-    return <span className="text-xs text-destructive">Shop settings unavailable</span>;
+    return (
+      <span className="text-xs text-destructive">{t('settings.workspace.unavailable')}</span>
+    );
   }
   if (!workspace.isReady) {
-    return <span className="text-xs text-warning">No active branch/rate</span>;
+    return <span className="text-xs text-warning">{t('settings.workspace.notReady')}</span>;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <label className="sr-only" htmlFor="workspace-branch">
-        Branch
+        {t('settings.workspace.branch')}
       </label>
       <select
         id="workspace-branch"
-        aria-label="Branch"
+        aria-label={t('settings.workspace.branch')}
         value={workspace.branchId ?? ''}
         onChange={(event) => workspace.setBranchId(event.target.value)}
         className={selectClasses}
@@ -39,11 +44,11 @@ export function WorkspaceSelector() {
         ))}
       </select>
       <label className="sr-only" htmlFor="workspace-rate-type">
-        Rate type
+        {t('settings.workspace.rateType')}
       </label>
       <select
         id="workspace-rate-type"
-        aria-label="Rate type"
+        aria-label={t('settings.workspace.rateType')}
         value={workspace.rateTypeId ?? ''}
         onChange={(event) => workspace.setRateTypeId(event.target.value)}
         className={selectClasses}

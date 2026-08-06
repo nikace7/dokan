@@ -86,7 +86,7 @@ describe('ExpensesPage', () => {
 
     // Rows render in both the mobile card list and the desktop table.
     expect((await screen.findAllByText('Shop rent')).length).toBeGreaterThan(0);
-    expect(screen.getByText('Expenses / खर्च')).toBeInTheDocument();
+    expect(screen.getByText('Expenses')).toBeInTheDocument();
     // List (card + table) and summary (card + table) each render the amount twice.
     expect(screen.getAllByText('रू 1,500.00').length).toBe(4);
     // Filter option + list (card + table) + summary (card + table).
