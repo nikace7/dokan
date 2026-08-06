@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { getTenant, listPlans, listUsage, updateTenant } from '@/features/admin/api';
 import type { TenantStatus } from '@/features/admin/api';
+import { FeatureTogglesPanel } from '@/features/admin/FeatureTogglesPanel';
 import { SupportAccessPanel } from '@/features/admin/SupportAccessPanel';
 import { TenantBillingPanel } from '@/features/admin/TenantBillingPanel';
 import { TenantOverridesPanel } from '@/features/admin/TenantOverridesPanel';
@@ -144,7 +145,19 @@ export function TenantDetailPage() {
         )}
       </Card>
       {user ? <TenantBillingPanel tenantId={id} role={user.role} /> : null}
-      {user ? <TenantOverridesPanel tenantId={id} canWrite={user.role === 'SUPER_ADMIN'} /> : null}
+      {user ? (
+        <FeatureTogglesPanel tenantId={id} planId={current.plan} canWrite={user.role === 'SUPER_ADMIN'} />
+      ) : null}
+      {user ? (
+        <details className="group">
+          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+            Advanced: raw overrides
+          </summary>
+          <div className="mt-2">
+            <TenantOverridesPanel tenantId={id} canWrite={user.role === 'SUPER_ADMIN'} />
+          </div>
+        </details>
+      ) : null}
       {user?.role === 'SUPER_ADMIN' || user?.role === 'SUPPORT' ? (
         <SupportAccessPanel tenantId={id} slug={current.slug} role={user.role} />
       ) : null}
