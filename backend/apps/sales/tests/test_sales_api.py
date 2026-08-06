@@ -387,3 +387,41 @@ class TestHoldCompleteCancelFlow:
         )
         assert response.status_code == 409
         assert response.json()["error"]["code"] == "INVOICE_NOT_EDITABLE"
+
+
+class TestQrTender:
+    """QR is a cash-equivalent digital tender: counts toward paid, due zero."""
+
+    def test_qr_sale_completes_paid_in_full(self, tenant: Any, user: Any, shop: dict) -> None:
+        grant(tenant, user, "sale.create")
+        response = auth_client(user).post(
+            SALES_URL,
+            sale_payload(shop, payments=[{"method": "QR", "amount": "2000.00"}]),
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="k-qr",
+        )
+        assert response.status_code == 201
+        data = response.json()["data"]
+        assert data["status"] == "COMPLETED"
+        assert data["paid_amount"] == "2000.00"
+        assert data["due_amount"] == "0.00"
+        assert data["tenders"] == [{"method": "QR", "amount": "2000.00"}]
+
+    def test_qr_split_with_cash(self, tenant: Any, user: Any, shop: dict) -> None:
+        grant(tenant, user, "sale.create")
+        response = auth_client(user).post(
+            SALES_URL,
+            sale_payload(
+                shop,
+                payments=[
+                    {"method": "QR", "amount": "1500.00"},
+                    {"method": "CASH", "amount": "500.00"},
+                ],
+            ),
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="k-qr-split",
+        )
+        assert response.status_code == 201
+        assert response.json()["data"]["due_amount"] == "0.00"

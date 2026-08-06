@@ -157,6 +157,65 @@ class TestExpectedCash:
         )
         assert closed.expected_cash == Decimal("100.00")
 
+    def test_qr_sale_tender_is_not_drawer_cash(self, shop: dict) -> None:
+        """QR reconciles like the other digital wallets — never drawer cash."""
+        session = services.open_session(
+            shop["tenant"],
+            branch=shop["branch"],
+            opening_float=Decimal("100.00"),
+            opened_by=shop["user"],
+        )
+        sale_services.create_sale(
+            shop["tenant"],
+            branch=shop["branch"],
+            rate_type=shop["rate_type"],
+            customer=shop["customer"],
+            lines=[
+                SaleLineInput(
+                    variant=shop["variant"],
+                    qty=Decimal("1"),
+                    unit_price=None,
+                    discount=Decimal("0"),
+                )
+            ],
+            payments=[{"method": "QR", "amount": Decimal("1000.00")}],
+            idempotency_key="s-qr",
+            created_by=shop["user"],
+        )
+
+        closed = services.close_session(
+            shop["tenant"],
+            session=session,
+            counted_cash=Decimal("100.00"),
+            closed_by=shop["user"],
+        )
+        assert closed.expected_cash == Decimal("100.00")
+
+    def test_qr_receipt_is_not_drawer_cash(self, shop: dict) -> None:
+        session = services.open_session(
+            shop["tenant"],
+            branch=shop["branch"],
+            opening_float=Decimal("100.00"),
+            opened_by=shop["user"],
+        )
+        services.record_receipt(
+            shop["tenant"],
+            branch=shop["branch"],
+            customer=shop["customer"],
+            amount=Decimal("500.00"),
+            method="QR",
+            idempotency_key="r-qr",
+            created_by=shop["user"],
+        )
+
+        closed = services.close_session(
+            shop["tenant"],
+            session=session,
+            counted_cash=Decimal("100.00"),
+            closed_by=shop["user"],
+        )
+        assert closed.expected_cash == Decimal("100.00")
+
     def test_cash_supplier_payment_leaves_the_drawer(self, shop: dict) -> None:
         session = services.open_session(
             shop["tenant"],
