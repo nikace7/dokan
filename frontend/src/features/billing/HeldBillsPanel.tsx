@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -13,6 +14,7 @@ import { useCartStore } from '@/stores/cartStore';
  * no stock or numbering moves twice.
  */
 export function HeldBillsPanel() {
+  const { t } = useTranslation();
   const resumeHeld = useCartStore((s) => s.resumeHeld);
   const currentHeldId = useCartStore((s) => s.heldSaleId);
 
@@ -45,16 +47,16 @@ export function HeldBillsPanel() {
   }
 
   return (
-    <Card title="Held bills / रोकिएका बिल" className="mt-4">
+    <Card title={t('billing.heldBills')} className="mt-4">
       <ul className="space-y-2">
         {held.map((invoice) => (
           <li key={invoice.id} className="flex items-center justify-between gap-2 text-sm">
             <div>
-              <span className="font-medium">{invoice.customer_name ?? 'Walk-in'}</span>{' '}
+              <span className="font-medium">{invoice.customer_name ?? t('billing.walkIn')}</span>{' '}
               <span className="text-slate-500">{formatNpr(invoice.total)}</span>
             </div>
             <Button variant="secondary" size="sm" onClick={() => void resume(invoice.id)}>
-              Resume
+              {t('billing.resume')}
             </Button>
           </li>
         ))}

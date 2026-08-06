@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import i18n from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -32,7 +34,7 @@ function serverMessage(err: unknown): string {
   if (err instanceof ApiError) {
     return err.message;
   }
-  return 'Could not reach the server. Check your connection and try again.';
+  return i18n.t('common.networkError');
 }
 
 /**
@@ -48,6 +50,7 @@ export function BillingPage() {
   const queryClient = useQueryClient();
   const workspace = useWorkspace();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [queuedRef, setQueuedRef] = useState<string | null>(null);
@@ -128,15 +131,11 @@ export function BillingPage() {
     return (
       <main className="p-6">
         <Card className="mx-auto max-w-lg text-center">
-          <p className="text-sm font-medium text-blue-700">No connection — bill queued</p>
-          <h2 className="mt-1 text-2xl font-bold">Reference {queuedRef}</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            The bill is stored on this device and syncs automatically when the connection returns.
-            The invoice number is assigned by the server at sync time — quote this reference, never
-            an invoice number.
-          </p>
+          <p className="text-sm font-medium text-blue-700">{t('billing.queuedTitle')}</p>
+          <h2 className="mt-1 text-2xl font-bold">{t('billing.queuedRef', { ref: queuedRef })}</h2>
+          <p className="mt-2 text-sm text-slate-600">{t('billing.queuedBody')}</p>
           <Button size="lg" className="mt-6 w-full" onClick={() => setQueuedRef(null)} autoFocus>
-            New bill / नयाँ बिल
+            {t('billing.receipt.newBill')}
           </Button>
         </Card>
       </main>
@@ -148,8 +147,10 @@ export function BillingPage() {
       <main className="p-6">
         {planWarning ? (
           <p role="status" className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            You have used {planWarning.usage} of {planWarning.limit} monthly bills. Billing remains
-            available; contact support if you need a higher plan.
+            {t('billing.planWarning', {
+              usage: planWarning.usage,
+              limit: planWarning.limit,
+            })}
           </p>
         ) : null}
         <ReceiptPanel
@@ -171,15 +172,14 @@ export function BillingPage() {
           role="status"
           className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800 lg:col-span-2"
         >
-          Loading branches and rate types…
+          {t('billing.workspaceLoading')}
         </p>
       ) : !workspace.isReady ? (
         <p
           role="alert"
           className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800 lg:col-span-2"
         >
-          Billing needs an active branch and rate type. Configure them in the header or finish
-          tenant setup first.
+          {t('billing.workspaceNotReady')}
         </p>
       ) : null}
 
@@ -187,13 +187,13 @@ export function BillingPage() {
         <Card>
           <ScanInput />
         </Card>
-        <Card title={heldSaleId ? 'Bill (resumed from held)' : 'Bill'}>
+        <Card title={heldSaleId ? t('billing.billResumed') : t('billing.bill')}>
           <CartTable />
         </Card>
       </div>
 
       <div>
-        <Card title="Payment / भुक्तानी">
+        <Card title={t('billing.payment')}>
           <PaymentPanel
             busy={saleMutation.isPending}
             disabled={!workspace.isReady}
@@ -212,7 +212,7 @@ export function BillingPage() {
               onClick={() => holdMutation.mutate()}
               className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300"
             >
-              {holdMutation.isPending ? 'Parking…' : 'Park this bill (hold)'}
+              {holdMutation.isPending ? t('billing.parking') : t('billing.holdBill')}
             </button>
           </div>
           {saleError ? (

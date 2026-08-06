@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -23,15 +24,16 @@ function billUrl(shareUrlPath: string): string {
  * then hand the link to the OS share sheet, the clipboard, or WhatsApp.
  */
 export function ShareBillPanel({ invoice }: ShareBillPanelProps) {
+  const { t } = useTranslation();
   const [url, setUrl] = useState<string | null>(null);
 
   const shareMutation = useMutation({
     mutationFn: () => shareSale(invoice.id),
     onError: (err) => {
       if (err instanceof ApiError && err.status === 403) {
-        toast.error('You do not have permission to share bills. / बिल सेयर गर्ने अनुमति छैन।');
+        toast.error(t('share.permissionDenied'));
       } else {
-        toast.error('Could not create the share link. Try again. / लिङ्क बन्न सकेन।');
+        toast.error(t('share.createFailed'));
       }
     },
   });
@@ -49,7 +51,12 @@ export function ShareBillPanel({ invoice }: ShareBillPanelProps) {
     }
     if (typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title: `Bill ${invoice.invoice_prefix}-${invoice.invoice_no}`, url: link });
+        await navigator.share({
+          title: t('share.billTitle', {
+            number: `${invoice.invoice_prefix}-${invoice.invoice_no}`,
+          }),
+          url: link,
+        });
         return;
       } catch {
         // Share sheet dismissed or unavailable — fall through to clipboard.
@@ -57,14 +64,14 @@ export function ShareBillPanel({ invoice }: ShareBillPanelProps) {
     }
     try {
       await navigator.clipboard.writeText(link);
-      toast.success('Link copied / लिङ्क कपी भयो');
+      toast.success(t('share.linkCopied'));
     } catch {
-      toast.error('Copy failed — long-press the link instead. / कपी भएन।');
+      toast.error(t('share.copyFailed'));
     }
   };
 
   return (
-    <Card title="Share bill / बिल सेयर" className="mx-auto mt-4 max-w-lg">
+    <Card title={t('share.title')} className="mx-auto mt-4 max-w-lg">
       <div className="grid gap-2 sm:grid-cols-2">
         <Button
           variant="secondary"
@@ -72,7 +79,7 @@ export function ShareBillPanel({ invoice }: ShareBillPanelProps) {
           disabled={shareMutation.isPending}
           onClick={() => void share()}
         >
-          {shareMutation.isPending ? 'Creating link…' : 'Share link / लिङ्क सेयर'}
+          {shareMutation.isPending ? t('share.creatingLink') : t('share.shareLink')}
         </Button>
         <Button asChild variant="secondary" size="lg" disabled={url === null}>
           <a
@@ -90,9 +97,7 @@ export function ShareBillPanel({ invoice }: ShareBillPanelProps) {
           {url}
         </p>
       ) : (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Create the link first, then send it on WhatsApp. पहिले लिङ्क बनाउनुहोस्।
-        </p>
+        <p className="mt-3 text-xs text-muted-foreground">{t('share.createFirst')}</p>
       )}
     </Card>
   );

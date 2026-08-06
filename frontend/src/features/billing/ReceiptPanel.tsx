@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,8 +16,13 @@ interface ReceiptPanelProps {
 /**
  * Post-sale receipt. Every figure here comes from the server's response —
  * the client never re-derives invoice totals.
+ *
+ * The receipt BODY is deliberately bilingual ("Invoice / बिल", fixed 80mm
+ * print layout) and does NOT go through i18n — only the screen-only chrome
+ * (Sale completed, Reprint, New bill) is translated.
  */
 export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
+  const { t } = useTranslation();
   const [printCount, setPrintCount] = useState(invoice.print_count);
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
@@ -33,13 +39,13 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
       flushSync(() => setPrintCount(result.print_count));
       setPrintError(null);
     } catch {
-      setPrintError('Receipt opened, but its print history could not be saved.');
+      setPrintError(t('billing.receipt.printHistoryError'));
     } finally {
       window.print();
       printInFlight.current = false;
       setIsPrinting(false);
     }
-  }, [invoice.id]);
+  }, [invoice.id, t]);
 
   useEffect(() => {
     if (autoPrintStarted.current) return;
@@ -50,7 +56,7 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
   return (
     <Card id="sales-receipt" className="mx-auto max-w-lg">
       <div className="receipt-screen-only text-center">
-        <p className="text-sm font-medium text-green-700">Sale completed</p>
+        <p className="text-sm font-medium text-green-700">{t('billing.receipt.saleCompleted')}</p>
       </div>
       <div className="text-center">
         <h1 className="text-xl font-bold">{invoice.tenant_name}</h1>
@@ -136,10 +142,10 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
           disabled={isPrinting}
           onClick={() => void printReceipt()}
         >
-          {isPrinting ? 'Printing…' : 'Reprint / फेरि प्रिन्ट'}
+          {isPrinting ? t('billing.receipt.printing') : t('billing.receipt.reprint')}
         </Button>
         <Button size="lg" onClick={onNewBill} autoFocus>
-          New bill / नयाँ बिल
+          {t('billing.receipt.newBill')}
         </Button>
       </div>
       {printError ? (
