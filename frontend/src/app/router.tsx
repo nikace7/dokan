@@ -5,6 +5,7 @@ import { AuditPage } from '@/features/audit/AuditPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { BillingPage } from '@/features/billing/BillingPage';
+import { SimpleSalePage } from '@/features/billing/SimpleSalePage';
 import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
 import { ItemFormPage } from '@/features/catalog/ItemFormPage';
 import { ItemsPage } from '@/features/catalog/ItemsPage';
@@ -65,6 +66,7 @@ function getRouter() {
       children: [
         { path: '/', element: <DashboardPage /> },
         { path: '/billing', element: <BillingPage /> },
+        { path: '/billing/simple', element: <SimpleSalePage /> },
         { path: '/catalog', element: <ItemsPage /> },
         { path: '/catalog/items/new', element: <ItemFormPage /> },
         { path: '/catalog/items/:id', element: <ItemDetailPage /> },
