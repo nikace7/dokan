@@ -20,17 +20,17 @@ export function ItemFormPage() {
   if (isEdit && itemQuery.isPending) {
     return (
       <main className="mx-auto max-w-3xl p-4">
-        <p className="text-sm text-slate-500">Loading…</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       </main>
     );
   }
   if (isEdit && itemQuery.isError) {
     return (
       <main className="mx-auto max-w-3xl p-4">
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {itemQuery.error instanceof Error ? itemQuery.error.message : 'Item not found.'}
         </p>
-        <Link className="mt-2 inline-block text-blue-700 hover:underline" to="/catalog">
+        <Link className="mt-2 inline-block text-primary hover:underline" to="/catalog">
           Back to items
         </Link>
       </main>

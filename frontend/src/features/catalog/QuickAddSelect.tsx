@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
+import { selectClasses } from '@/features/catalog/ui';
 
 interface QuickAddSelectProps<T extends { id: string; name: string }> {
   label: string;
@@ -13,7 +15,6 @@ interface QuickAddSelectProps<T extends { id: string; name: string }> {
   addLabel: string;
   /** Optional second input (e.g. size-chart values, comma separated). */
   extraField?: { label: string; placeholder: string };
-  children?: ReactNode;
 }
 
 /**
@@ -55,14 +56,14 @@ export function QuickAddSelect<T extends { id: string; name: string }>({
   };
 
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
       <div className="flex gap-2">
         <select
           aria-label={label}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className={selectClasses}
         >
           <option value="">— none —</option>
           {options.map((option) => (
@@ -74,32 +75,30 @@ export function QuickAddSelect<T extends { id: string; name: string }>({
         <Button
           variant="secondary"
           size="sm"
-          className="whitespace-nowrap"
+          className="h-9 whitespace-nowrap"
           onClick={() => setAdding((a) => !a)}
         >
           {adding ? 'Cancel' : addLabel}
         </Button>
       </div>
       {adding ? (
-        <div className="mt-1 flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-          <input
+        <div className="mt-1 flex flex-col gap-2 rounded-md border border-border bg-muted/50 p-2">
+          <Input
             aria-label={`New ${label} name`}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
           {extraField ? (
-            <input
+            <Input
               aria-label={extraField.label}
               value={extra}
               onChange={(e) => setExtra(e.target.value)}
               placeholder={extraField.placeholder}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
             />
           ) : null}
           {error ? (
-            <p role="alert" className="text-xs text-red-600">
+            <p role="alert" className="text-xs text-destructive">
               {error}
             </p>
           ) : null}
