@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import {
   createExchange,
   getReturnableLines,
@@ -28,6 +29,9 @@ const PAYMENT_METHODS: ExchangePaymentMethod[] = [
   'BANK',
   'CREDIT',
 ];
+
+const lineInputClasses =
+  'w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
@@ -99,17 +103,17 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
   }
 
   return (
-    <form onSubmit={submit} className="border-t border-slate-200 px-2 py-3">
+    <form onSubmit={submit} className="border-t border-border px-2 py-3">
       {linesQuery.isFetching ? (
-        <p className="text-sm text-slate-500">Loading returned lines…</p>
+        <p className="text-sm text-muted-foreground">Loading returned lines…</p>
       ) : null}
       {linesQuery.isError ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-destructive">
           {errorMessage(linesQuery.error, 'Could not load returnable lines.')}
         </p>
       ) : null}
       {linesQuery.data && linesQuery.data.length > 0 ? (
-        <LineTable
+        <LineList
           lines={linesQuery.data}
           quantities={returnQuantities}
           onChange={(variant, value) =>
@@ -118,7 +122,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
         />
       ) : null}
 
-      <div className="mt-4 rounded-md border border-slate-200 p-3">
+      <div className="mt-4 rounded-md border border-border p-3">
         <h3 className="text-sm font-semibold">New item</h3>
         <div className="mt-2 flex flex-wrap items-end gap-2">
           <Input
@@ -132,58 +136,51 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
           </Button>
         </div>
         {newLines.length > 0 ? (
-          <table className="mt-3 w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-                <th className="py-1 pr-2 font-medium">Item</th>
-                <th className="py-1 text-right font-medium">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {newLines.map((line, index) => (
-                <tr key={`${line.variant.id}-${index}`} className="border-b border-slate-100">
-                  <td className="py-2 pr-2">
-                    {line.variant.item__name}{' '}
-                    <span className="text-xs text-slate-500">{line.variant.sku}</span>
-                  </td>
-                  <td className="py-2 text-right">
-                    <input
-                      aria-label={`New quantity for ${line.variant.item__name}`}
-                      type="number"
-                      min="0.001"
-                      step="0.001"
-                      value={line.qty}
-                      onChange={(event) =>
-                        setNewLines((current) =>
-                          current.map((item, currentIndex) =>
-                            currentIndex === index ? { ...item, qty: event.target.value } : item,
-                          ),
-                        )
-                      }
-                      className="w-24 rounded-md border border-slate-300 px-2 py-1 text-right text-sm"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="mt-3 divide-y divide-border rounded-md border border-border px-3">
+            {newLines.map((line, index) => (
+              <li
+                key={`${line.variant.id}-${index}`}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-sm"
+              >
+                <div className="min-w-0">
+                  <span className="font-medium">{line.variant.item__name}</span>{' '}
+                  <span className="text-xs text-muted-foreground">{line.variant.sku}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Qty</span>
+                  <input
+                    aria-label={`New quantity for ${line.variant.item__name}`}
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    value={line.qty}
+                    onChange={(event) =>
+                      setNewLines((current) =>
+                        current.map((item, currentIndex) =>
+                          currentIndex === index ? { ...item, qty: event.target.value } : item,
+                        ),
+                      )
+                    }
+                    className={lineInputClasses}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : null}
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <Input label="Reason" value={reason} onChange={(event) => setReason(event.target.value)} />
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`exchange-payment-method-${sale.id}`}
-            className="text-sm font-medium text-slate-700"
-          >
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`exchange-payment-method-${sale.id}`}>
             Extra payment method (optional)
-          </label>
+          </Label>
           <select
             id={`exchange-payment-method-${sale.id}`}
             value={paymentMethod}
             onChange={(event) => setPaymentMethod(event.target.value as ExchangePaymentMethod)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {PAYMENT_METHODS.map((method) => (
               <option key={method} value={method}>
@@ -201,12 +198,12 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
           onChange={(event) => setPaymentAmount(event.target.value)}
         />
       </div>
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-muted-foreground">
         Prices and the difference are calculated by the server. Add extra payment only when the new
         item total exceeds the return credit.
       </p>
       {error ? (
-        <p role="alert" className="mt-2 text-sm text-red-600">
+        <p role="alert" className="mt-2 text-sm text-destructive">
           {error}
         </p>
       ) : null}
@@ -217,7 +214,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
   );
 }
 
-function LineTable({
+function LineList({
   lines,
   quantities,
   onChange,
@@ -227,38 +224,35 @@ function LineTable({
   onChange: (variant: string, value: string) => void;
 }) {
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-          <th className="py-1 pr-2 font-medium">Returned item</th>
-          <th className="py-1 pr-2 text-right font-medium">Remaining</th>
-          <th className="py-1 text-right font-medium">Return qty</th>
-        </tr>
-      </thead>
-      <tbody>
-        {lines.map((line) => (
-          <tr key={line.variant} className="border-b border-slate-100">
-            <td className="py-2 pr-2">
-              <span className="font-medium">{line.item_name}</span>{' '}
-              <span className="text-xs text-slate-500">{line.sku}</span>
-            </td>
-            <td className="py-2 pr-2 text-right">{line.remaining}</td>
-            <td className="py-2 text-right">
-              <input
-                aria-label={`Return quantity for ${line.item_name}`}
-                type="number"
-                min="0"
-                max={line.remaining}
-                step="0.001"
-                value={quantities[line.variant] ?? ''}
-                onChange={(event) => onChange(line.variant, event.target.value)}
-                className="w-24 rounded-md border border-slate-300 px-2 py-1 text-right text-sm"
-              />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <ul className="divide-y divide-border rounded-md border border-border px-3">
+      {lines.map((line) => (
+        <li
+          key={line.variant}
+          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-sm"
+        >
+          <div className="min-w-0">
+            <span className="font-medium">{line.item_name}</span>{' '}
+            <span className="text-xs text-muted-foreground">{line.sku}</span>
+            <span className="block text-xs text-muted-foreground">
+              Remaining: {line.remaining}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Return qty</span>
+            <input
+              aria-label={`Return quantity for ${line.item_name}`}
+              type="number"
+              min="0"
+              max={line.remaining}
+              step="0.001"
+              value={quantities[line.variant] ?? ''}
+              onChange={(event) => onChange(line.variant, event.target.value)}
+              className={lineInputClasses}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -278,37 +272,39 @@ export function ExchangePage() {
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       {statusMessage ? (
-        <p role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}
         </p>
       ) : null}
       <Card title="Exchanges / साटफेर">
-        <p className="mb-3 text-sm text-slate-600">
+        <p className="mb-3 text-sm text-muted-foreground">
           Select the original bill, choose returned quantities, and add the replacement items.
         </p>
         {salesQuery.isFetching ? (
-          <p className="py-4 text-sm text-slate-500">Loading sales…</p>
+          <p className="py-4 text-sm text-muted-foreground">Loading sales…</p>
         ) : null}
         {salesQuery.isError ? (
-          <p role="alert" className="py-4 text-sm text-red-600">
+          <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {errorMessage(salesQuery.error, 'Could not load completed sales.')}
           </p>
         ) : null}
         {salesQuery.data && sales.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">No completed sales found.</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No completed sales found.
+          </p>
         ) : null}
         {sales.map((sale) => (
-          <div key={sale.id} className="border-b border-slate-100 last:border-0">
+          <div key={sale.id} className="border-b border-border last:border-0">
             <button
               type="button"
               aria-expanded={expandedId === sale.id}
               onClick={() => setExpandedId((current) => (current === sale.id ? null : sale.id))}
-              className="flex w-full items-center justify-between gap-2 px-2 py-3 text-left text-sm hover:bg-slate-50"
+              className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
               <span className="font-medium">Invoice {sale.invoice_no ?? '—'}</span>
-              <span className="text-slate-600">{sale.customer_name || 'Walk-in'}</span>
-              <span className="text-slate-500">{sale.business_date_bs}</span>
-              <span>{formatNpr(sale.total)}</span>
+              <span className="text-muted-foreground">{sale.customer_name || 'Walk-in'}</span>
+              <span className="text-muted-foreground">{sale.business_date_bs}</span>
+              <span className="tabular-nums">{formatNpr(sale.total)}</span>
             </button>
             {expandedId === sale.id ? (
               <ExchangeEditor
@@ -324,7 +320,7 @@ export function ExchangePage() {
         ))}
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-slate-500">
+            <span className="text-muted-foreground">
               Page {meta.page} of {meta.total_pages} ({meta.count} sales)
             </span>
             <div className="flex gap-2">

@@ -39,20 +39,20 @@ export function InvoiceAllocationPicker({
   }, 0);
 
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
-      <p className="text-sm font-medium text-slate-700">Allocate against invoices (optional)</p>
+    <div className="rounded-md border border-border bg-muted/50 p-3 sm:col-span-2">
+      <p className="text-sm font-medium">Allocate against invoices (optional)</p>
       {query.isFetching ? (
-        <p className="mt-1 text-xs text-slate-500">Loading open invoices…</p>
+        <p className="mt-1 text-xs text-muted-foreground">Loading open invoices…</p>
       ) : null}
       {query.isError ? (
-        <p role="alert" className="mt-1 text-xs text-red-600">
+        <p role="alert" className="mt-1 text-xs text-destructive">
           {query.error instanceof ApiError || query.error instanceof Error
             ? query.error.message
             : 'Could not load open invoices.'}
         </p>
       ) : null}
       {query.data && invoices.length === 0 ? (
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           No open invoices. The payment can remain unallocated.
         </p>
       ) : null}
@@ -69,7 +69,7 @@ export function InvoiceAllocationPicker({
         </div>
       ) : null}
       {total > 0 ? (
-        <p className="mt-2 text-xs text-slate-600">Allocated: {formatNpr(total)}</p>
+        <p className="mt-2 text-xs text-muted-foreground">Allocated: {formatNpr(total)}</p>
       ) : null}
     </div>
   );

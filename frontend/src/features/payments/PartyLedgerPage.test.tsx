@@ -95,8 +95,9 @@ describe('PartyLedgerPage', () => {
     });
     fireEvent.click(await screen.findByRole('button', { name: /Sita Rai 9800000000/i }));
 
-    expect(await screen.findByText('Bill 1001')).toBeInTheDocument();
-    expect(screen.getByText('CASH receipt')).toBeInTheDocument();
+    // Rows render in both the mobile card list and the desktop table.
+    expect((await screen.findAllByText('Bill 1001')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('CASH receipt').length).toBeGreaterThan(0);
     expect(screen.getAllByText('रू 2,000.00').length).toBeGreaterThan(0);
   });
 
@@ -109,7 +110,7 @@ describe('PartyLedgerPage', () => {
     });
     fireEvent.click(await screen.findByRole('button', { name: /ABC Garments 9811111111/i }));
 
-    expect(await screen.findByText('Bill 2001')).toBeInTheDocument();
+    expect((await screen.findAllByText('Bill 2001')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('रू 4,000.00').length).toBeGreaterThan(0);
   });
 });

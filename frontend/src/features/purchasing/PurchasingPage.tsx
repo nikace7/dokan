@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { confirmInvoice, listInvoices } from '@/features/purchasing/api';
@@ -10,19 +11,18 @@ import { SuppliersPanel } from '@/features/purchasing/SuppliersPanel';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
 
-const STATUS_BADGES: Record<PurchaseInvoiceStatus, string> = {
-  DRAFT: 'bg-amber-100 text-amber-800',
-  CONFIRMED: 'bg-green-100 text-green-800',
-  CANCELLED: 'bg-slate-200 text-slate-600',
+const STATUS_VARIANTS: Record<PurchaseInvoiceStatus, 'warning' | 'success' | 'secondary'> = {
+  DRAFT: 'warning',
+  CONFIRMED: 'success',
+  CANCELLED: 'secondary',
 };
 
 function StatusBadge({ status }: { status: PurchaseInvoiceStatus }) {
-  return (
-    <span className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_BADGES[status]}`}>
-      {status}
-    </span>
-  );
+  return <Badge variant={STATUS_VARIANTS[status]}>{status}</Badge>;
 }
+
+const selectClasses =
+  'rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 /** Expanded invoice: lines, totals, and the guarded DRAFT→CONFIRMED action. */
 function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
@@ -43,38 +43,33 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
 
   return (
     <div className="px-2 py-3">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-            <th className="py-1 pr-2 font-medium">Variant</th>
-            <th className="py-1 pr-2 text-right font-medium">Qty</th>
-            <th className="py-1 pr-2 text-right font-medium">Unit cost</th>
-            <th className="py-1 text-right font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoice.items.map((item) => (
-            <tr key={item.id} className="border-b border-slate-100">
-              <td className="py-1.5 pr-2">
-                {item.item_name} <span className="text-xs text-slate-500">{item.variant_sku}</span>
-              </td>
-              <td className="py-1.5 pr-2 text-right">{item.qty}</td>
-              <td className="py-1.5 pr-2 text-right">
-                {formatNpr(item.unit_cost, { symbol: '' })}
-              </td>
-              <td className="py-1.5 text-right">{formatNpr(item.line_total, { symbol: '' })}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ul className="divide-y divide-border rounded-md border border-border px-3">
+        {invoice.items.map((item) => (
+          <li
+            key={item.id}
+            className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2 text-sm"
+          >
+            <div className="min-w-0">
+              <p className="font-medium">
+                {item.item_name}{' '}
+                <span className="text-xs text-muted-foreground">{item.variant_sku}</span>
+              </p>
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {item.qty} × {formatNpr(item.unit_cost, { symbol: '' })}
+              </p>
+            </div>
+            <p className="tabular-nums">{formatNpr(item.line_total, { symbol: '' })}</p>
+          </li>
+        ))}
+      </ul>
       <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
         <div className="flex gap-1">
-          <dt className="text-slate-500">Subtotal</dt>
+          <dt className="text-muted-foreground">Subtotal</dt>
           <dd>{formatNpr(invoice.subtotal)}</dd>
         </div>
         {invoice.is_vat_bill ? (
           <div className="flex gap-1">
-            <dt className="text-slate-500">VAT</dt>
+            <dt className="text-muted-foreground">VAT</dt>
             <dd>{formatNpr(invoice.vat_amount)}</dd>
           </div>
         ) : null}
@@ -83,11 +78,11 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
           <dd>{formatNpr(invoice.total)}</dd>
         </div>
         <div className="flex gap-1">
-          <dt className="text-slate-500">Paid</dt>
+          <dt className="text-muted-foreground">Paid</dt>
           <dd>{formatNpr(invoice.paid_amount)}</dd>
         </div>
         <div className="flex gap-1">
-          <dt className="text-slate-500">Due</dt>
+          <dt className="text-muted-foreground">Due</dt>
           <dd>{formatNpr(invoice.due_amount)}</dd>
         </div>
       </dl>
@@ -95,13 +90,13 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
       {invoice.status === 'DRAFT' ? (
         <div className="mt-3">
           {confirming ? (
-            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-              <p className="text-sm text-amber-900">
+            <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2">
+              <p className="text-sm text-warning">
                 Confirm this purchase? It posts the stock into the ledger and updates cost (weighted
                 average). This cannot be undone.
               </p>
               {error ? (
-                <p role="alert" className="mt-1 text-sm text-red-600">
+                <p role="alert" className="mt-1 text-sm text-destructive">
                   {error}
                 </p>
               ) : null}
@@ -158,7 +153,7 @@ export function PurchasingPage() {
         }
       >
         {showForm ? (
-          <div className="mb-4 rounded-md border border-slate-200 p-3">
+          <div className="mb-4 rounded-md border border-border p-3">
             <PurchaseInvoiceForm
               onCreated={(invoice) => {
                 setShowForm(false);
@@ -177,7 +172,7 @@ export function PurchasingPage() {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className={selectClasses}
           >
             <option value="">All statuses</option>
             <option value="DRAFT">Draft</option>
@@ -186,23 +181,27 @@ export function PurchasingPage() {
           </select>
         </div>
 
-        {invoicesQuery.isFetching ? <p className="py-4 text-sm text-slate-500">Loading…</p> : null}
+        {invoicesQuery.isFetching ? (
+          <p className="py-4 text-sm text-muted-foreground">Loading…</p>
+        ) : null}
         {invoicesQuery.data && invoices.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">No purchase invoices yet.</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No purchase invoices yet.
+          </p>
         ) : null}
 
         {invoices.map((invoice) => (
-          <div key={invoice.id} className="border-b border-slate-100 last:border-0">
+          <div key={invoice.id} className="border-b border-border last:border-0">
             <button
               type="button"
               aria-expanded={expandedId === invoice.id}
               onClick={() => setExpandedId((cur) => (cur === invoice.id ? null : invoice.id))}
-              className="flex w-full items-center justify-between gap-2 px-2 py-3 text-left text-sm hover:bg-slate-50"
+              className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
               <span className="font-medium">{invoice.invoice_no}</span>
-              <span className="text-slate-600">{invoice.supplier_name}</span>
-              <span className="text-slate-500">{invoice.bill_date_bs}</span>
-              <span>{formatNpr(invoice.total)}</span>
+              <span className="text-muted-foreground">{invoice.supplier_name}</span>
+              <span className="text-muted-foreground">{invoice.bill_date_bs}</span>
+              <span className="tabular-nums">{formatNpr(invoice.total)}</span>
               <StatusBadge status={invoice.status} />
             </button>
             {expandedId === invoice.id ? <InvoiceDetail invoice={invoice} /> : null}
@@ -211,7 +210,7 @@ export function PurchasingPage() {
 
         {meta && meta.total_pages > 1 ? (
           <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-slate-500">
+            <span className="text-muted-foreground">
               Page {meta.page} of {meta.total_pages} ({meta.count} invoices)
             </span>
             <div className="flex gap-2">
