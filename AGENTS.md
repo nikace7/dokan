@@ -191,6 +191,15 @@ HTTP → urls → view (thin) → service (writes) / selector (reads) → model
 - `frontend/src/` — `app/` (router/providers), `features/` (per-module UI; `billing/`
   is the most optimized), `components/ui/`, `lib/` (`api/` generated client, `bs/`,
   `offline/`, `permissions.ts`, `money.ts`), `hooks/`, `stores/`.
+- **Frontend design system**: theme tokens live in `src/styles/tokens.css` (HSL-channel
+  CSS custom properties, zinc base + single indigo accent) wired through
+  `tailwind.config.js` — use token classes (`bg-primary`, `text-muted-foreground`,
+  `border`) instead of raw `slate-*`/`blue-*`. `src/components/ui/` holds
+  shadcn/ui-style primitives (CVA variants, Radix underpinnings); compose class lists
+  with `cn()` from `src/lib/utils.ts`. The tenant app shell is
+  `src/components/layout/AppShell.tsx` (sidebar on desktop, bottom tab bar + More
+  sheet on mobile). The 80mm receipt print CSS in `styles/index.css` must stay
+  untouched.
 - **Files stay under 400 lines.** When a services file grows, split by use case
   (`sales/services/{create_sale,void_sale,returns,exchange}.py`), not by layer.
 
