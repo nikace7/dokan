@@ -1,8 +1,10 @@
+import { Store } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/features/auth/useAuth';
 
@@ -39,43 +41,63 @@ export function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-center text-3xl font-bold text-blue-700">दोकान</h1>
-        <p className="mt-1 text-center text-sm text-slate-500">Sign in to your shop</p>
+    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-6">
+      <div className="flex w-full max-w-sm flex-col items-center">
+        <div className="mb-6 flex flex-col items-center gap-2">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <Store className="h-6 w-6" />
+          </span>
+          <span className="text-2xl font-bold tracking-tight">दोकान</span>
+        </div>
 
-        <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
-          <Input
-            label="Phone / फोन"
-            name="phone"
-            inputMode="tel"
-            autoComplete="username"
-            autoFocus
-            required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="98XXXXXXXX"
-          />
-          <Input
-            label="Password / पासवर्ड"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+        <Card className="w-full">
+          <CardHeader className="space-y-1 pb-4 text-center">
+            <CardTitle className="text-xl">Sign in</CardTitle>
+            <CardDescription>Sign in to your shop / आफ्नो पसलमा प्रवेश गर्नुहोस्</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+              <Input
+                label="Phone / फोन"
+                name="phone"
+                inputMode="tel"
+                autoComplete="username"
+                autoFocus
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="98XXXXXXXX"
+              />
+              <Input
+                label="Password / पासवर्ड"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
 
-          {loginError ? (
-            <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-              {loginError}
-            </p>
-          ) : null}
+              {loginError ? (
+                <p
+                  role="alert"
+                  className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {loginError}
+                </p>
+              ) : null}
 
-          <Button type="submit" size="lg" disabled={isLoggingIn || isRestoring}>
-            {isLoggingIn ? 'Signing in…' : 'Sign in / प्रवेश'}
-          </Button>
-        </form>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={isLoggingIn || isRestoring}
+              >
+                {isLoggingIn ? 'Signing in…' : 'Sign in / प्रवेश'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );
