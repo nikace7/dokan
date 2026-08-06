@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from apps.payments.models import CashSession, Payment, PaymentAllocation
 
-_METHODS = ["CASH", "ESEWA", "KHALTI", "FONEPAY", "CARD", "BANK"]
+_METHODS = ["CASH", "ESEWA", "KHALTI", "FONEPAY", "QR", "CARD", "BANK"]
 
 
 class AllocationInputSerializer(serializers.Serializer):
