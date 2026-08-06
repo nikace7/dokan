@@ -126,7 +126,8 @@ describe('PricingPage', () => {
     renderPage();
 
     expect(await screen.findByText('Retail')).toBeInTheDocument();
-    expect(await screen.findByText('Season price update')).toBeInTheDocument();
+    // History rows render twice (mobile card + desktop table).
+    expect((await screen.findAllByText('Season price update')).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'New rate type' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save price' })).not.toBeInTheDocument();
   });

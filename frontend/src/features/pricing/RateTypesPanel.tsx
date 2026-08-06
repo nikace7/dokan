@@ -5,8 +5,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { createRateType, deactivateRateType, updateRateType } from '@/features/pricing/api';
 import type { RateTypePayload } from '@/features/pricing/api';
+import { selectClasses } from '@/features/pricing/ui';
 import { listPermissions } from '@/features/settings/api';
 import type { RateType } from '@/features/settings/api';
 import { ApiError } from '@/lib/api/client';
@@ -37,20 +39,20 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
         />
       ) : null}
       {rates.length === 0 ? (
-        <p className="text-sm text-slate-500">No rate types configured.</p>
+        <p className="text-sm text-muted-foreground">No rate types configured.</p>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rates.map((rate) => (
-          <section key={rate.id} className="rounded-md border border-slate-200 p-3">
+          <section key={rate.id} className="rounded-md border border-border p-3">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="font-semibold">
                   {rate.name}
                   {rate.name_np ? (
-                    <span className="ml-1 text-slate-500">{rate.name_np}</span>
+                    <span className="ml-1 text-muted-foreground">{rate.name_np}</span>
                   ) : null}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   {rate.code}
                   {rate.is_default ? ' · Default' : ''}
                   {!rate.is_active ? ' · Inactive' : ''}
@@ -62,7 +64,7 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
                 </Button>
               ) : null}
             </div>
-            <dl className="mt-2 text-xs text-slate-600">
+            <dl className="mt-2 text-xs text-muted-foreground">
               <div className="flex justify-between">
                 <dt>Default margin</dt>
                 <dd>{rate.default_margin_pct ? `${rate.default_margin_pct}%` : '—'}</dd>
@@ -75,7 +77,7 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
             {canEdit && rate.is_active && !rate.is_default ? (
               <button
                 type="button"
-                className="mt-3 text-xs text-red-700 underline disabled:text-slate-400"
+                className="mt-3 text-xs text-destructive underline disabled:text-muted-foreground"
                 disabled={deactivate.isPending}
                 onClick={() => deactivate.mutate(rate.id)}
               >
@@ -86,7 +88,7 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
         ))}
       </div>
       {deactivate.isError ? (
-        <p role="alert" className="mt-3 text-sm text-red-700">
+        <p role="alert" className="mt-3 text-sm text-destructive">
           {deactivate.error instanceof ApiError
             ? deactivate.error.message
             : 'Could not deactivate the rate type.'}
@@ -149,7 +151,7 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
   return (
     <form
       onSubmit={submit}
-      className="mb-4 grid gap-3 rounded-md border border-blue-200 bg-blue-50 p-3 sm:grid-cols-2"
+      className="mb-4 grid gap-3 rounded-md border border-primary/40 bg-primary/5 p-3 sm:grid-cols-2"
     >
       <Input
         label="Rate code"
@@ -174,14 +176,15 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
         value={form.default_margin_pct ?? ''}
         onChange={(event) => setForm({ ...form, default_margin_pct: event.target.value })}
       />
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-        Required permission
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="rate-required-permission">Required permission</Label>
         <select
+          id="rate-required-permission"
           value={form.required_permission ?? ''}
           onChange={(event) =>
             setForm({ ...form, required_permission: event.target.value || null })
           }
-          className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+          className={selectClasses}
         >
           <option value="">Anyone allowed to bill</option>
           {permissions.data?.map((permission) => (
@@ -190,7 +193,7 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
             </option>
           ))}
         </select>
-      </label>
+      </div>
       <Input
         label="Sort order"
         type="number"
@@ -202,11 +205,12 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
           type="checkbox"
           checked={form.is_default}
           onChange={(event) => setForm({ ...form, is_default: event.target.checked })}
+          className="h-4 w-4 accent-primary"
         />
         Make this the default selling rate
       </label>
       {mutation.isError ? (
-        <p role="alert" className="text-sm text-red-700 sm:col-span-2">
+        <p role="alert" className="text-sm text-destructive sm:col-span-2">
           {mutation.error instanceof ApiError
             ? mutation.error.message
             : 'Could not save rate type.'}
