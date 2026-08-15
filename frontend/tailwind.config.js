@@ -56,6 +56,34 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        // Pastel icon-chip tints (StatTile, quick actions): `bg-tint-green` /
+        // `text-tint-green-foreground`. Tokens live in styles/tokens.css.
+        tint: {
+          green: {
+            DEFAULT: 'hsl(var(--tint-green))',
+            foreground: 'hsl(var(--tint-green-foreground))',
+          },
+          blue: {
+            DEFAULT: 'hsl(var(--tint-blue))',
+            foreground: 'hsl(var(--tint-blue-foreground))',
+          },
+          amber: {
+            DEFAULT: 'hsl(var(--tint-amber))',
+            foreground: 'hsl(var(--tint-amber-foreground))',
+          },
+          rose: {
+            DEFAULT: 'hsl(var(--tint-rose))',
+            foreground: 'hsl(var(--tint-rose-foreground))',
+          },
+          violet: {
+            DEFAULT: 'hsl(var(--tint-violet))',
+            foreground: 'hsl(var(--tint-violet-foreground))',
+          },
+        },
+      },
+      boxShadow: {
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
       },
       borderRadius: {
         lg: 'var(--radius)',
