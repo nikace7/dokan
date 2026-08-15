@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Run as a non-root user.
 RUN groupadd --system dokan && useradd --system --create-home --home-dir /home/dokan --gid dokan dokan \
-    && mkdir -p /app/staticfiles && chown -R dokan:dokan /app
+    && mkdir -p /app/staticfiles /app/media && chown -R dokan:dokan /app
 USER dokan
 
 EXPOSE 8000
