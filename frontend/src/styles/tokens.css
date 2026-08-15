@@ -3,10 +3,15 @@
  *
  * HSL channel triplets (no `hsl()` wrapper) so Tailwind can apply opacity
  * modifiers: `hsl(var(--primary) / 0.5)`. Neutral zinc base with a single
- * indigo accent, per the retail aesthetic in docs/SYSTEM_DESIGN.md §7.
+ * emerald accent, per the retail aesthetic in docs/SYSTEM_DESIGN.md §7.
  *
  * Kept as CSS custom properties (not hard-coded in tailwind.config.js) so a
  * per-tenant accent override can later swap a handful of variables at runtime.
+ *
+ * Theme v2 (design-v2): accent switched indigo → emerald. Semantic token
+ * names are unchanged, so existing screens pick up the new color with no
+ * class edits. Adds pastel `--tint-*` pairs for icon chips (StatTile, quick
+ * actions) and a soft layered card shadow (`--shadow-card`).
  */
 :root {
   --background: 0 0% 100%;
@@ -18,8 +23,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 240 10% 3.9%;
 
-  /* Indigo-600 family — the ONE accent. */
-  --primary: 243 75% 59%;
+  /* Emerald-600 family — the ONE accent. */
+  --primary: 160 84% 30%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 240 5% 96%;
@@ -28,8 +33,9 @@
   --muted: 240 5% 96%;
   --muted-foreground: 240 4% 46%;
 
-  --accent: 243 94% 96%;
-  --accent-foreground: 243 75% 40%;
+  /* Soft primary tint — active nav pills, hover surfaces. */
+  --accent: 152 76% 95%;
+  --accent-foreground: 160 84% 24%;
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
@@ -42,7 +48,26 @@
 
   --border: 240 6% 90%;
   --input: 240 6% 90%;
-  --ring: 243 75% 59%;
+  --ring: 160 84% 30%;
 
-  --radius: 0.5rem;
+  /* Pastel icon-chip tints: `--tint-<name>` is the chip background,
+   * `--tint-<name>-foreground` the matching icon color. Keep pairs in sync. */
+  --tint-green: 152 76% 94%;
+  --tint-green-foreground: 160 84% 26%;
+  --tint-blue: 213 94% 94%;
+  --tint-blue-foreground: 221 83% 40%;
+  --tint-amber: 44 96% 92%;
+  --tint-amber-foreground: 32 95% 32%;
+  --tint-rose: 350 89% 95%;
+  --tint-rose-foreground: 347 77% 42%;
+  --tint-violet: 258 90% 96%;
+  --tint-violet-foreground: 262 83% 45%;
+
+  --radius: 0.75rem;
+
+  /* Soft layered card shadow — used by the `shadow-card` utility. */
+  --shadow-card:
+    0 1px 2px 0 rgb(0 0 0 / 0.04), 0 4px 12px -2px rgb(0 0 0 / 0.06);
+  --shadow-card-hover:
+    0 2px 4px 0 rgb(0 0 0 / 0.05), 0 10px 24px -4px rgb(0 0 0 / 0.1);
 }
