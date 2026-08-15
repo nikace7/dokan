@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { TableCell } from '@/components/ui/table';
 import { deactivateItem, listCategories, listItems } from '@/features/catalog/api';
 import type { Item, ItemListFilters } from '@/features/catalog/api';
-import { selectClasses } from '@/features/catalog/ui';
+import { ItemImage, selectClasses } from '@/features/catalog/ui';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 
@@ -164,10 +164,15 @@ export function ItemsPage() {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  {item.name}
-                  {item.name_np ? (
-                    <span className="ml-1 text-muted-foreground">{item.name_np}</span>
-                  ) : null}
+                  <span className="flex items-center gap-2">
+                    <ItemImage imageUrl={item.image_url} alt={item.name} className="h-10 w-10" />
+                    <span>
+                      {item.name}
+                      {item.name_np ? (
+                        <span className="ml-1 text-muted-foreground">{item.name_np}</span>
+                      ) : null}
+                    </span>
+                  </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {item.category ? (categoryNames.get(item.category) ?? '—') : '—'}
@@ -183,22 +188,25 @@ export function ItemsPage() {
             )}
             renderCard={(item) => (
               <div className="flex items-start justify-between gap-3 text-sm">
-                <div className="min-w-0">
-                  <Link
-                    className="font-medium text-primary hover:underline"
-                    to={`/catalog/items/${item.id}`}
-                  >
-                    {item.code}
-                  </Link>
-                  <p className="truncate">
-                    {item.name}
-                    {item.name_np ? (
-                      <span className="ml-1 text-muted-foreground">{item.name_np}</span>
-                    ) : null}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {item.category ? (categoryNames.get(item.category) ?? '—') : '—'} · {item.unit}
-                  </p>
+                <div className="flex min-w-0 items-start gap-2">
+                  <ItemImage imageUrl={item.image_url} alt={item.name} className="h-10 w-10" />
+                  <div className="min-w-0">
+                    <Link
+                      className="font-medium text-primary hover:underline"
+                      to={`/catalog/items/${item.id}`}
+                    >
+                      {item.code}
+                    </Link>
+                    <p className="truncate">
+                      {item.name}
+                      {item.name_np ? (
+                        <span className="ml-1 text-muted-foreground">{item.name_np}</span>
+                      ) : null}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {item.category ? (categoryNames.get(item.category) ?? '—') : '—'} · {item.unit}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
                   <Badge variant={item.is_active ? 'success' : 'secondary'}>
