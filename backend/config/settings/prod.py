@@ -1,7 +1,9 @@
 """Production settings — asserts every required secret exists at startup."""
 
+from pathlib import Path
+
 from config.settings.base import *  # noqa: F403
-from config.settings.base import assert_required_secrets, env_list
+from config.settings.base import assert_required_secrets, env, env_list
 
 assert_required_secrets()
 
@@ -15,3 +17,7 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Media volume path on the VPS (compose overrides via the MEDIA_ROOT env var
+# to the mounted volume path when running in Docker).
+MEDIA_ROOT = Path(env("MEDIA_ROOT", "/srv/media") or "/srv/media")

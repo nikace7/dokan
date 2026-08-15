@@ -129,6 +129,7 @@ class TestForSaleList:
             "sku": variant.sku,
             "barcode": "1234567890123",
             "mrp": "1500.00",
+            "image_url": None,
             "qty_on_hand": "7.000",
             "min_selling_price": None,
             "max_selling_price": None,

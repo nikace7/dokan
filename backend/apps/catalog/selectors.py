@@ -130,7 +130,8 @@ def list_variants_for_sale(
     come from the pricing chain (variant → item → category pct-of-MRP);
     either side is None when unset. Cost NEVER appears here (#10): the
     selector reads no cost column and the bounds chain is MRP/selling-price
-    based. Money crosses the API as strings, never JSON floats.
+    based. Money crosses the API as strings, never JSON floats. ``image_url``
+    is the item's media URL path (or None) so the picker can show thumbnails.
     """
     from apps.inventory.models import StockLevel
     from apps.pricing.services import effective_price_bounds
@@ -161,6 +162,7 @@ def list_variants_for_sale(
                 "sku": variant.sku,
                 "barcode": variant.barcode,
                 "mrp": str(variant.mrp) if variant.mrp is not None else None,
+                "image_url": variant.item.image.url if variant.item.image else None,
                 "qty_on_hand": str(level.qty_on_hand),
                 "min_selling_price": str(min_price) if min_price is not None else None,
                 "max_selling_price": str(max_price) if max_price is not None else None,

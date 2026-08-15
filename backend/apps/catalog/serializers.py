@@ -61,6 +61,8 @@ class SizeChartSerializer(TenantContextSerializer):
 
 
 class ItemSerializer(TenantContextSerializer):
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Item
         fields = (
@@ -77,6 +79,7 @@ class ItemSerializer(TenantContextSerializer):
             "hsn_code",
             "unit",
             "is_vat_applicable",
+            "image_url",
             "images",
             "attributes",
             "min_selling_price",
@@ -84,7 +87,11 @@ class ItemSerializer(TenantContextSerializer):
             "reorder_level",
             "is_active",
         )
-        read_only_fields = ("id", "is_active")
+        read_only_fields = ("id", "image_url", "is_active")
+
+    def get_image_url(self, obj: Item) -> str | None:
+        """Public media URL (MEDIA_URL + storage key), never a filesystem path."""
+        return obj.image.url if obj.image else None
 
 
 class ItemVariantSerializer(TenantContextSerializer):
