@@ -43,6 +43,12 @@
     "settings": "Settings",
     "more": "More",
     "moreNavigation": "More navigation",
+    "newSale": "New sale",
+    "sections": {
+      "sales": "Sales",
+      "catalog": "Catalog & stock",
+      "manage": "Manage"
+    },
     "signOut": "Sign out"
   },
   "auth": {
@@ -51,7 +57,12 @@
     "phone": "Phone",
     "password": "Password",
     "signIn": "Sign in",
-    "signingIn": "Signing in…"
+    "signingIn": "Signing in…",
+    "pitch": "The complete management system for Nepali clothing shops.",
+    "pointBilling": "Fast counter billing — barcode POS or simple sale",
+    "pointStock": "Stock, purchasing, and transfers in one ledger",
+    "pointReports": "Udharo khata and reports in Bikram Sambat",
+    "brandFooter": "Dokan — built for Nepal. BS calendar, udharo, and VAT billing included."
   },
   "billing": {
     "scanLabel": "Scan barcode or type SKU",
