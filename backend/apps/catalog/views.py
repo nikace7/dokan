@@ -250,6 +250,30 @@ class ItemDetailView(_CatalogAPIView):
         return ok({"id": str(pk), "is_active": False})
 
 
+class ItemImageView(_CatalogAPIView):
+    """POST/DELETE /catalog/items/{id}/image — one photo per item.
+
+    Multipart upload, field name ``image``; the response is the item detail
+    serializer (envelope) so the client sees the fresh ``image_url``. The
+    default method map already gates POST/DELETE on ``catalog.manage``.
+    """
+
+    def post(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        item = _get_or_404(tenant, Item, pk, "Item")
+        uploaded = request.FILES.get("image")
+        if uploaded is None:
+            raise ServiceError("IMAGE_REQUIRED", "Attach an image file as the 'image' field.")
+        item = services.set_item_image(item, uploaded)
+        return ok(ItemSerializer(item, context=self._context(request)).data)
+
+    def delete(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        item = _get_or_404(tenant, Item, pk, "Item")
+        item = services.clear_item_image(item)
+        return ok({"id": str(item.pk), "image_url": None})
+
+
 class VariantListView(_CatalogAPIView):
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)

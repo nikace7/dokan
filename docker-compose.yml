@@ -73,6 +73,9 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
+      # Uploaded media (item images) lives on the shared ``media`` volume;
+      # Caddy serves it read-only at /media/* (mirrors the static pattern).
+      MEDIA_ROOT: ${MEDIA_ROOT:-/app/media}
     depends_on:
       db:
         condition: service_healthy
@@ -80,6 +83,7 @@ services:
         condition: service_healthy
     volumes:
       - staticfiles:/app/staticfiles
+      - media:/app/media
     healthcheck:
       test:
         - CMD-SHELL
@@ -220,6 +224,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - staticfiles:/srv/django-static:ro
+      - media:/srv/django-media:ro
       - caddydata:/data
       - caddyconfig:/config
     depends_on:
@@ -234,5 +239,6 @@ volumes:
   backups:
   redisdata:
   staticfiles:
+  media:
   caddydata:
   caddyconfig:
