@@ -3,6 +3,7 @@
 from django.urls import path
 
 from apps.reports.views import (
+    CollectionsByTenderView,
     DailySalesView,
     DashboardView,
     DeadStockView,
@@ -20,6 +21,11 @@ app_name = "reports"
 
 urlpatterns = [
     path("dashboard", DashboardView.as_view(), name="dashboard"),
+    path(
+        "reports/collections-by-tender",
+        CollectionsByTenderView.as_view(),
+        name="collections-by-tender",
+    ),
     path("reports/daily-sales", DailySalesView.as_view(), name="daily-sales"),
     path("reports/monthly-sales", MonthlySalesView.as_view(), name="monthly-sales"),
     path("reports/item-sales", ItemSalesView.as_view(), name="item-sales"),

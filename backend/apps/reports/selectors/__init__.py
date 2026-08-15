@@ -18,6 +18,7 @@ from apps.reports.selectors.financial import (
     profit_report,
 )
 from apps.reports.selectors.sales import (
+    collections_by_tender,
     daily_sales,
     item_sales,
     monthly_sales,
@@ -33,6 +34,7 @@ from apps.reports.selectors.vat import (
 )
 
 __all__ = [
+    "collections_by_tender",
     "daily_sales",
     "dashboard_summary",
     "dead_stock",
