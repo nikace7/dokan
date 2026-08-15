@@ -271,6 +271,8 @@ export interface VariantForSale {
   sku: string;
   barcode: string;
   mrp: string | null;
+  /** Item photo path (`/media/tenants/…`), null when the item has none. */
+  image_url: string | null;
   qty_on_hand: string;
   min_selling_price: string | null;
   max_selling_price: string | null;

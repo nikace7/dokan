@@ -52,6 +52,8 @@ export interface Item {
   hsn_code: string | null;
   unit: string;
   is_vat_applicable: boolean;
+  /** Absolute API path of the item photo (`/media/tenants/…`), null when unset. */
+  image_url: string | null;
   min_selling_price: string | null;
   max_selling_price: string | null;
   reorder_level: string | null;
@@ -134,6 +136,26 @@ export function listItems(filters: ItemListFilters = {}): Promise<Page<Item>> {
 
 export function getItem(id: string): Promise<Item> {
   return authedRequest<Item>(`/v1/catalog/items/${id}`);
+}
+
+/** Accepted item-photo types and size cap — mirrored in the form's client-side checks. */
+export const ITEM_IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp';
+export const ITEM_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Upload/replace the item photo (`POST /catalog/items/<id>/image`, multipart
+ * field `image`). Returns the updated item. FormData bodies pass through the
+ * client untouched so the browser sets the multipart boundary.
+ */
+export function uploadItemImage(id: string, file: File): Promise<Item> {
+  const body = new FormData();
+  body.append('image', file);
+  return authedRequest<Item>(`/v1/catalog/items/${id}/image`, { method: 'POST', body });
+}
+
+/** Remove the item photo. Returns the updated item (image_url null). */
+export function removeItemImage(id: string): Promise<Item> {
+  return authedRequest<Item>(`/v1/catalog/items/${id}/image`, { method: 'DELETE' });
 }
 
 export function createItem(payload: ItemPayload): Promise<Item> {
