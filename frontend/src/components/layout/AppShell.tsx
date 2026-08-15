@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Plus,
   Repeat,
   ScanLine,
   ScrollText,
@@ -22,7 +23,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 
 import { LanguageToggle } from '@/components/layout/LanguageToggle';
 import {
@@ -84,8 +85,40 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-/** Mobile bottom tab bar: the four counter-critical screens + a More sheet. */
-const MOBILE_TABS = ['/', '/billing', '/billing/simple', '/stock', '/reports'] as const;
+/**
+ * Sidebar grouping (display only — applied AFTER permission/plan filtering,
+ * so it never changes which items render). `/` stays unsectioned on top.
+ * Keys translate under `nav.sections.*`.
+ */
+const NAV_SECTION_ORDER = ['sales', 'catalog', 'manage'] as const;
+type NavSectionKey = (typeof NAV_SECTION_ORDER)[number];
+
+const NAV_SECTION_BY_PATH: Record<string, NavSectionKey> = {
+  '/billing': 'sales',
+  '/billing/simple': 'sales',
+  '/payments': 'sales',
+  '/ledgers': 'sales',
+  '/returns': 'sales',
+  '/exchanges': 'sales',
+  '/catalog': 'catalog',
+  '/pricing': 'catalog',
+  '/stock': 'catalog',
+  '/stock/transfers': 'catalog',
+  '/purchasing': 'catalog',
+  '/customers': 'manage',
+  '/expenses': 'manage',
+  '/reports': 'manage',
+  '/audit': 'manage',
+  '/settings': 'manage',
+  '/settings/staff': 'manage',
+};
+
+/**
+ * Mobile bottom tab bar: counter-critical screens + a raised center FAB for
+ * "new sale" + a More sheet. Billing itself is the FAB, not a tab.
+ */
+const MOBILE_TABS_BEFORE_FAB = ['/', '/stock'] as const;
+const MOBILE_TABS_AFTER_FAB = ['/reports'] as const;
 
 function useVisibleNavItems(): NavItem[] {
   const { user } = useAuth();
@@ -115,7 +148,7 @@ function useVisibleNavItems(): NavItem[] {
 function BrandMark({ className }: { className?: string }) {
   return (
     <span className={cn('flex items-center gap-2 font-bold text-foreground', className)}>
-      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
         <Store className="h-4 w-4" />
       </span>
       <span className="text-lg">दोकान</span>
@@ -131,9 +164,9 @@ function SideNavLink({ item }: { item: NavItem }) {
       end={item.end}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
           isActive
-            ? 'bg-accent text-accent-foreground'
+            ? 'bg-accent text-accent-foreground shadow-sm'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
         )
       }
@@ -141,6 +174,41 @@ function SideNavLink({ item }: { item: NavItem }) {
       <item.icon className="h-4 w-4 shrink-0" />
       {t(`nav.${item.labelKey}`)}
     </NavLink>
+  );
+}
+
+/** Sectioned sidebar nav: dashboard on top, then labeled groups. */
+function SideNav({ items }: { items: NavItem[] }) {
+  const { t } = useTranslation();
+  const topItems = items.filter((item) => !NAV_SECTION_BY_PATH[item.to]);
+  return (
+    <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+      {topItems.length > 0 ? (
+        <div className="space-y-0.5">
+          {topItems.map((item) => (
+            <SideNavLink key={item.to} item={item} />
+          ))}
+        </div>
+      ) : null}
+      {NAV_SECTION_ORDER.map((section) => {
+        const sectionItems = items.filter((item) => NAV_SECTION_BY_PATH[item.to] === section);
+        if (sectionItems.length === 0) {
+          return null;
+        }
+        return (
+          <div key={section}>
+            <p className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+              {t(`nav.sections.${section}`)}
+            </p>
+            <div className="space-y-0.5">
+              {sectionItems.map((item) => (
+                <SideNavLink key={item.to} item={item} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -183,7 +251,7 @@ function MoreSheet({
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium',
+                  'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium',
                   isActive
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -214,17 +282,62 @@ function MoreSheet({
   );
 }
 
+function MobileTab({ item }: { item: NavItem }) {
+  const { t } = useTranslation();
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) =>
+        cn(
+          'flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium',
+          isActive ? 'text-primary' : 'text-muted-foreground',
+        )
+      }
+    >
+      <item.icon className="h-5 w-5" />
+      {t(`nav.${item.labelKey}`)}
+    </NavLink>
+  );
+}
+
 /**
- * Authenticated tenant app shell: slim sidebar on desktop, top bar + bottom
- * tab bar on mobile. Replaces the old single-row header nav, which no longer
- * fit the growing route list.
+ * Raised center FAB in the mobile tab bar — the counter's "new sale" action.
+ * Targets billingPath(user), so it follows the tenant's POS plan mode.
+ */
+function NewSaleFab() {
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  return (
+    <div className="relative flex-1">
+      <Link
+        to={billingPath(user)}
+        aria-label={t('nav.newSale')}
+        className={cn(
+          'absolute -top-5 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center',
+          'rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background',
+          'transition-transform active:scale-95',
+        )}
+      >
+        <Plus className="h-7 w-7" />
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * Authenticated tenant app shell: slim sectioned sidebar on desktop, top bar
+ * + bottom tab bar with a center new-sale FAB on mobile.
  */
 export function AppShell() {
   const { user, signOut } = useAuth();
   const { t } = useTranslation();
   const items = useVisibleNavItems();
-  const tabs = items.filter((item) =>
-    (MOBILE_TABS as readonly string[]).includes(item.to),
+  const tabsBeforeFab = items.filter((item) =>
+    (MOBILE_TABS_BEFORE_FAB as readonly string[]).includes(item.to),
+  );
+  const tabsAfterFab = items.filter((item) =>
+    (MOBILE_TABS_AFTER_FAB as readonly string[]).includes(item.to),
   );
 
   return (
@@ -236,11 +349,7 @@ export function AppShell() {
         <div className="flex h-14 items-center border-b px-4">
           <BrandMark />
         </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-          {items.map((item) => (
-            <SideNavLink key={item.to} item={item} />
-          ))}
-        </nav>
+        <SideNav items={items} />
         <div className="space-y-3 border-t p-3">
           <WorkspaceSelector />
           <LanguageToggle />
@@ -269,27 +378,18 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="pb-20 md:pb-8 md:pl-60">
+      <main className="pb-24 md:pb-8 md:pl-60">
         <Outlet />
       </main>
 
-      {/* Mobile bottom tab bar */}
+      {/* Mobile bottom tab bar with center new-sale FAB */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background md:hidden">
-        {tabs.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              cn(
-                'flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium',
-                isActive ? 'text-primary' : 'text-muted-foreground',
-              )
-            }
-          >
-            <item.icon className="h-5 w-5" />
-            {t(`nav.${item.labelKey}`)}
-          </NavLink>
+        {tabsBeforeFab.map((item) => (
+          <MobileTab key={item.to} item={item} />
+        ))}
+        <NewSaleFab />
+        {tabsAfterFab.map((item) => (
+          <MobileTab key={item.to} item={item} />
         ))}
         <MoreSheet items={items} userName={user?.full_name} onSignOut={signOut} />
       </nav>

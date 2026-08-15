@@ -1,4 +1,4 @@
-import { Store } from 'lucide-react';
+import { BarChart3, Boxes, Receipt, Store } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,12 +14,64 @@ interface LocationState {
   from?: { pathname?: string };
 }
 
+/** Left brand panel (desktop only): product pitch in primary tints. */
+function BrandPanel() {
+  const { t } = useTranslation();
+  const points = [
+    { icon: Receipt, text: t('auth.pointBilling') },
+    { icon: Boxes, text: t('auth.pointStock') },
+    { icon: BarChart3, text: t('auth.pointReports') },
+  ];
+  return (
+    <div
+      className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at 20% 20%, hsl(var(--tint-green) / 0.18), transparent 45%),' +
+          'radial-gradient(circle at 80% 70%, hsl(var(--tint-blue) / 0.14), transparent 40%)',
+      }}
+    >
+      {/* Subtle dot texture */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: 'radial-gradient(hsl(0 0% 100% / 0.35) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+        }}
+      />
+      <div className="relative flex items-center gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
+          <Store className="h-5 w-5" />
+        </span>
+        <span className="text-xl font-bold">दोकान</span>
+      </div>
+      <div className="relative space-y-6">
+        <p className="max-w-md text-3xl font-bold leading-snug tracking-tight">{t('auth.pitch')}</p>
+        <ul className="space-y-3">
+          {points.map(({ icon: Icon, text }) => (
+            <li key={text} className="flex items-center gap-3 text-sm font-medium">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15 [&_svg]:size-4">
+                <Icon />
+              </span>
+              {text}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <p className="relative text-xs text-primary-foreground/70">{t('auth.brandFooter')}</p>
+    </div>
+  );
+}
+
 /**
  * Login — phone + password against the host tenant's SimpleJWT endpoint.
  *
  * The tenant comes from the subdomain the page is served from, so there is
  * no shop picker here; a user logging in on the wrong subdomain simply has
  * no account.
+ *
+ * Desktop: brand panel left, sign-in card right. Mobile: single centered card.
  */
 export function LoginPage() {
   const { isAuthenticated, isRestoring, isLoggingIn, loginError, signIn } = useAuth();
@@ -44,66 +96,71 @@ export function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-6">
-      <div className="flex w-full max-w-sm flex-col items-center">
-        <div className="mb-4 flex w-full justify-end">
-          <LanguageToggle />
-        </div>
-        <div className="mb-6 flex flex-col items-center gap-2">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Store className="h-6 w-6" />
-          </span>
-          <span className="text-2xl font-bold tracking-tight">दोकान</span>
-        </div>
+    <main className="grid min-h-screen bg-muted/40 lg:grid-cols-2">
+      <BrandPanel />
 
-        <Card className="w-full">
-          <CardHeader className="space-y-1 pb-4 text-center">
-            <CardTitle className="text-xl">{t('auth.title')}</CardTitle>
-            <CardDescription>{t('auth.subtitle')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-              <Input
-                label={t('auth.phone')}
-                name="phone"
-                inputMode="tel"
-                autoComplete="username"
-                autoFocus
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="98XXXXXXXX"
-              />
-              <Input
-                label={t('auth.password')}
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+      <div className="flex items-center justify-center p-6">
+        <div className="flex w-full max-w-sm flex-col items-center">
+          <div className="mb-4 flex w-full justify-end">
+            <LanguageToggle />
+          </div>
+          {/* Mobile-only brand header (desktop has the brand panel). */}
+          <div className="mb-6 flex flex-col items-center gap-2 lg:hidden">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Store className="h-6 w-6" />
+            </span>
+            <span className="text-2xl font-bold tracking-tight">दोकान</span>
+          </div>
 
-              {loginError ? (
-                <p
-                  role="alert"
-                  className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          <Card className="w-full shadow-card">
+            <CardHeader className="space-y-1 pb-4 text-center">
+              <CardTitle className="text-xl">{t('auth.title')}</CardTitle>
+              <CardDescription>{t('auth.subtitle')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+                <Input
+                  label={t('auth.phone')}
+                  name="phone"
+                  inputMode="tel"
+                  autoComplete="username"
+                  autoFocus
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="98XXXXXXXX"
+                />
+                <Input
+                  label={t('auth.password')}
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+
+                {loginError ? (
+                  <p
+                    role="alert"
+                    className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                  >
+                    {loginError}
+                  </p>
+                ) : null}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoggingIn || isRestoring}
                 >
-                  {loginError}
-                </p>
-              ) : null}
-
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full"
-                disabled={isLoggingIn || isRestoring}
-              >
-                {isLoggingIn ? t('auth.signingIn') : t('auth.signIn')}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                  {isLoggingIn ? t('auth.signingIn') : t('auth.signIn')}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </main>
   );

@@ -109,3 +109,50 @@ describe('AppShell billing nav', () => {
     expect(i18n.language).toBe('ne');
   });
 });
+
+describe('AppShell new-sale FAB', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    setTokens({ access: 'access', refresh: 'refresh' });
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/auth/me')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: me(features), error: null }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fetchMock.mockReset();
+    clearTokens();
+    features = {};
+    void i18n.changeLanguage('en');
+  });
+
+  it('renders the center FAB targeting the classic POS with advanced_pos', async () => {
+    features = { simple_sale: true, advanced_pos: true };
+    renderShell();
+
+    const fab = await screen.findByRole('link', { name: 'New sale' });
+    await waitFor(() => {
+      expect(fab).toHaveAttribute('href', '/billing');
+    });
+  });
+
+  it('renders the center FAB targeting simple sale without advanced_pos', async () => {
+    features = { simple_sale: true, advanced_pos: false };
+    renderShell();
+
+    const fab = await screen.findByRole('link', { name: 'New sale' });
+    await waitFor(() => {
+      expect(fab).toHaveAttribute('href', '/billing/simple');
+    });
+  });
+});
