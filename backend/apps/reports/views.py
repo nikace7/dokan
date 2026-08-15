@@ -120,6 +120,23 @@ class DashboardView(APIView):
         return ok(selectors.dashboard_summary(tenant, _user(request)))
 
 
+class CollectionsByTenderView(_ReportsAPIView):
+    """GET /reports/collections-by-tender — collections grouped by payment
+    method (tender) for a branch/period. Same gate as daily sales."""
+
+    def get(self, request: Request) -> Response:
+        tenant = require_request_tenant(request)
+        return ok(
+            selectors.collections_by_tender(
+                tenant,
+                _user(request),
+                branch_id=_uuid_param(request, "branch"),
+                date_from_bs=_bs_param(request, "date_from_bs"),
+                date_to_bs=_bs_param(request, "date_to_bs"),
+            )
+        )
+
+
 class DailySalesView(_ReportsAPIView):
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)

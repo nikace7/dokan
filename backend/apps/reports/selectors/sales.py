@@ -6,6 +6,7 @@ amounts, so sales reports show them as separate ``returns_*`` columns
 ``net_total`` column is computed here for convenience.
 """
 
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -14,6 +15,8 @@ from django.db.models.functions import Substr
 
 from apps.reports.selectors._shared import resolve_date_range
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
+from apps.sales.services.create_sale import PAYMENT_METHODS
+from core.money import quantize_money
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -154,3 +157,59 @@ def item_sales(
         }
         for row in qs
     ]
+
+
+def collections_by_tender(
+    tenant: "Tenant",
+    user: "User",
+    *,
+    branch_id: UUID | None = None,
+    date_from_bs: str | None = None,
+    date_to_bs: str | None = None,
+) -> dict[str, Any]:
+    """Collections grouped by payment method over COMPLETED SALE invoices.
+
+    Reads the tenders JSON list on each invoice — the same source the
+    tender-aware cash-session expected-cash uses (apps/payments). CREDIT
+    and POINTS are not collections (udharo / loyalty redemption), so they
+    are excluded. No cost fields are involved anywhere in this report.
+    """
+    from_bs, to_bs = resolve_date_range(date_from_bs, date_to_bs)
+    rows = (
+        _base(tenant, branch_id, from_bs, to_bs)
+        .filter(doc_type=_SALE)
+        .values_list("tenders", flat=True)
+    )
+    non_collections = {"CREDIT", "POINTS"}
+    by_method: dict[str, dict[str, Any]] = {}
+    for tenders in rows:
+        for tender in tenders:
+            if not isinstance(tender, dict):
+                continue
+            method = tender.get("method")
+            if not method or method in non_collections or method not in PAYMENT_METHODS:
+                continue
+            amount = Decimal(str(tender.get("amount", "0")))
+            if amount <= 0:
+                continue
+            entry = by_method.setdefault(
+                method, {"method": method, "amount": Decimal("0"), "count": 0}
+            )
+            entry["amount"] += amount
+            entry["count"] += 1
+
+    methods = sorted(by_method.values(), key=lambda e: (-e["amount"], e["method"]))
+    grand_total = quantize_money(sum((entry["amount"] for entry in methods), Decimal("0")))
+    return {
+        "date_from_bs": from_bs,
+        "date_to_bs": to_bs,
+        "methods": [
+            {
+                "method": entry["method"],
+                "amount": str(quantize_money(entry["amount"])),
+                "count": entry["count"],
+            }
+            for entry in methods
+        ],
+        "total": str(grand_total),
+    }
