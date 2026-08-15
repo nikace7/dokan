@@ -31,3 +31,38 @@ export interface DashboardSummary {
 export function fetchDashboard(): Promise<DashboardSummary> {
   return authedRequest<DashboardSummary>('/v1/dashboard');
 }
+
+export interface TenderCollection {
+  method: string;
+  /** 2-decimal money string, e.g. "45200.00". */
+  amount: string;
+  count: number;
+}
+
+/** `GET /reports/collections-by-tender` — perm `report.sales`. CREDIT is
+ *  never included server-side (it is not a collection). */
+export interface CollectionsByTender {
+  date_from_bs: string;
+  date_to_bs: string;
+  methods: TenderCollection[];
+  total: string;
+}
+
+/**
+ * Tender breakdown for the dashboard donut. All params optional server-side;
+ * pass the current BS month and selected branch for the home default.
+ */
+export function fetchCollectionsByTender(params: {
+  branch?: string | null;
+  dateFromBs: string;
+  dateToBs: string;
+}): Promise<CollectionsByTender> {
+  const search = new URLSearchParams({
+    date_from_bs: params.dateFromBs,
+    date_to_bs: params.dateToBs,
+  });
+  if (params.branch) {
+    search.set('branch', params.branch);
+  }
+  return authedRequest<CollectionsByTender>(`/v1/reports/collections-by-tender?${search}`);
+}
