@@ -4,6 +4,8 @@ API routes are versioned under ``/api/v1/``. App URL modules are empty until
 their feature lands; including them now keeps the routing table stable.
 """
 
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -31,3 +33,8 @@ urlpatterns = [
     path("api/v1/", include("apps.notifications.urls")),
     path("api/v1/", include("apps.compliance.urls")),
 ]
+
+# Local dev only: serve uploaded media from Django (production serves the
+# same files from the shared media volume via Caddy's file_server).
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

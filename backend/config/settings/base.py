@@ -191,6 +191,12 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Uploaded media (item images). Written by the backend onto the ``media``
+# volume, served by Caddy at MEDIA_URL (mirrors the staticfiles pattern);
+# in local dev Django's static() helper serves it when DEBUG is on.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = Path(env("MEDIA_ROOT", str(BASE_DIR / "media")) or str(BASE_DIR / "media"))
+
 # Tenant-scoped custom user model (phone login). Platform staff live in
 # apps.platformadmin.PlatformUser — a separate table and token audience.
 AUTH_USER_MODEL = "accounts.User"
