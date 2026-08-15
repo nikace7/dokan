@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { searchVariantsForSale } from '@/features/billing/api';
 import type { VariantForSale } from '@/features/billing/api';
+import { ItemImage } from '@/features/catalog/ui';
 import { formatNpr } from '@/lib/money';
 
 const DEBOUNCE_MS = 300;
@@ -94,15 +95,22 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
                     className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => onPick(row)}
                   >
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">
-                        {row.item_name}
-                        <span className="text-muted-foreground">
-                          {' '}
-                          — {row.size} / {row.color}
+                    <span className="flex min-w-0 items-center gap-3">
+                      <ItemImage
+                        imageUrl={row.image_url}
+                        alt={row.item_name}
+                        className="h-11 w-11"
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">
+                          {row.item_name}
+                          <span className="text-muted-foreground">
+                            {' '}
+                            — {row.size} / {row.color}
+                          </span>
                         </span>
+                        <span className="block text-xs text-muted-foreground">{row.sku}</span>
                       </span>
-                      <span className="block text-xs text-muted-foreground">{row.sku}</span>
                     </span>
                     <span className="shrink-0 text-right">
                       {row.mrp ? (

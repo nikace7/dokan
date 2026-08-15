@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TableCell } from '@/components/ui/table';
 import { getItem, listSizeCharts, listVariants } from '@/features/catalog/api';
+import { ItemImage } from '@/features/catalog/ui';
 import { VariantMatrix } from '@/features/catalog/VariantMatrix';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
@@ -82,24 +83,27 @@ export function ItemDetailPage() {
           </Button>
         }
       >
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-muted-foreground">{t('catalog.detail.nameNp')}</dt>
-            <dd>{item.name_np ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t('catalog.detail.unit')}</dt>
-            <dd>{item.unit}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t('catalog.detail.vatApplicable')}</dt>
-            <dd>{item.is_vat_applicable ? t('catalog.detail.yes') : t('catalog.detail.no')}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t('catalog.detail.reorderLevel')}</dt>
-            <dd>{item.reorder_level ?? '—'}</dd>
-          </div>
-        </dl>
+        <div className="flex items-start gap-3">
+          <ItemImage imageUrl={item.image_url} alt={item.name} className="h-20 w-20" />
+          <dl className="grid flex-1 gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">{t('catalog.detail.nameNp')}</dt>
+              <dd>{item.name_np ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">{t('catalog.detail.unit')}</dt>
+              <dd>{item.unit}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">{t('catalog.detail.vatApplicable')}</dt>
+              <dd>{item.is_vat_applicable ? t('catalog.detail.yes') : t('catalog.detail.no')}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">{t('catalog.detail.reorderLevel')}</dt>
+              <dd>{item.reorder_level ?? '—'}</dd>
+            </div>
+          </dl>
+        </div>
       </Card>
 
       <Card title={t('catalog.detail.variantsTitle', { count: variants.length })}>
