@@ -31,6 +31,7 @@ const ITEM = {
   hsn_code: null,
   unit: 'PCS',
   is_vat_applicable: false,
+  image_url: '/media/tenants/t1/items/ts.png',
   min_selling_price: null,
   max_selling_price: null,
   reorder_level: null,
@@ -92,6 +93,30 @@ describe('ItemsPage', () => {
     });
     // Row still renders from the (mocked) filtered response.
     expect((await screen.findAllByText('T-Shirt')).length).toBeGreaterThan(0);
+  });
+
+  it('renders the item photo, or a placeholder tile when image_url is null', async () => {
+    renderItems();
+    const thumbs = await screen.findAllByRole('img', { name: 'T-Shirt' });
+    expect(thumbs.length).toBeGreaterThan(0);
+    expect(thumbs[0]).toHaveAttribute('src', '/media/tenants/t1/items/ts.png');
+    expect(thumbs[0]).toHaveAttribute('loading', 'lazy');
+  });
+
+  it('renders no img for an item without a photo', async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/catalog/categories')) {
+        return Promise.resolve(envelope([], PAGE_META));
+      }
+      if (url.includes('/v1/catalog/items')) {
+        return Promise.resolve(envelope([{ ...ITEM, image_url: null }], PAGE_META));
+      }
+      return Promise.reject(new Error(`Unexpected request: GET ${url}`));
+    });
+    renderItems();
+    await screen.findAllByText('T-Shirt');
+    expect(screen.queryByRole('img', { name: 'T-Shirt' })).not.toBeInTheDocument();
   });
 
   it('filters by status through the is_active query param', async () => {
