@@ -5,10 +5,17 @@ features); tests that need the database use the ``django_db`` marker and a
 dedicated test database on the host/port below.
 """
 
+import tempfile
+from pathlib import Path
+
 from config.settings.base import *  # noqa: F403
 from config.settings.base import env
 
 DEBUG = False
+
+# Uploaded files land in a per-run temp dir; image tests override this with
+# tmp_path so each test asserts against its own empty storage.
+MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="dokan-test-media-"))
 
 # Connection is env-overridable so a dedicated local test container
 # (e.g. -p 5433:5432) and the CI postgres:16 service both work unchanged.

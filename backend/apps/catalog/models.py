@@ -21,6 +21,19 @@ from django.db.models import Q
 from core.models import TenantScopedModel
 
 
+def item_image_upload_to(instance: "Item", filename: str) -> str:
+    """Tenant-namespaced media path: tenants/<tenant_id>/items/<uuid><ext>.
+
+    The filename is server-generated (uuid4 hex) so a hostile or odd client
+    filename can never influence the storage path; only the extension is
+    carried over, and the service layer normalises it from the detected
+    image format before saving.
+    """
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    suffix = f".{ext}" if ext else ""
+    return f"tenants/{instance.tenant_id}/items/{uuid.uuid4().hex}{suffix}"
+
+
 class SizeChart(TenantScopedModel):
     """An ordered list of sizes, e.g. ['S','M','L','XL'] or ['28','30','32']."""
 
@@ -113,6 +126,9 @@ class Item(TenantScopedModel):
     hsn_code = models.TextField(null=True, blank=True)
     unit = models.TextField(default="PCS")
     is_vat_applicable = models.BooleanField(default=False)
+    # One photo per item (the style), not per variant. Stored under
+    # tenants/<tenant_id>/items/ on the media volume; served at MEDIA_URL.
+    image = models.ImageField(upload_to=item_image_upload_to, null=True, blank=True)
     images = models.JSONField(null=True, blank=True)
     attributes = models.JSONField(null=True, blank=True)  # fabric, fit, care — escape hatch
     min_selling_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)

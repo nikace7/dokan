@@ -342,6 +342,7 @@ The style. Never stocked or sold directly — variants are.
 | hsn_code | text | yes | |
 | unit | text | no | default `'PCS'` |
 | is_vat_applicable | boolean | no | default false |
+| image | varchar(100) | yes | one photo per item; storage key under `tenants/<tenant_id>/items/` on the media volume; served at `/media/...`; written only by `catalog.services.set_item_image` (2 MB cap, jpeg/png/webp sniffed with Pillow) |
 | images | jsonb | yes | list of storage keys/URLs |
 | attributes | jsonb | yes | **deliberate escape hatch instead of EAV**: fabric, fit, care, … Display only |
 | min_selling_price | numeric(14,2) | yes | NULL = inherit from category |
