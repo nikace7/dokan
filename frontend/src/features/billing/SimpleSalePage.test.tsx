@@ -46,6 +46,7 @@ const TSHIRT = {
   sku: 'TS-BLK-M',
   barcode: '8901234567890',
   mrp: '1500.00',
+  image_url: '/media/tenants/t1/items/tshirt.png',
   qty_on_hand: '5.000',
   min_selling_price: '1200.00',
   max_selling_price: '1600.00',
@@ -60,6 +61,7 @@ const JEANS = {
   sku: 'JN-BLU-32',
   barcode: '8901234567891',
   mrp: '2500.00',
+  image_url: null,
   qty_on_hand: '3.000',
   min_selling_price: null,
   max_selling_price: null,
@@ -220,6 +222,31 @@ describe('SimpleSalePage', () => {
     fireEvent.click(screen.getByRole('button', { name: /remove jeans/i }));
     expect(screen.queryByRole('region', { name: /Jeans/ })).not.toBeInTheDocument();
     expect(completeButton()).toHaveTextContent('रू 1,500.00');
+  });
+
+  it('shows item photos in the picker and line card, with a placeholder when null', async () => {
+    installApiMock();
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /add item/i }));
+    const dialog = await screen.findByRole('dialog');
+
+    // T-Shirt has a photo; Jeans falls back to the placeholder tile.
+    const tshirtButton = await within(dialog).findByRole('button', { name: /T-Shirt/ });
+    const thumb = within(tshirtButton).getByRole('img', { name: 'T-Shirt' });
+    expect(thumb).toHaveAttribute('src', '/media/tenants/t1/items/tshirt.png');
+    expect(thumb).toHaveAttribute('loading', 'lazy');
+    expect(
+      within(within(dialog).getByRole('button', { name: /Jeans/ })).queryByRole('img'),
+    ).not.toBeInTheDocument();
+
+    // The picked line keeps the thumbnail.
+    fireEvent.click(tshirtButton);
+    const line = screen.getByRole('region', { name: 'T-Shirt — M / Black' });
+    expect(within(line).getByRole('img', { name: 'T-Shirt' })).toHaveAttribute(
+      'src',
+      '/media/tenants/t1/items/tshirt.png',
+    );
   });
 
   it('blocks submit when the price is outside the allowed range', async () => {
