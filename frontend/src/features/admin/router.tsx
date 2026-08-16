@@ -1,5 +1,7 @@
 import { createBrowserRouter, Link, Navigate, RouterProvider } from 'react-router-dom';
 
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { AdminLayout } from '@/features/admin/AdminLayout';
 import { PlansPage } from '@/features/admin/PlansPage';
 import { PlatformAuditPage } from '@/features/admin/PlatformAuditPage';
@@ -20,12 +22,18 @@ function PlatformAuditRoute() {
 
 function AdminNotFound() {
   return (
-    <main className="mx-auto max-w-sm p-6">
-      <h1 className="text-2xl font-semibold">404</h1>
-      <p className="mt-2 text-slate-600">This control-plane page does not exist.</p>
-      <Link className="mt-4 inline-block text-blue-700 underline" to="/admin/tenants">
-        Back to tenants
-      </Link>
+    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-6">
+      <Card className="w-full max-w-sm text-center shadow-card">
+        <CardHeader className="space-y-1 pb-4">
+          <CardTitle className="text-2xl">404</CardTitle>
+          <CardDescription>This control-plane page does not exist.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="outline" className="w-full">
+            <Link to="/admin/tenants">Back to tenants</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </main>
   );
 }
