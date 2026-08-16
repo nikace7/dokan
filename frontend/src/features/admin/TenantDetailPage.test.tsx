@@ -103,14 +103,18 @@ describe('TenantDetailPage', () => {
     );
 
     expect(await screen.findByText('Demo Shop')).toBeInTheDocument();
-    fireEvent.change(await screen.findByLabelText('Target user'), {
+    const targetSelect = await screen.findByLabelText('Target user');
+    // Wait for the targets query to land before selecting, or the value won't stick.
+    await screen.findByRole('option', { name: 'Demo Owner · 9800000000' });
+    fireEvent.change(targetSelect, {
       target: { value: 'owner-1' },
     });
     fireEvent.change(screen.getByLabelText('Reason'), {
       target: { value: 'Investigating a reported billing discrepancy.' },
     });
-    expect(screen.queryByRole('option', { name: 'Read/write' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Start support access' }));
+    // SUPPORT role: the edit scope stays disabled (super admins only).
+    expect(screen.getByRole('radio', { name: /assist — can edit/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Start assist session' }));
 
     const link = await screen.findByRole('link', { name: 'Open audited tenant session' });
     expect(link).toHaveAttribute(
