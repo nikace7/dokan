@@ -1,12 +1,65 @@
+import { KeyRound, Lock, ShieldCheck, Store } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { usePlatformAuth } from '@/features/admin/usePlatformAuth';
 
+/** Left brand panel (desktop only): what this console is and who it is for. */
+function BrandPanel() {
+  const points = [
+    { icon: Store, text: 'Provision, suspend, and support every tenant shop from one place.' },
+    { icon: KeyRound, text: 'Separate auth realm — platform tokens never touch a tenant session.' },
+    { icon: Lock, text: 'Restricted networks, mandatory authenticator codes, full audit trail.' },
+  ];
+  return (
+    <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
+      {/* Subtle dot texture */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: 'radial-gradient(hsl(0 0% 100% / 0.35) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+        }}
+      />
+      <div className="relative flex items-center gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
+          <ShieldCheck className="h-5 w-5" />
+        </span>
+        <span className="text-xl font-bold">Dokan Control</span>
+      </div>
+      <div className="relative space-y-6">
+        <p className="max-w-md text-3xl font-bold leading-snug tracking-tight">
+          The control plane for every Dokan shop.
+        </p>
+        <ul className="space-y-3">
+          {points.map(({ icon: Icon, text }) => (
+            <li key={text} className="flex items-center gap-3 text-sm font-medium">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15 [&_svg]:size-4">
+                <Icon />
+              </span>
+              {text}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <p className="relative text-xs text-primary-foreground/70">
+        Authorized platform staff only. Every action here is audited.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Platform login — email + password + TOTP against the admin-host auth
+ * realm. English only (the admin portal has no i18n).
+ *
+ * Desktop: brand panel left, sign-in card right. Mobile: single centered card.
+ */
 export function PlatformLoginPage() {
   const auth = usePlatformAuth();
   const navigate = useNavigate();
@@ -18,52 +71,85 @@ export function PlatformLoginPage() {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    void auth.signIn(email.trim(), password, otp).then(() => navigate('/admin', { replace: true }));
+    void auth
+      .signIn(email.trim(), password, otp)
+      .then(() => navigate('/admin', { replace: true }))
+      .catch(() => {
+        // Failure is already surfaced via loginError from the mutation.
+      });
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
-      <Card className="w-full max-w-md" title="Dokan platform control plane">
-        <p className="mb-4 text-sm text-slate-600">
-          Restricted to approved networks. Password and authenticator code are required.
-        </p>
-        <form onSubmit={submit} className="flex flex-col gap-4">
-          <Input
-            label="Email"
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <Input
-            label="Password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <Input
-            label="Authentication code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            maxLength={6}
-            required
-            value={otp}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-          />
-          {auth.loginError ? (
-            <p role="alert" className="text-sm text-red-700">
-              {auth.loginError}
-            </p>
-          ) : null}
-          <Button type="submit" size="lg" disabled={auth.isLoggingIn || otp.length !== 6}>
-            {auth.isLoggingIn ? 'Verifying…' : 'Sign in securely'}
-          </Button>
-        </form>
-      </Card>
+    <main className="grid min-h-screen bg-muted/40 lg:grid-cols-2">
+      <BrandPanel />
+
+      <div className="flex items-center justify-center p-6">
+        <div className="flex w-full max-w-sm flex-col items-center">
+          {/* Mobile-only brand header (desktop has the brand panel). */}
+          <div className="mb-6 flex flex-col items-center gap-2 lg:hidden">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <ShieldCheck className="h-6 w-6" />
+            </span>
+            <span className="text-2xl font-bold tracking-tight">Dokan Control</span>
+          </div>
+
+          <Card className="w-full shadow-card">
+            <CardHeader className="space-y-1 pb-4 text-center">
+              <CardTitle className="text-xl">Platform sign in</CardTitle>
+              <CardDescription>
+                Password and authenticator code are required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={submit} className="flex flex-col gap-4">
+                <Input
+                  label="Email"
+                  type="email"
+                  autoComplete="username"
+                  autoFocus
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+                <Input
+                  label="Password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <Input
+                  label="Authentication code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  required
+                  value={otp}
+                  onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+                {auth.loginError ? (
+                  <p
+                    role="alert"
+                    className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                  >
+                    {auth.loginError}
+                  </p>
+                ) : null}
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full"
+                  disabled={auth.isLoggingIn || otp.length !== 6}
+                >
+                  {auth.isLoggingIn ? 'Verifying…' : 'Sign in securely'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </main>
   );
 }
