@@ -1,5 +1,14 @@
 import '@testing-library/jest-dom/vitest';
 
+// jsdom has no ResizeObserver; Radix primitives (Dialog, Popover) need one.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver =
+  globalThis.ResizeObserver ?? (ResizeObserverStub as unknown as typeof ResizeObserver);
+
 // Initialize the shared i18next instance for tests: English, synchronous
 // (resources are bundled, so no backend/detector), mirroring src/lib/i18n.
 // Tests assert the ENGLISH string — bilingual "EN / नेपाली" labels are gone.
