@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -95,6 +95,47 @@ describe('platform management pages', () => {
     expect(await screen.findByText('Basic')).toBeInTheDocument();
     expect(screen.getByText('max_users')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New plan' })).toBeInTheDocument();
+  });
+
+  it('creates a plan from the friendly editors', async () => {
+    renderPage(<PlansPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'New plan' }));
+
+    fireEvent.change(await screen.findByLabelText('Code'), { target: { value: 'PRO' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Pro' } });
+    fireEvent.change(screen.getByLabelText('Price (NPR)'), { target: { value: '3000' } });
+    fireEvent.change(screen.getByLabelText('Staff accounts'), { target: { value: '10' } });
+    fireEvent.click(screen.getByRole('switch', { name: 'SMS receipts' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create plan' }));
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(
+        ([input, init]) => String(input).includes('/v1/admin/plans') && init?.method === 'POST',
+      );
+      expect(call).toBeDefined();
+      const body = JSON.parse(String(call?.[1]?.body)) as {
+        limits: Record<string, unknown>;
+        features: Record<string, unknown>;
+      };
+      expect(body).toMatchObject({
+        code: 'pro',
+        name: 'Pro',
+        price_npr: '3000',
+        billing_cycle: 'monthly',
+        is_active: true,
+      });
+      expect(body.limits).toEqual({ max_users: 10 });
+      expect(body.features).toMatchObject({
+        sms: true,
+        simple_sale: false,
+        advanced_pos: false,
+        profit_reports: false,
+        vat_module: false,
+        multi_branch: false,
+        custom_rate_types: false,
+      });
+      expect(body.features).not.toHaveProperty('max_rate_types');
+    });
   });
 
   it('shows immutable platform audit context', async () => {

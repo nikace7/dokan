@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Switch } from '@/components/ui/switch';
 import { deleteOverride, listOverrides, listPlans, setOverride } from '@/features/admin/api';
+import { AdminCard } from '@/features/admin/components';
 import { ApiError } from '@/lib/api/client';
 import { PLAN_FEATURE_CATALOG } from '@/lib/plans';
 
@@ -49,7 +49,10 @@ export function FeatureTogglesPanel({
   const mutationError = toggle.isError ? toggle.error : reset.isError ? reset.error : null;
 
   return (
-    <Card title="Features">
+    <AdminCard
+      title="Features"
+      description="Effective feature switches for this shop: the plan default, or an override that wins until it expires."
+    >
       <ul className="divide-y divide-border">
         {PLAN_FEATURE_CATALOG.map((entry) => {
           const override = overrides.data?.data.find(
@@ -97,6 +100,6 @@ export function FeatureTogglesPanel({
             : 'Could not update the feature.'}
         </p>
       ) : null}
-    </Card>
+    </AdminCard>
   );
 }
