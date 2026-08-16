@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,73 +15,95 @@ function envelope(data: unknown, meta?: Record<string, unknown>, status = 200): 
   });
 }
 
+const PAGE_META = { count: 0, page: 1, total_pages: 1, page_size: 50 };
+
+const TENANT = {
+  id: 'tenant-1',
+  slug: 'demo',
+  name: 'Demo Shop',
+  legal_name: 'Demo Traders Pvt. Ltd.',
+  pan_vat_no: '123456789',
+  vat_registered: true,
+  plan: 'plan-1',
+  plan_code: 'basic',
+  plan_name: 'Basic',
+  status: 'ACTIVE',
+  trial_ends_at: '2026-08-15T00:00:00Z',
+  calendar_pref: 'BS',
+  locale: 'np',
+  onboarded_at: '2026-08-02T00:00:00Z',
+  created_at: '2026-08-01T00:00:00Z',
+};
+
+const SNAPSHOT = {
+  id: 'snap-1',
+  date: '2026-08-10',
+  users: 3,
+  items: 120,
+  invoices_mtd: 45,
+  storage_mb: 40,
+  sms_used: 12,
+};
+
+interface MockOptions {
+  role?: 'SUPPORT' | 'SUPER_ADMIN';
+  tenant?: typeof TENANT;
+  usage?: Array<typeof SNAPSHOT>;
+}
+
+function installApiMock({ role = 'SUPER_ADMIN', tenant = TENANT, usage = [] }: MockOptions = {}) {
+  fetchMock.mockImplementation((input, init) => {
+    const url = String(input);
+    const method = init?.method ?? 'GET';
+    if (url.includes('/v1/admin/auth/me')) {
+      return Promise.resolve(
+        envelope({ id: 'user-1', email: 'admin@dokan.test', full_name: 'Ram Admin', role }),
+      );
+    }
+    if (url.endsWith('/v1/admin/tenants/tenant-1') && method === 'PATCH') {
+      const patch = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return Promise.resolve(envelope({ ...tenant, ...patch }));
+    }
+    if (url.endsWith('/v1/admin/tenants/tenant-1')) {
+      return Promise.resolve(envelope(tenant));
+    }
+    if (url.endsWith('/usage')) {
+      return Promise.resolve(envelope(usage, { ...PAGE_META, count: usage.length }));
+    }
+    if (url.endsWith('/subscriptions') || url.endsWith('/overrides')) {
+      return Promise.resolve(envelope([], PAGE_META));
+    }
+    if (url.endsWith('/users')) {
+      return Promise.resolve(envelope([]));
+    }
+    if (url.includes('/v1/admin/plans')) {
+      return Promise.resolve(envelope([], PAGE_META));
+    }
+    return Promise.reject(new Error(`Unexpected request: ${method} ${url}`));
+  });
+}
+
+function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/admin/tenants/tenant-1']}>
+        <Routes>
+          <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function patchCalls() {
+  return fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH');
+}
+
 describe('TenantDetailPage', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock);
     setPlatformTokens({ access: 'platform-access', refresh: 'platform-refresh' });
-    fetchMock.mockImplementation((input, init) => {
-      const url = String(input);
-      if (url.includes('/v1/admin/auth/me')) {
-        return Promise.resolve(
-          envelope({
-            id: 'support-1',
-            email: 'support@dokan.test',
-            full_name: 'Ram Support',
-            role: 'SUPPORT',
-          }),
-        );
-      }
-      if (url.endsWith('/v1/admin/tenants/tenant-1')) {
-        return Promise.resolve(
-          envelope({
-            id: 'tenant-1',
-            slug: 'demo',
-            name: 'Demo Shop',
-            plan: 'plan-1',
-            plan_code: 'basic',
-            plan_name: 'Basic',
-            status: 'ACTIVE',
-            trial_ends_at: null,
-            calendar_pref: 'BS',
-            locale: 'np',
-            created_at: '2026-08-01T00:00:00Z',
-          }),
-        );
-      }
-      if (url.endsWith('/users')) {
-        return Promise.resolve(
-          envelope([{ id: 'owner-1', phone: '9800000000', full_name: 'Demo Owner' }]),
-        );
-      }
-      if (url.endsWith('/impersonate') && init?.method === 'POST') {
-        return Promise.resolve(
-          envelope(
-            {
-              session: {
-                id: 'session-1',
-                platform_user: 'support-1',
-                platform_user_name: 'Ram Support',
-                tenant: 'tenant-1',
-                target_user_id: 'owner-1',
-                reason: 'Investigating a reported billing discrepancy.',
-                scope: 'READ_ONLY',
-                started_at: '2026-08-05T00:00:00Z',
-                expires_at: '2026-08-05T00:15:00Z',
-                ended_at: null,
-              },
-              access: 'tenant.token/value',
-              token_type: 'Bearer',
-            },
-            undefined,
-            201,
-          ),
-        );
-      }
-      if (url.endsWith('/subscriptions') || url.endsWith('/usage') || url.endsWith('/overrides')) {
-        return Promise.resolve(envelope([], { count: 0, page: 1, total_pages: 1, page_size: 50 }));
-      }
-      return Promise.reject(new Error(`Unexpected request: ${url}`));
-    });
   });
 
   afterEach(() => {
@@ -90,37 +112,58 @@ describe('TenantDetailPage', () => {
     clearPlatformTokens();
   });
 
-  it('starts read-only support access and exposes a fragment-only tenant handoff', async () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/admin/tenants/tenant-1']}>
-          <Routes>
-            <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+  it('renders profile facts and the latest usage rows', async () => {
+    installApiMock({ role: 'SUPPORT', usage: [SNAPSHOT] });
+    renderPage();
 
-    expect(await screen.findByText('Demo Shop')).toBeInTheDocument();
-    const targetSelect = await screen.findByLabelText('Target user');
-    // Wait for the targets query to land before selecting, or the value won't stick.
-    await screen.findByRole('option', { name: 'Demo Owner · 9800000000' });
-    fireEvent.change(targetSelect, {
-      target: { value: 'owner-1' },
-    });
-    fireEvent.change(screen.getByLabelText('Reason'), {
-      target: { value: 'Investigating a reported billing discrepancy.' },
-    });
-    // SUPPORT role: the edit scope stays disabled (super admins only).
-    expect(screen.getByRole('radio', { name: /assist — can edit/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Start assist session' }));
+    expect(await screen.findByRole('heading', { name: 'Demo Shop' })).toBeInTheDocument();
+    expect(screen.getByText('demo')).toBeInTheDocument();
+    expect(screen.getByText('Demo Traders Pvt. Ltd.')).toBeInTheDocument();
+    expect(screen.getByText('123456789')).toBeInTheDocument();
+    expect(screen.getByText('2026-08-01')).toBeInTheDocument();
 
-    const link = await screen.findByRole('link', { name: 'Open audited tenant session' });
-    expect(link).toHaveAttribute(
-      'href',
-      'http://demo.localhost:3000/support-login#access=tenant.token%2Fvalue',
-    );
-    expect(link.getAttribute('href')).not.toContain('?');
+    // Usage table shows the snapshot values.
+    const dateCell = await screen.findByText('2026-08-10');
+    expect(dateCell.closest('tr')).toHaveTextContent('120');
+    expect(dateCell.closest('tr')).toHaveTextContent('45');
+
+    // Support gets no lifecycle writes.
+    expect(screen.queryByRole('button', { name: 'Suspend' })).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state when no usage snapshots exist', async () => {
+    installApiMock({ role: 'SUPPORT', usage: [] });
+    renderPage();
+    expect(await screen.findByText('No usage snapshots yet')).toBeInTheDocument();
+  });
+
+  it('suspends an active tenant after confirmation', async () => {
+    installApiMock({ role: 'SUPER_ADMIN' });
+    renderPage();
+    await screen.findByRole('heading', { name: 'Demo Shop' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Suspend' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Suspend tenant?');
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => expect(patchCalls()).toHaveLength(1));
+    expect(JSON.parse(String(patchCalls()[0][1]?.body))).toEqual({ status: 'SUSPENDED' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('reactivates a suspended tenant after confirmation', async () => {
+    installApiMock({ role: 'SUPER_ADMIN', tenant: { ...TENANT, status: 'SUSPENDED' } });
+    renderPage();
+    await screen.findByRole('heading', { name: 'Demo Shop' });
+
+    expect(screen.queryByRole('button', { name: 'Suspend' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Reactivate tenant?');
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => expect(patchCalls()).toHaveLength(1));
+    expect(JSON.parse(String(patchCalls()[0][1]?.body))).toEqual({ status: 'ACTIVE' });
   });
 });
