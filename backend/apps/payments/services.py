@@ -1,6 +1,6 @@
 """Write-side business logic for payments — receipts and supplier payments.
 
-Invariant map (AGENTS.md):
+Invariant map (ARCHITECTURE §6):
 - #3: completed invoices are NEVER updated. Allocations and outstanding are
   ledger-derived (due_amount − Σ allocations; dues − credit notes −
   receipts), never written back onto the invoice.

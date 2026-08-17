@@ -155,7 +155,7 @@ never do float money arithmetic on either side.
 ## 8. Bilingual UI conventions
 
 The UI is bilingual **Nepali + English**, with Nepali labels on
-counter-facing screens (AGENTS.md, SYSTEM_DESIGN §6.4, §7):
+counter-facing screens ([ARCHITECTURE.md](ARCHITECTURE.md), SYSTEM_DESIGN §6.4, §7):
 
 - **Labels**: Nepali + English side by side initially, then per-user
   preference. No jargon — "Stock" not "Inventory Ledger", "Baki" not

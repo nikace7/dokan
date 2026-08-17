@@ -1,6 +1,6 @@
 """Sales service tests — the invariants are the point.
 
-Money-critical: apps/sales/services must stay at 100% coverage (AGENTS.md).
+Money-critical: apps/sales/services must stay at 100% coverage (see docs/ARCHITECTURE.md).
 Covered: totals + VAT rule, stock ledger posting, gapless numbering,
 idempotent replay, cost_at_sale snapshot, credit rules, held-bill flow,
 and completed-invoice immutability.

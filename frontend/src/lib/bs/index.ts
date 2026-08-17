@@ -1,6 +1,6 @@
 /**
  * Bikram Sambat (BS) conversion — the ONLY module in the frontend that may
- * import `nepali-date-converter` (AGENTS.md invariant 9; mirrors the
+ * import `nepali-date-converter` (ARCHITECTURE §6 invariant 9; mirrors the
  * backend's `core/calendar/bs.py` contract in docs/SYSTEM_DESIGN.md §6.3).
  *
  * Rules:

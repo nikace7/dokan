@@ -1,6 +1,6 @@
 """Inventory models — the stock ledger and its projection.
 
-Invariant #1 (AGENTS.md, docs/DATABASE_SCHEMA.md §6): **stock changes only
+Invariant #1 (ARCHITECTURE §6, docs/DATABASE_SCHEMA.md §6): **stock changes only
 via ``stock_movement``** (immutable, append-only ledger — the migration
 REVOKEs UPDATE/DELETE from the app role). ``stock_level`` is a projection
 written by the inventory service in the same transaction as its ledger rows,

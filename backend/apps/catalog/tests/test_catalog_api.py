@@ -1,5 +1,5 @@
 """API tests for catalog endpoints — happy path, auth-denied, validation,
-and the cost-price leak rules (AGENTS.md invariant 10).
+and the cost-price leak rules (ARCHITECTURE §6 invariant 10).
 
 Requests go through the full stack (TenantMiddleware → JWT → HasPermission)
 with an explicit Host header; permissions are granted via roles BEFORE login

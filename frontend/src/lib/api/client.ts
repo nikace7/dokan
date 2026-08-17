@@ -103,7 +103,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       (IDEMPOTENT_POST_PATHS.some((p) => path.startsWith(p)) ? newIdempotencyKey() : undefined);
     if (key) {
       // Mandatory on POST /sales and /payments: a double-tap on a flaky
-      // connection must replay, not duplicate (AGENTS.md invariant 8).
+      // connection must replay, not duplicate (ARCHITECTURE §6 invariant 8).
       headers.set('Idempotency-Key', key);
     }
   }

@@ -90,7 +90,7 @@ def record_token_tenant_mismatch(request: "HttpRequest", token: Any) -> None:
     """Security audit hook for a cross-tenant token replay.
 
     Today: structured application-log event (no PII, no token material —
-    AGENTS.md logging rules). When apps.audit lands, this must also write an
+    docs/ARCHITECTURE.md §8 logging rules). When apps.audit lands, this must also write an
     ``audit_log`` row — token theft across tenants is an accountability
     event, not just a debug line.
     """

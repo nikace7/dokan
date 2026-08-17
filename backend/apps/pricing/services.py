@@ -1,6 +1,6 @@
 """Pricing services — resolution chain, guardrails, price writes, rate types.
 
-Money-critical module: 100% coverage required (AGENTS.md).
+Money-critical module: 100% coverage required (see docs/ARCHITECTURE.md).
 
 Resolution chain (docs/SYSTEM_DESIGN.md §4.2, deterministic, first hit wins):
     VARIANT-scope price → ITEM-scope → CATEGORY-scope (nearest ancestor
