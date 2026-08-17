@@ -80,7 +80,7 @@ class Migration(migrations.Migration):
                 ],
             },
         ),
-        # RLS + append-only (AGENTS.md invariant 7): wrong entries are
+        # RLS + append-only (ARCHITECTURE §6 invariant 7): wrong entries are
         # reversed by counter-entries, never edited or deleted.
         *rls_migration_operations("audit_log"),
         revoke_update_delete_operation("audit_log"),

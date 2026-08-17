@@ -1,6 +1,6 @@
 """Money helpers — Decimal only, NPR only, Nepali display conventions.
 
-Rules (AGENTS.md, docs/SYSTEM_DESIGN.md §4–§7):
+Rules (docs/ARCHITECTURE.md, docs/SYSTEM_DESIGN.md §4–§7):
 - Money is always ``Decimal``. Never float.
 - Display uses Nepali lakh/crore grouping (``1,23,456.00``), not Western
   thousands grouping, with an optional Devanagari numeral rendering

@@ -1,5 +1,5 @@
 """API tests for inventory endpoints — happy path, auth-denied, validation,
-and the cost-price leak rules (AGENTS.md invariant 10).
+and the cost-price leak rules (ARCHITECTURE §6 invariant 10).
 
 Patterns mirror apps/catalog/tests/test_catalog_api.py: full stack
 (TenantMiddleware → JWT → HasPermission), permissions granted BEFORE login

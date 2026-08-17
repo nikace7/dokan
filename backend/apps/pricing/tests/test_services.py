@@ -1,6 +1,6 @@
 """Pricing service tests — the resolution and guardrail matrices.
 
-Money-critical: apps/pricing must stay at 100% coverage (AGENTS.md).
+Money-critical: apps/pricing must stay at 100% coverage (see docs/ARCHITECTURE.md).
 Chain under test (design §4.2): VARIANT → ITEM → CATEGORY (nearest ancestor
 first) → variant.mrp → 409 PRICE_NOT_SET.
 """

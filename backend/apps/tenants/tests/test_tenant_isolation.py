@@ -1,6 +1,6 @@
 """Tenant isolation suite — the test that protects the business.
 
-Runs in CI on every PR (AGENTS.md). Parametrized over EVERY concrete
+Runs in CI on every PR (see docs/ARCHITECTURE.md). Parametrized over EVERY concrete
 ``TenantScopedModel`` subclass: tenant A must get empty querysets for every
 row of tenant B — enforced by Postgres RLS, so a forgotten ``.filter()`` is
 structurally unable to leak.

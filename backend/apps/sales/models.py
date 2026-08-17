@@ -2,7 +2,7 @@
 
 Tenant-scoped, RLS-protected; every composite index leads with tenant_id.
 
-Invariants honoured here (AGENTS.md):
+Invariants honoured here (ARCHITECTURE §6):
 - **#3 Completed invoices are never updated or deleted.** HELD bills are
   working state; COMPLETED is terminal for this slice (returns/corrections
   come later as separate RETURN documents with ``original_invoice_id``).

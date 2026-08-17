@@ -1,5 +1,5 @@
 #!/bin/bash
-# Creates the two database roles the platform runs on (AGENTS.md invariant 5):
+# Creates the two database roles the platform runs on (ARCHITECTURE §6 invariant 5):
 #
 #   dokan_migrator — owns the schema, runs migrations, bypasses RLS as owner
 #                    of the tables (FORCE RLS still applies; migrations use
@@ -27,7 +27,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-S
     ALTER DEFAULT PRIVILEGES FOR ROLE dokan_migrator IN SCHEMA public
         GRANT USAGE, SELECT ON SEQUENCES TO dokan_app;
 
-    -- ...except the audit log, which is append-only (AGENTS.md invariant 7).
+    -- ...except the audit log, which is append-only (ARCHITECTURE §6 invariant 7).
     -- A migration revokes UPDATE/DELETE on audit_log once that table exists:
     --   REVOKE UPDATE, DELETE ON audit_log FROM dokan_app;
 SQL
