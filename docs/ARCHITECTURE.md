@@ -238,7 +238,8 @@ Decisions that follow from this:
 
 ## 6. Data & consistency invariants
 
-Three invariants must never be violated (SYSTEM_DESIGN §3.5):
+These twelve invariants must never be violated. Code comments cite them as
+"ARCHITECTURE §6 invariant N"; reviews reject anything that breaks one.
 
 1. **Stock changes only via `stock_movement`** (immutable, append-only ledger).
    `stock_level` is a projection written in the same transaction; a monthly job
@@ -247,18 +248,38 @@ Three invariants must never be violated (SYSTEM_DESIGN §3.5):
    rewrite history — profit reports are stable.
 3. **Completed invoices are never updated or deleted.** Corrections happen via
    RETURN / credit note (accounting + IRD requirement).
+4. **Tenant comes only from the subdomain** — never from a header, body, or
+   query param. Middleware sets `SET LOCAL app.tenant_id` inside the request
+   transaction.
+5. **App DB role is non-superuser, non-owner** with `FORCE ROW LEVEL SECURITY`
+   on every tenant-scoped table; migrations run as a separate privileged role.
+6. **Every composite index leads with `tenant_id`** so RLS predicates are
+   index-covered.
+7. **Audit log is append-only** (`REVOKE UPDATE, DELETE` from the app role),
+   written by explicit `audit(...)` calls in services — never by signals.
+8. **`POST /sales` and `POST /payments` require a mandatory `Idempotency-Key`
+   header**; the key is stored on the record, unique per tenant, and a replay
+   returns the original record with 200.
+9. **BS conversion lives only in `core/calendar/bs.py`** (backend) and
+   `lib/bs/` (frontend). The API always exchanges AD ISO strings; BS is a
+   presentation/reporting concern. `business_date_bs` (`char(10)`) and
+   `fiscal_year_bs` (`char(7)`) are denormalized onto every transaction row at
+   write time, so reports are plain indexed range scans with no conversion in
+   SQL.
+10. **Cost price must never leak** to users without `pricing.view_cost` — not
+    in serializer fields, selector querysets, UI components, or even error
+    messages ("below cost" is itself a disclosure).
+11. **Money is Decimal** via `core/money.py`; display uses Nepali lakh/crore
+    grouping (`1,23,456`) with optional Devanagari numerals.
+12. **POS sale completion requires an open `CashSession`** for the branch.
+    Holding a bill remains allowed without a session, and idempotent replays
+    return the original invoice even after the session closes.
 
-Supporting mechanisms:
+Supporting mechanism:
 
 - **Gapless invoice numbering**: row-locked `number_sequence` per (tenant,
   branch, doc_type, fiscal_year_bs) — DB sequences leave gaps on rollback, which
   IRD does not accept.
-- **Idempotency**: `POST /sales` and `POST /payments` require an
-  `Idempotency-Key` header; the key is stored on the record, unique per tenant;
-  a replay returns the original record with 200.
-- **BS dates denormalized at write time**: `business_date_bs char(10)` and
-  `fiscal_year_bs char(7)` on every transaction row, so reports are plain
-  indexed range scans with no conversion in SQL.
 
 ---
 
