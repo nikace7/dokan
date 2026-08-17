@@ -1,8 +1,8 @@
 # Dokan E2E tests (Playwright)
 
-End-to-end smoke suite for the tenant frontend, per the testing strategy in
-`AGENTS.md`: **login → billing loads**, **scan → cart → cash bill → receipt**,
-and a **return against the created bill**. It runs against the real local
+End-to-end smoke suite for the tenant frontend: **login → billing loads**,
+**scan → cart → cash bill → receipt**, and a **return against the created
+bill**. It runs against the real local
 stack — it is deliberately **not wired into CI**: the suite needs the full
 compose stack (Postgres, Redis, backend, frontend, Caddy) plus seeded demo
 data, which is too heavy for the PR gate. Run it locally before releases or

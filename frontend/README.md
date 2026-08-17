@@ -1,7 +1,7 @@
 # Dokan frontend
 
-Vite + React + TypeScript for the multi-tenant clothing-shop SaaS. See the
-root `AGENTS.md` and `docs/SYSTEM_DESIGN.md` for the architecture; this
+Vite + React + TypeScript for the multi-tenant clothing-shop SaaS. See
+[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) for the architecture; this
 file is the quickstart.
 
 ## Quickstart (demo tenant)
