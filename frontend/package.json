@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Frontend for the multi-tenant clothing shop management system (Nepal). See AGENTS.md and docs/SYSTEM_DESIGN.md.",
+  "description": "Frontend for the multi-tenant clothing shop management system (Nepal).",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

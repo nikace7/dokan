@@ -1,6 +1,6 @@
 # Dokan load tests (k6)
 
-k6 scripts for the two load targets in `AGENTS.md`:
+k6 scripts for the two POS load targets:
 
 | Script      | Endpoint                                | Target rate |
 | ----------- | --------------------------------------- | ----------- |
