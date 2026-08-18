@@ -8,7 +8,7 @@ code as it stands in `backend/apps/pricing/` (`models.py`, `services.py`,
 doc and the code disagree, the code is right.
 
 Money-critical module: 100% test coverage is required on `apps/pricing/`
-(AGENTS.md, Testing strategy).
+([ARCHITECTURE.md](ARCHITECTURE.md), Testing strategy).
 
 ---
 

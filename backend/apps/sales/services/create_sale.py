@@ -1,6 +1,6 @@
 """Sale completion pipeline — the POS billing core. ONE transaction per sale.
 
-Order of operations (invariant map, AGENTS.md):
+Order of operations (invariant map, ARCHITECTURE §6):
 1. Resolve/guard prices (pricing app; #10 cost never leaks).
 2. Compute totals. **VAT rule (documented, simple):** VAT is charged
    VAT-EXCLUSIVE at 13% on the discounted line total of items flagged

@@ -1,6 +1,6 @@
 """Sales services — write-side use cases, one transaction each.
 
-Split by use case per AGENTS.md: ``create_sale`` (the completion pipeline)
+Split by use case per docs/ARCHITECTURE.md: ``create_sale`` (the completion pipeline)
 and ``held_bills`` (park/resume/complete/cancel).
 """
 

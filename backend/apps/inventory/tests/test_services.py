@@ -3,7 +3,7 @@
 Covers: moving weighted average across repeated openings, the zero-floor
 guard, balance_after correctness, BS/fiscal-year denormalization at write
 time, and damage write-offs. apps/inventory/services is a 100%-coverage
-module per AGENTS.md — keep it that way.
+module per docs/ARCHITECTURE.md — keep it that way.
 """
 
 from datetime import date

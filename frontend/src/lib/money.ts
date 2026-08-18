@@ -1,5 +1,5 @@
 /**
- * Money helpers (AGENTS.md invariant 11).
+ * Money helpers (ARCHITECTURE §6 invariant 11).
  *
  * Rules:
  * - Money crosses this module as **integer paisa** (`Paisa`). One rupee =

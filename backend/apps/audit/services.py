@@ -1,6 +1,6 @@
 """The audit write path — the ONLY way audit rows are created.
 
-Rules (AGENTS.md invariant 7, design §8.6):
+Rules (ARCHITECTURE §6 invariant 7, design §8.6):
 - Services call ``audit(...)`` explicitly, inside the SAME transaction as
   the mutation it records. Never signals.
 - Application logs and audit logs are different things: this module never

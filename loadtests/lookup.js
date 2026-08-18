@@ -1,6 +1,6 @@
 /**
  * Load test: GET /api/v1/catalog/variants/lookup at 200 rps — the POS
- * barcode/SKU hot path (AGENTS.md testing-strategy target).
+ * barcode/SKU hot path (docs/ARCHITECTURE.md testing-strategy target).
  *
  * setup() logs in once; iterations alternate barcode-style and sku-style
  * lookups across the seeded demo SKUs so caches see a realistic mix.

@@ -25,7 +25,7 @@ class ServiceError(Exception):
 
     Services raise these; views convert them with :func:`error`. Validation
     messages must never disclose cost prices to users without
-    ``pricing.view_cost`` (AGENTS.md invariant 10).
+    ``pricing.view_cost`` (ARCHITECTURE §6 invariant 10).
     """
 
     def __init__(
