@@ -37,3 +37,8 @@ Thumbs.db
 # Docker
 *.tar
 .worktrees/
+
+# Local-only development helpers (kept on disk, never published)
+AGENTS.md
+scripts/fix-local-access.bat
+scripts/fix-local-access.ps1
