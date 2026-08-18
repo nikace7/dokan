@@ -6,7 +6,7 @@ import { ApiError } from '@/lib/api/client';
 
 /**
  * Server-state defaults. TanStack Query owns all server state; Zustand is
- * only for cart/UI state (see AGENTS.md).
+ * only for cart/UI state (see docs/ARCHITECTURE.md).
  */
 const queryClient = new QueryClient({
   defaultOptions: {

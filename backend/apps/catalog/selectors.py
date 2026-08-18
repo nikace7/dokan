@@ -1,6 +1,6 @@
 """Read-side queries for catalog; every selector takes an explicit ``user``.
 
-Cost-visibility rule (AGENTS.md invariant 10, design §4.6): ``avg_cost`` is
+Cost-visibility rule (ARCHITECTURE §6 invariant 10, design §4.6): ``avg_cost`` is
 dropped AT THE SELECTOR for users without ``pricing.view_cost`` — it never
 enters application memory for them, on success or error paths.
 """

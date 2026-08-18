@@ -1,6 +1,6 @@
 """Reports selectors — read-side only, no models, no caching layer yet.
 
-Conventions (docs/SYSTEM_DESIGN.md §5, AGENTS.md):
+Conventions (docs/SYSTEM_DESIGN.md §5, docs/ARCHITECTURE.md):
 - Every selector takes an explicit ``user``; cost data exists only behind
   ``pricing.view_cost`` (dropped at the selector, invariant 10).
 - Reports are plain indexed GROUP BYs on the denormalized BS columns

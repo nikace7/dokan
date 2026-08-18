@@ -1,6 +1,6 @@
 """Read-side queries for inventory; every selector takes an explicit ``user``.
 
-Cost-visibility rule (AGENTS.md invariant 10): ``avg_cost`` / ``unit_cost``
+Cost-visibility rule (ARCHITECTURE §6 invariant 10): ``avg_cost`` / ``unit_cost``
 are deferred AT THE QUERYSET for users without ``pricing.view_cost`` — the
 columns never enter application memory for them.
 """

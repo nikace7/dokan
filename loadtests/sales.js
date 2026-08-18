@@ -1,5 +1,5 @@
 /**
- * Load test: POST /api/v1/sales at 50 rps (AGENTS.md testing-strategy target).
+ * Load test: POST /api/v1/sales at 50 rps (docs/ARCHITECTURE.md testing-strategy target).
  *
  * Each iteration completes a one-line CASH sale with a unique Idempotency-Key
  * (invariant 8). setup() logs in once, resolves the default branch / rate

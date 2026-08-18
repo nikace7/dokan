@@ -10,7 +10,7 @@ derives a price from `avg_cost × default_margin_pct`, and §4.3 specifies
 category-level min/max bounds as percentages of **cost**. Both are
 cost-derived values.
 
-AGENTS.md invariant 10 is absolute: cost price must never leak to users
+[ARCHITECTURE.md §6](../ARCHITECTURE.md#6-data--consistency-invariants) invariant 10 is absolute: cost price must never leak to users
 without `pricing.view_cost` — not in serializer fields, selector querysets,
 UI components, or **error messages**. A price resolved as `avg_cost × margin`
 discloses cost to any cashier who triggers it; a "below minimum" error whose
