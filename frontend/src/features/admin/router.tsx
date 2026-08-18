@@ -50,6 +50,9 @@ function getRouter() {
         </RequirePlatformAuth>
       ),
       children: [
+        // Bare host root (admin.example.com/) lands here — send it to the
+        // tenant list instead of the 404 card; auth guard bounces to login.
+        { path: '/', element: <Navigate to="/admin/tenants" replace /> },
         { path: '/admin', element: <Navigate to="/admin/tenants" replace /> },
         { path: '/admin/tenants', element: <TenantsPage /> },
         { path: '/admin/tenants/:id', element: <TenantDetailPage /> },
