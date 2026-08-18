@@ -1,10 +1,21 @@
 # Public single-VPS edge. API requests preserve the original Host so Django's
 # subdomain tenant resolver remains the only source of tenant identity.
 
+# Optional global options (empty by default). Deployments that run Caddy behind
+# an outer TLS-terminating edge set e.g. CADDY_GLOBAL_OPTIONS="auto_https off".
+{
+	{$CADDY_GLOBAL_OPTIONS}
+}
+
 (app_routes) {
 	@backend path /api/* /django-admin*
 	handle @backend {
-		reverse_proxy backend:8000
+		reverse_proxy backend:8000 {
+			# Deployment-specific header directives (empty by default). Behind an
+			# outer TLS edge: pin X-Forwarded-Proto and pass the outer XFF chain.
+			{$CADDY_PROXY_HEADER_PROTO}
+			{$CADDY_PROXY_HEADER_XFF}
+		}
 	}
 
 	handle_path /static/* {
@@ -38,21 +49,22 @@
 }
 
 # Tenant shops. Production sets CADDY_TLS_CONFIG to tls-cloudflare; local uses
-# Caddy's internal CA.
-*.{$ROOT_DOMAIN} {
+# Caddy's internal CA. Behind an outer TLS-terminating edge, set
+# CADDY_ADDRESS_SCHEME=http:// and CADDY_TLS_CONFIG=/etc/caddy/tls-off.
+{$CADDY_ADDRESS_SCHEME}*.{$ROOT_DOMAIN} {
 	import app_routes
 	import security_headers
 	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
 }
 
 # Exact platform hosts retain separate application auth realms.
-admin.{$ROOT_DOMAIN} {
+{$CADDY_ADDRESS_SCHEME}admin.{$ROOT_DOMAIN} {
 	import app_routes
 	import security_headers
 	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
 }
 
-www.{$ROOT_DOMAIN}, app.{$ROOT_DOMAIN} {
+{$CADDY_ADDRESS_SCHEME}www.{$ROOT_DOMAIN}, {$CADDY_ADDRESS_SCHEME}app.{$ROOT_DOMAIN} {
 	import app_routes
 	import security_headers
 	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
