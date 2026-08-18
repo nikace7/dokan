@@ -159,3 +159,34 @@ known dump) or point-in-time recovery (host loss or a precise pre-incident
 timestamp). Recover into an isolated replacement database, verify checksums,
 schema, tenant counts, invoices and stock projections, then switch application
 traffic. Document the recovery point objective actually achieved.
+
+## Variant: nested VM behind a shared TLS-terminating edge
+
+One production shape deviates from the single-VPS reference: the app runs on
+a small VM reached through a shared gateway that terminates TLS (and may host
+unrelated sites). Hostnames, addresses and access paths for any specific
+instance belong in the operator's private runbook, not in this repository.
+
+- The outer edge terminates TLS and proxies the apex + wildcard hosts to the
+  VM with `Host`, `X-Forwarded-For` and `X-Forwarded-Proto` preserved.
+- Caddy on the VM serves plain HTTP for that trusted hop, driven entirely by
+  env vars (no Caddyfile fork): `CADDY_ADDRESS_SCHEME=http://`,
+  `CADDY_TLS_CONFIG` pointing at an empty snippet, `CADDY_PROXY_HEADER_PROTO`
+  pinning `X-Forwarded-Proto https`, and `CADDY_PROXY_HEADER_XFF` passing the
+  edge's XFF chain through. The `{$CADDY_*}` placeholders in the repo
+  `Caddyfile` are what make this env-driven behavior possible.
+- A host-specific, uncommitted `docker-compose.override.yml` sizes gunicorn
+  workers for the guest and adds the `X-Forwarded-Proto: https` header to the
+  backend healthcheck (production's `SECURE_SSL_REDIRECT` 301s headerless
+  checks).
+- If object storage is not yet available, run with
+  `REQUIRE_OBJECT_STORAGE=false`, `POSTGRES_ARCHIVE_MODE=off`, and
+  `--scale wal-uploader=0` (it would crash-loop without `BACKUP_S3_URI`).
+  Nightly verified dumps and weekly base backups still run into the `backups`
+  volume. Treat this as a strictly temporary state — local volumes are not a
+  disaster-recovery copy, so provisioning a bucket is launch-blocking.
+- If the outer edge cannot issue the wildcard certificate yet, it may
+  temporarily proxy plain HTTP; replace that with HTTP→HTTPS redirect + TLS
+  (DNS-01 against the DNS provider) before onboarding real tenants.
+- The platform-admin IP allowlist (`PLATFORM_ADMIN_ALLOWED_IPS`) sees real
+  client IPs through the whole chain; keep it tight (the operator's own /32).

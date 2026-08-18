@@ -40,5 +40,6 @@ Thumbs.db
 
 # Local-only development helpers (kept on disk, never published)
 AGENTS.md
+OPS-LOCAL.md
 scripts/fix-local-access.bat
 scripts/fix-local-access.ps1
