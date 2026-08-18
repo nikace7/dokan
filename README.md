@@ -1,100 +1,39 @@
 # Dokan — Clothing Shop Management System
 
-Multi-tenant SaaS for clothing retail shops in Nepal: subdomain-per-shop
+Multi-tenant SaaS for clothing retail shops in Nepal: one subdomain per shop
 (`<slug>.dokan.com.np`), Nepali (BS) calendar native, IRD-compliant billing,
-and an offline-tolerant POS. The authoritative specification is
-[`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md); house rules for
-contributors (human or AI) are in [`AGENTS.md`](AGENTS.md).
+and an offline-tolerant POS that runs as a PWA on any phone or laptop.
+
+## Features
+
+- **Simple Sale** — a mobile-first counter flow: pick an item, pick a size,
+  see the allowed selling-price range, enter the sold price, tender Cash/QR,
+  and share the bill with the customer as a link. A classic barcode POS is
+  available as a per-tenant plan feature.
+- **Inventory** — immutable stock ledger: opening stock, signed adjustments,
+  damage write-offs, branch-to-branch transfers, and physical counts with
+  variance finalization.
+- **Udharo (khata)** — customer credit with limits, receipt allocation,
+  linked reversals, and receivables aging; supplier ledgers and cash
+  day-close sessions.
+- **Reports** — daily/monthly/top-item sales, stock summary/low/dead, profit,
+  dues, and IRD VAT registers — all native to the BS fiscal calendar.
+- **Platform control plane** — provision tenants, manage plans and custom
+  subscriptions, toggle per-tenant features, inspect usage, and open
+  time-boxed, fully audited support sessions into any tenant.
+- **Bilingual UI** — English/नेपाली toggle across the tenant app.
 
 ## Stack
 
 - **Backend:** Django 5 + DRF + SimpleJWT, PostgreSQL 16 (Row-Level Security
   for tenant isolation), Redis, Celery.
-- **Frontend:** Vite + React + TypeScript tenant/admin SPA, built into an
-  unprivileged production image.
-- **Deploy (Phase 1):** single VPS, Docker Compose, Caddy with wildcard TLS.
+- **Frontend:** Vite + React + TypeScript tenant/admin SPA, Tailwind,
+  TanStack Query, Zustand; built into an unprivileged production image.
+- **Deploy:** single VPS, Docker Compose, Caddy with wildcard TLS.
 
-## Quickstart (backend)
+## Quickstart (Docker)
 
-Prerequisites: Docker + Docker Compose, or Python 3.12 for a local venv.
-
-```bash
-cp .env.example .env          # fill in the change-me values
-docker compose up --build     # db, redis, backend, frontend, celery, beat, caddy
-# Migrations use the dedicated role; demo bootstrap uses the local superuser.
-docker compose exec backend sh -c 'DATABASE_USER=dokan_migrator DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" python manage.py migrate'
-docker compose exec backend sh -c 'DATABASE_USER=postgres DATABASE_PASSWORD="$POSTGRES_PASSWORD" python manage.py seed_demo'
-```
-
-Local development without Docker:
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e "backend[dev]"
-cd backend
-python manage.py migrate
-python manage.py runserver
-```
-
-### Try the demo shop (end-to-end)
-
-With Postgres running (any local instance; below uses port 5433 as an
-example) and from `backend/`:
-
-```bash
-export ROOT_DOMAIN=localhost           # tenants resolve as <slug>.localhost
-export DATABASE_PORT=5433 DATABASE_USER=postgres DATABASE_PASSWORD=testpw DATABASE_NAME=dokan_dev
-export DJANGO_SETTINGS_MODULE=config.settings.dev
-
-python manage.py migrate
-python manage.py seed_demo             # idempotent demo tenant + owner + catalog + stock
-python manage.py runserver
-```
-
-Then open **http://demo.localhost:8000/api/docs/** (browsers resolve
-`*.localhost` to loopback; if Windows tries IPv6 `::1` first and fails, apply
-the `hosts`-file pin described in "Run locally (full Docker stack)" below) and log in via
-`POST /api/v1/auth/token` with phone `9800000000`, password `demo1234`.
-Every tenant endpoint must be called on the `demo.localhost` host — the
-tenant comes from the subdomain, never from a header. `seed_demo` creates
-a branch, an owner with all permissions, a default Retail rate type, three
-items with M/L variants, and 20 units of opening stock per variant, so
-`POST /api/v1/sales` works after opening the branch's cash session (remember
-the mandatory `Idempotency-Key` header).
-
-For hot-reload development, the frontend (`frontend/`) serves login and the POS billing screen:
-`npm install && npm run dev` proxies `/api` to IPv4 loopback while preserving
-`demo.localhost` as the tenant host. After sign-in, choose the active branch
-and rate type in the app header. Sign in at http://localhost:5173 with the
-seeded owner above. On a ready bill, F9 completes the sale and opens the
-bilingual 80mm receipt; reprints are recorded as immutable audit events.
-
-The same build serves the isolated platform control plane on
-http://admin.localhost:5173. Set `PLATFORM_ADMIN_ALLOWED_IPS` for the client
-network, provision an account with `python manage.py create_platform_user
---email admin@example.com --full-name "Platform Admin"`, and enroll the
-one-time TOTP secret printed by that command. Platform and tenant tokens use
-separate storage, and tenant support sessions are handed off through a
-short-lived URL fragment that is cleared immediately after use.
-
-The Compose stack builds the same frontend for production and serves tenant and
-admin routes through Caddy; `/api` remains same-origin and is forwarded to
-Django with the original Host intact. Local Caddy uses its internal certificate
-authority, while production uses the Cloudflare DNS-01 snippet documented in
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
-After seeding, open `https://demo.localhost`; the first local visit may require
-accepting Caddy's development certificate.
-
-Local SMS uses the no-network `log` provider: receipt requests are queued and
-delivery state is persisted without sending real messages. Use
-`POST /api/v1/notifications/sms/receipt`; owners can inspect status at
-`GET /api/v1/notifications/sms`. A real provider adapter is required before
-enabling SMS in production.
-
-## Run locally (full Docker stack)
-
-This is the production-like local setup — one command, no local Python/Node
-needed:
+Prerequisites: Docker + Docker Compose.
 
 ```bash
 cp .env.example .env          # fill in the change-me values
@@ -110,10 +49,10 @@ docker compose exec backend sh -c 'DATABASE_USER=postgres DATABASE_PASSWORD="$PO
 
 Then open:
 
-| URL | What | Login |
-|---|---|---|
-| `https://demo.localhost` | Tenant app (demo shop) | phone `9800000000`, password `demo1234` |
-| `https://admin.localhost` | Platform control plane | create with `python manage.py create_platform_user …`, TOTP required |
+| URL                     | What                        | Login                                                                       |
+| ----------------------- | --------------------------- | --------------------------------------------------------------------------- |
+| `https://demo.localhost`  | Tenant app (demo shop)      | phone `9800000000`, password `demo1234`                                     |
+| `https://admin.localhost` | Platform control plane      | create with `python manage.py create_platform_user …`, TOTP required        |
 
 Two platform gotchas:
 
@@ -122,21 +61,56 @@ Two platform gotchas:
   service) answers. Force IPv4 by adding this line to
   `C:\Windows\System32\drivers\etc\hosts` (edit as Administrator):
   `127.0.0.1 demo.localhost admin.localhost app.localhost www.localhost`
-  (one line, space-separated), then `ipconfig /flushdns`. Or run
-  `scripts/fix-local-access.ps1` as Administrator (right-click → Run with
-  PowerShell) — it adds the hosts line, flushes DNS, and trusts the Caddy
-  dev CA in one step.
-- **Certificate warning.** Local Caddy issues certs from its own dev CA. Either
-  accept the browser warning once, or trust it permanently:
+  (one line, space-separated), then `ipconfig /flushdns`.
+- **Certificate warning.** Local Caddy issues certs from its own dev CA.
+  Either accept the browser warning once, or trust it permanently:
   `docker cp shop_system-caddy-1:/data/caddy/pki/authorities/local/root.crt .`
   then import `root.crt` into the OS Trusted Root store.
 
 The `frontend` container intentionally publishes **no host port** (`docker ps`
 shows bare `8080/tcp`): all public traffic enters through Caddy, which forwards
-`/api` to Django with the original `Host` intact. For hot-reload frontend
-development instead, run `npm install && npm run dev` in `frontend/` and use
-http://localhost:5173 (Vite proxies `/api` to the backend).
+`/api` to Django with the original `Host` intact.
 
+The demo seed creates a branch, an owner with all permissions, a default
+Retail rate type, three items with M/L variants, and 20 units of opening stock
+per variant. Open the branch cash session from `/payments`, then bill from the
+simple-sale screen. The tenant comes from the subdomain, never from a header —
+every tenant endpoint must be called on the `demo.localhost` host.
+
+The same build serves the isolated platform control plane on
+`https://admin.localhost`. Set `PLATFORM_ADMIN_ALLOWED_IPS` for the client
+network, provision an account with
+`python manage.py create_platform_user --email admin@example.com --full-name "Platform Admin"`,
+and enroll the one-time TOTP secret printed by that command. Platform and
+tenant tokens use separate storage, and tenant support sessions are handed off
+through a short-lived URL fragment that is cleared immediately after use.
+
+Local SMS uses the no-network `log` provider: receipt requests are queued and
+delivery state is persisted without sending real messages. A real provider
+adapter is required before enabling SMS in production.
+
+## Local development (hot reload)
+
+Backend (Python 3.12):
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e "backend[dev]"
+cd backend
+python manage.py migrate
+python manage.py runserver
+```
+
+Frontend (Node 20+):
+
+```bash
+cd frontend
+npm install && npm run dev
+```
+
+Vite serves http://localhost:5173 and proxies `/api` to IPv4 loopback while
+preserving `demo.localhost` as the tenant host. Sign in with the seeded owner;
+choose the active branch and rate type in the app header.
 
 Useful commands (from `backend/`):
 
@@ -161,11 +135,13 @@ backend/
 ├── config/            # settings split (base/dev/prod/test), urls, celery
 ├── core/              # platform spine: BS calendar, money, RLS, tenant
 │                      # middleware, numbering, permissions, base models
-├── apps/              # one Django app per business module (skeletons)
+├── apps/              # one Django app per business module (15 apps)
 ├── tests/factories/   # TenantFactory — every factory hangs off it
 └── scripts/           # e.g. golden-fixture generator
-docs/                  # SYSTEM_DESIGN.md (authoritative) + planned docs
-frontend/              # React PWA (separate scaffold)
+docs/                  # architecture, tenancy, schema, deployment, ADRs, …
+frontend/              # React PWA (tenant app + platform control plane)
+e2e/                   # Playwright smoke suite (local, not in CI)
+loadtests/             # k6 load scripts for the POS hot paths
 docker/postgres/init/  # app/migration role bootstrap
 .github/workflows/     # CI gates: ruff, mypy, pytest+coverage, frontend tests,
                        # build, migrations, gitleaks
@@ -173,7 +149,21 @@ docker/postgres/init/  # app/migration role bootstrap
 
 ## Documentation
 
-Start with `docs/SYSTEM_DESIGN.md` and `AGENTS.md`. The design lists the
-full doc set (ARCHITECTURE, MULTI_TENANCY, DATABASE_SCHEMA, RATE_RULES,
-GIT_WORKFLOW, ROADMAP, …) in `docs/` — they land alongside the code they
-describe, per the repo rule that stale docs are deleted, not kept.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system design, layering
+  rules, and the twelve data/consistency invariants
+- [`docs/MULTI_TENANCY.md`](docs/MULTI_TENANCY.md) — subdomain tenancy and the
+  Postgres RLS model
+- [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) — tables, constraints,
+  and indexing rules
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — VPS layout, TLS, backups,
+  restore drill
+- [`docs/RATE_RULES.md`](docs/RATE_RULES.md) — rate types and price resolution
+- [`docs/NEPALI_LOCALIZATION.md`](docs/NEPALI_LOCALIZATION.md) — BS calendar
+  and NPR formatting conventions
+- [`docs/COMPLIANCE_IRD.md`](docs/COMPLIANCE_IRD.md) — billing compliance and
+  the CBMS sync queue
+- [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md) — the full design
+  specification
+- [`docs/DECISIONS/`](docs/DECISIONS/) — architecture decision records
+- [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) ·
+  [`docs/ROADMAP.md`](docs/ROADMAP.md) · [`CHANGELOG.md`](CHANGELOG.md)
