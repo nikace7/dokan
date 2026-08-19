@@ -62,7 +62,7 @@
     "pointBilling": "Fast counter billing — barcode POS or simple sale",
     "pointStock": "Stock, purchasing, and transfers in one ledger",
     "pointReports": "Udharo khata and reports in Bikram Sambat",
-    "brandFooter": "Dokan — built for Nepal. BS calendar, udharo, and VAT billing included."
+    "brandFooter": "mero-pasal.online — built for Nepal. BS calendar, udharo, and VAT billing included."
   },
   "billing": {
     "scanLabel": "Scan barcode or type SKU",
@@ -544,7 +544,7 @@
     },
     "supportCard": {
       "title": "Support access",
-      "help": "Review every time Dokan support entered this shop and who ended the session.",
+      "help": "Review every time mero-pasal.online support entered this shop and who ended the session.",
       "viewLog": "View support access log"
     },
     "staff": {

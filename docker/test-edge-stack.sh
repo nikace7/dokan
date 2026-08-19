@@ -54,8 +54,8 @@ asset=$(printf '%s' "$tenant" | sed -n 's/.*src="\([^"]*\.js\)".*/\1/p' | head -
 asset_headers=$(request --head "https://demo.dokan.test$asset")
 modules=$(docker run --rm dokan-caddy:test caddy list-modules)
 
-printf '%s' "$tenant" | grep -q '<title>Dokan'
-printf '%s' "$admin" | grep -q '<title>Dokan'
+printf '%s' "$tenant" | grep -q '<title>mero-pasal\.online'
+printf '%s' "$admin" | grep -q '<title>mero-pasal\.online'
 [ "$api" = "backend-ok" ]
 printf '%s' "$headers" | grep -qi '^content-security-policy:'
 printf '%s' "$headers" | grep -qi '^x-frame-options: DENY'
