@@ -8,10 +8,11 @@
  * Kept as CSS custom properties (not hard-coded in tailwind.config.js) so a
  * per-tenant accent override can later swap a handful of variables at runtime.
  *
- * Theme v2 (design-v2): accent switched indigo → emerald. Semantic token
- * names are unchanged, so existing screens pick up the new color with no
- * class edits. Adds pastel `--tint-*` pairs for icon chips (StatTile, quick
- * actions) and a soft layered card shadow (`--shadow-card`).
+ * Theme v3 (mero-pasal rebrand): accent switched emerald → brand blue
+ * (the shopping-bag mark); the brand's puzzle green lives on as `--success`.
+ * Semantic token names are unchanged, so existing screens pick up the new
+ * color with no class edits. Pastel `--tint-*` pairs for icon chips
+ * (StatTile, quick actions) and a soft layered card shadow (`--shadow-card`).
  */
 :root {
   --background: 0 0% 100%;
@@ -23,8 +24,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 240 10% 3.9%;
 
-  /* Emerald-600 family — the ONE accent. */
-  --primary: 160 84% 30%;
+  /* Brand blue (blue-600 family) — the ONE accent. */
+  --primary: 221 83% 53%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 240 5% 96%;
@@ -34,8 +35,8 @@
   --muted-foreground: 240 4% 46%;
 
   /* Soft primary tint — active nav pills, hover surfaces. */
-  --accent: 152 76% 95%;
-  --accent-foreground: 160 84% 24%;
+  --accent: 214 95% 93%;
+  --accent-foreground: 221 83% 30%;
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
@@ -48,7 +49,7 @@
 
   --border: 240 6% 90%;
   --input: 240 6% 90%;
-  --ring: 160 84% 30%;
+  --ring: 221 83% 53%;
 
   /* Pastel icon-chip tints: `--tint-<name>` is the chip background,
    * `--tint-<name>-foreground` the matching icon color. Keep pairs in sync. */
