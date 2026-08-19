@@ -178,7 +178,16 @@ instance belong in the operator's private runbook, not in this repository.
 - A host-specific, uncommitted `docker-compose.override.yml` sizes gunicorn
   workers for the guest and adds the `X-Forwarded-Proto: https` header to the
   backend healthcheck (production's `SECURE_SSL_REDIRECT` 301s headerless
-  checks).
+  checks). Because the override exists, always run `docker compose` from the
+  project directory (the override autoloads) or pass both `-f` files
+  explicitly — `docker compose -f docker-compose.yml …` silently drops the
+  override and recreates services with the wrong shape.
+- The edge Caddyfile and TLS-off snippet are bind-mounted from an ops
+  directory outside the checkout. After a `git pull` that changes the repo
+  `Caddyfile`, sync it into the ops copy **in place** (`cat repo/Caddyfile >
+  ops/Caddyfile`, preserving the inode the container has mounted) and run
+  `caddy reload`; a plain `cp` swaps the inode and the running container
+  keeps serving the old file from its stale mount.
 - If object storage is not yet available, run with
   `REQUIRE_OBJECT_STORAGE=false`, `POSTGRES_ARCHIVE_MODE=off`, and
   `--scale wal-uploader=0` (it would crash-loop without `BACKUP_S3_URI`).
