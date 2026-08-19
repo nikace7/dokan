@@ -10,4 +10,4 @@ from django.test import Client
 def test_openapi_schema_renders() -> None:
     response = Client().get("/api/schema/", HTTP_HOST="dokan.com.np")
     assert response.status_code == 200
-    assert b"Dokan API" in response.content
+    assert b"mero-pasal.online API" in response.content
