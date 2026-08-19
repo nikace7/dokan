@@ -51,8 +51,8 @@ class Command(BaseCommand):
         user.set_password(password)
         user.save()
 
-        label = quote(f"Dokan:{email}")
-        issuer = quote("Dokan")
+        label = quote(f"mero-pasal.online:{email}")
+        issuer = quote("mero-pasal.online")
         self.stdout.write(self.style.SUCCESS(f"Created platform user {email}."))
         self.stdout.write(f"TOTP secret (show once): {secret}")
         self.stdout.write(

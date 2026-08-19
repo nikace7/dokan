@@ -1,7 +1,8 @@
-import { Building2, Layers, LogOut, ScrollText, ShieldCheck } from 'lucide-react';
+import { Building2, Layers, LogOut, ScrollText } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
+import brandMark from '@/assets/brand-mark.webp';
 import { Badge } from '@/components/ui/badge';
 import { usePlatformAuth } from '@/features/admin/usePlatformAuth';
 import { cn } from '@/lib/utils';
@@ -32,10 +33,8 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 function BrandMark() {
   return (
     <span className="flex items-center gap-2 font-bold text-foreground">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-        <ShieldCheck className="h-4 w-4" />
-      </span>
-      <span className="text-lg">Dokan Control</span>
+      <img src={brandMark} alt="" className="h-8 w-8" />
+      <span className="text-lg">mero-pasal Control</span>
     </span>
   );
 }

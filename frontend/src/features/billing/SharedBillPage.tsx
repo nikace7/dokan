@@ -69,9 +69,9 @@ function Shell({ children }: { children: React.ReactNode }) {
         <p className="text-xs text-muted-foreground">
           Powered by{' '}
           <Link to="/" className="font-medium text-primary hover:underline">
-            Dokan
+            mero-pasal.online
           </Link>{' '}
-          — दोकान
+          — मेरो पसल
         </p>
       </footer>
     </main>
