@@ -229,7 +229,7 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Dokan API",
+    "TITLE": "mero-pasal.online API",
     "DESCRIPTION": "Multi-tenant clothing shop management API (see docs/SYSTEM_DESIGN.md).",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,

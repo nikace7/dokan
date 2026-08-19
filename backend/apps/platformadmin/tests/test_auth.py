@@ -129,7 +129,7 @@ class TestPlatformProvisioning:
         assert user.check_password("a secure platform password")
         assert user.totp_secret
         output = capsys.readouterr().out
-        assert "otpauth://totp/Dokan%3Aadmin%40dokan.test" in output
+        assert "otpauth://totp/mero-pasal.online%3Aadmin%40dokan.test" in output
         assert user.totp_secret in output
 
     def test_command_rejects_short_password(self, monkeypatch: pytest.MonkeyPatch) -> None:
