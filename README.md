@@ -1,7 +1,7 @@
-# Dokan — Clothing Shop Management System
+# mero-pasal.online — Clothing Shop Management System
 
 Multi-tenant SaaS for clothing retail shops in Nepal: one subdomain per shop
-(`<slug>.dokan.com.np`), Nepali (BS) calendar native, IRD-compliant billing,
+(`<slug>.mero-pasal.online`), Nepali (BS) calendar native, IRD-compliant billing,
 and an offline-tolerant POS that runs as a PWA on any phone or laptop.
 
 ## Features
