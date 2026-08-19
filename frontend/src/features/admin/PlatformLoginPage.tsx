@@ -1,8 +1,9 @@
-import { KeyRound, Lock, ShieldCheck, Store } from 'lucide-react';
+import { KeyRound, Lock, Store } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 
+import brandMark from '@/assets/brand-mark.webp';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -27,14 +28,14 @@ function BrandPanel() {
         }}
       />
       <div className="relative flex items-center gap-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
-          <ShieldCheck className="h-5 w-5" />
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-sm">
+          <img src={brandMark} alt="" className="h-7 w-7" />
         </span>
-        <span className="text-xl font-bold">Dokan Control</span>
+        <span className="text-xl font-bold">mero-pasal Control</span>
       </div>
       <div className="relative space-y-6">
         <p className="max-w-md text-3xl font-bold leading-snug tracking-tight">
-          The control plane for every Dokan shop.
+          The control plane for every mero-pasal shop.
         </p>
         <ul className="space-y-3">
           {points.map(({ icon: Icon, text }) => (
@@ -87,10 +88,10 @@ export function PlatformLoginPage() {
         <div className="flex w-full max-w-sm flex-col items-center">
           {/* Mobile-only brand header (desktop has the brand panel). */}
           <div className="mb-6 flex flex-col items-center gap-2 lg:hidden">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <ShieldCheck className="h-6 w-6" />
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-card">
+              <img src={brandMark} alt="" className="h-11 w-11" />
             </span>
-            <span className="text-2xl font-bold tracking-tight">Dokan Control</span>
+            <span className="text-2xl font-bold tracking-tight">mero-pasal Control</span>
           </div>
 
           <Card className="w-full shadow-card">

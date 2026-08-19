@@ -13,7 +13,6 @@ import {
   ScanLine,
   ScrollText,
   Settings as SettingsIcon,
-  Store,
   Tag,
   Truck,
   Undo2,
@@ -25,6 +24,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
+import brandMark from '@/assets/brand-mark.webp';
 import { LanguageToggle } from '@/components/layout/LanguageToggle';
 import {
   Sheet,
@@ -148,10 +148,8 @@ function useVisibleNavItems(): NavItem[] {
 function BrandMark({ className }: { className?: string }) {
   return (
     <span className={cn('flex items-center gap-2 font-bold text-foreground', className)}>
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-        <Store className="h-4 w-4" />
-      </span>
-      <span className="text-lg">दोकान</span>
+      <img src={brandMark} alt="" className="h-8 w-8" />
+      <span className="text-lg">mero-pasal.online</span>
     </span>
   );
 }
