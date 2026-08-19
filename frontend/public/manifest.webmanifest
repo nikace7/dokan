@@ -1,13 +1,13 @@
 {
   "id": "/",
-  "name": "Dokan — Shop Management",
-  "short_name": "Dokan",
-  "description": "Multi-tenant shop management for clothing retail in Nepal.",
+  "name": "mero-pasal.online — Complete Shop Management",
+  "short_name": "mero-pasal",
+  "description": "Billing, stock, catalogs, and expenses — complete shop management, simplified, for clothing retail in Nepal.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0f172a",
+  "theme_color": "#1d4ed8",
   "icons": [
     {
       "src": "/icons/icon-192.png",

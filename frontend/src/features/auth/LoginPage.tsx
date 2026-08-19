@@ -1,9 +1,10 @@
-import { BarChart3, Boxes, Receipt, Store } from 'lucide-react';
+import { BarChart3, Boxes, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
+import brandMark from '@/assets/brand-mark.webp';
 import { LanguageToggle } from '@/components/layout/LanguageToggle';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -41,10 +42,10 @@ function BrandPanel() {
         }}
       />
       <div className="relative flex items-center gap-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
-          <Store className="h-5 w-5" />
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-sm">
+          <img src={brandMark} alt="" className="h-7 w-7" />
         </span>
-        <span className="text-xl font-bold">दोकान</span>
+        <span className="text-xl font-bold">mero-pasal.online</span>
       </div>
       <div className="relative space-y-6">
         <p className="max-w-md text-3xl font-bold leading-snug tracking-tight">{t('auth.pitch')}</p>
@@ -106,10 +107,10 @@ export function LoginPage() {
           </div>
           {/* Mobile-only brand header (desktop has the brand panel). */}
           <div className="mb-6 flex flex-col items-center gap-2 lg:hidden">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Store className="h-6 w-6" />
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-card">
+              <img src={brandMark} alt="" className="h-11 w-11" />
             </span>
-            <span className="text-2xl font-bold tracking-tight">दोकान</span>
+            <span className="text-2xl font-bold tracking-tight">mero-pasal.online</span>
           </div>
 
           <Card className="w-full shadow-card">
