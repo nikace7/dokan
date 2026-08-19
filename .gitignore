@@ -41,5 +41,7 @@ Thumbs.db
 # Local-only development helpers (kept on disk, never published)
 AGENTS.md
 OPS-LOCAL.md
+OPS-totp-qr.png
+OPS-totp-secret.txt
 scripts/fix-local-access.bat
 scripts/fix-local-access.ps1
