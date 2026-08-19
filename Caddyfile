@@ -64,7 +64,9 @@
 	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
 }
 
-{$CADDY_ADDRESS_SCHEME}www.{$ROOT_DOMAIN}, {$CADDY_ADDRESS_SCHEME}app.{$ROOT_DOMAIN} {
+# Landing hosts (www/app) and the bare apex serve the tenant SPA without a
+# shop context; the middleware treats them as tenant-less public hosts.
+{$CADDY_ADDRESS_SCHEME}www.{$ROOT_DOMAIN}, {$CADDY_ADDRESS_SCHEME}app.{$ROOT_DOMAIN}, {$CADDY_ADDRESS_SCHEME}{$ROOT_DOMAIN} {
 	import app_routes
 	import security_headers
 	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
