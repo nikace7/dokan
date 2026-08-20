@@ -885,6 +885,28 @@
       "add": "Add",
       "createError": "Could not create."
     },
+    "quickCreate": {
+      "title": "Add product",
+      "subtitle": "Item, variants and opening stock in one go.",
+      "productSection": "Product",
+      "moreDetails": "More details",
+      "variantsSection": "Sizes & colours",
+      "stockSection": "Opening stock",
+      "stockBranch": "Branch: {{branch}}",
+      "stockUnitCost": "Unit cost (रू)",
+      "stockUnitCostRequired": "Unit cost is required when you enter opening quantities.",
+      "stockNote": "Note (optional)",
+      "qtyAria": "Quantity for {{size}} / {{color}}",
+      "submit": "Add product",
+      "submitting": "Adding…",
+      "saveError": "Could not add the product.",
+      "errorRequired": "Code, name, at least one size and one colour are required.",
+      "success": "Product \"{{name}}\" added.",
+      "successStock_one": "{{count}} stock entry posted",
+      "successStock_other": "{{count}} stock entries posted",
+      "addAnother": "Add another",
+      "viewProduct": "View product"
+    },
     "matrix": {
       "sizes": "Sizes",
       "colours": "Colours",

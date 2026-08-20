@@ -187,6 +187,52 @@ export function bulkCreateVariants(
   });
 }
 
+/** One-shot "Add product" payload — item + size×colour variants + optional opening stock. */
+export interface QuickCreateProductPayload {
+  code: string;
+  name: string;
+  name_np?: string | null;
+  category?: string | null;
+  brand?: string | null;
+  size_chart?: string | null;
+  gender?: Gender | null;
+  season?: string | null;
+  collection_tag?: string | null;
+  hsn_code?: string | null;
+  unit?: string;
+  is_vat_applicable?: boolean;
+  min_selling_price?: string | null;
+  max_selling_price?: string | null;
+  reorder_level?: string | null;
+  sizes: string[];
+  colors: string[];
+  mrp?: string | null;
+  /** Sent only when at least one quantity was entered; needs `stock.adjust`. */
+  stock?: {
+    branch: string;
+    unit_cost: string;
+    note: string;
+    /** `"<size>::<color>"` keys with decimal-string quantities. */
+    quantities: Record<string, string>;
+  };
+}
+
+export interface QuickCreateProductResult {
+  item: Item;
+  variants: ItemVariant[];
+  variants_created: number;
+  stock_movements: number;
+}
+
+export function quickCreateProduct(
+  payload: QuickCreateProductPayload,
+): Promise<QuickCreateProductResult> {
+  return authedRequest<QuickCreateProductResult>('/v1/catalog/products/quick-create', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
 export function listCategories(): Promise<Page<Category>> {
   return authedRequestPage<Category>(`/v1/catalog/categories${qs({ limit: 200 })}`);
 }

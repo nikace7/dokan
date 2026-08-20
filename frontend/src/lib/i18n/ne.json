@@ -885,6 +885,28 @@
       "add": "थप्नुहोस्",
       "createError": "बनाउन सकिएन।"
     },
+    "quickCreate": {
+      "title": "सामान थप्नुहोस्",
+      "subtitle": "वस्तु, भेरियन्ट र सुरुवाती स्टक एकैपटक।",
+      "productSection": "सामान",
+      "moreDetails": "थप विवरण",
+      "variantsSection": "साइज र रंग",
+      "stockSection": "सुरुवाती स्टक",
+      "stockBranch": "शाखा: {{branch}}",
+      "stockUnitCost": "एकाइ लागत (रू)",
+      "stockUnitCostRequired": "सुरुवाती मात्रा राखेपछि एकाइ लागत अनिवार्य छ।",
+      "stockNote": "टिप्पणी (ऐच्छिक)",
+      "qtyAria": "{{size}} / {{color}} मात्रा",
+      "submit": "सामान थप्नुहोस्",
+      "submitting": "थपिँदैछ…",
+      "saveError": "सामान थप्न सकिएन।",
+      "errorRequired": "कोड, नाम, कम्तीमा एउटा साइज र एउटा रंग अनिवार्य छन्।",
+      "success": "सामान \"{{name}}\" थपियो।",
+      "successStock_one": "{{count}} स्टक प्रविष्टि भयो",
+      "successStock_other": "{{count}} स्टक प्रविष्टि भयो",
+      "addAnother": "अर्को थप्नुहोस्",
+      "viewProduct": "सामान हेर्नुहोस्"
+    },
     "matrix": {
       "sizes": "साइज",
       "colours": "रंग",

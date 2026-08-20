@@ -120,3 +120,56 @@ class VariantBulkSerializer(serializers.Serializer):
     sizes = serializers.ListField(child=serializers.CharField(max_length=32), allow_empty=False)
     colors = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=False)
     mrp = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, allow_null=True)
+
+
+class QuickCreateStockSerializer(serializers.Serializer):
+    """Optional opening-stock block of the quick-create payload.
+
+    ``quantities`` maps ``"<size>::<colour>"`` to a quantity string; pair
+    membership and qty > 0 are business rules checked in the service.
+    """
+
+    branch = serializers.UUIDField()
+    unit_cost = serializers.DecimalField(max_digits=14, decimal_places=2)
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+    quantities = serializers.DictField(
+        child=serializers.DecimalField(max_digits=12, decimal_places=3),
+        allow_empty=False,
+    )
+
+
+class QuickCreateProductSerializer(serializers.Serializer):
+    """One-shot product payload: item fields + matrix (+ optional stock).
+
+    The item field set mirrors ItemSerializer's writable fields exactly so
+    every item attribute stays settable through the simplified flow.
+    """
+
+    code = serializers.CharField()
+    name = serializers.CharField()
+    name_np = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    category = serializers.UUIDField(required=False, allow_null=True)
+    brand = serializers.UUIDField(required=False, allow_null=True)
+    size_chart = serializers.UUIDField(required=False, allow_null=True)
+    gender = serializers.ChoiceField(choices=Item.Gender.choices, required=False, allow_null=True)
+    season = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    collection_tag = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    hsn_code = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    unit = serializers.CharField(required=False, default="PCS")
+    is_vat_applicable = serializers.BooleanField(required=False, default=False)
+    images = serializers.JSONField(required=False, allow_null=True)
+    attributes = serializers.JSONField(required=False, allow_null=True)
+    min_selling_price = serializers.DecimalField(
+        max_digits=14, decimal_places=2, required=False, allow_null=True
+    )
+    max_selling_price = serializers.DecimalField(
+        max_digits=14, decimal_places=2, required=False, allow_null=True
+    )
+    reorder_level = serializers.DecimalField(
+        max_digits=12, decimal_places=3, required=False, allow_null=True
+    )
+
+    sizes = serializers.ListField(child=serializers.CharField(max_length=32), allow_empty=False)
+    colors = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=False)
+    mrp = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, allow_null=True)
+    stock = QuickCreateStockSerializer(required=False)
