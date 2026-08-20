@@ -126,6 +126,7 @@ export interface StockCount {
 
 export interface LevelListFilters {
   branch?: string;
+  variant?: string;
   search?: string;
   page?: number;
 }
@@ -134,6 +135,9 @@ export function listLevels(filters: LevelListFilters = {}): Promise<Page<StockLe
   const params = new URLSearchParams();
   if (filters.branch) {
     params.set('branch', filters.branch);
+  }
+  if (filters.variant) {
+    params.set('variant', filters.variant);
   }
   if (filters.search) {
     params.set('search', filters.search);
