@@ -244,7 +244,10 @@ function MoreSheet({
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="truncate text-base font-bold">{shopName}</SheetTitle>
+          <SheetTitle className="flex items-center gap-2 truncate text-base font-bold">
+            <img src={brandMark} alt="" className="h-7 w-7 shrink-0" />
+            <span className="truncate">{shopName}</span>
+          </SheetTitle>
         </SheetHeader>
         <nav className="mt-4 grid grid-cols-2 gap-1">
           {items.map((item) => (
@@ -351,7 +354,8 @@ export function AppShell() {
 
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background md:flex">
-        <div className="flex h-14 items-center border-b px-4">
+        <div className="flex h-14 items-center gap-2 border-b px-4">
+          <img src={brandMark} alt="" className="h-8 w-8 shrink-0" />
           <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
         </div>
         <SideNav items={items} />
@@ -375,8 +379,9 @@ export function AppShell() {
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
-        <span className="max-w-48 truncate text-base font-bold tracking-tight">
-          {user?.shop_name}
+        <span className="flex max-w-56 items-center gap-2">
+          <img src={brandMark} alt="" className="h-7 w-7 shrink-0" />
+          <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
         </span>
         <div className="flex items-center gap-2">
           <LanguageToggle />
