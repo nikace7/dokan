@@ -179,19 +179,23 @@ describe('DashboardPage', () => {
     expect(screen.getAllByText('CASH').length).toBeGreaterThan(1);
   });
 
-  it('keeps a cashier home minimal: no donut, no reports/customers shortcuts', async () => {
+  it('keeps a cashier home minimal: no collection figures, donut, or reports shortcuts', async () => {
+    // Without report.sales the server omits today_total/last_30_days — staff
+    // see their bill count and recent bills, never the shop's collections.
     installMock(me(['sale.create', 'sale.view', 'stock.view']), {
       shop_name: 'Shree Ganesh Vastralaya',
       business_date_bs: '2083-04-20',
-      sales: { today_total: '8000.00', bill_count: 4, last_30_days: [] },
+      sales: { bill_count: 4 },
       low_stock: { count: 2 },
       recent_bills: [],
     });
 
     renderPage();
 
-    expect(await screen.findByText("Today's collection")).toBeInTheDocument();
+    expect(await screen.findByText('Bills today')).toBeInTheDocument();
     expect(screen.getByText('Low stock')).toBeInTheDocument();
+    expect(screen.queryByText("Today's collection")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Last 30 days sales')).not.toBeInTheDocument();
     expect(screen.queryByText('Dues outstanding')).not.toBeInTheDocument();
     expect(screen.queryByText('Collection by method')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Reports' })).not.toBeInTheDocument();

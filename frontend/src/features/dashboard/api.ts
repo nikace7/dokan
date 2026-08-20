@@ -18,9 +18,10 @@ export interface DashboardSummary {
   shop_name: string;
   business_date_bs: string;
   sales?: {
-    today_total: string;
+    /** Aggregates are present only with report.sales; staff see bill_count. */
+    today_total?: string;
     bill_count: number;
-    last_30_days: DashboardSalesDay[];
+    last_30_days?: DashboardSalesDay[];
   };
   profit?: { today_net_profit: string };
   dues?: { total_receivable: string; customer_count: number };
