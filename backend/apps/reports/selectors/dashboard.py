@@ -31,6 +31,10 @@ def dashboard_summary(tenant: "Tenant", user: "User") -> dict[str, Any]:
     }
 
     if user.has_perm("sale.view"):
+        # Collection AGGREGATES (today's total, the trend) are owner-level
+        # data: they require report.sales. Staff ringing up sales keep the
+        # operational bits — their bill count and recent bills.
+        can_view_collections = user.has_perm("report.sales")
         rows = daily_sales(
             tenant,
             user,
@@ -38,17 +42,19 @@ def dashboard_summary(tenant: "Tenant", user: "User") -> dict[str, Any]:
             date_to_bs=today_bs,
         )
         current = next((row for row in rows if row["business_date_bs"] == today_bs), None)
-        result["sales"] = {
-            "today_total": current["net_total"] if current else "0.00",
+        sales_block: dict[str, Any] = {
             "bill_count": current["bill_count"] if current else 0,
-            "last_30_days": [
+        }
+        if can_view_collections:
+            sales_block["today_total"] = current["net_total"] if current else "0.00"
+            sales_block["last_30_days"] = [
                 {
                     "business_date_bs": row["business_date_bs"],
                     "net_total": row["net_total"],
                 }
                 for row in rows
-            ],
-        }
+            ]
+        result["sales"] = sales_block
         invoices = sales_selectors.list_invoices(
             tenant, user, status=SalesInvoice.Status.COMPLETED
         ).filter(doc_type=SalesInvoice.DocType.SALE)[:5]

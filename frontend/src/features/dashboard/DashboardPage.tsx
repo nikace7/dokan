@@ -119,14 +119,14 @@ export function DashboardPage() {
         className="grid grid-cols-2 gap-3 lg:grid-cols-4"
         aria-label={t('dashboard.todaySummary')}
       >
-        {data.sales ? (
+        {data.sales?.today_total !== undefined ? (
           <StatTile
             label={t('dashboard.todayCollection')}
             valuePaisa={toPaisa(data.sales.today_total)}
             icon={Banknote}
             tint="green"
             trend={yesterdayTrend(
-              data.sales.last_30_days,
+              data.sales.last_30_days ?? [],
               data.business_date_bs,
               t('dashboard.vsYesterday'),
             )}
@@ -175,7 +175,7 @@ export function DashboardPage() {
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-2" aria-label={t('dashboard.charts')}>
-        {data.sales ? (
+        {data.sales?.last_30_days ? (
           <ChartCard title={t('dashboard.trend.title')}>
             <SalesTrendChart rows={data.sales.last_30_days} />
           </ChartCard>
