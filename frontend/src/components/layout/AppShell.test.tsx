@@ -21,6 +21,8 @@ function me(features: Record<string, unknown>) {
     is_owner: true,
     permissions: [],
     plan: { code: 'pro', name: 'Pro', features },
+    shop_name: 'Shree Ganesh Vastralaya',
+    shop_name_np: null,
   };
 }
 
@@ -107,6 +109,17 @@ describe('AppShell billing nav', () => {
       expect(screen.getAllByRole('link', { name: 'बिलिङ' }).length).toBeGreaterThan(0);
     });
     expect(i18n.language).toBe('ne');
+  });
+
+  it('shows the shop name up top and the product as a powered-by mark', async () => {
+    features = { simple_sale: true, advanced_pos: true };
+    renderShell();
+
+    // Sidebar + mobile top bar both render the tenant's shop name.
+    await waitFor(() => {
+      expect(screen.getAllByText('Shree Ganesh Vastralaya').length).toBeGreaterThan(0);
+    });
+    expect(screen.getByText('Powered by mero-pasal.online')).toBeInTheDocument();
   });
 });
 

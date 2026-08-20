@@ -145,12 +145,18 @@ function useVisibleNavItems(): NavItem[] {
   });
 }
 
-function BrandMark({ className }: { className?: string }) {
+function PoweredBy({ className }: { className?: string }) {
+  const { t } = useTranslation();
   return (
-    <span className={cn('flex items-center gap-2 font-bold text-foreground', className)}>
-      <img src={brandMark} alt="" className="h-8 w-8" />
-      <span className="text-lg">mero-pasal.online</span>
-    </span>
+    <p
+      className={cn(
+        'flex items-center justify-center gap-1 text-[11px] text-muted-foreground/70',
+        className,
+      )}
+    >
+      <img src={brandMark} alt="" className="h-3.5 w-3.5" />
+      {t('nav.poweredBy', { brand: 'mero-pasal.online' })}
+    </p>
   );
 }
 
@@ -214,10 +220,12 @@ function SideNav({ items }: { items: NavItem[] }) {
 function MoreSheet({
   items,
   userName,
+  shopName,
   onSignOut,
 }: {
   items: NavItem[];
   userName: string | undefined;
+  shopName: string | undefined;
   onSignOut: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -236,9 +244,7 @@ function MoreSheet({
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <BrandMark className="text-base" />
-          </SheetTitle>
+          <SheetTitle className="truncate text-base font-bold">{shopName}</SheetTitle>
         </SheetHeader>
         <nav className="mt-4 grid grid-cols-2 gap-1">
           {items.map((item) => (
@@ -275,6 +281,7 @@ function MoreSheet({
             {t('nav.signOut')}
           </button>
         </div>
+        <PoweredBy className="mt-3" />
       </SheetContent>
     </Sheet>
   );
@@ -345,7 +352,7 @@ export function AppShell() {
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background md:flex">
         <div className="flex h-14 items-center border-b px-4">
-          <BrandMark />
+          <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
         </div>
         <SideNav items={items} />
         <div className="space-y-3 border-t p-3">
@@ -362,12 +369,15 @@ export function AppShell() {
               <LogOut className="h-4 w-4" />
             </button>
           </div>
+          <PoweredBy />
         </div>
       </aside>
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
-        <BrandMark />
+        <span className="max-w-48 truncate text-base font-bold tracking-tight">
+          {user?.shop_name}
+        </span>
         <div className="flex items-center gap-2">
           <LanguageToggle />
           <span className="max-w-40 truncate text-sm text-muted-foreground">
@@ -389,7 +399,12 @@ export function AppShell() {
         {tabsAfterFab.map((item) => (
           <MobileTab key={item.to} item={item} />
         ))}
-        <MoreSheet items={items} userName={user?.full_name} onSignOut={signOut} />
+        <MoreSheet
+          items={items}
+          userName={user?.full_name}
+          shopName={user?.shop_name}
+          onSignOut={signOut}
+        />
       </nav>
     </div>
   );
