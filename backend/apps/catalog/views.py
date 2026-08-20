@@ -3,9 +3,10 @@
 Permissions: ``catalog.view`` for reads, ``catalog.manage`` for writes
 (enforced per-method via core.permissions.HasPermission). All responses use
 the API envelope; list endpoints paginate via EnvelopePageNumberPagination.
+Variant/lookup/quick-create views live in ``views_variants.py``.
 """
 
-from typing import Any, ClassVar, cast
+from typing import Any, ClassVar
 from uuid import UUID
 
 from rest_framework import status
@@ -14,16 +15,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog import selectors, services
-from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
+from apps.catalog.models import Brand, Category, Item, SizeChart
 from apps.catalog.serializers import (
     BrandSerializer,
     CategorySerializer,
     ItemSerializer,
-    ItemVariantSerializer,
     SizeChartSerializer,
-    VariantBulkSerializer,
 )
-from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
@@ -272,119 +270,3 @@ class ItemImageView(_CatalogAPIView):
         item = _get_or_404(tenant, Item, pk, "Item")
         item = services.clear_item_image(item)
         return ok({"id": str(item.pk), "image_url": None})
-
-
-class VariantListView(_CatalogAPIView):
-    def get(self, request: Request) -> Response:
-        tenant = require_request_tenant(request)
-        qs = selectors.list_variants(
-            tenant,
-            _user(request),
-            item_id=_uuid_param(request, "item"),
-            is_active=self._is_active_param(request),
-        )
-        return self._paginated(request, qs, ItemVariantSerializer)
-
-    def post(self, request: Request) -> Response:
-        tenant = require_request_tenant(request)
-        payload = request.data
-        if not isinstance(payload, dict):
-            raise ServiceError("ITEM_REQUIRED", "Provide a valid item id.")
-        try:
-            item_pk = UUID(str(payload.get("item")))
-        except ValueError:
-            raise ServiceError("ITEM_REQUIRED", "Provide a valid item id.") from None
-        item = _get_or_404(tenant, Item, item_pk, "Item")
-        serializer = ItemVariantSerializer(data=request.data, context=self._context(request))
-        serializer.is_valid(raise_exception=True)
-        validated = serializer.validated_data
-        validated.pop("item", None)
-        variant = services.create_variant(tenant, item=item, **validated)
-        return ok(
-            ItemVariantSerializer(variant, context=self._context(request)).data,
-            status.HTTP_201_CREATED,
-        )
-
-
-class VariantDetailView(_CatalogAPIView):
-    def patch(self, request: Request, pk: UUID) -> Response:
-        tenant = require_request_tenant(request)
-        variant = _get_or_404(tenant, ItemVariant, pk, "Variant")
-        serializer = ItemVariantSerializer(
-            variant, data=request.data, partial=True, context=self._context(request)
-        )
-        serializer.is_valid(raise_exception=True)
-        variant = services.update_variant(variant, **serializer.validated_data)
-        return ok(ItemVariantSerializer(variant, context=self._context(request)).data)
-
-    def delete(self, request: Request, pk: UUID) -> Response:
-        tenant = require_request_tenant(request)
-        variant = _get_or_404(tenant, ItemVariant, pk, "Variant")
-        services.deactivate(variant)
-        return ok({"id": str(pk), "is_active": False})
-
-
-class VariantBulkView(_CatalogAPIView):
-    """POST /catalog/items/{id}/variants/bulk — the size × colour matrix."""
-
-    def post(self, request: Request, pk: UUID) -> Response:
-        tenant = require_request_tenant(request)
-        item = _get_or_404(tenant, Item, pk, "Item")
-        serializer = VariantBulkSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        result = services.bulk_create_variants(tenant, item=item, **serializer.validated_data)
-        return ok(
-            {
-                "created_count": result["created_count"],
-                "skipped_count": result["skipped_count"],
-                "created": ItemVariantSerializer(
-                    result["created"], many=True, context=self._context(request)
-                ).data,
-                "skipped": result["skipped"],
-            },
-            status.HTTP_201_CREATED,
-        )
-
-
-class VariantLookupView(_CatalogAPIView):
-    """GET /catalog/variants/lookup?barcode=|sku= — the POS hot path."""
-
-    method_permissions: ClassVar[dict[str, str]] = {"GET": "catalog.view"}
-
-    def get(self, request: Request) -> Response:
-        tenant = require_request_tenant(request)
-        barcode = request.query_params.get("barcode", "").strip()
-        sku = request.query_params.get("sku", "").strip()
-        if not barcode and not sku:
-            return error(400, "LOOKUP_PARAM_REQUIRED", "Provide a barcode or sku query parameter.")
-        found = selectors.get_variant_for_lookup(tenant, _user(request), barcode=barcode, sku=sku)
-        if found is None:
-            return error(404, "VARIANT_NOT_FOUND", "No variant matches that code.")
-        return ok(found)
-
-
-class VariantForSaleView(_CatalogAPIView):
-    """GET /catalog/variants/for-sale?branch_id=&search= — the sale dropdown.
-
-    Gated on ``sale.create`` (not stock.view): a cashier builds bills but
-    may not see stock reports. Returns only sellable rows (qty_on_hand > 0)
-    with price bounds — never any cost figure (#10).
-    """
-
-    method_permissions: ClassVar[dict[str, str]] = {"GET": "sale.create"}
-
-    def get(self, request: Request) -> Response:
-        tenant = require_request_tenant(request)
-        branch_id = _uuid_param(request, "branch_id")
-        if branch_id is None:
-            return error(400, "BRANCH_REQUIRED", "Provide a branch_id query parameter.")
-        _get_or_404(tenant, Branch, branch_id, "Branch")
-        rows: Any = selectors.list_variants_for_sale(  # a plain list, not a QuerySet
-            tenant,
-            _user(request),
-            branch_id=branch_id,
-            search=request.query_params.get("search", "").strip(),
-        )
-        paginator = EnvelopePageNumberPagination()
-        page = cast("list[Any]", paginator.paginate_queryset(rows, request, view=self))
-        return paginator.get_paginated_response(page)
