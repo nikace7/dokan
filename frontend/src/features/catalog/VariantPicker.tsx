@@ -14,6 +14,9 @@ export interface PickedVariant {
   color: string;
   mrp: string;
   itemName: string;
+  /** Variant min/max SP, falling back to the item's range; null when unset. */
+  minPrice: string | null;
+  maxPrice: string | null;
 }
 
 interface VariantPickerProps {
@@ -70,9 +73,7 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
           <p className="px-3 py-2 text-sm text-muted-foreground">{t('catalog.picker.loading')}</p>
         ) : null}
         {variantsQuery.data && variants.length === 0 ? (
-          <p className="px-3 py-2 text-sm text-muted-foreground">
-            {t('catalog.picker.empty')}
-          </p>
+          <p className="px-3 py-2 text-sm text-muted-foreground">{t('catalog.picker.empty')}</p>
         ) : null}
         <ul className="max-h-48 divide-y divide-border overflow-y-auto">
           {variants.map((variant: ItemVariant) => (
@@ -88,6 +89,8 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
                     color: variant.color,
                     mrp: variant.mrp,
                     itemName: item.name,
+                    minPrice: variant.min_selling_price ?? item.min_selling_price ?? null,
+                    maxPrice: variant.max_selling_price ?? item.max_selling_price ?? null,
                   });
                   setItem(null);
                   setSearch('');
@@ -97,9 +100,7 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
                   {variant.size} / {variant.color}{' '}
                   <span className="text-xs text-muted-foreground">{variant.sku}</span>
                 </span>
-                <span className="text-muted-foreground tabular-nums">
-                  {formatNpr(variant.mrp)}
-                </span>
+                <span className="text-muted-foreground tabular-nums">{formatNpr(variant.mrp)}</span>
               </button>
             </li>
           ))}
