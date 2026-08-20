@@ -181,7 +181,10 @@ class TestDashboardApi:
 
         assert response.status_code == 200
         data = response.json()["data"]
-        assert data["sales"]["today_total"] == "2260.00"
+        # Collection aggregates are owner-level: no report.sales, no totals.
+        assert "today_total" not in data["sales"]
+        assert "last_30_days" not in data["sales"]
+        # Operational bits stay: the staff's own bill count and bills.
         assert data["sales"]["bill_count"] == 1
         assert data["low_stock"]["count"] == 1
         assert data["recent_bills"][0]["invoice_no"] == shop["sale"].invoice_no
@@ -197,6 +200,7 @@ class TestDashboardApi:
             "pricing.view_cost",
             "report.ledger",
             "report.profit",
+            "report.sales",
             "sale.view",
             "stock.view",
         )
@@ -205,6 +209,8 @@ class TestDashboardApi:
 
         assert response.status_code == 200
         data = response.json()["data"]
+        assert data["sales"]["today_total"] == "2260.00"
+        assert [row["net_total"] for row in data["sales"]["last_30_days"]] == ["2260.00"]
         assert data["profit"]["today_net_profit"] == "1060.00"
         assert data["dues"] == {"customer_count": 0, "total_receivable": "0.00"}
 

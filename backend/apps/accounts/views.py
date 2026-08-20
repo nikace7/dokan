@@ -120,6 +120,7 @@ class MeView(APIView):
                 is_owner=selectors.is_owner(user),
                 shop_name=tenant.name,
                 shop_name_np=tenant.name_np,
+                currency=tenant.currency,
             )
         )
 

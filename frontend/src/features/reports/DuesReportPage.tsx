@@ -87,7 +87,7 @@ function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
           ))}
           <MoneyCell>
             {formatPaisa(addPaisa(...rows.map((r) => toPaisa(r.total_outstanding))), {
-              symbol: 'रू ',
+              symbol: 'auto',
             })}
           </MoneyCell>
         </TableRow>
@@ -97,7 +97,7 @@ function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
           <span className="text-muted-foreground">{t('reports.dues.totalOutstanding')}</span>
           <span className="font-semibold tabular-nums">
             {formatPaisa(addPaisa(...rows.map((r) => toPaisa(r.total_outstanding))), {
-              symbol: 'रू ',
+              symbol: 'auto',
             })}
           </span>
         </div>
@@ -134,7 +134,7 @@ function PayablesTable({ rows }: { rows: PayableRow[] }) {
         <TableRow>
           <TableCell className="font-semibold">{t('reports.total')}</TableCell>
           <MoneyCell>
-            {formatPaisa(addPaisa(...rows.map((r) => toPaisa(r.payable))), { symbol: 'रू ' })}
+            {formatPaisa(addPaisa(...rows.map((r) => toPaisa(r.payable))), { symbol: 'auto' })}
           </MoneyCell>
         </TableRow>
       }

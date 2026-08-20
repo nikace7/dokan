@@ -24,6 +24,9 @@
     "english": "EN",
     "nepali": "ने"
   },
+  "currency": {
+    "label": "मुद्रा"
+  },
   "nav": {
     "dashboard": "ड्यासबोर्ड",
     "billing": "बिलिङ",
@@ -536,6 +539,10 @@
       "locale": "इन्टरफेस भाषा",
       "localeNp": "नेपाली",
       "localeEn": "अंग्रेजी",
+      "currency": "मुद्रा",
+      "currencyNpr": "NPR — नेपाली रुपैयाँ",
+      "currencyInr": "INR — भारतीय रुपैयाँ",
+      "currencyHelp": "रकम यही मुद्रामा भण्डार हुन्छ; NPR/INR टगलले देखिने मात्र बदल्छ।",
       "save": "सेटिङ सेभ गर्नुहोस्"
     },
     "staffCard": {

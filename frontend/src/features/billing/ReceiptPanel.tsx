@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { recordReceiptPrint } from '@/features/billing/api';
 import type { SalesInvoice } from '@/features/billing/api';
 import { formatNpr } from '@/lib/money';
+import { useCurrencyStore } from '@/stores/currency';
 
 interface ReceiptPanelProps {
   invoice: SalesInvoice;
@@ -20,9 +21,13 @@ interface ReceiptPanelProps {
  * The receipt BODY is deliberately bilingual ("Invoice / बिल", fixed 80mm
  * print layout) and does NOT go through i18n — only the screen-only chrome
  * (Sale completed, Reprint, New bill) is translated.
+ *
+ * Amounts always print in the shop's BASE currency (`currency: base`):
+ * a receipt is a legal document and never follows the display toggle.
  */
 export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
   const { t } = useTranslation();
+  const base = useCurrencyStore((state) => state.base);
   const [printCount, setPrintCount] = useState(invoice.print_count);
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
@@ -99,8 +104,8 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
                 ) : null}
               </td>
               <td className="py-1.5 text-right">{item.qty}</td>
-              <td className="py-1.5 text-right">{formatNpr(item.unit_price, { symbol: '' })}</td>
-              <td className="py-1.5 text-right">{formatNpr(item.line_total, { symbol: '' })}</td>
+              <td className="py-1.5 text-right">{formatNpr(item.unit_price, { symbol: '', currency: base })}</td>
+              <td className="py-1.5 text-right">{formatNpr(item.line_total, { symbol: '', currency: base })}</td>
             </tr>
           ))}
         </tbody>
@@ -115,7 +120,7 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
         {invoice.round_off !== '0.00' ? <Row label="Round off" value={invoice.round_off} /> : null}
         <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-bold">
           <dt>Total</dt>
-          <dd>{formatNpr(invoice.total)}</dd>
+          <dd>{formatNpr(invoice.total, { currency: base })}</dd>
         </div>
         <Row label="Paid" value={invoice.paid_amount} />
         {invoice.tenders.map((tender, index) => (
@@ -128,7 +133,7 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
         <div className="flex justify-between">
           <dt className="text-slate-600">Due (udharo)</dt>
           <dd className={invoice.due_amount !== '0.00' ? 'font-semibold text-red-600' : ''}>
-            {formatNpr(invoice.due_amount)}
+            {formatNpr(invoice.due_amount, { currency: base })}
           </dd>
         </div>
       </dl>
@@ -158,10 +163,12 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  // Receipt figures always print in the shop's base currency.
+  const base = useCurrencyStore((state) => state.base);
   return (
     <div className="flex justify-between">
       <dt className="text-slate-600">{label}</dt>
-      <dd>{formatNpr(value)}</dd>
+      <dd>{formatNpr(value, { currency: base })}</dd>
     </div>
   );
 }

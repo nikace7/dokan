@@ -77,7 +77,7 @@ export function CartTable() {
               </div>
             </td>
             <td className="py-2 pr-2 text-right whitespace-nowrap">
-              {formatPaisa(line.unitPricePaisa, { symbol: 'रू ' })}
+              {formatPaisa(line.unitPricePaisa, { symbol: 'auto' })}
             </td>
             <td className="py-2 pr-2 text-right">
               <input
@@ -93,7 +93,7 @@ export function CartTable() {
               />
             </td>
             <td className="py-2 pr-2 text-right font-medium whitespace-nowrap">
-              {formatPaisa(lineTotalPaisa(line), { symbol: 'रू ' })}
+              {formatPaisa(lineTotalPaisa(line), { symbol: 'auto' })}
             </td>
             <td className="py-2 text-right">
               <button
@@ -114,7 +114,7 @@ export function CartTable() {
             {t('billing.totalDisplayOnly')}
           </td>
           <td className="pt-3 pr-2 text-right text-lg font-bold whitespace-nowrap">
-            {formatPaisa(cartTotalPaisa(lines), { symbol: 'रू ' })}
+            {formatPaisa(cartTotalPaisa(lines), { symbol: 'auto' })}
           </td>
           <td />
         </tr>
