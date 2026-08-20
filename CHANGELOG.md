@@ -6,6 +6,24 @@ commits; each release ends with a plain-language section for shop owners.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Catalog
+
+- `catalog` — one-transaction `POST /catalog/products/quick-create`:
+  item + size×colour variant matrix + optional opening stock in a single
+  call (stock block additionally requires `stock.adjust`; cost fields stay
+  hidden without `pricing.view_cost`)
+- `frontend` — the `/catalog/items/new` screen is now a single mobile-first
+  page: product basics, optional details, size/colour chips, and per-combo
+  opening quantities with a shared cost; edit flow unchanged
+
+### What shopkeepers get
+
+- **Add a product once, sell it a minute later.** Name, photo, price range,
+  sizes, colours, and how many pieces are on the shelf — all on one screen,
+  one save. No more hopping between three pages before the first bill.
+
 ## [1.0.0] - 2026-08-05
 
 First release. The full Phase 1 platform plus a running start on Phase 2,
