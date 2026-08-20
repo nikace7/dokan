@@ -147,6 +147,8 @@ class TestMe:
         assert data["full_name"] == user.full_name
         assert data["is_owner"] is False
         assert data["permissions"] == ["sale.create"]
+        assert data["shop_name"] == tenant.name
+        assert data["shop_name_np"] == tenant.name_np
         assert data["plan"] == {
             "code": tenant.plan.code,
             "name": tenant.plan.name,

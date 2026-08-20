@@ -149,6 +149,8 @@ class MeSerializer(serializers.Serializer):
     is_owner = serializers.BooleanField()
     permissions = serializers.ListField(child=serializers.CharField())
     plan = serializers.JSONField()
+    shop_name = serializers.CharField()
+    shop_name_np = serializers.CharField(allow_null=True)
 
     @classmethod
     def for_user(
@@ -158,6 +160,8 @@ class MeSerializer(serializers.Serializer):
         plan: dict[str, Any],
         *,
         is_owner: bool,
+        shop_name: str,
+        shop_name_np: str | None,
     ) -> dict[str, Any]:
         """Build the payload for a user (keeps the view thin)."""
         return cls(
@@ -170,5 +174,7 @@ class MeSerializer(serializers.Serializer):
                 "is_owner": is_owner,
                 "permissions": sorted(permissions),
                 "plan": plan,
+                "shop_name": shop_name,
+                "shop_name_np": shop_name_np,
             }
         ).data

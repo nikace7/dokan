@@ -24,6 +24,9 @@ export interface MeUser {
     name: string;
     features: Record<string, unknown>;
   };
+  /** Tenant shop identity for the app shell header. */
+  shop_name: string;
+  shop_name_np: string | null;
 }
 
 /** `POST /auth/token` — phone + password, scoped to the host's tenant. */
