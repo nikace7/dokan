@@ -239,6 +239,7 @@ def update_tenant(
             "trial_ends_at",
             "calendar_pref",
             "locale",
+            "currency",
         }
     }
     if "plan" in fields and not fields["plan"].is_active:
