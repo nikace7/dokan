@@ -10,6 +10,7 @@ import { SimpleSalePage } from '@/features/billing/SimpleSalePage';
 import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
 import { ItemFormPage } from '@/features/catalog/ItemFormPage';
 import { ItemsPage } from '@/features/catalog/ItemsPage';
+import { QuickAddProductPage } from '@/features/catalog/QuickAddProductPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { CustomersPage } from '@/features/customers/CustomersPage';
 import { ExpensesPage } from '@/features/expenses/ExpensesPage';
@@ -72,7 +73,7 @@ function getRouter() {
         { path: '/billing', element: <BillingPage /> },
         { path: '/billing/simple', element: <SimpleSalePage /> },
         { path: '/catalog', element: <ItemsPage /> },
-        { path: '/catalog/items/new', element: <ItemFormPage /> },
+        { path: '/catalog/items/new', element: <QuickAddProductPage /> },
         { path: '/catalog/items/:id', element: <ItemDetailPage /> },
         { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
         { path: '/pricing', element: <PricingPage /> },
