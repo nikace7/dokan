@@ -90,7 +90,7 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
 
       <p className="mt-2 text-right text-sm">
         <span className="text-muted-foreground">{t('simpleSale.line.lineTotal')}: </span>
-        <span className="font-semibold">{total === null ? '—' : formatPaisa(total, { symbol: 'रू ' })}</span>
+        <span className="font-semibold">{total === null ? '—' : formatPaisa(total, { symbol: 'auto' })}</span>
       </p>
     </section>
   );

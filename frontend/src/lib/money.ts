@@ -8,7 +8,14 @@
  *   converted via `toPaisa` (string parsing, never `x * 100`).
  * - Display uses Nepali lakh/crore grouping: `1,23,456.00`.
  * - Devanagari numerals are an optional display preference (`२०८२`-style).
+ * - Paisa enters in the tenant's BASE currency; formatting converts to the
+ *   device's display currency (stores/currency) at the NRB peg. Pass
+ *   `currency` explicitly for documents that must not follow the toggle
+ *   (receipts always print in the base currency).
  */
+
+import { CURRENCY_SYMBOLS, convertPaisa, useCurrencyStore } from '@/stores/currency';
+import type { Currency } from '@/stores/currency';
 
 /** Integer paisa. Always an integer; never a float amount of rupees. */
 export type Paisa = number;
@@ -93,14 +100,24 @@ export function toDevanagariDigits(text: string): string {
 export interface FormatMoneyOptions {
   /** Render digits in Devanagari (default for locale=np). */
   devanagari?: boolean;
-  /** Prefix with the NPR currency symbol. Default: `"रू "`; pass `""` to omit. */
+  /**
+   * Currency symbol prefix. Default (null): none. `'auto'` follows the
+   * target currency (रू for NPR, ₹ for INR); any other string is literal.
+   */
   symbol?: string | null;
+  /**
+   * Target display currency (default: the device's current display
+   * currency). Pass the base currency for legal documents (receipts).
+   */
+  currency?: Currency;
 }
 
 /** Format integer paisa as `1,23,456.00` (lakh/crore grouping). */
 export function formatPaisa(paisa: Paisa, options: FormatMoneyOptions = {}): string {
-  const { devanagari = false, symbol = null } = options;
-  const value = assertIntegerPaisa(paisa);
+  const { devanagari = false, symbol = null, currency } = options;
+  const { base, display } = useCurrencyStore.getState();
+  const target = currency ?? display;
+  const value = convertPaisa(assertIntegerPaisa(paisa), base, target);
 
   const negative = value < 0;
   const abs = Math.abs(value);
@@ -112,11 +129,11 @@ export function formatPaisa(paisa: Paisa, options: FormatMoneyOptions = {}): str
     formatted = toDevanagariDigits(formatted);
   }
   const prefix = negative ? '-' : '';
-  const currency = symbol === null ? '' : symbol;
-  return `${prefix}${currency}${formatted}`;
+  const sign = symbol === 'auto' ? CURRENCY_SYMBOLS[target] : (symbol ?? '');
+  return `${prefix}${sign}${formatted}`;
 }
 
 /** Convenience: format a rupee amount (`number | string`) for display. */
 export function formatNpr(amount: number | string, options: FormatMoneyOptions = {}): string {
-  return formatPaisa(toPaisa(amount), { symbol: 'रू ', ...options });
+  return formatPaisa(toPaisa(amount), { symbol: 'auto', ...options });
 }

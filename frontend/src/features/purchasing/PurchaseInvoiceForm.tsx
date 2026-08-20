@@ -213,7 +213,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
                   />
                 </div>
                 <p className="text-sm tabular-nums">
-                  {formatPaisa(draftLineTotalPaisa(line), { symbol: 'रू ' })}
+                  {formatPaisa(draftLineTotalPaisa(line), { symbol: 'auto' })}
                 </p>
                 <button
                   type="button"
@@ -233,7 +233,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
               {t('purchasing.form.totalDisplayOnly')}
             </span>
             <span className="font-bold tabular-nums">
-              {formatPaisa(totalPaisa, { symbol: 'रू ' })}
+              {formatPaisa(totalPaisa, { symbol: 'auto' })}
             </span>
           </div>
         </div>

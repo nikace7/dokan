@@ -12,6 +12,8 @@ export interface TenantSettings {
   timezone: string;
   calendar_pref: 'BS' | 'AD' | 'BOTH';
   locale: 'np' | 'en';
+  /** The shop's money currency; display conversion is a view preference. */
+  currency: 'NPR' | 'INR';
   status: string;
   plan_code: string;
 }
@@ -121,6 +123,7 @@ export function updateTenantSettings(
       | 'vat_registered'
       | 'calendar_pref'
       | 'locale'
+      | 'currency'
     >
   >,
 ): Promise<TenantSettings> {
