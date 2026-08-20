@@ -41,6 +41,7 @@ def provision_tenant(
     vat_registered: bool = False,
     calendar_pref: str = "BS",
     locale: str = "np",
+    currency: str = "NPR",
     owner_email: str | None = None,
     request: "HttpRequest | None" = None,
 ) -> "Tenant":
@@ -58,6 +59,7 @@ def provision_tenant(
         trial_ends_at=trial_ends_at,
         calendar_pref=calendar_pref,
         locale=locale,
+        currency=currency,
     )
     # Platform requests have no tenant middleware context. Set it locally so
     # RLS protects every tenant-scoped provisioning write.

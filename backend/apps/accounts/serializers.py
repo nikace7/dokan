@@ -151,6 +151,7 @@ class MeSerializer(serializers.Serializer):
     plan = serializers.JSONField()
     shop_name = serializers.CharField()
     shop_name_np = serializers.CharField(allow_null=True)
+    currency = serializers.CharField()
 
     @classmethod
     def for_user(
@@ -162,6 +163,7 @@ class MeSerializer(serializers.Serializer):
         is_owner: bool,
         shop_name: str,
         shop_name_np: str | None,
+        currency: str,
     ) -> dict[str, Any]:
         """Build the payload for a user (keeps the view thin)."""
         return cls(
@@ -176,5 +178,6 @@ class MeSerializer(serializers.Serializer):
                 "plan": plan,
                 "shop_name": shop_name,
                 "shop_name_np": shop_name_np,
+                "currency": currency,
             }
         ).data

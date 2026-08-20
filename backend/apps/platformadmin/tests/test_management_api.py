@@ -250,6 +250,20 @@ class TestTenantManagement:
         assert get_tenant_by_slug(tenant.slug).status == "SUSPENDED"
         assert PlatformAuditLog.objects.filter(action="tenant.update", tenant=tenant).exists()
 
+    def test_superadmin_can_set_tenant_currency(self) -> None:
+        tenant = TenantFactory(slug="currency-shop")
+        client, _ = client_for()
+        response = client.patch(
+            f"{TENANTS_URL}/{tenant.pk}",
+            {"currency": "INR"},
+            format="json",
+            **admin_host(),
+        )
+        assert response.status_code == 200
+        assert response.json()["data"]["currency"] == "INR"
+        tenant.refresh_from_db()
+        assert tenant.currency == "INR"
+
     def test_list_filters_by_status_and_search(self) -> None:
         TenantFactory(slug="alpha-shop", name="Alpha Fashion", status="ACTIVE")
         TenantFactory(slug="beta-shop", name="Beta Fashion", status="SUSPENDED")
