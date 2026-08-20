@@ -210,7 +210,7 @@ class TestDashboardApi:
         assert response.status_code == 200
         data = response.json()["data"]
         assert data["sales"]["today_total"] == "2260.00"
-        assert len(data["sales"]["last_30_days"]) == 30
+        assert [row["net_total"] for row in data["sales"]["last_30_days"]] == ["2260.00"]
         assert data["profit"]["today_net_profit"] == "1060.00"
         assert data["dues"] == {"customer_count": 0, "total_receivable": "0.00"}
 
