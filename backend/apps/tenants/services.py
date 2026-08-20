@@ -27,6 +27,7 @@ _EDITABLE_FIELDS = (
     "vat_registered",
     "calendar_pref",
     "locale",
+    "currency",
 )
 
 
@@ -231,6 +232,7 @@ def create_platform_tenant(
     vat_registered: bool = False,
     calendar_pref: str = Tenant.CalendarPref.BS,
     locale: str = Tenant.Locale.NP,
+    currency: str = Tenant.Currency.NPR,
 ) -> Tenant:
     """Create the platform row before the orchestrator opens tenant RLS context."""
     if not plan.is_active:
@@ -249,6 +251,7 @@ def create_platform_tenant(
         trial_ends_at=trial_ends_at,
         calendar_pref=calendar_pref,
         locale=locale,
+        currency=currency,
     )
     try:
         tenant.full_clean()

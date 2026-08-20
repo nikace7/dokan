@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { useCurrencyStore } from '@/stores/currency';
 
 import {
   addPaisa,
@@ -86,5 +88,39 @@ describe('formatNpr', () => {
 describe('toDevanagariDigits', () => {
   it('maps every ASCII digit', () => {
     expect(toDevanagariDigits('0123456789')).toBe('०१२३४५६७८९');
+  });
+});
+
+describe('display-currency conversion (NPR/INR peg)', () => {
+  beforeEach(() => {
+    useCurrencyStore.setState({ base: 'NPR', display: 'NPR' });
+    localStorage.clear();
+  });
+
+  it('leaves amounts untouched when display matches base', () => {
+    expect(formatNpr('1600')).toBe('रू 1,600.00');
+  });
+
+  it('converts NPR base to INR display at the NRB peg, with the ₹ symbol', () => {
+    useCurrencyStore.setState({ display: 'INR' });
+    expect(formatNpr('1600')).toBe('₹ 1,000.00');
+    expect(formatNpr('160')).toBe('₹ 100.00');
+  });
+
+  it('converts INR base to NPR display', () => {
+    useCurrencyStore.setState({ base: 'INR', display: 'NPR' });
+    expect(formatNpr('1000')).toBe('रू 1,600.00');
+  });
+
+  it('pins documents to an explicit currency regardless of the toggle', () => {
+    useCurrencyStore.setState({ base: 'NPR', display: 'INR' });
+    expect(formatNpr('1600', { currency: 'NPR' })).toBe('रू 1,600.00');
+  });
+
+  it('converts integer paisa with half-up rounding, never floats', () => {
+    useCurrencyStore.setState({ display: 'INR' });
+    // 1 NPR paisa → 0.625 INR paisa → 1; 3 → 1.875 → 2.
+    expect(formatPaisa(1)).toBe('0.01');
+    expect(formatPaisa(3)).toBe('0.02');
   });
 });

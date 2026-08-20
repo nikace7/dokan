@@ -10,8 +10,14 @@ Rules (docs/ARCHITECTURE.md, docs/SYSTEM_DESIGN.md §4–§7):
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Final, Literal
 
-#: ISO 4217 code for the only currency this system handles.
+#: ISO 4217 codes for the currencies this system handles.
 CURRENCY_NPR: Final = "NPR"
+CURRENCY_INR: Final = "INR"
+SUPPORTED_CURRENCIES: Final = (CURRENCY_NPR, CURRENCY_INR)
+
+#: Nepal Rastra Bank pegs the NPR to the INR at this fixed rate; conversion
+#: is a display concern only — storage is always in the tenant's currency.
+NPR_PER_INR: Final = Decimal("1.6")
 
 #: Display symbol used on receipts and screens.
 CURRENCY_SYMBOL: Final = "Rs"

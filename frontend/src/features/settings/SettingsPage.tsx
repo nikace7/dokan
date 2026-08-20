@@ -21,6 +21,7 @@ type SettingsForm = {
   vat_registered: boolean;
   calendar_pref: TenantSettings['calendar_pref'];
   locale: TenantSettings['locale'];
+  currency: TenantSettings['currency'];
 };
 
 function toForm(settings: TenantSettings): SettingsForm {
@@ -32,6 +33,7 @@ function toForm(settings: TenantSettings): SettingsForm {
     vat_registered: settings.vat_registered,
     calendar_pref: settings.calendar_pref,
     locale: settings.locale,
+    currency: settings.currency,
   };
 }
 
@@ -212,6 +214,22 @@ export function SettingsPage() {
                 <option value="np">{t('settings.profile.localeNp')}</option>
                 <option value="en">{t('settings.profile.localeEn')}</option>
               </select>
+            </label>
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
+              {t('settings.profile.currency')}
+              <select
+                value={form.currency}
+                onChange={(event) =>
+                  setForm({ ...form, currency: event.target.value as SettingsForm['currency'] })
+                }
+                className={`${selectClasses} font-normal`}
+              >
+                <option value="NPR">{t('settings.profile.currencyNpr')}</option>
+                <option value="INR">{t('settings.profile.currencyInr')}</option>
+              </select>
+              <span className="text-xs font-normal text-muted-foreground">
+                {t('settings.profile.currencyHelp')}
+              </span>
             </label>
           </div>
 

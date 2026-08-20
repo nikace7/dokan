@@ -27,6 +27,8 @@ export interface MeUser {
   /** Tenant shop identity for the app shell header. */
   shop_name: string;
   shop_name_np: string | null;
+  /** Tenant money currency — the base every amount is stored in. */
+  currency: 'NPR' | 'INR';
 }
 
 /** `POST /auth/token` — phone + password, scoped to the host's tenant. */

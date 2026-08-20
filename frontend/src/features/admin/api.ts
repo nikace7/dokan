@@ -44,6 +44,7 @@ export interface Tenant {
   timezone?: string;
   calendar_pref: 'BS' | 'AD' | 'BOTH';
   locale: 'np' | 'en';
+  currency: 'NPR' | 'INR';
   onboarded_at?: string | null;
   created_at: string;
 }

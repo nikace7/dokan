@@ -108,6 +108,7 @@ class TenantSerializer(serializers.ModelSerializer):
             "timezone",
             "calendar_pref",
             "locale",
+            "currency",
             "onboarded_at",
             "created_at",
         )
@@ -129,6 +130,10 @@ class TenantCreateSerializer(serializers.Serializer):
         default=Tenant.CalendarPref.BS,
     )
     locale = serializers.ChoiceField(choices=Tenant.Locale.choices, default=Tenant.Locale.NP)
+    currency = serializers.ChoiceField(
+        choices=Tenant.Currency.choices,
+        default=Tenant.Currency.NPR,
+    )
     owner_phone = serializers.CharField(max_length=32)
     owner_full_name = serializers.CharField(max_length=200)
     owner_email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
@@ -153,6 +158,7 @@ class TenantUpdateSerializer(serializers.Serializer):
     trial_ends_at = serializers.DateTimeField(required=False, allow_null=True)
     calendar_pref = serializers.ChoiceField(choices=Tenant.CalendarPref.choices, required=False)
     locale = serializers.ChoiceField(choices=Tenant.Locale.choices, required=False)
+    currency = serializers.ChoiceField(choices=Tenant.Currency.choices, required=False)
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):

@@ -106,7 +106,7 @@ export function StatTile({
     );
   }
 
-  const displayValue = valuePaisa !== undefined ? formatPaisa(valuePaisa, { symbol: 'रू ' }) : value;
+  const displayValue = valuePaisa !== undefined ? formatPaisa(valuePaisa, { symbol: 'auto' }) : value;
 
   return (
     <div className={cn('rounded-xl border bg-card p-4 shadow-card', className)}>

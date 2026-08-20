@@ -116,6 +116,7 @@ class TestTenantSettings:
         assert listed.status_code == 200
         assert listed.json()["data"]["slug"] == tenant.slug
         assert listed.json()["data"]["plan_code"] == tenant.plan.code
+        assert listed.json()["data"]["currency"] == "NPR"
 
         response = client.patch(
             SETTINGS_URL,
@@ -126,6 +127,7 @@ class TestTenantSettings:
                 "vat_registered": True,
                 "calendar_pref": "BOTH",
                 "locale": "en",
+                "currency": "INR",
             },
             format="json",
             **host(tenant.slug),
@@ -135,6 +137,7 @@ class TestTenantSettings:
         assert response.json()["data"]["name"] == "Updated Shop"
         tenant.refresh_from_db()
         assert tenant.legal_name == "Updated Shop Pvt. Ltd."
+        assert tenant.currency == "INR"
         row = AuditLog.objects.get(tenant=tenant, action="tenant.settings.update")
         assert row.target_type == "tenant"
         assert row.before is not None and row.before["name"] != "Updated Shop"

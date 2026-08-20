@@ -23,6 +23,7 @@ class TenantSettingsSerializer(serializers.ModelSerializer):
             "timezone",
             "calendar_pref",
             "locale",
+            "currency",
             "status",
             "plan_code",
         )

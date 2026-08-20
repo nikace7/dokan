@@ -73,6 +73,10 @@ class Tenant(models.Model):
         NP = "np"
         EN = "en"
 
+    class Currency(models.TextChoices):
+        NPR = "NPR"
+        INR = "INR"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.TextField(
         unique=True,
@@ -90,6 +94,9 @@ class Tenant(models.Model):
     timezone = models.TextField(default="Asia/Kathmandu")
     calendar_pref = models.TextField(choices=CalendarPref.choices, default=CalendarPref.BS)
     locale = models.TextField(choices=Locale.choices, default=Locale.NP)
+    # The shop's money currency. Storage stays in this currency; the other
+    # supported currency is a display-time conversion (core/money.py peg).
+    currency = models.TextField(choices=Currency.choices, default=Currency.NPR)
     onboarded_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True, blank=True)  # soft delete only

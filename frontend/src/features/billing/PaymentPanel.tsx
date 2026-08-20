@@ -144,16 +144,16 @@ export function PaymentPanel({
       <dl className="space-y-1 rounded-md bg-slate-50 px-3 py-2 text-sm">
         <div className="flex justify-between">
           <dt className="text-slate-600">{t('billing.billTotal')}</dt>
-          <dd className="font-medium">{formatPaisa(totalPaisa, { symbol: 'रू ' })}</dd>
+          <dd className="font-medium">{formatPaisa(totalPaisa, { symbol: 'auto' })}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-slate-600">{t('billing.paid')}</dt>
-          <dd className="font-medium">{formatPaisa(Math.max(0, paidPaisa), { symbol: 'रू ' })}</dd>
+          <dd className="font-medium">{formatPaisa(Math.max(0, paidPaisa), { symbol: 'auto' })}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-slate-600">{t('billing.dueUdharo')}</dt>
           <dd className={duePaisa > 0 ? 'font-semibold text-red-600' : 'font-medium'}>
-            {formatPaisa(Math.max(0, duePaisa), { symbol: 'रू ' })}
+            {formatPaisa(Math.max(0, duePaisa), { symbol: 'auto' })}
           </dd>
         </div>
       </dl>

@@ -149,6 +149,7 @@ class TestMe:
         assert data["permissions"] == ["sale.create"]
         assert data["shop_name"] == tenant.name
         assert data["shop_name_np"] == tenant.name_np
+        assert data["currency"] == tenant.currency
         assert data["plan"] == {
             "code": tenant.plan.code,
             "name": tenant.plan.name,
