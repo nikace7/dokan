@@ -4,6 +4,7 @@ import { fetchPlatformMe, platformLogin } from '@/features/admin/api';
 import type { PlatformUser } from '@/features/admin/api';
 import { clearPlatformTokens, hasPlatformTokens, setPlatformTokens } from '@/features/admin/tokens';
 import { ApiError } from '@/lib/api/client';
+import { useAuthSession } from '@/stores/authSession';
 
 const PLATFORM_ME_KEY = ['platform', 'auth', 'me'] as const;
 
@@ -17,6 +18,8 @@ export function usePlatformAuth(): {
   signOut: () => void;
 } {
   const queryClient = useQueryClient();
+  // Re-render consumers on sign-out so RequirePlatformAuth redirects at once.
+  useAuthSession((state) => state.rev);
   const me = useQuery({
     queryKey: PLATFORM_ME_KEY,
     queryFn: fetchPlatformMe,
@@ -35,6 +38,9 @@ export function usePlatformAuth(): {
   const signOut = () => {
     clearPlatformTokens();
     queryClient.clear();
+    // Same observer caveat as the tenant signOut: force the guard to react.
+    queryClient.setQueryData(PLATFORM_ME_KEY, null);
+    useAuthSession.getState().bump();
   };
   const loginError =
     login.error instanceof ApiError

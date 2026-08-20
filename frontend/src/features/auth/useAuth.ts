@@ -4,6 +4,7 @@ import { fetchMe, login } from '@/features/auth/api';
 import type { MeUser } from '@/features/auth/api';
 import { ApiError } from '@/lib/api/client';
 import { clearTokens, hasTokens, setTokens } from '@/lib/auth/tokens';
+import { useAuthSession } from '@/stores/authSession';
 
 const ME_QUERY_KEY = ['auth', 'me'] as const;
 
@@ -29,6 +30,8 @@ export interface AuthState {
  */
 export function useAuth(): AuthState {
   const queryClient = useQueryClient();
+  // Every consumer re-renders when the session is revoked (signOut bumps).
+  useAuthSession((state) => state.rev);
 
   const meQuery = useQuery({
     queryKey: ME_QUERY_KEY,
@@ -50,8 +53,12 @@ export function useAuth(): AuthState {
 
   const signOut = () => {
     clearTokens();
-    // Drop every cached query: server state is tenant- and user-scoped.
+    // queryClient.clear() removes every query but active observers keep
+    // their last result — the bump re-renders consumers so the route guard
+    // sees the empty token store and redirects without a manual refresh.
     queryClient.clear();
+    queryClient.setQueryData(ME_QUERY_KEY, null);
+    useAuthSession.getState().bump();
   };
 
   const loginError =
