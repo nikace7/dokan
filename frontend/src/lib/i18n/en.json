@@ -24,6 +24,9 @@
     "english": "EN",
     "nepali": "ने"
   },
+  "currency": {
+    "label": "Currency"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "billing": "Billing",
@@ -536,6 +539,10 @@
       "locale": "Interface language",
       "localeNp": "Nepali",
       "localeEn": "English",
+      "currency": "Currency",
+      "currencyNpr": "NPR — Nepali rupee",
+      "currencyInr": "INR — Indian rupee",
+      "currencyHelp": "Amounts are stored in this currency; the NPR/INR toggle only changes how they are shown.",
       "save": "Save settings"
     },
     "staffCard": {

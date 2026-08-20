@@ -79,6 +79,12 @@ export function TenantDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ['platform', 'tenants', id] });
     },
   });
+  const currencyMutation = useMutation({
+    mutationFn: (currency: 'NPR' | 'INR') => updateTenant(id, { currency }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['platform', 'tenants', id] });
+    },
+  });
 
   if (tenant.isPending) {
     return (
@@ -140,6 +146,27 @@ export function TenantDetailPage() {
           <Fact label="VAT registered" value={current.vat_registered ? 'Yes' : 'No'} />
           <Fact label="Calendar" value={current.calendar_pref} />
           <Fact label="Locale" value={current.locale} />
+          <div>
+            <dt className="text-muted-foreground">Currency</dt>
+            <dd className="font-medium text-foreground">
+              {canManage ? (
+                <select
+                  value={current.currency}
+                  disabled={currencyMutation.isPending}
+                  onChange={(event) =>
+                    currencyMutation.mutate(event.target.value as 'NPR' | 'INR')
+                  }
+                  aria-label="Currency"
+                  className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                >
+                  <option value="NPR">NPR</option>
+                  <option value="INR">INR</option>
+                </select>
+              ) : (
+                current.currency
+              )}
+            </dd>
+          </div>
           <Fact label="Trial ends" value={isoDate(current.trial_ends_at)} />
           <Fact label="Onboarded" value={isoDate(current.onboarded_at)} />
           <Fact label="Created" value={isoDate(current.created_at)} />

@@ -20,11 +20,12 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
 import brandMark from '@/assets/brand-mark.webp';
+import { CurrencyToggle } from '@/components/layout/CurrencyToggle';
 import { LanguageToggle } from '@/components/layout/LanguageToggle';
 import {
   Sheet,
@@ -42,6 +43,7 @@ import { hasPlanFeature } from '@/lib/plans';
 import { billingPath } from '@/lib/plans';
 import type { PlanFeature } from '@/lib/plans';
 import { cn } from '@/lib/utils';
+import { useCurrencyStore } from '@/stores/currency';
 
 interface NavItem {
   to: string;
@@ -341,6 +343,15 @@ export function AppShell() {
   const { user, signOut } = useAuth();
   const { t } = useTranslation();
   const items = useVisibleNavItems();
+  // Subscribing to display re-renders the whole shell (and thus the routed
+  // page) on toggle, so every money.ts format call re-runs in the new currency.
+  useCurrencyStore((state) => state.display);
+  const setBaseCurrency = useCurrencyStore((state) => state.setBase);
+  useEffect(() => {
+    if (user?.currency) {
+      setBaseCurrency(user.currency);
+    }
+  }, [user?.currency, setBaseCurrency]);
   const tabsBeforeFab = items.filter((item) =>
     (MOBILE_TABS_BEFORE_FAB as readonly string[]).includes(item.to),
   );
@@ -361,7 +372,10 @@ export function AppShell() {
         <SideNav items={items} />
         <div className="space-y-3 border-t p-3">
           <WorkspaceSelector />
-          <LanguageToggle />
+          <div className="flex items-center justify-between gap-1">
+            <LanguageToggle />
+            <CurrencyToggle />
+          </div>
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm text-muted-foreground">{user?.full_name}</span>
             <button
@@ -384,6 +398,7 @@ export function AppShell() {
           <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
         </span>
         <div className="flex items-center gap-2">
+          <CurrencyToggle />
           <LanguageToggle />
           <span className="max-w-40 truncate text-sm text-muted-foreground">
             {user?.full_name}

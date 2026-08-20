@@ -230,7 +230,7 @@ export function SimpleSalePage() {
           >
             {saleMutation.isPending
               ? t('simpleSale.saving')
-              : `${t('simpleSale.complete')} · ${formatPaisa(total, { symbol: 'रू ' })}`}
+              : `${t('simpleSale.complete')} · ${formatPaisa(total, { symbol: 'auto' })}`}
           </Button>
           {saleError ? (
             <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
