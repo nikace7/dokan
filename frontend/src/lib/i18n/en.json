@@ -1002,6 +1002,12 @@
       "note": "Note (optional)",
       "post": "Post opening stock"
     },
+    "variantInfo": {
+      "mrp": "MRP",
+      "range": "Selling range",
+      "noRange": "Not set",
+      "onHand": "In stock (this branch)"
+    },
     "transfers": {
       "title": "Stock transfers",
       "subtitle": "Stock leaves the source when sent and remains in transit until received.",
