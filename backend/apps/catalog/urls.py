@@ -12,6 +12,9 @@ from apps.catalog.views import (
     ItemListView,
     SizeChartDetailView,
     SizeChartListView,
+)
+from apps.catalog.views_variants import (
+    QuickCreateProductView,
     VariantBulkView,
     VariantDetailView,
     VariantForSaleView,
@@ -32,6 +35,11 @@ urlpatterns = [
     path("catalog/items/<uuid:pk>", ItemDetailView.as_view(), name="item-detail"),
     path("catalog/items/<uuid:pk>/image", ItemImageView.as_view(), name="item-image"),
     path("catalog/items/<uuid:pk>/variants/bulk", VariantBulkView.as_view(), name="variant-bulk"),
+    path(
+        "catalog/products/quick-create",
+        QuickCreateProductView.as_view(),
+        name="product-quick-create",
+    ),
     path("catalog/variants", VariantListView.as_view(), name="variant-list"),
     path("catalog/variants/lookup", VariantLookupView.as_view(), name="variant-lookup"),
     path("catalog/variants/for-sale", VariantForSaleView.as_view(), name="variant-for-sale"),
