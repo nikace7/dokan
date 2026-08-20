@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { VariantPicker } from '@/features/catalog/VariantPicker';
 import { postAdjustment, postWriteOff } from '@/features/inventory/api';
+import { VariantStockInfo } from '@/features/inventory/VariantStockInfo';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { ApiError } from '@/lib/api/client';
 
@@ -71,19 +72,22 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
         </DialogHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
           {variant ? (
-            <div className="flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
-              <span className="font-medium">
-                {variant.itemName} — {variant.size} / {variant.color}
-                <span className="ml-1 text-xs text-muted-foreground">{variant.sku}</span>
-              </span>
-              <button
-                type="button"
-                className="text-primary hover:underline"
-                onClick={() => setVariant(null)}
-              >
-                {t('catalog.picker.change')}
-              </button>
-            </div>
+            <>
+              <div className="flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
+                <span className="font-medium">
+                  {variant.itemName} — {variant.size} / {variant.color}
+                  <span className="ml-1 text-xs text-muted-foreground">{variant.sku}</span>
+                </span>
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => setVariant(null)}
+                >
+                  {t('catalog.picker.change')}
+                </button>
+              </div>
+              <VariantStockInfo variant={variant} branchId={workspace.branchId} />
+            </>
           ) : (
             <VariantPicker onPick={setVariant} />
           )}
@@ -125,7 +129,10 @@ export function StockOperationDialog({ kind, onClose, onPosted }: StockOperation
           </div>
 
           {error ? (
-            <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p
+              role="alert"
+              className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
               {error}
             </p>
           ) : null}
