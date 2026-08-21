@@ -9,6 +9,7 @@ from apps.accounts.views import (
     RoleListView,
     StaffListView,
     StaffRoleAssignmentView,
+    StaffRoleRevokeView,
     TenantTokenRefreshView,
     TokenObtainView,
 )
@@ -24,4 +25,9 @@ urlpatterns = [
     path("roles/<uuid:pk>", RoleDetailView.as_view(), name="role-detail"),
     path("users", StaffListView.as_view(), name="staff-list"),
     path("users/<uuid:pk>/roles", StaffRoleAssignmentView.as_view(), name="staff-role-assignment"),
+    path(
+        "users/<uuid:pk>/roles/<uuid:assignment_id>",
+        StaffRoleRevokeView.as_view(),
+        name="staff-role-revoke",
+    ),
 ]
