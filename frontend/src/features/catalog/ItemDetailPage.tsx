@@ -122,7 +122,7 @@ export function ItemDetailPage() {
                 <TableCell>{variant.color}</TableCell>
                 <TableCell className="text-muted-foreground">{variant.barcode ?? '—'}</TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {formatNpr(variant.mrp)}
+                  {variant.mrp !== null ? formatNpr(variant.mrp) : '—'}
                 </TableCell>
                 {showCost ? (
                   <TableCell className="text-right tabular-nums">
@@ -141,7 +141,9 @@ export function ItemDetailPage() {
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-medium tabular-nums">{formatNpr(variant.mrp)}</p>
+                  <p className="font-medium tabular-nums">
+                    {variant.mrp !== null ? formatNpr(variant.mrp) : '—'}
+                  </p>
                   {showCost && variant.avg_cost !== undefined ? (
                     <p className="text-xs text-muted-foreground tabular-nums">
                       {t('catalog.detail.costAmount', { amount: formatNpr(variant.avg_cost) })}

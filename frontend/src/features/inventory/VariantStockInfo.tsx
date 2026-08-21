@@ -41,7 +41,9 @@ export function VariantStockInfo({ variant, branchId }: VariantStockInfoProps) {
     <dl className="grid grid-cols-3 gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs">
       <div>
         <dt className="text-muted-foreground">{t('inventory.variantInfo.mrp')}</dt>
-        <dd className="font-medium tabular-nums">{formatNpr(variant.mrp)}</dd>
+        <dd className="font-medium tabular-nums">
+          {variant.mrp !== null ? formatNpr(variant.mrp) : '—'}
+        </dd>
       </div>
       <div>
         <dt className="text-muted-foreground">{t('inventory.variantInfo.range')}</dt>
