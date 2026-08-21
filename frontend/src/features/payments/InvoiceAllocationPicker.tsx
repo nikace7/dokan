@@ -8,7 +8,7 @@ import {
 } from '@/features/payments/api';
 import type { AllocationInvoice } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr, toPaisa } from '@/lib/money';
+import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
 
 export type AllocationParty = 'customer' | 'supplier';
 
@@ -24,6 +24,7 @@ export function InvoiceAllocationPicker({
   onChange: (values: Record<string, string>) => void;
 }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const query = useQuery({
     queryKey: ['payments', 'allocation-invoices', party, partyId],
     queryFn: () =>
@@ -87,6 +88,7 @@ function AllocationField({
   onChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const label = t('payments.allocation.fieldLabel', { invoice: invoice.invoice_no ?? '—' });
   return (
     <Input

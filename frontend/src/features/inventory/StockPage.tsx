@@ -14,7 +14,7 @@ import { OpeningStockDialog } from '@/features/inventory/OpeningStockDialog';
 import { StockOperationDialog } from '@/features/inventory/StockOperationDialog';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 import { hasPlanFeature } from '@/lib/plans';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,7 @@ export function StockPage() {
   const [page, setPage] = useState(1);
   const [movementPage, setMovementPage] = useState(1);
   const [dialog, setDialog] = useState<Dialog>(null);
+  useMoneyDisplay();
   const canView = hasPermission(user, 'stock.view');
   const canAdjust = hasPermission(user, 'stock.adjust');
   const canTransfer = hasPlanFeature(user, 'multi_branch');
@@ -199,9 +200,7 @@ export function StockPage() {
       </Card>
 
       <Card title={t('inventory.movements.title')}>
-        <p className="mb-3 text-sm text-muted-foreground">
-          {t('inventory.movements.subtitle')}
-        </p>
+        <p className="mb-3 text-sm text-muted-foreground">{t('inventory.movements.subtitle')}</p>
         {movementsQuery.isFetching ? (
           <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : null}
@@ -228,9 +227,7 @@ export function StockPage() {
                 >
                   {movement.qty_delta}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {movement.balance_after}
-                </TableCell>
+                <TableCell className="text-right tabular-nums">{movement.balance_after}</TableCell>
                 <TableCell>{movement.note || '—'}</TableCell>
                 <TableCell>{movement.created_by_name || t('inventory.system')}</TableCell>
               </>

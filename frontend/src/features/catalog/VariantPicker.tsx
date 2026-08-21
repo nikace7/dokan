@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/Input';
 import { listVariants, searchItems } from '@/features/catalog/api';
 import type { Item, ItemVariant } from '@/features/catalog/api';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 export interface PickedVariant {
   id: string;
@@ -50,6 +50,7 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [item, setItem] = useState<Item | null>(null);
+  useMoneyDisplay();
 
   const itemsQuery = useQuery({
     queryKey: ['catalog', 'items', 'picker', search],

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { getSale, listHeldBills } from '@/features/billing/api';
 import type { SalesInvoice } from '@/features/billing/api';
-import { formatNpr, toPaisa } from '@/lib/money';
+import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { useCartStore } from '@/stores/cartStore';
 
 /**
@@ -17,6 +17,7 @@ export function HeldBillsPanel() {
   const { t } = useTranslation();
   const resumeHeld = useCartStore((s) => s.resumeHeld);
   const currentHeldId = useCartStore((s) => s.heldSaleId);
+  useMoneyDisplay();
 
   const query = useQuery({
     queryKey: ['sales', 'held'],

@@ -25,7 +25,7 @@ import {
 import type { Customer, CustomerPayload } from '@/features/customers/api';
 import { listPricingRateTypes } from '@/features/pricing/api';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 
 type StatusFilter = 'active' | 'inactive' | 'all';
@@ -81,9 +81,7 @@ export function CustomersPage() {
       <Card
         title={t('customers.title')}
         actions={
-          canManage ? (
-            <Button onClick={() => setEditing('new')}>{t('customers.new')}</Button>
-          ) : null
+          canManage ? <Button onClick={() => setEditing('new')}>{t('customers.new')}</Button> : null
         }
       >
         {editing && canManage ? (
@@ -125,9 +123,7 @@ export function CustomersPage() {
         ) : null}
         {customers.isError ? (
           <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {customers.error instanceof Error
-              ? customers.error.message
-              : t('customers.loadError')}
+            {customers.error instanceof Error ? customers.error.message : t('customers.loadError')}
           </p>
         ) : null}
         {customers.data && rows.length === 0 ? (
@@ -199,6 +195,7 @@ function CustomerList({
   deactivatePending: boolean;
 }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   return (
     <>
       <ul className="divide-y divide-border md:hidden">
@@ -222,7 +219,9 @@ function CustomerList({
               <div className="flex gap-1">
                 <dt className="text-muted-foreground">{t('customers.creditLimit')}</dt>
                 <dd className="tabular-nums">
-                  {customer.credit_limit ? formatNpr(customer.credit_limit) : t('customers.unlimited')}
+                  {customer.credit_limit
+                    ? formatNpr(customer.credit_limit)
+                    : t('customers.unlimited')}
                 </dd>
               </div>
               <div className="flex gap-1">
@@ -266,14 +265,16 @@ function CustomerList({
                   <span className="text-xs">{customer.address ?? t('customers.noAddress')}</span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {customer.credit_limit ? formatNpr(customer.credit_limit) : t('customers.unlimited')}
+                  {customer.credit_limit
+                    ? formatNpr(customer.credit_limit)
+                    : t('customers.unlimited')}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {customer.loyalty_points}
-                </TableCell>
+                <TableCell className="text-right tabular-nums">{customer.loyalty_points}</TableCell>
                 <TableCell>
                   <Badge variant={customer.is_active ? 'success' : 'secondary'}>
-                    {customer.is_active ? t('customers.statusActive') : t('customers.statusInactive')}
+                    {customer.is_active
+                      ? t('customers.statusActive')
+                      : t('customers.statusInactive')}
                   </Badge>
                 </TableCell>
                 {canManage ? (

@@ -8,7 +8,7 @@ import { TableCell } from '@/components/ui/table';
 import { listPriceChanges, listPrices } from '@/features/pricing/api';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 function target(row: {
   scope?: string;
@@ -25,6 +25,7 @@ export function PriceTables() {
   const { t } = useTranslation();
   const [pricePage, setPricePage] = useState(1);
   const [changePage, setChangePage] = useState(1);
+  useMoneyDisplay();
   const prices = useQuery({
     queryKey: ['pricing', 'prices', pricePage],
     queryFn: () => listPrices({ page: pricePage }),
@@ -122,9 +123,7 @@ export function PriceTables() {
                   {row.new_price ? formatNpr(row.new_price) : t('pricing.tables.unset')}
                 </TableCell>
                 <TableCell>
-                  <span className="block">
-                    {row.changed_by_name ?? t('pricing.tables.system')}
-                  </span>
+                  <span className="block">{row.changed_by_name ?? t('pricing.tables.system')}</span>
                   <span className="text-xs text-muted-foreground">
                     {row.reason ?? t('pricing.tables.noReason')}
                   </span>

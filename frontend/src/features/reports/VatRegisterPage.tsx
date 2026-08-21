@@ -12,7 +12,7 @@ import type { BsRange, PurchaseVatRow, SalesVatRow, VatRegister } from '@/featur
 import { BsRangeControls } from '@/features/reports/BsRangeControls';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 type RegisterKind = 'sales' | 'purchase';
 
@@ -78,6 +78,7 @@ function TotalsFooter({
   colSpan: number;
 }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   return (
     <TableRow>
       <TableCell colSpan={colSpan} className="font-semibold">
@@ -92,6 +93,7 @@ function TotalsFooter({
 
 function TotalsCard({ totals }: { totals: VatRegister<never>['totals'] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   return (
     <dl className="mt-2 space-y-1 rounded-md bg-muted/50 p-3 text-sm">
       <div className="flex justify-between">
@@ -112,6 +114,7 @@ function TotalsCard({ totals }: { totals: VatRegister<never>['totals'] }) {
 
 function SalesRegister({ data }: { data: VatRegister<SalesVatRow> }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const columns: readonly ReportColumn[] = [
     { header: t('reports.columns.invoice') },
     { header: t('reports.columns.dateBs') },
@@ -174,6 +177,7 @@ function SalesRegister({ data }: { data: VatRegister<SalesVatRow> }) {
 
 function PurchaseRegister({ data }: { data: VatRegister<PurchaseVatRow> }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const columns: readonly ReportColumn[] = [
     { header: t('reports.columns.invoice') },
     { header: t('reports.columns.dateBs') },

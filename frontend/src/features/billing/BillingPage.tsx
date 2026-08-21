@@ -129,7 +129,7 @@ export function BillingPage() {
 
   if (queuedRef) {
     return (
-      <main className="p-6">
+      <main className="p-4 sm:p-6">
         <Card className="mx-auto max-w-lg text-center">
           <p className="text-sm font-medium text-blue-700">{t('billing.queuedTitle')}</p>
           <h2 className="mt-1 text-2xl font-bold">{t('billing.queuedRef', { ref: queuedRef })}</h2>
@@ -144,7 +144,7 @@ export function BillingPage() {
 
   if (receipt) {
     return (
-      <main className="p-6">
+      <main className="p-4 sm:p-6">
         {planWarning ? (
           <p role="status" className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
             {t('billing.planWarning', {

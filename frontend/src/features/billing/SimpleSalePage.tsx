@@ -8,7 +8,12 @@ import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/features/auth/useAuth';
 import { ApiError } from '@/lib/api/client';
 import { createSale, currentSaleContext, paisaToApiString } from '@/features/billing/api';
-import type { PaymentMethod, PlanUsageWarning, SalesInvoice, VariantForSale } from '@/features/billing/api';
+import type {
+  PaymentMethod,
+  PlanUsageWarning,
+  SalesInvoice,
+  VariantForSale,
+} from '@/features/billing/api';
 import { ItemPickerDialog } from '@/features/billing/ItemPickerDialog';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { ShareBillPanel } from '@/features/billing/ShareBillPanel';
@@ -16,7 +21,7 @@ import { SimpleSaleLineCard } from '@/features/billing/SimpleSaleLineCard';
 import { grandTotalPaisa, linesValid } from '@/features/billing/simpleSaleModel';
 import type { SimpleLine } from '@/features/billing/simpleSaleModel';
 import { useWorkspace } from '@/features/settings/useWorkspace';
-import { formatPaisa, toPaisa } from '@/lib/money';
+import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { useSyncStore } from '@/lib/offline/sync';
 import { hasPermission } from '@/lib/permissions';
 
@@ -57,6 +62,7 @@ export function SimpleSalePage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const online = useSyncStore((s) => s.online);
+  useMoneyDisplay();
 
   const [lines, setLines] = useState<SimpleLine[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -69,8 +75,7 @@ export function SimpleSalePage() {
   const idempotencyKey = useRef(crypto.randomUUID());
 
   const total = grandTotalPaisa(lines);
-  const canSubmit =
-    online && workspace.isReady && linesValid(lines) && total > 0;
+  const canSubmit = online && workspace.isReady && linesValid(lines) && total > 0;
 
   const saleMutation = useMutation({
     mutationFn: () => {
@@ -119,7 +124,10 @@ export function SimpleSalePage() {
     return (
       <main className="mx-auto max-w-2xl p-4">
         {planWarning ? (
-          <p role="status" className="mb-4 rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
+          <p
+            role="status"
+            className="mb-4 rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground"
+          >
             {t('billing.planWarning', {
               usage: planWarning.usage,
               limit: planWarning.limit,
@@ -141,7 +149,7 @@ export function SimpleSalePage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[70vh] max-w-2xl flex-col gap-3 p-4 pb-28">
+    <main className="mx-auto flex min-h-[70vh] max-w-2xl flex-col gap-3 p-4">
       <h1 className="text-xl font-semibold">{t('simpleSale.title')}</h1>
 
       {!online ? (
@@ -193,9 +201,12 @@ export function SimpleSalePage() {
         }}
       />
 
-      {/* Sticky above the mobile bottom tab bar (h-14); flush at md+ where it hides. */}
-      <div className="fixed inset-x-0 bottom-14 border-t border-border bg-card p-3 shadow-lg md:bottom-0">
-        <div className="mx-auto flex max-w-2xl flex-col gap-2">
+      {/* In-flow sticky bar: pins above the mobile bottom tab bar (h-14)
+          while scrolled, flush at md+ where the bar hides. Being part of the
+          flow means it sizes itself — the old fixed bar needed brittle
+          bottom padding and covered content when the error line grew it. */}
+      <div className="sticky bottom-14 -mx-4 mt-auto border-t border-border bg-card p-3 shadow-lg md:bottom-0">
+        <div className="flex flex-col gap-2">
           <div
             role="group"
             aria-label={t('simpleSale.paymentMethod')}
@@ -233,7 +244,10 @@ export function SimpleSalePage() {
               : `${t('simpleSale.complete')} · ${formatPaisa(total, { symbol: 'auto' })}`}
           </Button>
           {saleError ? (
-            <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p
+              role="alert"
+              className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
               {saleError}
             </p>
           ) : null}
