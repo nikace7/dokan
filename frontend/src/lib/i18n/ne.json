@@ -588,6 +588,9 @@
       "assign": "दिनुहोस्",
       "assigned": "भूमिका दिइयो।",
       "assignError": "भूमिका दिन सकिएन।",
+      "revoked": "भूमिका हटाइयो।",
+      "revokeError": "भूमिका हटाउन सकिएन।",
+      "revokeRole": "{{name}} बाट {{role}} भूमिका हटाउनुहोस्",
       "rolesTitle": "उपलब्ध भूमिकाहरू",
       "noRoles": "कुनै भूमिका मिलाइएको छैन।",
       "noPermissions": "अनुमति छैन"

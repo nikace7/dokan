@@ -75,6 +75,7 @@ export interface UpdateRolePayload {
 
 export interface StaffRoleAssignment {
   id: string;
+  assignment_id: string;
   code: string;
   name: string;
   branch_id: string | null;
@@ -167,4 +168,11 @@ export function assignStaffRole(
     method: 'POST',
     body: { role, branch },
   });
+}
+
+export function removeStaffRole(
+  userId: string,
+  assignmentId: string,
+): Promise<{ revoked: string; user: string }> {
+  return authedRequest(`/v1/users/${userId}/roles/${assignmentId}`, { method: 'DELETE' });
 }
