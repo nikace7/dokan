@@ -35,7 +35,7 @@ export function ScanInput() {
         sku: variant.sku,
         label: `${variant.item__name} — ${variant.size} / ${variant.color}`,
         quantity: 1,
-        unitPricePaisa: toPaisa(variant.mrp),
+        unitPricePaisa: variant.mrp !== null ? toPaisa(variant.mrp) : 0,
         discountPaisa: 0,
       });
       setCode('');

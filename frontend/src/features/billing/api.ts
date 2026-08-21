@@ -21,8 +21,8 @@ export interface VariantLookup {
   size: string;
   color: string;
   color_hex: string;
-  /** Money crosses the API as a string, e.g. "1500.00". */
-  mrp: string;
+  /** Money crosses the API as a string, e.g. "1500.00"; null when no MRP is set. */
+  mrp: string | null;
   is_active: boolean;
   item__name: string;
   item__name_np: string;
