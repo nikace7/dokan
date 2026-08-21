@@ -13,6 +13,7 @@ import {
   listBranches,
   listRoles,
   listStaff,
+  removeStaffRole,
 } from '@/features/settings/api';
 import type { CreateStaffPayload } from '@/features/settings/api';
 import { RoleManagementCard } from '@/features/settings/RoleManagementCard';
@@ -81,6 +82,16 @@ export function StaffPage() {
       setStatusMessage(t('settings.staff.assigned'));
     },
     onError: (error) => setStatusMessage(errorMessage(error, t('settings.staff.assignError'))),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: ({ userId, assignmentId }: { userId: string; assignmentId: string }) =>
+      removeStaffRole(userId, assignmentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['tenant', 'staff'] });
+      setStatusMessage(t('settings.staff.revoked'));
+    },
+    onError: (error) => setStatusMessage(errorMessage(error, t('settings.staff.revokeError'))),
   });
 
   if (!canManage) {
@@ -221,16 +232,37 @@ export function StaffPage() {
                     <p className="text-sm font-medium">{member.full_name}</p>
                     <p className="text-sm text-muted-foreground">{member.phone}</p>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {member.roles.length > 0
-                      ? member.roles
-                          .map(
-                            (role) =>
-                              `${role.code} @ ${role.branch_code ?? t('settings.staff.allBranchesInline')}`,
-                          )
-                          .join(', ')
-                      : t('settings.staff.noRole')}
-                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {member.roles.length > 0 ? (
+                      member.roles.map((role) => (
+                        <span
+                          key={role.assignment_id}
+                          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
+                        >
+                          {role.code} @ {role.branch_code ?? t('settings.staff.allBranchesInline')}
+                          <button
+                            type="button"
+                            aria-label={t('settings.staff.revokeRole', {
+                              role: role.code,
+                              name: member.full_name,
+                            })}
+                            disabled={revokeMutation.isPending}
+                            onClick={() =>
+                              revokeMutation.mutate({
+                                userId: member.id,
+                                assignmentId: role.assignment_id,
+                              })
+                            }
+                            className="font-medium text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground">{t('settings.staff.noRole')}</p>
+                    )}
+                  </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <select
                       aria-label={t('settings.staff.roleFor', { name: member.full_name })}

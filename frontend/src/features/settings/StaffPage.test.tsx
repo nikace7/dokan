@@ -97,7 +97,14 @@ describe('StaffPage', () => {
             is_active: true,
             must_change_password: true,
             roles: [
-              { id: role.id, code: role.code, name: role.name, branch_id: null, branch_code: null },
+              {
+                id: role.id,
+                assignment_id: 'assignment-new',
+                code: role.code,
+                name: role.name,
+                branch_id: null,
+                branch_code: null,
+              },
             ],
           },
           201,
@@ -109,6 +116,9 @@ describe('StaffPage', () => {
           201,
         );
       }
+      if (url.includes('/v1/users/') && init?.method === 'DELETE') {
+        return envelope({ revoked: 'assignment-1', user: 'staff-1' });
+      }
       return page([
         {
           id: 'staff-1',
@@ -117,7 +127,16 @@ describe('StaffPage', () => {
           full_name: 'Existing Cashier',
           is_active: true,
           must_change_password: false,
-          roles: [],
+          roles: [
+            {
+              id: role.id,
+              assignment_id: 'assignment-1',
+              code: role.code,
+              name: role.name,
+              branch_id: null,
+              branch_code: null,
+            },
+          ],
         },
       ]);
     });
@@ -167,5 +186,24 @@ describe('StaffPage', () => {
         String(input).includes('/v1/users/staff-1/roles') && init?.method === 'POST',
     );
     expect(JSON.parse(String(assignmentCall?.[1]?.body))).toMatchObject({ branch: 'branch-1' });
+  });
+
+  it('revokes an existing role assignment from the chip', async () => {
+    renderStaff();
+
+    expect(await screen.findByText('Existing Cashier')).toBeInTheDocument();
+    expect(screen.getByText(/CASHIER @ all branches/)).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove role CASHIER from Existing Cashier' }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/v1/users/staff-1/roles/assignment-1'),
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+    });
+    expect(await screen.findByText('Role removed.')).toBeInTheDocument();
   });
 });
