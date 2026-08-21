@@ -2,7 +2,7 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recha
 import { useTranslation } from 'react-i18next';
 
 import type { ItemSalesRow } from '@/features/reports/api';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 const TOP_N = 10;
 
@@ -18,6 +18,7 @@ interface ChartRow {
  */
 export function ItemSalesChart({ rows }: { rows: ItemSalesRow[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const data: ChartRow[] = rows.slice(0, TOP_N).map((row) => ({
     name: `${row.item_name} (${row.size}/${row.color})`,
     qty: Number(row.qty),
@@ -29,11 +30,7 @@ export function ItemSalesChart({ rows }: { rows: ItemSalesRow[] }) {
   }
 
   return (
-    <div
-      role="img"
-      aria-label={t('reports.itemChart.aria')}
-      className="mb-4 h-64 w-full"
-    >
+    <div role="img" aria-label={t('reports.itemChart.aria')} className="mb-4 h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 8 }}>
           <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />

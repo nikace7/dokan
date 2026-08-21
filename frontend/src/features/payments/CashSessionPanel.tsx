@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { closeCashSession, getCurrentCashSession, openCashSession } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 
 function message(error: unknown, fallback: string): string {
@@ -23,6 +23,7 @@ export function CashSessionPanel() {
   const [countedCash, setCountedCash] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [messageText, setMessageText] = useState<string | null>(null);
+  useMoneyDisplay();
   const query = useQuery({
     queryKey: ['payments', 'cash-session', workspace.branchId],
     queryFn: () => getCurrentCashSession(workspace.branchId ?? ''),

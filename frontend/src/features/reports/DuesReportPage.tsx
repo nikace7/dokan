@@ -7,7 +7,7 @@ import { AGING_BUCKETS, fetchDues } from '@/features/reports/api';
 import type { PayableRow, ReceivableRow } from '@/features/reports/api';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
-import { addPaisa, formatNpr, formatPaisa, toPaisa } from '@/lib/money';
+import { addPaisa, formatNpr, formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 
 /**
  * Dues report — customer udharo aging and supplier payables. Bucket
@@ -35,14 +35,13 @@ export function DuesReportPage() {
 
 function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const columns: readonly ReportColumn[] = [
     { header: t('reports.columns.customer') },
-    ...AGING_BUCKETS.map(
-      (bucket): ReportColumn => ({
-        header: t('reports.dues.days', { bucket }),
-        className: 'text-right',
-      }),
-    ),
+    ...AGING_BUCKETS.map((bucket): ReportColumn => ({
+      header: t('reports.dues.days', { bucket }),
+      className: 'text-right',
+    })),
     { header: t('reports.total'), className: 'text-right' },
   ];
   return (
@@ -108,6 +107,7 @@ function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
 
 function PayablesTable({ rows }: { rows: PayableRow[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const columns: readonly ReportColumn[] = [
     { header: t('reports.columns.supplier') },
     { header: t('reports.columns.payable'), className: 'text-right' },

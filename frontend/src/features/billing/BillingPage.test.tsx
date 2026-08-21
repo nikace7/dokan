@@ -186,6 +186,10 @@ describe('BillingPage', () => {
     expect(screen.getByText(/2083-04-15/)).toBeInTheDocument();
     expect(screen.getByText('Shree Ganesh')).toBeInTheDocument();
     expect(screen.getByText(/PAN\/VAT: 123456789/)).toBeInTheDocument();
+    // Completing a sale must never pop the print/PDF dialog on its own.
+    expect(printMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /reprint/i }));
     await waitFor(() => expect(printMock).toHaveBeenCalledTimes(1));
 
     fireEvent.click(screen.getByRole('button', { name: /reprint/i }));
@@ -216,7 +220,7 @@ describe('BillingPage', () => {
     expect(useCartStore.getState().lines).toHaveLength(0);
   });
 
-  it('uses F9 to complete and print a ready bill', async () => {
+  it('uses F9 to complete a ready bill without auto-printing', async () => {
     installApiMock(envelope(INVOICE, 201));
     renderBilling();
 
@@ -224,7 +228,7 @@ describe('BillingPage', () => {
     fireEvent.keyDown(window, { key: 'F9' });
 
     expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
-    await waitFor(() => expect(printMock).toHaveBeenCalledTimes(1));
+    expect(printMock).not.toHaveBeenCalled();
   });
 
   it('still opens the receipt when print-history recording fails', async () => {
@@ -244,6 +248,10 @@ describe('BillingPage', () => {
     await scanAndAdd('8901234567890');
     fireEvent.click(screen.getByRole('button', { name: /complete sale/i }));
 
+    // The receipt renders fine; only the explicit Reprint hits the failing
+    // print-history endpoint, and the dialog still opens afterwards.
+    expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /reprint/i }));
     expect(await screen.findByText(/print history could not be saved/i)).toBeInTheDocument();
     expect(printMock).toHaveBeenCalledTimes(1);
   });

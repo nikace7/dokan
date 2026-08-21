@@ -10,7 +10,7 @@ import type { PurchaseInvoice, PurchaseInvoiceStatus } from '@/features/purchasi
 import { PurchaseInvoiceForm } from '@/features/purchasing/PurchaseInvoiceForm';
 import { SuppliersPanel } from '@/features/purchasing/SuppliersPanel';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 const STATUS_VARIANTS: Record<PurchaseInvoiceStatus, 'warning' | 'success' | 'secondary'> = {
   DRAFT: 'warning',
@@ -38,6 +38,7 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useMoneyDisplay();
 
   const confirmMutation = useMutation({
     mutationFn: () => confirmInvoice(invoice.id),
@@ -142,6 +143,7 @@ export function PurchasingPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  useMoneyDisplay();
 
   const invoicesQuery = useQuery({
     queryKey: ['purchasing', 'invoices', statusFilter, page],
