@@ -12,7 +12,8 @@ export interface PickedVariant {
   sku: string;
   size: string;
   color: string;
-  mrp: string;
+  /** Null when the variant has no MRP set. */
+  mrp: string | null;
   itemName: string;
   /** Variant min/max SP, falling back to the item's range; null when unset. */
   minPrice: string | null;
@@ -117,7 +118,9 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
                   {variant.size} / {variant.color}{' '}
                   <span className="text-xs text-muted-foreground">{variant.sku}</span>
                 </span>
-                <span className="text-muted-foreground tabular-nums">{formatNpr(variant.mrp)}</span>
+                <span className="text-muted-foreground tabular-nums">
+                  {variant.mrp !== null ? formatNpr(variant.mrp) : '—'}
+                </span>
               </button>
             </li>
           ))}

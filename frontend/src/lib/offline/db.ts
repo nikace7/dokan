@@ -45,7 +45,7 @@ export interface CachedVariant {
   barcode: string | null;
   size: string;
   color: string;
-  mrp: string;
+  mrp: string | null;
   itemName: string;
   cachedAt: string;
 }
