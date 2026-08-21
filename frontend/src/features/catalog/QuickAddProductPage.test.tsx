@@ -167,6 +167,24 @@ describe('QuickAddProductPage', () => {
     expect(quickCreateMock).not.toHaveBeenCalled();
   });
 
+  it('falls back to a Free Size / Standard variant when no size or colour is picked', async () => {
+    quickCreateMock.mockResolvedValue({ ...RESULT, stock_movements: 0 } as never);
+    renderPage();
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: '0001' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Uniqlo Jacket' } });
+
+    // The opening-stock grid always shows the effective single combo.
+    expect(screen.getByLabelText('Quantity for Free Size / Standard')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add product' }));
+
+    await waitFor(() => expect(quickCreateMock).toHaveBeenCalledTimes(1));
+    const payload = submittedPayload();
+    expect(payload.sizes).toEqual(['Free Size']);
+    expect(payload.colors).toEqual(['Standard']);
+    expect(payload).not.toHaveProperty('stock');
+  });
+
   it('shows the API error message when the create fails', async () => {
     quickCreateMock.mockRejectedValue(
       new ApiError(400, { code: 'VALIDATION', message: 'Code 0001 already exists.' }),
