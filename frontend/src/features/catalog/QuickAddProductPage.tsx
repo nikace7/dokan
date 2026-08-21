@@ -41,6 +41,10 @@ function blankToNull(value: string): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
+/** Default single variant for shops that don't track sizes/colours. */
+const DEFAULT_SIZE = 'Free Size';
+const DEFAULT_COLOR = 'Standard';
+
 /**
  * One-page "Add product" flow: item details, size×colour variants, and
  * opening stock in a single POST /catalog/products/quick-create. Replaces
@@ -150,7 +154,7 @@ export function QuickAddProductPage() {
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (!code.trim() || !name.trim() || sizes.length === 0 || colors.length === 0) {
+    if (!code.trim() || !name.trim()) {
       setError(t('catalog.quickCreate.errorRequired'));
       return;
     }
@@ -190,16 +194,20 @@ export function QuickAddProductPage() {
       min_selling_price: blankToNull(minPrice),
       max_selling_price: blankToNull(maxPrice),
       reorder_level: blankToNull(reorderLevel),
-      sizes,
-      colors,
+      sizes: effectiveSizes,
+      colors: effectiveColors,
       mrp: blankToNull(mrp),
       ...(stock ? { stock } : {}),
     });
   };
 
+  // Sizes/colours are optional: a shop that doesn't track them gets one
+  // "Free Size / Standard" variant — the same default the data setup used.
+  const effectiveSizes = sizes.length > 0 ? sizes : [DEFAULT_SIZE];
+  const effectiveColors = colors.length > 0 ? colors : [DEFAULT_COLOR];
+
   const branchName =
     workspace.branches.find((branch) => branch.id === workspace.branchId)?.name ?? null;
-  const stockReady = sizes.length > 0 && colors.length > 0;
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 p-4">
@@ -311,6 +319,9 @@ export function QuickAddProductPage() {
           </Card>
 
           <Card title={t('catalog.quickCreate.variantsSection')}>
+            <p className="mb-3 text-xs text-muted-foreground">
+              {t('catalog.quickCreate.sizeColourOptionalHint')}
+            </p>
             <SizesColoursSection
               sizeCharts={taxonomies.data?.sizeCharts ?? []}
               sizeChart={sizeChart}
@@ -336,23 +347,21 @@ export function QuickAddProductPage() {
             />
           </Card>
 
-          {stockReady ? (
-            <Card title={t('catalog.quickCreate.stockSection')}>
-              <OpeningStockSection
-                sizes={sizes}
-                colors={colors}
-                quantities={quantities}
-                onQuantityChange={(key, value) =>
-                  setQuantities((current) => ({ ...current, [key]: value }))
-                }
-                unitCost={unitCost}
-                onUnitCostChange={setUnitCost}
-                note={note}
-                onNoteChange={setNote}
-                branchName={branchName}
-              />
-            </Card>
-          ) : null}
+          <Card title={t('catalog.quickCreate.stockSection')}>
+            <OpeningStockSection
+              sizes={effectiveSizes}
+              colors={effectiveColors}
+              quantities={quantities}
+              onQuantityChange={(key, value) =>
+                setQuantities((current) => ({ ...current, [key]: value }))
+              }
+              unitCost={unitCost}
+              onUnitCostChange={setUnitCost}
+              note={note}
+              onNoteChange={setNote}
+              branchName={branchName}
+            />
+          </Card>
 
           {error ? (
             <p
