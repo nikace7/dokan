@@ -5,6 +5,7 @@ import { onPlatformSignedOut } from '@/features/admin/authed';
 import { isPlatformHost } from '@/features/admin/supportHandoff';
 import { onSignedOut } from '@/lib/api/authed';
 import { initOfflineSync } from '@/lib/offline/sync';
+import { initVersionCheck } from '@/lib/versionCheck';
 
 import { AppProviders } from './providers';
 import { AppRouter } from './router';
@@ -31,6 +32,10 @@ export default function App() {
         : onSignedOut(() => window.location.assign('/login')),
     [platformHost],
   );
+
+  // Long-lived tabs/PWAs never reload themselves — poll the build stamp and
+  // toast a reload action once a newer deploy exists (both portals).
+  useEffect(() => initVersionCheck(), []);
 
   return <AppProviders>{platformHost ? <AdminRouter /> : <AppRouter />}</AppProviders>;
 }
