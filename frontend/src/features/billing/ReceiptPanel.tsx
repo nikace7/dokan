@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -18,6 +18,10 @@ interface ReceiptPanelProps {
  * Post-sale receipt. Every figure here comes from the server's response —
  * the client never re-derives invoice totals.
  *
+ * Printing is always explicit: completing a sale never pops the print/PDF
+ * dialog on its own — the counter presses Reprint (the print count and
+ * "Copy N" marker only move on those deliberate prints).
+ *
  * The receipt BODY is deliberately bilingual ("Invoice / बिल", fixed 80mm
  * print layout) and does NOT go through i18n — only the screen-only chrome
  * (Sale completed, Reprint, New bill) is translated.
@@ -31,7 +35,6 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
   const [printCount, setPrintCount] = useState(invoice.print_count);
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
-  const autoPrintStarted = useRef(false);
   const printInFlight = useRef(false);
   const invoiceNumber = `${invoice.doc_type === 'RETURN' ? 'RET' : invoice.invoice_prefix}-${invoice.invoice_no}`;
 
@@ -51,12 +54,6 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
       setIsPrinting(false);
     }
   }, [invoice.id, t]);
-
-  useEffect(() => {
-    if (autoPrintStarted.current) return;
-    autoPrintStarted.current = true;
-    void printReceipt();
-  }, [printReceipt]);
 
   return (
     <Card id="sales-receipt" className="mx-auto max-w-lg">

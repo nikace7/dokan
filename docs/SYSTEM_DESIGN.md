@@ -715,7 +715,7 @@ Tiles are role-filtered. A cashier sees two tiles and one button. Nothing else o
 │                                            │  [ कार्ड ] [ उधारो ] │
 │                                            │                      │
 │                                            │  ┏━━━━━━━━━━━━━━━━┓  │
-│ [F3] Hold   [F4] Customer   [F7] Discount │  ┃ F9 सेभ + प्रिन्ट┃  │
+│ [F3] Hold   [F4] Customer   [F7] Discount │  ┃   F9 सेभ      ┃  │
 └────────────────────────────────────────────┴──━━━━━━━━━━━━━━━━━──┘
 ```
 
@@ -727,7 +727,7 @@ Interaction contract:
 - Out-of-stock shows a red qty and a warning; `tenant_setting.allow_negative_stock` decides block vs. warn. Default **warn**, because the garment is physically in the customer's hand.
 - Split payment: tap two methods, the second auto-fills the remainder.
 - `Udharo` requires a customer and checks `credit_limit`; over limit needs manager approval.
-- F9 saves + prints. Print preview is skipped by default (setting).
+- F9 saves the bill and shows the receipt. Printing is always a separate, deliberate tap on **Reprint** — completing a sale never opens the print/PDF dialog on its own.
 - The whole screen works at 1024×768 and on a 10" tablet.
 
 ### 7.4 Stock entry — the size × colour matrix
