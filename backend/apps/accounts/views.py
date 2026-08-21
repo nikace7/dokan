@@ -17,7 +17,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts import selectors, services
-from apps.accounts.models import Role, User
+from apps.accounts.models import Role, User, UserRole
 from apps.accounts.selectors import get_permission_codes
 from apps.accounts.serializers import (
     MeSerializer,
@@ -273,6 +273,23 @@ class StaffRoleAssignmentView(_AccountsManagementAPIView):
             },
             status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+
+class StaffRoleRevokeView(_AccountsManagementAPIView):
+    """DELETE /users/<id>/roles/<assignment_id> — revoke one assignment."""
+
+    method_permissions: ClassVar[dict[str, str]] = {
+        "DELETE": "user.manage",
+    }
+
+    def delete(self, request: Request, pk: UUID, assignment_id: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        user = _tenant_object(tenant, User, pk, "Staff account")
+        assignment = _tenant_object(tenant, UserRole, assignment_id, "Role assignment")
+        services.unassign_staff_role(
+            tenant, actor=_user(request), user=user, assignment=assignment, request=request
+        )
+        return ok({"revoked": str(assignment_id), "user": str(user.id)})
 
 
 def _tenant_object(tenant: Any, model: Any, pk: UUID, what: str) -> Any:

@@ -14,6 +14,9 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.accounts.models import Permission, Role, RolePermission, User, UserRole
+from apps.accounts.services.staff_roles import (
+    unassign_staff_role as unassign_staff_role,
+)
 from apps.audit.services import audit
 from apps.tenants.services import enforce_creation_limit
 from core.responses import ServiceError
