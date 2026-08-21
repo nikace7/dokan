@@ -22,7 +22,7 @@ One shop can run its entire counter on Dokan. Shipped:
 | Catalog | Category tree, brands, size charts, items, variants, size×colour matrix entry, barcode/SKU POS lookup (ADR 0003) |
 | Inventory | Immutable `stock_movement` ledger + `stock_level` projection, opening stock, signed adjustments, damage write-offs, moving weighted average |
 | Pricing | Rate types, effective-dated scoped prices, min/max guardrails, price change log (ADR 0005) — see `docs/RATE_RULES.md` |
-| Sales | One-transaction POS billing, held bills, gapless numbering, `Idempotency-Key` with 200-replay, open-cash-session guard, F9 auto-print, 80mm bilingual receipts |
+| Sales | One-transaction POS billing, held bills, gapless numbering, `Idempotency-Key` with 200-replay, open-cash-session guard, F9 quick-complete, on-demand 80mm bilingual receipts |
 | Customers | CRUD with partial-unique phone, credit limit gated on `customer.credit` |
 | Payments | Append-only payments + allocations, canonical ledger-derived outstanding, reversals, cash sessions with tender-aware day close |
 | Reports | Daily/monthly/item sales, stock summary/low/dead, profit (gated), dues, VAT registers, role-filtered dashboard |

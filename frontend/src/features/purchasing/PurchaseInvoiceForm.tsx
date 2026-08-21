@@ -14,7 +14,7 @@ import { VariantPicker } from '@/features/catalog/VariantPicker';
 import { ApiError } from '@/lib/api/client';
 import { MoneyError, multiplyPaisa, toPaisa } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
-import { formatPaisa } from '@/lib/money';
+import { formatPaisa, useMoneyDisplay } from '@/lib/money';
 import { hasPlanFeature } from '@/lib/plans';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 
@@ -71,6 +71,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
   const [note, setNote] = useState('');
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [error, setError] = useState<string | null>(null);
+  useMoneyDisplay();
 
   const suppliersQuery = useQuery({
     queryKey: ['purchasing', 'suppliers'],

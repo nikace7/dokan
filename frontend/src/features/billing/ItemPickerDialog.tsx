@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { searchVariantsForSale } from '@/features/billing/api';
 import type { VariantForSale } from '@/features/billing/api';
 import { ItemImage } from '@/features/catalog/ui';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 const DEBOUNCE_MS = 300;
 
@@ -34,6 +34,7 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
+  useMoneyDisplay();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(search.trim()), DEBOUNCE_MS);
@@ -73,7 +74,11 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
         />
         <div className="-mx-1 flex-1 overflow-y-auto px-1">
           {query.isPending ? (
-            <div role="status" aria-label={t('simpleSale.picker.loadingAria')} className="space-y-2">
+            <div
+              role="status"
+              aria-label={t('simpleSale.picker.loadingAria')}
+              className="space-y-2"
+            >
               <Skeleton className="h-14 w-full" />
               <Skeleton className="h-14 w-full" />
               <Skeleton className="h-14 w-full" />

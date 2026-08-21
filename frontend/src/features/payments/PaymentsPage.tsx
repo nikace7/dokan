@@ -21,7 +21,7 @@ import { InvoiceAllocationPicker } from '@/features/payments/InvoiceAllocationPi
 import { SupplierPaymentForm } from '@/features/payments/SupplierPaymentForm';
 import type { Payment, ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 
 const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
@@ -210,7 +210,11 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         value={refNo}
         onChange={(event) => setRefNo(event.target.value)}
       />
-      <Input label={t('common.note')} value={note} onChange={(event) => setNote(event.target.value)} />
+      <Input
+        label={t('common.note')}
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
+      />
       {error ? (
         <p role="alert" className="text-sm text-destructive sm:col-span-2">
           {error}
@@ -228,6 +232,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
 /** Payment history: card list below `md`, full table from `md` up. */
 function PaymentList({ payments }: { payments: Payment[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   return (
     <>
       <ul className="divide-y divide-border md:hidden">

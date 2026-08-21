@@ -11,7 +11,7 @@ import {
   stockQty,
 } from '@/features/billing/simpleSaleModel';
 import type { SimpleLine } from '@/features/billing/simpleSaleModel';
-import { formatPaisa } from '@/lib/money';
+import { formatPaisa, useMoneyDisplay } from '@/lib/money';
 
 interface SimpleSaleLineCardProps {
   line: SimpleLine;
@@ -25,6 +25,7 @@ interface SimpleSaleLineCardProps {
  */
 export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineCardProps) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const { variant } = line;
   const total = lineTotalPaisa(line);
   const hint = priceRangeHint(variant);
@@ -90,7 +91,9 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
 
       <p className="mt-2 text-right text-sm">
         <span className="text-muted-foreground">{t('simpleSale.line.lineTotal')}: </span>
-        <span className="font-semibold">{total === null ? '—' : formatPaisa(total, { symbol: 'auto' })}</span>
+        <span className="font-semibold">
+          {total === null ? '—' : formatPaisa(total, { symbol: 'auto' })}
+        </span>
       </p>
     </section>
   );

@@ -10,7 +10,7 @@ import { BsRangeControls } from '@/features/reports/BsRangeControls';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 /**
  * Profit report — revenue / COGS / gross (and net when the backend subtracts
@@ -63,7 +63,11 @@ function ProfitResults({ data }: { data: ProfitReport }) {
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label={t('reports.profit.revenue')} value={data.totals.revenue} />
         <StatCard label={t('reports.profit.costOfGoods')} value={data.totals.cogs} />
-        <StatCard label={t('reports.profit.grossProfit')} value={data.totals.gross_profit} highlight />
+        <StatCard
+          label={t('reports.profit.grossProfit')}
+          value={data.totals.gross_profit}
+          highlight
+        />
         {hasNet ? (
           <StatCard
             label={t('reports.profit.netProfit')}
@@ -86,6 +90,7 @@ function StatCard({
   value: string;
   highlight?: boolean;
 }) {
+  useMoneyDisplay();
   return (
     <div
       className={
@@ -102,6 +107,7 @@ function StatCard({
 
 function ProfitTable({ rows, hasNet }: { rows: ProfitRow[]; hasNet: boolean }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const money = (amount: string | undefined) => formatNpr(amount ?? '0.00', { symbol: '' });
   const columns: ReportColumn[] = [
     { header: t('reports.columns.bsMonth') },
@@ -152,7 +158,9 @@ function ProfitTable({ rows, hasNet }: { rows: ProfitRow[]; hasNet: boolean }) {
           <p className="mt-1 text-xs text-muted-foreground">
             {t('reports.profit.cardRevenue', { amount: money(row.revenue) })} ·{' '}
             {t('reports.profit.cardCogs', { amount: money(row.cogs) })}
-            {hasNet ? ` · ${t('reports.profit.cardExpenses', { amount: money(row.expenses) })}` : ''}
+            {hasNet
+              ? ` · ${t('reports.profit.cardExpenses', { amount: money(row.expenses) })}`
+              : ''}
           </p>
         </div>
       )}

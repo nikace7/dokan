@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { CustomerPicker } from '@/features/billing/CustomerPicker';
 import type { PaymentMethod } from '@/features/billing/api';
-import { formatPaisa, toPaisa } from '@/lib/money';
+import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 import { cartTotalPaisa, useCartStore } from '@/stores/cartStore';
 
@@ -47,6 +47,7 @@ export function PaymentPanel({
   const [amountRaw, setAmountRaw] = useState('');
   const [isVatBill, setIsVatBill] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useMoneyDisplay();
 
   const totalPaisa = cartTotalPaisa(lines);
   let tenderPaisa: Paisa | null = null;
@@ -105,7 +106,11 @@ export function PaymentPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="group" aria-label={t('simpleSale.paymentMethod')} className="grid grid-cols-3 gap-2">
+      <div
+        role="group"
+        aria-label={t('simpleSale.paymentMethod')}
+        className="grid grid-cols-3 gap-2"
+      >
         {METHODS.map((m) => (
           <button
             key={m.id}

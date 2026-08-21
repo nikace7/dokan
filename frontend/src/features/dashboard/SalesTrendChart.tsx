@@ -10,7 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { DashboardSalesDay } from '@/features/dashboard/api';
-import { formatNpr, toPaisa } from '@/lib/money';
+import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
 
 function money(value: string): string {
   return formatNpr(value).replace(/\.00$/, '');
@@ -40,6 +40,7 @@ interface TrendPoint {
  */
 export function SalesTrendChart({ rows }: { rows: DashboardSalesDay[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const points: TrendPoint[] = rows.map((row) => ({
     date: row.business_date_bs,
     paisa: toPaisa(row.net_total),

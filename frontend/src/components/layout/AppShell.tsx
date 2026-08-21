@@ -343,9 +343,10 @@ export function AppShell() {
   const { user, signOut } = useAuth();
   const { t } = useTranslation();
   const items = useVisibleNavItems();
-  // Subscribing to display re-renders the whole shell (and thus the routed
-  // page) on toggle, so every money.ts format call re-runs in the new currency.
-  useCurrencyStore((state) => state.display);
+  // NOTE: money.ts formatters read the currency store non-reactively, so
+  // components that render amounts subscribe via useMoneyDisplay() — a bare
+  // subscription here would NOT re-render the routed page (<Outlet> returns
+  // a stable element reference and React bails out of the subtree).
   const setBaseCurrency = useCurrencyStore((state) => state.setBase);
   useEffect(() => {
     if (user?.currency) {
@@ -392,15 +393,15 @@ export function AppShell() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
-        <span className="flex max-w-56 items-center gap-2">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b bg-background px-4 md:hidden">
+        <span className="flex min-w-0 max-w-32 items-center gap-2 sm:max-w-56">
           <img src={brandMark} alt="" className="h-7 w-7 shrink-0" />
           <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <CurrencyToggle />
           <LanguageToggle />
-          <span className="max-w-40 truncate text-sm text-muted-foreground">
+          <span className="hidden max-w-40 truncate text-sm text-muted-foreground sm:inline">
             {user?.full_name}
           </span>
         </div>

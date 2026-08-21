@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Paisa } from '@/lib/money';
-import { formatPaisa } from '@/lib/money';
+import { formatPaisa, useMoneyDisplay } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 /** Pastel icon-chip tints — one per `--tint-*` pair in styles/tokens.css. */
@@ -89,6 +89,7 @@ export function StatTile({
   isLoading = false,
   className,
 }: StatTileProps) {
+  useMoneyDisplay();
   if (isLoading) {
     return (
       <div
@@ -106,14 +107,13 @@ export function StatTile({
     );
   }
 
-  const displayValue = valuePaisa !== undefined ? formatPaisa(valuePaisa, { symbol: 'auto' }) : value;
+  const displayValue =
+    valuePaisa !== undefined ? formatPaisa(valuePaisa, { symbol: 'auto' }) : value;
 
   return (
     <div className={cn('rounded-xl border bg-card p-4 shadow-card', className)}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
         <span className={chipVariants({ tint })}>
           <Icon />
         </span>
