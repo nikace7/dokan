@@ -268,3 +268,99 @@ class TestRoleManagement:
 
         assert response.status_code == 409
         assert response.json()["error"]["code"] == "ROLE_IN_USE"
+
+
+class TestStaffRoleRevocation:
+    def test_revokes_role_and_invalidates_permission_cache(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+        staff = UserFactory(tenant=tenant)
+        role = RoleFactory(tenant=tenant, code="CASHIER", name="Cashier")
+        RolePermissionFactory(
+            tenant=tenant,
+            role=role,
+            permission=Permission.objects.get(code="sale.create"),
+        )
+        assignment = UserRoleFactory(tenant=tenant, user=staff, role=role)
+        assert staff.has_perm("sale.create") is True
+
+        response = auth_client(owner, tenant.slug).delete(
+            f"{USERS_URL}/{staff.pk}/roles/{assignment.pk}", **host(tenant.slug)
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"]["revoked"] == str(assignment.pk)
+        assert not UserRole.objects.filter(pk=assignment.pk).exists()
+        assert staff.has_perm("sale.create") is False
+        audit_row = AuditLog.objects.get(tenant=tenant, action="user.role.revoke")
+        assert audit_row.before == {"role": "CASHIER", "branch": None}
+
+    def test_revoke_requires_authentication_and_permission(self, tenant: Any) -> None:
+        assignment = UserRoleFactory(
+            tenant=tenant, user=UserFactory(tenant=tenant), role=RoleFactory(tenant=tenant)
+        )
+        url = f"{USERS_URL}/{assignment.user_id}/roles/{assignment.pk}"
+        assert APIClient().delete(url, **host(tenant.slug)).status_code == 401
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+        assert auth_client(user, tenant.slug).delete(url, **host(tenant.slug)).status_code == 403
+
+    def test_revoke_rejects_wrong_tenant_and_wrong_user(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+        staff = UserFactory(tenant=tenant)
+        other_staff = UserFactory(tenant=tenant)
+        assignment = UserRoleFactory(tenant=tenant, user=staff, role=RoleFactory(tenant=tenant))
+        foreign_assignment = UserRoleFactory(
+            tenant=TenantFactory(slug="foreigntenant"),
+            user=UserFactory(tenant=TenantFactory(slug="foreigntenant2")),
+            role=RoleFactory(tenant=TenantFactory(slug="foreigntenant3")),
+        )
+        client = auth_client(owner, tenant.slug)
+
+        wrong_user = client.delete(
+            f"{USERS_URL}/{other_staff.pk}/roles/{assignment.pk}", **host(tenant.slug)
+        )
+        foreign = client.delete(
+            f"{USERS_URL}/{staff.pk}/roles/{foreign_assignment.pk}", **host(tenant.slug)
+        )
+
+        assert wrong_user.status_code == 404
+        assert foreign.status_code == 404
+        assert UserRole.objects.filter(pk=assignment.pk).exists()
+
+    def test_last_owner_assignment_cannot_be_revoked(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+        owner_role = RoleFactory(tenant=tenant, code="OWNER", name="Owner", is_system=True)
+        assignment = UserRoleFactory(tenant=tenant, user=owner, role=owner_role)
+        client = auth_client(owner, tenant.slug)
+
+        blocked = client.delete(
+            f"{USERS_URL}/{owner.pk}/roles/{assignment.pk}", **host(tenant.slug)
+        )
+
+        assert blocked.status_code == 400
+        assert blocked.json()["error"]["code"] == "LAST_OWNER_ROLE"
+        assert UserRole.objects.filter(pk=assignment.pk).exists()
+
+        second = UserRoleFactory(tenant=tenant, user=UserFactory(tenant=tenant), role=owner_role)
+        allowed = client.delete(
+            f"{USERS_URL}/{owner.pk}/roles/{assignment.pk}", **host(tenant.slug)
+        )
+
+        assert allowed.status_code == 200
+        assert UserRole.objects.filter(pk=second.pk).exists()
+
+    def test_staff_list_exposes_assignment_id(self, tenant: Any) -> None:
+        owner = UserFactory(tenant=tenant)
+        grant(tenant, owner, "user.manage")
+        staff = UserFactory(tenant=tenant)
+        assignment = UserRoleFactory(tenant=tenant, user=staff, role=RoleFactory(tenant=tenant))
+
+        response = auth_client(owner, tenant.slug).get(USERS_URL, **host(tenant.slug))
+
+        members = {row["id"]: row for row in response.json()["data"]}
+        roles = members[str(staff.pk)]["roles"]
+        assert roles[0]["assignment_id"] == str(assignment.pk)
+        assert roles[0]["id"] == str(assignment.role_id)

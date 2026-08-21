@@ -588,6 +588,9 @@
       "assign": "Assign",
       "assigned": "Role assigned.",
       "assignError": "Could not assign the role.",
+      "revoked": "Role removed.",
+      "revokeError": "Could not remove the role.",
+      "revokeRole": "Remove role {{role}} from {{name}}",
       "rolesTitle": "Available roles",
       "noRoles": "No roles configured.",
       "noPermissions": "No permissions"
