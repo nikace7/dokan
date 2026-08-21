@@ -6,7 +6,7 @@
   "description": "Frontend for the multi-tenant clothing shop management system (Nepal).",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/stamp-version.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -2,6 +2,8 @@
   "common": {
     "loading": "Loading…",
     "networkError": "Could not reach the server. Check your connection and try again.",
+    "updateAvailable": "A new version of the app is available.",
+    "reload": "Reload",
     "remove": "Remove ✕",
     "stock": "Stock {{qty}}",
     "previous": "Previous",
