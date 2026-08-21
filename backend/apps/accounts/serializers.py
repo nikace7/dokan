@@ -92,6 +92,7 @@ class StaffUserSerializer(serializers.ModelSerializer):
         return [
             {
                 "id": str(assignment.role_id),
+                "assignment_id": str(assignment.pk),
                 "code": assignment.role.code,
                 "name": assignment.role.name,
                 "branch_id": str(assignment.branch_id) if assignment.branch_id else None,
