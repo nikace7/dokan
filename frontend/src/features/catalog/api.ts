@@ -87,7 +87,7 @@ export interface ItemVariant {
   color_hex: string | null;
   sku: string;
   barcode: string | null;
-  mrp: string;
+  mrp: string | null;
   min_selling_price: string | null;
   max_selling_price: string | null;
   /** Only present for users with `pricing.view_cost` — never assume it. */
