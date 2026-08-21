@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +17,20 @@ export interface PickedVariant {
   /** Variant min/max SP, falling back to the item's range; null when unset. */
   minPrice: string | null;
   maxPrice: string | null;
+}
+
+/** Map an item + variant row to the picked shape (price range falls back to the item's). */
+function toPicked(item: Item, variant: ItemVariant): PickedVariant {
+  return {
+    id: variant.id,
+    sku: variant.sku,
+    size: variant.size,
+    color: variant.color,
+    mrp: variant.mrp,
+    itemName: item.name,
+    minPrice: variant.min_selling_price ?? item.min_selling_price ?? null,
+    maxPrice: variant.max_selling_price ?? item.max_selling_price ?? null,
+  };
 }
 
 interface VariantPickerProps {
@@ -50,8 +64,20 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
     staleTime: 30_000,
   });
 
+  const variants = variantsQuery.data?.data;
+
+  // Single-variant items skip the second tap: the only choice is picked
+  // automatically once the variant list loads.
+  useEffect(() => {
+    if (item && variants && variants.length === 1) {
+      onPick(toPicked(item, variants[0]));
+      setItem(null);
+      setSearch('');
+    }
+  }, [item, variants, onPick]);
+
   if (item) {
-    const variants = variantsQuery.data?.data ?? [];
+    const variantRows = variants ?? [];
     return (
       <div className="rounded-md border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border bg-muted/50 px-3 py-2 text-sm">
@@ -72,26 +98,17 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
         {variantsQuery.isFetching ? (
           <p className="px-3 py-2 text-sm text-muted-foreground">{t('catalog.picker.loading')}</p>
         ) : null}
-        {variantsQuery.data && variants.length === 0 ? (
+        {variantsQuery.data && variantRows.length === 0 ? (
           <p className="px-3 py-2 text-sm text-muted-foreground">{t('catalog.picker.empty')}</p>
         ) : null}
         <ul className="max-h-48 divide-y divide-border overflow-y-auto">
-          {variants.map((variant: ItemVariant) => (
+          {variantRows.map((variant: ItemVariant) => (
             <li key={variant.id}>
               <button
                 type="button"
                 className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => {
-                  onPick({
-                    id: variant.id,
-                    sku: variant.sku,
-                    size: variant.size,
-                    color: variant.color,
-                    mrp: variant.mrp,
-                    itemName: item.name,
-                    minPrice: variant.min_selling_price ?? item.min_selling_price ?? null,
-                    maxPrice: variant.max_selling_price ?? item.max_selling_price ?? null,
-                  });
+                  onPick(toPicked(item, variant));
                   setItem(null);
                   setSearch('');
                 }}
