@@ -20,7 +20,7 @@ import type { DashboardBill } from '@/features/dashboard/api';
 import { SalesTrendChart } from '@/features/dashboard/SalesTrendChart';
 import { currentBsMonthRange } from '@/features/reports/api';
 import { useWorkspace } from '@/features/settings/useWorkspace';
-import { formatNpr, toPaisa } from '@/lib/money';
+import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 import { billingPath } from '@/lib/plans';
 
@@ -41,6 +41,7 @@ export function DashboardPage() {
   const { user } = useAuth();
   const workspace = useWorkspace();
   const navigate = useNavigate();
+  useMoneyDisplay();
 
   const dashboard = useQuery({
     queryKey: ['dashboard'],
@@ -334,6 +335,7 @@ function RecentBills({
   canViewSalesReport: boolean;
 }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   return (
     <Card
       title={t('dashboard.recentBills')}

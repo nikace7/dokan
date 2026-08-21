@@ -19,7 +19,7 @@ import type {
   VariantLookup,
 } from '@/features/exchange/api';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 const PAYMENT_METHODS: ExchangePaymentMethod[] = [
   'CASH',
@@ -269,6 +269,7 @@ export function ExchangePage() {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  useMoneyDisplay();
   const salesQuery = useQuery({
     queryKey: ['exchange', 'sales', page],
     queryFn: () => listSales(page),

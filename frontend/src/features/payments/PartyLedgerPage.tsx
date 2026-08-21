@@ -20,7 +20,7 @@ import type { LedgerRow } from '@/features/payments/api';
 import { listSuppliers } from '@/features/purchasing/api';
 import type { Supplier } from '@/features/purchasing/api';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 type Party = 'customer' | 'supplier';
 
@@ -163,7 +163,9 @@ function PartySearch({
       <Input
         label={party === 'customer' ? t('payments.customer') : t('payments.supplier')}
         aria-label={
-          party === 'customer' ? t('payments.ledger.customerAria') : t('payments.ledger.supplierAria')
+          party === 'customer'
+            ? t('payments.ledger.customerAria')
+            : t('payments.ledger.supplierAria')
         }
         value={search}
         onChange={(event) =>
@@ -201,6 +203,7 @@ function PartySearch({
 /** Ledger rows: card list below `md`, full table from `md` up. */
 function LedgerTable({ rows }: { rows: LedgerRow[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   if (rows.length === 0) {
     return (
       <p className="mt-4 py-8 text-center text-sm text-muted-foreground">

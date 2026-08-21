@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { listLevels } from '@/features/inventory/api';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 interface VariantStockInfoProps {
   variant: PickedVariant;
@@ -22,6 +22,7 @@ function qtyDisplay(raw: string): string {
  */
 export function VariantStockInfo({ variant, branchId }: VariantStockInfoProps) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const levelQuery = useQuery({
     queryKey: ['inventory', 'levels', 'variant', branchId, variant.id],
     queryFn: () => listLevels({ branch: branchId ?? undefined, variant: variant.id }),

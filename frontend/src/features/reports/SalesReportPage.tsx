@@ -13,7 +13,7 @@ import { BsRangeControls } from '@/features/reports/BsRangeControls';
 import { ItemSalesChart } from '@/features/reports/ItemSalesChart';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
-import { addPaisa, formatNpr, formatPaisa, toPaisa } from '@/lib/money';
+import { addPaisa, formatNpr, formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 
 type Tab = 'daily' | 'monthly' | 'items';
@@ -109,6 +109,7 @@ export function SalesReportPage() {
 
 function DailyTable({ rows }: { rows: DailySalesRow[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const columns: readonly ReportColumn[] = [
     { header: t('reports.columns.dateBs') },
     { header: t('reports.columns.bills'), className: 'text-right' },
@@ -205,6 +206,7 @@ function DailyTable({ rows }: { rows: DailySalesRow[] }) {
 
 function MonthlyTable({ rows }: { rows: MonthlySalesRow[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const columns: readonly ReportColumn[] = [
     { header: t('reports.columns.bsMonth') },
     { header: t('reports.columns.bills'), className: 'text-right' },
@@ -266,6 +268,7 @@ function MonthlyTable({ rows }: { rows: MonthlySalesRow[] }) {
 
 function ItemsTable({ rows }: { rows: ItemSalesRow[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   const columns: readonly ReportColumn[] = [
     { header: t('reports.columns.sku') },
     { header: t('reports.columns.item') },

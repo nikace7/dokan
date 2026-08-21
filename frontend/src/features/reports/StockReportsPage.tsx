@@ -12,7 +12,7 @@ import { fetchDeadStock, fetchLowStock, fetchStockSummary } from '@/features/rep
 import type { DeadStockRow, LowStockRow, StockSummaryRow } from '@/features/reports/api';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 type Tab = 'summary' | 'low' | 'dead';
 
@@ -135,6 +135,7 @@ export function StockReportsPage() {
 
 function SummaryTable({ rows }: { rows: StockSummaryRow[] }) {
   const { t } = useTranslation();
+  useMoneyDisplay();
   // The backend includes cost columns only for pricing.view_cost users.
   const showCost = rows.some((row) => row.avg_cost !== undefined);
   const columns: ReportColumn[] = [

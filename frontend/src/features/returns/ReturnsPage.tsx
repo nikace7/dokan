@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { createReturn, getReturnableLines, listSales } from '@/features/returns/api';
 import type { RefundMethod, ReturnableLine, SaleSummary } from '@/features/returns/api';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 const REFUND_METHODS: RefundMethod[] = [
   'CREDIT_NOTE',
@@ -180,6 +180,7 @@ export function ReturnsPage() {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  useMoneyDisplay();
   const salesQuery = useQuery({
     queryKey: ['returns', 'sales', page],
     queryFn: () => listSales(page),

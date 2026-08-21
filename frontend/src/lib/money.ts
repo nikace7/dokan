@@ -137,3 +137,19 @@ export function formatPaisa(paisa: Paisa, options: FormatMoneyOptions = {}): str
 export function formatNpr(amount: number | string, options: FormatMoneyOptions = {}): string {
   return formatPaisa(toPaisa(amount), { symbol: 'auto', ...options });
 }
+
+/**
+ * Subscribe the calling component to currency state so its `formatNpr` /
+ * `formatPaisa` output re-renders when the NPR/INR toggle flips (or the base
+ * currency loads from /auth/me).
+ *
+ * The formatters above read the store non-reactively (`getState()`) so they
+ * stay callable anywhere — the price is that a component which renders
+ * amounts MUST call this hook once at its top. Without it a currency change
+ * only appears after the next unrelated re-render or a full page refresh.
+ * Documents pinned to `currency: base` (receipts) may skip it.
+ */
+export function useMoneyDisplay(): void {
+  useCurrencyStore((state) => state.base);
+  useCurrencyStore((state) => state.display);
+}

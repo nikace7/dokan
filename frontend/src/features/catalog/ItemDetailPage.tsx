@@ -10,7 +10,7 @@ import { ItemImage } from '@/features/catalog/ui';
 import { VariantMatrix } from '@/features/catalog/VariantMatrix';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
-import { formatNpr } from '@/lib/money';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 /**
  * Item detail: summary, existing variants, and the size × colour matrix
@@ -20,6 +20,7 @@ export function ItemDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  useMoneyDisplay();
 
   const itemQuery = useQuery({
     queryKey: ['catalog', 'items', 'detail', id],
@@ -49,7 +50,9 @@ export function ItemDetailPage() {
     return (
       <main className="mx-auto max-w-4xl p-4">
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {itemQuery.error instanceof Error ? itemQuery.error.message : t('catalog.detail.notFound')}
+          {itemQuery.error instanceof Error
+            ? itemQuery.error.message
+            : t('catalog.detail.notFound')}
         </p>
         <Link className="mt-2 inline-block text-primary hover:underline" to="/catalog">
           {t('catalog.detail.back')}
