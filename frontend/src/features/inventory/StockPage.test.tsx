@@ -120,7 +120,9 @@ function mockBase(permissions: string[]) {
 async function pickVariant() {
   fireEvent.change(screen.getByLabelText('Search items'), { target: { value: 'shirt' } });
   fireEvent.click(await screen.findByRole('button', { name: /Oxford Shirt/ }));
-  fireEvent.click(await screen.findByRole('button', { name: /M \/ Blue/ }));
+  // The mocked item has exactly one variant, so the picker auto-picks it and
+  // the picked chip (name — size / colour) replaces the picker.
+  await screen.findByText(/M \/ Blue/);
 }
 
 describe('StockPage', () => {
