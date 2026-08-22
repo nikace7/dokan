@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -15,14 +17,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Customer } from '@/features/billing/api';
-import { listPayments, recordReceipt, searchCustomers } from '@/features/payments/api';
+import { getCustomer, listPayments, recordReceipt } from '@/features/payments/api';
+import type { Payment, ReceiptMethod } from '@/features/payments/api';
 import { CashSessionPanel } from '@/features/payments/CashSessionPanel';
+import { CustomerField } from '@/features/payments/CustomerField';
 import { InvoiceAllocationPicker } from '@/features/payments/InvoiceAllocationPicker';
 import { SupplierPaymentForm } from '@/features/payments/SupplierPaymentForm';
-import type { Payment, ReceiptMethod } from '@/features/payments/api';
+import { useWorkspace } from '@/features/settings/useWorkspace';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
-import { useWorkspace } from '@/features/settings/useWorkspace';
 
 const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
 
@@ -33,77 +36,11 @@ function message(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
 }
 
-function CustomerField({
-  customer,
-  search,
-  onSearch,
-  onSelect,
-  onClear,
-}: {
-  customer: Customer | null;
-  search: string;
-  onSearch: (value: string) => void;
-  onSelect: (value: Customer) => void;
-  onClear: () => void;
-}) {
-  const { t } = useTranslation();
-  const query = useQuery({
-    queryKey: ['payments', 'customers', search],
-    queryFn: () => searchCustomers(search),
-    enabled: search.trim().length >= 2 && !customer,
-    staleTime: 30_000,
-  });
-
-  if (customer) {
-    return (
-      <div className="flex items-center justify-between rounded-md border border-primary/30 bg-accent px-3 py-2">
-        <span className="text-sm">
-          <strong>{customer.name}</strong>{' '}
-          <span className="text-muted-foreground">{customer.phone}</span>
-        </span>
-        <Button type="button" variant="secondary" size="sm" onClick={onClear}>
-          {t('common.change')}
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <Input
-        label={t('payments.customer')}
-        aria-label={t('payments.customerSearchAria')}
-        value={search}
-        onChange={(event) => onSearch(event.target.value)}
-        placeholder={t('common.searchByNameOrPhone')}
-        autoComplete="off"
-      />
-      {query.isFetching ? (
-        <p className="mt-1 text-xs text-muted-foreground">{t('common.searching')}</p>
-      ) : null}
-      {query.data && query.data.length > 0 ? (
-        <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-popover">
-          {query.data.map((result) => (
-            <li key={result.id}>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
-                onClick={() => onSelect(result)}
-              >
-                <span className="font-medium">{result.name}</span>
-                <span className="text-muted-foreground">{result.phone}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
-
 function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
   const { t } = useTranslation();
   const workspace = useWorkspace();
+  const [searchParams] = useSearchParams();
+  const preselectId = searchParams.get('customer');
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [search, setSearch] = useState('');
   const [amount, setAmount] = useState('');
@@ -112,6 +49,22 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
   const [note, setNote] = useState('');
   const [allocations, setAllocations] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+
+  // Deep link from the customers list (/payments?customer=<id>): fetch the party
+  // once and preselect it. A bad id just leaves the form in its normal state.
+  const preselectApplied = useRef(false);
+  const preselect = useQuery({
+    queryKey: ['customers', 'detail', preselectId],
+    queryFn: () => getCustomer(preselectId!),
+    enabled: Boolean(preselectId),
+    retry: false,
+    staleTime: 60_000,
+  });
+  useEffect(() => {
+    if (preselectApplied.current || !preselect.data) return;
+    preselectApplied.current = true;
+    if (!customer) setCustomer(preselect.data);
+  }, [preselect.data, customer]);
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -169,6 +122,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
             setAllocations({});
           }}
           onClear={() => {
+            preselectApplied.current = true;
             setCustomer(null);
             setAllocations({});
           }}
@@ -242,9 +196,9 @@ function PaymentList({ payments }: { payments: Payment[] }) {
               <span className="font-medium">{payment.customer_name || '—'}</span>
               <span className="font-semibold tabular-nums">{formatNpr(payment.amount)}</span>
             </div>
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground">
               <span>{payment.business_date_bs}</span>
-              <span>{payment.method}</span>
+              <Badge variant="outline">{payment.method}</Badge>
               <span>{payment.note || '—'}</span>
             </div>
           </li>
@@ -266,7 +220,9 @@ function PaymentList({ payments }: { payments: Payment[] }) {
               <TableRow key={payment.id}>
                 <TableCell className="whitespace-nowrap">{payment.business_date_bs}</TableCell>
                 <TableCell className="font-medium">{payment.customer_name || '—'}</TableCell>
-                <TableCell>{payment.method}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{payment.method}</Badge>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{payment.note || '—'}</TableCell>
                 <TableCell className="text-right font-semibold tabular-nums">
                   {formatNpr(payment.amount)}

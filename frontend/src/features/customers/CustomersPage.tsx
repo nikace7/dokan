@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Phone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
@@ -16,22 +17,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/useAuth';
-import {
-  createCustomer,
-  deactivateCustomer,
-  listCustomers,
-  updateCustomer,
-} from '@/features/customers/api';
-import type { Customer, CustomerPayload } from '@/features/customers/api';
+import { deactivateCustomer, listCustomers } from '@/features/customers/api';
+import type { Customer } from '@/features/customers/api';
+import { CustomerForm, selectClasses } from '@/features/customers/CustomerForm';
 import { listPricingRateTypes } from '@/features/pricing/api';
-import { ApiError } from '@/lib/api/client';
-import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 
 type StatusFilter = 'active' | 'inactive' | 'all';
-
-const selectClasses =
-  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 export function CustomersPage() {
   const { t } = useTranslation();
@@ -180,6 +173,44 @@ function CustomerActions({
   );
 }
 
+/** Phone number as a tel: link so the counter can call a khata customer directly. */
+function PhoneLink({ phone }: { phone: string }) {
+  return (
+    <a
+      href={`tel:${phone}`}
+      className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
+    >
+      <Phone className="h-3.5 w-3.5" aria-hidden />
+      {phone}
+    </a>
+  );
+}
+
+/** Loyalty points — rendered as a chip once the customer actually has points. */
+function LoyaltyValue({ points }: { points: string }) {
+  if (toPaisa(points) <= 0) return <>{points}</>;
+  return <Badge variant="secondary">{points}</Badge>;
+}
+
+/** Khata shortcuts for active customers: collect dues or jump to the party ledger. */
+function KhataLinks({ customer }: { customer: Customer }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <Button size="sm" variant="outline" asChild>
+        <Link to={`/payments?customer=${customer.id}`}>
+          {t('customers.receivePayment', { defaultValue: 'Receive payment' })}
+        </Link>
+      </Button>
+      <Button size="sm" variant="ghost" asChild>
+        <Link to={`/ledgers?customer=${customer.id}`}>
+          {t('customers.viewLedger', { defaultValue: 'Ledger' })}
+        </Link>
+      </Button>
+    </>
+  );
+}
+
 /** Card list below `md`, full table from `md` up — both render the same rows. */
 function CustomerList({
   customers,
@@ -205,7 +236,7 @@ function CustomerList({
               <div className="min-w-0">
                 <p className="font-medium">{customer.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {customer.phone ?? t('common.noPhone')}
+                  {customer.phone ? <PhoneLink phone={customer.phone} /> : t('common.noPhone')}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {customer.address ?? t('customers.noAddress')}
@@ -226,17 +257,22 @@ function CustomerList({
               </div>
               <div className="flex gap-1">
                 <dt className="text-muted-foreground">{t('customers.loyalty')}</dt>
-                <dd className="tabular-nums">{customer.loyalty_points}</dd>
+                <dd className="tabular-nums">
+                  <LoyaltyValue points={customer.loyalty_points} />
+                </dd>
               </div>
             </dl>
-            {canManage ? (
-              <div className="mt-2">
-                <CustomerActions
-                  customer={customer}
-                  onEdit={onEdit}
-                  onDeactivate={onDeactivate}
-                  deactivatePending={deactivatePending}
-                />
+            {customer.is_active || canManage ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {customer.is_active ? <KhataLinks customer={customer} /> : null}
+                {canManage ? (
+                  <CustomerActions
+                    customer={customer}
+                    onEdit={onEdit}
+                    onDeactivate={onDeactivate}
+                    deactivatePending={deactivatePending}
+                  />
+                ) : null}
               </div>
             ) : null}
           </li>
@@ -251,9 +287,7 @@ function CustomerList({
               <TableHead className="text-right">{t('customers.creditLimit')}</TableHead>
               <TableHead className="text-right">{t('customers.loyalty')}</TableHead>
               <TableHead>{t('customers.tableStatus')}</TableHead>
-              {canManage ? (
-                <TableHead className="text-right">{t('customers.tableActions')}</TableHead>
-              ) : null}
+              <TableHead className="text-right">{t('customers.tableActions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -261,7 +295,9 @@ function CustomerList({
               <TableRow key={customer.id}>
                 <TableCell className="font-medium">{customer.name}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  <span className="block">{customer.phone ?? t('common.noPhone')}</span>
+                  <span className="block">
+                    {customer.phone ? <PhoneLink phone={customer.phone} /> : t('common.noPhone')}
+                  </span>
                   <span className="text-xs">{customer.address ?? t('customers.noAddress')}</span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
@@ -269,7 +305,9 @@ function CustomerList({
                     ? formatNpr(customer.credit_limit)
                     : t('customers.unlimited')}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{customer.loyalty_points}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  <LoyaltyValue points={customer.loyalty_points} />
+                </TableCell>
                 <TableCell>
                   <Badge variant={customer.is_active ? 'success' : 'secondary'}>
                     {customer.is_active
@@ -277,169 +315,25 @@ function CustomerList({
                       : t('customers.statusInactive')}
                   </Badge>
                 </TableCell>
-                {canManage ? (
-                  <TableCell className="text-right">
-                    <div className="flex justify-end">
+                <TableCell className="text-right">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {customer.is_active ? <KhataLinks customer={customer} /> : null}
+                    {canManage ? (
                       <CustomerActions
                         customer={customer}
                         onEdit={onEdit}
                         onDeactivate={onDeactivate}
                         deactivatePending={deactivatePending}
                       />
-                    </div>
-                  </TableCell>
-                ) : null}
+                    ) : null}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
     </>
-  );
-}
-
-function initial(customer?: Customer): CustomerPayload {
-  return {
-    name: customer?.name ?? '',
-    phone: customer?.phone ?? null,
-    address: customer?.address ?? null,
-    default_rate_type: customer?.default_rate_type ?? null,
-    credit_limit: customer?.credit_limit ?? null,
-    opening_balance: customer?.opening_balance ?? '0.00',
-    birthday_bs: customer?.birthday_bs ?? null,
-    gender: customer?.gender ?? null,
-    note: customer?.note ?? null,
-  };
-}
-
-function CustomerForm({
-  customer,
-  canSetCredit,
-  rates,
-  onDone,
-}: {
-  customer?: Customer;
-  canSetCredit: boolean;
-  rates: Array<{ id: string; name: string }>;
-  onDone: () => void;
-}) {
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const [form, setForm] = useState(() => initial(customer));
-  const save = useMutation({
-    mutationFn: (payload: CustomerPayload) =>
-      customer ? updateCustomer(customer.id, payload) : createCustomer(payload),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['customers'] });
-      onDone();
-    },
-  });
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const payload: CustomerPayload = {
-      ...form,
-      name: form.name.trim(),
-      phone: form.phone?.trim() || null,
-      address: form.address?.trim() || null,
-      birthday_bs: form.birthday_bs?.trim() || null,
-      note: form.note?.trim() || null,
-    };
-    if (!canSetCredit) delete payload.credit_limit;
-    save.mutate(payload);
-  };
-
-  return (
-    <form
-      onSubmit={submit}
-      className="mb-5 grid gap-3 rounded-md border border-border bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3"
-    >
-      <Input
-        label={t('customers.form.name')}
-        required
-        value={form.name}
-        onChange={(event) => setForm({ ...form, name: event.target.value })}
-      />
-      <Input
-        label={t('customers.form.phone')}
-        value={form.phone ?? ''}
-        onChange={(event) => setForm({ ...form, phone: event.target.value })}
-      />
-      <Input
-        label={t('customers.form.address')}
-        value={form.address ?? ''}
-        onChange={(event) => setForm({ ...form, address: event.target.value })}
-      />
-      <label className="flex flex-col gap-1.5 text-sm font-medium">
-        {t('customers.form.defaultRate')}
-        <select
-          value={form.default_rate_type ?? ''}
-          onChange={(event) => setForm({ ...form, default_rate_type: event.target.value || null })}
-          className={`${selectClasses} font-normal`}
-        >
-          <option value="">{t('customers.form.shopDefault')}</option>
-          {rates.map((rate) => (
-            <option key={rate.id} value={rate.id}>
-              {rate.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {canSetCredit ? (
-        <Input
-          label={t('customers.form.creditLimit')}
-          inputMode="decimal"
-          value={form.credit_limit ?? ''}
-          onChange={(event) => setForm({ ...form, credit_limit: event.target.value || null })}
-          placeholder={t('customers.form.creditUnlimited')}
-        />
-      ) : null}
-      <Input
-        label={t('customers.form.openingBalance')}
-        inputMode="decimal"
-        value={form.opening_balance ?? '0.00'}
-        onChange={(event) => setForm({ ...form, opening_balance: event.target.value })}
-      />
-      <Input
-        label={t('customers.form.birthdayBs')}
-        value={form.birthday_bs ?? ''}
-        onChange={(event) => setForm({ ...form, birthday_bs: event.target.value })}
-        placeholder="2082-04-12"
-      />
-      <label className="flex flex-col gap-1.5 text-sm font-medium">
-        {t('customers.form.gender')}
-        <select
-          value={form.gender ?? ''}
-          onChange={(event) => setForm({ ...form, gender: event.target.value || null })}
-          className={`${selectClasses} font-normal`}
-        >
-          <option value="">{t('customers.form.genderUnspecified')}</option>
-          <option value="F">{t('customers.form.genderFemale')}</option>
-          <option value="M">{t('customers.form.genderMale')}</option>
-          <option value="OTHER">{t('customers.form.genderOther')}</option>
-        </select>
-      </label>
-      <Input
-        label={t('common.note')}
-        value={form.note ?? ''}
-        onChange={(event) => setForm({ ...form, note: event.target.value })}
-      />
-      {save.isError ? (
-        <p
-          role="alert"
-          className="rounded-md bg-destructive/10 p-3 text-sm text-destructive sm:col-span-2 lg:col-span-3"
-        >
-          {save.error instanceof ApiError ? save.error.message : t('customers.form.saveError')}
-        </p>
-      ) : null}
-      <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
-        <Button type="submit" disabled={save.isPending}>
-          {t('customers.form.save')}
-        </Button>
-        <Button variant="secondary" onClick={onDone}>
-          {t('common.cancel')}
-        </Button>
-      </div>
-    </form>
   );
 }
 
