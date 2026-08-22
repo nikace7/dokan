@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/Input';
 import { listVariants, searchItems } from '@/features/catalog/api';
 import type { Item, ItemVariant } from '@/features/catalog/api';
+import { ItemImage } from '@/features/catalog/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 export interface PickedVariant {
@@ -83,8 +84,11 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
     return (
       <div className="rounded-md border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border bg-muted/50 px-3 py-2 text-sm">
-          <span className="font-medium">
-            {item.name} <span className="text-muted-foreground">({item.code})</span>
+          <span className="flex min-w-0 items-center gap-2 font-medium">
+            <ItemImage imageUrl={item.image_url} alt={item.name} className="h-9 w-9" />
+            <span>
+              {item.name} <span className="text-muted-foreground">({item.code})</span>
+            </span>
           </span>
           <button
             type="button"
@@ -154,7 +158,10 @@ export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
                 className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => setItem(found)}
               >
-                <span className="font-medium">{found.name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <ItemImage imageUrl={found.image_url} alt={found.name} className="h-9 w-9" />
+                  <span className="font-medium">{found.name}</span>
+                </span>
                 <span className="text-muted-foreground">{found.code}</span>
               </button>
             </li>

@@ -18,6 +18,7 @@ import type {
   SaleSummary,
   VariantLookup,
 } from '@/features/exchange/api';
+import { ItemImage } from '@/features/catalog/ui';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
@@ -144,9 +145,16 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
                 key={`${line.variant.id}-${index}`}
                 className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-sm"
               >
-                <div className="min-w-0">
-                  <span className="font-medium">{line.variant.item__name}</span>{' '}
-                  <span className="text-xs text-muted-foreground">{line.variant.sku}</span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <ItemImage
+                    imageUrl={line.variant.image_url}
+                    alt={line.variant.item__name}
+                    className="h-9 w-9"
+                  />
+                  <div className="min-w-0">
+                    <span className="font-medium">{line.variant.item__name}</span>{' '}
+                    <span className="text-xs text-muted-foreground">{line.variant.sku}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">{t('exchange.editor.qty')}</span>
