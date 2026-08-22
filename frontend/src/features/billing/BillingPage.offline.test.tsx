@@ -110,7 +110,8 @@ describe('BillingPage offline', () => {
     const input = screen.getByLabelText(/scan barcode or type sku/i);
     fireEvent.change(input, { target: { value: '8901234567890' } });
     fireEvent.submit(input.closest('form') as HTMLFormElement);
-    expect(await screen.findByText('T-Shirt — M / Black')).toBeInTheDocument();
+    // The label renders twice: the cart row and the last-scanned card.
+    expect((await screen.findAllByText('T-Shirt — M / Black')).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /complete sale/i }));
 
