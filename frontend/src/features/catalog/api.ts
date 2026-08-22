@@ -54,6 +54,11 @@ export interface Item {
   is_vat_applicable: boolean;
   /** Absolute API path of the item photo (`/media/tenants/…`), null when unset. */
   image_url: string | null;
+  /** Active-variant count — annotated on list responses; absent/null elsewhere. */
+  variants_count?: number | null;
+  /** Active-variant MRP range on list responses (decimal strings), null when none. */
+  mrp_min?: string | null;
+  mrp_max?: string | null;
   min_selling_price: string | null;
   max_selling_price: string | null;
   reorder_level: string | null;

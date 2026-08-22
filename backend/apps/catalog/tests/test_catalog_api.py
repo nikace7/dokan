@@ -132,6 +132,32 @@ class TestCrudFlow:
         assert body["meta"]["count"] == 1
         assert body["data"][0]["code"] == "SH-001"
 
+    def test_item_list_card_annotations(self, tenant: Any, user: Any) -> None:
+        """The card grid reads variants_count + MRP range straight off the list."""
+        grant(tenant, user, "catalog.view")
+        client = auth_client(user)
+
+        item = ItemFactory(tenant=tenant)
+        ItemVariantFactory(tenant=tenant, item=item, mrp="1000.00")
+        ItemVariantFactory(tenant=tenant, item=item, size="L", mrp="1200.00")
+        # Inactive variants count towards neither the count nor the range.
+        ItemVariantFactory(
+            tenant=tenant, item=item, size="XL", color="White", mrp="9999.00", is_active=False
+        )
+        bare = ItemFactory(tenant=tenant)
+
+        listing = client.get("/api/v1/catalog/items", **host())
+        assert listing.status_code == 200
+        rows = {row["id"]: row for row in listing.json()["data"]}
+        annotated = rows[str(item.pk)]
+        assert annotated["variants_count"] == 2
+        assert annotated["mrp_min"] == "1000.00"
+        assert annotated["mrp_max"] == "1200.00"
+        empty = rows[str(bare.pk)]
+        assert empty["variants_count"] == 0
+        assert empty["mrp_min"] is None
+        assert empty["mrp_max"] is None
+
     def test_duplicate_item_code_friendly_400(self, tenant: Any, user: Any) -> None:
         grant(tenant, user, "catalog.manage")
         ItemFactory(tenant=tenant, code="DUP")
