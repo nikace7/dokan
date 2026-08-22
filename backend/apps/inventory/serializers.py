@@ -40,6 +40,7 @@ class StockLevelSerializer(CostAwareSerializer):
     branch_code = serializers.CharField(source="branch.code", read_only=True)
     variant_sku = serializers.CharField(source="variant.sku", read_only=True)
     item_name = serializers.CharField(source="variant.item.name", read_only=True)
+    image_url = serializers.SerializerMethodField()
     # Annotated by the levels selector (annotation attrs, not model fields).
     reorder_level = serializers.DecimalField(
         max_digits=12, decimal_places=3, read_only=True, allow_null=True
@@ -55,6 +56,7 @@ class StockLevelSerializer(CostAwareSerializer):
             "variant",
             "variant_sku",
             "item_name",
+            "image_url",
             "qty_on_hand",
             "qty_reserved",
             "avg_cost",
@@ -63,6 +65,12 @@ class StockLevelSerializer(CostAwareSerializer):
             "updated_at",
         )
         read_only_fields = fields
+
+    def get_image_url(self, obj: StockLevel) -> str | None:
+        """Item photo as a public media URL; the levels selector already
+        select_relateds variant__item, so this adds no queries."""
+        image = obj.variant.item.image
+        return image.url if image else None
 
 
 class StockMovementSerializer(CostAwareSerializer):
