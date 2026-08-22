@@ -17,6 +17,7 @@ import type { StatTileTint } from '@/components/ui/StatTile';
 import { useAuth } from '@/features/auth/useAuth';
 import { fetchCollectionsByTender, fetchDashboard } from '@/features/dashboard/api';
 import type { DashboardBill } from '@/features/dashboard/api';
+import { LowStockStrip } from '@/features/dashboard/LowStockStrip';
 import { SalesTrendChart } from '@/features/dashboard/SalesTrendChart';
 import { currentBsMonthRange } from '@/features/reports/api';
 import { useWorkspace } from '@/features/settings/useWorkspace';
@@ -132,6 +133,7 @@ export function DashboardPage() {
               t('dashboard.vsYesterday'),
             )}
             caption={t('dashboard.billsCount', { count: data.sales.bill_count })}
+            to="/reports/sales"
           />
         ) : null}
         {data.sales ? (
@@ -140,6 +142,7 @@ export function DashboardPage() {
             value={String(data.sales.bill_count)}
             icon={Receipt}
             tint="blue"
+            to="/reports/sales"
           />
         ) : null}
         {data.dues ? (
@@ -149,6 +152,7 @@ export function DashboardPage() {
             icon={Wallet}
             tint="amber"
             caption={t('dashboard.customersCount', { count: data.dues.customer_count })}
+            to="/reports/dues"
           />
         ) : null}
         {data.low_stock ? (
@@ -158,9 +162,14 @@ export function DashboardPage() {
             icon={PackageX}
             tint="violet"
             caption={t('dashboard.atOrBelowReorder')}
+            to="/reports/stock"
           />
         ) : null}
       </section>
+
+      {data.low_stock && data.low_stock.count > 0 ? (
+        <LowStockStrip count={data.low_stock.count} />
+      ) : null}
 
       {isEmptyShop ? (
         <EmptyState
