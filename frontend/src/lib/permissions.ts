@@ -28,6 +28,11 @@ export type PermissionCodename =
   | 'report.profit'
   | 'report.ledger'
   | 'report.sales'
+  | 'report.stock'
+  | 'report.staff'
+  | 'report.cash'
+  | 'report.vat'
+  | 'report.expense'
   | 'user.manage'
   | 'settings.manage';
 

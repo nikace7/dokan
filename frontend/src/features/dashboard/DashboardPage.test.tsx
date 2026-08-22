@@ -29,6 +29,17 @@ function response(data: unknown): Response {
   });
 }
 
+function pagedResponse(rows: unknown[]): Response {
+  return new Response(
+    JSON.stringify({
+      data: rows,
+      error: null,
+      meta: { count: rows.length, page: 1, total_pages: 1, page_size: 50 },
+    }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  );
+}
+
 function me(permissions: string[], features: Record<string, unknown> = {}) {
   return {
     id: 'user-1',
@@ -82,7 +93,31 @@ const OWNER_DASHBOARD = {
   ],
 };
 
-function installMock(user: ReturnType<typeof me>, dashboard: unknown, collections?: unknown) {
+const LOW_STOCK_ROWS = [
+  {
+    variant_id: 'variant-1',
+    sku: 'TEE-BLK-M',
+    item_name: 'Cotton Tee',
+    branch_id: 'branch-1',
+    qty_on_hand: '2',
+    reorder_level: '5',
+  },
+  {
+    variant_id: 'variant-2',
+    sku: 'JNS-BLU-32',
+    item_name: 'Slim Jeans',
+    branch_id: 'branch-1',
+    qty_on_hand: '0',
+    reorder_level: '3',
+  },
+];
+
+function installMock(
+  user: ReturnType<typeof me>,
+  dashboard: unknown,
+  collections?: unknown,
+  lowStock: unknown[] = LOW_STOCK_ROWS,
+) {
   fetchMock.mockImplementation((input) => {
     const url = String(input);
     if (url.includes('/v1/auth/me')) {
@@ -90,6 +125,9 @@ function installMock(user: ReturnType<typeof me>, dashboard: unknown, collection
     }
     if (url.includes('/v1/reports/collections-by-tender')) {
       return Promise.resolve(response(collections ?? COLLECTIONS));
+    }
+    if (url.includes('/v1/reports/low-stock')) {
+      return Promise.resolve(pagedResponse(lowStock));
     }
     if (url.includes('/v1/dashboard')) {
       return Promise.resolve(response(dashboard));
@@ -129,6 +167,7 @@ describe('DashboardPage', () => {
         'report.ledger',
         'report.profit',
         'report.sales',
+        'report.stock',
         'sale.create',
         'sale.view',
         'stock.adjust',
@@ -155,6 +194,39 @@ describe('DashboardPage', () => {
     // Trend vs yesterday derived from the existing 30-day series.
     expect(screen.getByText(/50\.7%/)).toBeInTheDocument();
     expect(screen.getByText('vs yesterday')).toBeInTheDocument();
+
+    // Tiles drill down into their reports.
+    expect(screen.getByRole('link', { name: /Today's collection/ })).toHaveAttribute(
+      'href',
+      '/reports/sales',
+    );
+    expect(screen.getByRole('link', { name: /Bills today/ })).toHaveAttribute(
+      'href',
+      '/reports/sales',
+    );
+    expect(screen.getByRole('link', { name: /Dues outstanding/ })).toHaveAttribute(
+      'href',
+      '/reports/dues',
+    );
+    expect(screen.getByRole('link', { name: /Low stock/ })).toHaveAttribute(
+      'href',
+      '/reports/stock',
+    );
+
+    // Low-stock preview strip: header count, severity chips linking to the report.
+    expect(screen.getByText(/14 items/)).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /TEE-BLK-M/ })).toHaveAttribute(
+      'href',
+      '/reports/stock',
+    );
+    expect(screen.getByRole('link', { name: /JNS-BLU-32/ })).toHaveAttribute(
+      'href',
+      '/reports/stock',
+    );
+    expect(screen.getByText('2 left')).toHaveClass('bg-warning');
+    expect(screen.getByText('0 left')).toHaveClass('bg-destructive');
+    expect(screen.getByText('reorder at 5')).toBeInTheDocument();
+    expect(screen.getByText('reorder at 3')).toBeInTheDocument();
 
     // Charts: trend + tender donut with legend and center total.
     expect(screen.getByLabelText('Last 30 days sales')).toBeInTheDocument();
@@ -208,6 +280,46 @@ describe('DashboardPage', () => {
       fetchMock.mock.calls.some(([url]) =>
         String(url).includes('/v1/reports/collections-by-tender'),
       ),
+    ).toBe(false);
+    // Nor is the low-stock report — the preview strip needs report.stock.
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).includes('/v1/reports/low-stock')),
+    ).toBe(false);
+  });
+
+  it('omits the low-stock strip when the summary has no low-stock section', async () => {
+    installMock(me(['sale.create', 'sale.view', 'stock.view', 'report.stock']), {
+      shop_name: 'Shree Ganesh Vastralaya',
+      business_date_bs: '2083-04-20',
+      sales: { bill_count: 4 },
+      recent_bills: [],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('Bills today')).toBeInTheDocument();
+    expect(screen.queryByText('Low stock')).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).includes('/v1/reports/low-stock')),
+    ).toBe(false);
+  });
+
+  it('omits the low-stock strip when the count is zero', async () => {
+    installMock(me(['sale.create', 'sale.view', 'stock.view', 'report.stock']), {
+      shop_name: 'Shree Ganesh Vastralaya',
+      business_date_bs: '2083-04-20',
+      sales: { bill_count: 4 },
+      low_stock: { count: 0 },
+      recent_bills: [],
+    });
+
+    renderPage();
+
+    // The tile still renders, but no strip and no low-stock fetch.
+    expect(await screen.findByText('Low stock')).toBeInTheDocument();
+    expect(screen.queryByText(/0 items/)).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).includes('/v1/reports/low-stock')),
     ).toBe(false);
   });
 
