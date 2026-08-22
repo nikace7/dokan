@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,8 +41,11 @@ const level = {
   variant: 'variant-1',
   variant_sku: 'SHIRT-M',
   item_name: 'Oxford Shirt',
+  image_url: null as string | null,
   qty_on_hand: '8.000',
   qty_reserved: '0.000',
+  reorder_level: null as string | null,
+  is_low: false,
   updated_at: '2026-08-05T00:00:00Z',
 };
 
@@ -75,11 +78,11 @@ function renderPage() {
   );
 }
 
-function mockBase(permissions: string[]) {
+function mockBase(permissions: string[], levels: (typeof level)[] = [level]) {
   fetchMock.mockImplementation(async (input, init) => {
     const url = String(input);
     if (url.includes('/v1/auth/me')) return envelope(me(permissions));
-    if (url.includes('/v1/inventory/levels')) return envelope([level]);
+    if (url.includes('/v1/inventory/levels')) return envelope(levels);
     if (url.includes('/v1/inventory/movements')) return envelope([movement]);
     if (url.includes('/v1/branches')) {
       return envelope([{ id: 'branch-1', code: 'MAIN', name: 'Main', is_default: true }]);
@@ -118,11 +121,14 @@ function mockBase(permissions: string[]) {
 }
 
 async function pickVariant() {
-  fireEvent.change(screen.getByLabelText('Search items'), { target: { value: 'shirt' } });
-  fireEvent.click(await screen.findByRole('button', { name: /Oxford Shirt/ }));
+  // Scope to the operation dialog: level rows are now buttons whose names also
+  // match the item name, so an unscoped findByRole would see both.
+  const dialog = await screen.findByRole('dialog');
+  fireEvent.change(within(dialog).getByLabelText('Search items'), { target: { value: 'shirt' } });
+  fireEvent.click(await within(dialog).findByRole('button', { name: /Oxford Shirt/ }));
   // The mocked item has exactly one variant, so the picker auto-picks it and
   // the picked chip (name — size / colour) replaces the picker.
-  await screen.findByText(/M \/ Blue/);
+  await within(dialog).findByText(/M \/ Blue/);
 }
 
 describe('StockPage', () => {
@@ -186,5 +192,75 @@ describe('StockPage', () => {
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('Water damage') }),
       ),
     );
+  });
+
+  it('renders item photos in level rows, with a placeholder tile when no photo', async () => {
+    mockBase(
+      ['stock.view'],
+      [
+        { ...level, image_url: '/media/items/shirt.jpg' },
+        {
+          ...level,
+          id: 'level-2',
+          variant: 'variant-2',
+          item_name: 'Plain Tee',
+          variant_sku: 'TEE-L',
+        },
+      ],
+    );
+    renderPage();
+
+    // Rows render twice (mobile card + desktop table), so the photo does too.
+    expect((await screen.findAllByRole('img', { name: 'Oxford Shirt' })).length).toBe(2);
+    // image_url null → aria-hidden placeholder tile, never an <img>.
+    expect(screen.getAllByText('Plain Tee').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('img', { name: 'Plain Tee' })).not.toBeInTheDocument();
+  });
+
+  it('flags low rows with a warning chip, keeps out-of-stock destructive, healthy rows bare', async () => {
+    mockBase(
+      ['stock.view'],
+      [
+        { ...level, is_low: true, reorder_level: '10.000' },
+        {
+          ...level,
+          id: 'level-2',
+          variant: 'variant-2',
+          item_name: 'Plain Tee',
+          variant_sku: 'TEE-L',
+        },
+        {
+          ...level,
+          id: 'level-3',
+          variant: 'variant-3',
+          item_name: 'Worn Belt',
+          variant_sku: 'BELT-M',
+          qty_on_hand: '0.000',
+          is_low: true,
+          reorder_level: '5.000',
+        },
+      ],
+    );
+    renderPage();
+
+    await screen.findAllByText('Worn Belt');
+    // Low row: one chip in the mobile card + one in the desktop flag cell.
+    expect(screen.getAllByText('Low').length).toBe(2);
+    // qty 0 wins over the low flag — destructive badge, no "Low" chip for it.
+    expect(screen.getAllByText('Out of stock').length).toBe(2);
+  });
+
+  it('opens the variant stock dialog from a level row', async () => {
+    mockBase(['stock.view']);
+    renderPage();
+
+    const rowButtons = await screen.findAllByRole('button', { name: /Oxford Shirt/ });
+    fireEvent.click(rowButtons[0]);
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('MRP')).toBeInTheDocument();
+    expect(within(dialog).getByText('SHIRT-M')).toBeInTheDocument();
+    // VariantStockInfo refetches the level for this branch/variant → on-hand 8.
+    await waitFor(() => expect(within(dialog).getByText('8')).toBeInTheDocument());
   });
 });
