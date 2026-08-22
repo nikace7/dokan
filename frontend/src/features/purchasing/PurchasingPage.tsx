@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { confirmInvoice, listInvoices } from '@/features/purchasing/api';
 import type { PurchaseInvoice, PurchaseInvoiceStatus } from '@/features/purchasing/api';
 import { PurchaseInvoiceForm } from '@/features/purchasing/PurchaseInvoiceForm';
+import { StatusStepper } from '@/features/purchasing/StatusStepper';
 import { SuppliersPanel } from '@/features/purchasing/SuppliersPanel';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
@@ -53,7 +54,12 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
 
   return (
     <div className="px-2 py-3">
-      <ul className="divide-y divide-border rounded-md border border-border px-3">
+      {invoice.status === 'CANCELLED' ? (
+        <StatusBadge status={invoice.status} />
+      ) : (
+        <StatusStepper status={invoice.status} />
+      )}
+      <ul className="mt-3 divide-y divide-border rounded-md border border-border px-3">
         {invoice.items.map((item) => (
           <li
             key={item.id}
