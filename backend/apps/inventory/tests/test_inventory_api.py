@@ -239,6 +239,8 @@ class TestListEndpoints:
         assert rows[low_variant.sku]["is_low"] is True
         assert rows[ok_variant.sku]["reorder_level"] is None
         assert rows[ok_variant.sku]["is_low"] is False
+        # Row photos ride along for the visual stock list (null when unset).
+        assert rows[low_variant.sku]["image_url"] is None
         # Cost rule unchanged: no avg_cost without pricing.view_cost.
         assert "avg_cost" not in rows[low_variant.sku]
 
