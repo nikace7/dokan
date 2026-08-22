@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Phone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
@@ -16,6 +17,22 @@ import {
 } from '@/components/ui/table';
 import { createSupplier, listSuppliers } from '@/features/purchasing/api';
 import { ApiError } from '@/lib/api/client';
+
+/** Supplier phone as a tappable tel: link; em dash when there is none. */
+function SupplierPhone({ name, phone }: { name: string; phone: string | null }) {
+  const { t } = useTranslation();
+  if (!phone) return <>—</>;
+  return (
+    <a
+      href={`tel:${phone}`}
+      aria-label={t('purchasing.suppliers.callAria', { name, defaultValue: 'Call {{name}}' })}
+      className="inline-flex items-center gap-1 text-primary hover:underline"
+    >
+      <Phone aria-hidden className="h-3.5 w-3.5" />
+      {phone}
+    </a>
+  );
+}
 
 /** Supplier list + quick create form (name is the only required field). */
 export function SuppliersPanel() {
@@ -129,15 +146,19 @@ export function SuppliersPanel() {
                 <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
                   <div className="flex gap-1">
                     <dt className="text-muted-foreground">{t('purchasing.suppliers.phone')}</dt>
-                    <dd>{supplier.phone ?? '—'}</dd>
+                    <dd>
+                      <SupplierPhone name={supplier.name} phone={supplier.phone} />
+                    </dd>
                   </div>
                   <div className="flex gap-1">
                     <dt className="text-muted-foreground">{t('purchasing.suppliers.pan')}</dt>
                     <dd>{supplier.pan_no ?? '—'}</dd>
                   </div>
                   <div className="col-span-2 flex gap-1">
-                    <dt className="text-muted-foreground">{t('purchasing.suppliers.address')}</dt>
-                    <dd>{supplier.address ?? '—'}</dd>
+                    <dt className="shrink-0 text-muted-foreground">
+                      {t('purchasing.suppliers.address')}
+                    </dt>
+                    <dd className="truncate">{supplier.address ?? '—'}</dd>
                   </div>
                 </dl>
               </li>
@@ -158,12 +179,12 @@ export function SuppliersPanel() {
                   <TableRow key={supplier.id}>
                     <TableCell className="font-medium">{supplier.name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {supplier.phone ?? '—'}
+                      <SupplierPhone name={supplier.name} phone={supplier.phone} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {supplier.pan_no ?? '—'}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="max-w-48 truncate text-muted-foreground">
                       {supplier.address ?? '—'}
                     </TableCell>
                   </TableRow>
