@@ -6,12 +6,17 @@ import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/Input';
 import { TableCell } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/useAuth';
+import type { PickedVariant } from '@/features/catalog/VariantPicker';
+import { ItemImage } from '@/features/catalog/ui';
 import { listLevels, listMovements } from '@/features/inventory/api';
+import type { StockLevel } from '@/features/inventory/api';
 import { OpeningStockDialog } from '@/features/inventory/OpeningStockDialog';
 import { StockOperationDialog } from '@/features/inventory/StockOperationDialog';
+import { VariantStockInfo } from '@/features/inventory/VariantStockInfo';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
@@ -29,6 +34,7 @@ export function StockPage() {
   const [page, setPage] = useState(1);
   const [movementPage, setMovementPage] = useState(1);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [infoLevel, setInfoLevel] = useState<StockLevel | null>(null);
   useMoneyDisplay();
   const canView = hasPermission(user, 'stock.view');
   const canAdjust = hasPermission(user, 'stock.adjust');
@@ -149,7 +155,20 @@ export function StockPage() {
             empty={t('inventory.stock.emptyLevels')}
             renderCells={(level) => (
               <>
-                <TableCell className="font-medium">{level.item_name}</TableCell>
+                <TableCell>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-left font-medium hover:underline"
+                    onClick={() => setInfoLevel(level)}
+                  >
+                    <ItemImage
+                      imageUrl={level.image_url}
+                      alt={level.item_name}
+                      className="h-10 w-10"
+                    />
+                    {level.item_name}
+                  </button>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{level.variant_sku}</TableCell>
                 <TableCell className="text-muted-foreground">{level.branch_code}</TableCell>
                 <TableCell className="text-right tabular-nums">{level.qty_on_hand}</TableCell>
@@ -162,29 +181,34 @@ export function StockPage() {
                   </TableCell>
                 ) : null}
                 <TableCell>
-                  {Number(level.qty_on_hand) <= 0 ? (
-                    <Badge variant="destructive">{t('inventory.stock.outOfStock')}</Badge>
-                  ) : null}
+                  <LevelFlag level={level} />
                 </TableCell>
               </>
             )}
             renderCard={(level) => (
-              <div className="flex items-start justify-between gap-3 text-sm">
-                <div className="min-w-0">
-                  <p className="font-medium">{level.item_name}</p>
-                  <p className="text-muted-foreground">
-                    {level.variant_sku} · {level.branch_code}
-                  </p>
-                  {showCost && level.avg_cost !== undefined ? (
-                    <p className="text-xs text-muted-foreground tabular-nums">
-                      {t('inventory.stock.costAmount', { amount: formatNpr(level.avg_cost) })}
+              <button
+                type="button"
+                className="flex w-full items-start justify-between gap-3 text-left text-sm"
+                onClick={() => setInfoLevel(level)}
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <ItemImage
+                    imageUrl={level.image_url}
+                    alt={level.item_name}
+                    className="h-10 w-10"
+                  />
+                  <div className="min-w-0">
+                    <p className="font-medium">{level.item_name}</p>
+                    <p className="text-muted-foreground">
+                      {level.variant_sku} · {level.branch_code}
                     </p>
-                  ) : null}
-                  {Number(level.qty_on_hand) <= 0 ? (
-                    <Badge variant="destructive" className="mt-1">
-                      {t('inventory.stock.outOfStock')}
-                    </Badge>
-                  ) : null}
+                    {showCost && level.avg_cost !== undefined ? (
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {t('inventory.stock.costAmount', { amount: formatNpr(level.avg_cost) })}
+                      </p>
+                    ) : null}
+                    <LevelFlag level={level} className="mt-1" />
+                  </div>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="font-semibold tabular-nums">{level.qty_on_hand}</p>
@@ -192,7 +216,7 @@ export function StockPage() {
                     {t('inventory.stock.reserved', { qty: level.qty_reserved })}
                   </p>
                 </div>
-              </div>
+              </button>
             )}
           />
         ) : null}
@@ -269,8 +293,52 @@ export function StockPage() {
       {dialog === 'adjustment' || dialog === 'write-off' ? (
         <StockOperationDialog kind={dialog} onClose={() => setDialog(null)} onPosted={posted} />
       ) : null}
+      {infoLevel ? (
+        <Dialog open onOpenChange={(open) => (open ? undefined : setInfoLevel(null))}>
+          <DialogContent aria-label={infoLevel.item_name} className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{infoLevel.item_name}</DialogTitle>
+            </DialogHeader>
+            <VariantStockInfo variant={levelVariant(infoLevel)} branchId={infoLevel.branch} />
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </main>
   );
+}
+
+/** Stock-state chip: destructive when out, warning when at/below reorder. */
+function LevelFlag({ level, className }: { level: StockLevel; className?: string }) {
+  const { t } = useTranslation();
+  if (Number(level.qty_on_hand) <= 0) {
+    return (
+      <Badge variant="destructive" className={className}>
+        {t('inventory.stock.outOfStock')}
+      </Badge>
+    );
+  }
+  if (level.is_low) {
+    return (
+      <Badge variant="warning" className={className}>
+        {t('inventory.stock.low', { defaultValue: 'Low' })}
+      </Badge>
+    );
+  }
+  return null;
+}
+
+/** Map a stock-level row to the picker shape `VariantStockInfo` expects. */
+function levelVariant(level: StockLevel): PickedVariant {
+  return {
+    id: level.variant,
+    sku: level.variant_sku,
+    size: '',
+    color: '',
+    mrp: null,
+    itemName: level.item_name,
+    minPrice: null,
+    maxPrice: null,
+  };
 }
 
 function QueryError({ error, fallback }: { error: unknown; fallback: string }) {

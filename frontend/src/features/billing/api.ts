@@ -23,6 +23,12 @@ export interface VariantLookup {
   color_hex: string;
   /** Money crosses the API as a string, e.g. "1500.00"; null when no MRP is set. */
   mrp: string | null;
+  /**
+   * Item photo path (`/media/tenants/…`), null when the item has none.
+   * Optional because the offline Dexie cache (`lib/offline/catalogCache.ts`)
+   * predates the field and reconstructs lookups without it.
+   */
+  image_url?: string | null;
   is_active: boolean;
   item__name: string;
   item__name_np: string;

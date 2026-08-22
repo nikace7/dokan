@@ -83,5 +83,30 @@ describe('VariantStockInfo', () => {
     renderInfo({ ...variant, minPrice: null, maxPrice: null });
     expect(screen.getByText('Not set')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('0')).toBeInTheDocument());
+    // No level row → no photo URL → aria-hidden placeholder tile, no <img>.
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('shows the item photo from the level row beside the variant name', async () => {
+    fetchMock.mockImplementation(async () =>
+      envelope([
+        {
+          id: 'level-1',
+          branch: 'branch-1',
+          branch_code: 'MAIN',
+          variant: 'variant-1',
+          variant_sku: 'JACKET-M-BLK',
+          item_name: 'Thin Sunblock',
+          image_url: '/media/items/sunblock.jpg',
+          qty_on_hand: '8.000',
+          qty_reserved: '0.000',
+          reorder_level: null,
+          is_low: false,
+          updated_at: '2026-08-05T00:00:00Z',
+        },
+      ]),
+    );
+    renderInfo();
+    expect(await screen.findByRole('img', { name: 'Thin Sunblock' })).toBeInTheDocument();
   });
 });

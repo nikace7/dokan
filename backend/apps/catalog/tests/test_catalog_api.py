@@ -208,6 +208,9 @@ class TestLookup:
         data = response.json()["data"]
         assert data["sku"] == "LOOK-1"
         assert data["item__name"]
+        # The scan/exchange pickers render a photo thumbnail from this.
+        assert "image_url" in data
+        assert data["image_url"] is None  # no photo uploaded on the factory item
 
     def test_lookup_by_sku(self, tenant: Any, user: Any) -> None:
         grant(tenant, user, "catalog.view")

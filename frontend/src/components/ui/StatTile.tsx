@@ -1,5 +1,6 @@
 import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Paisa } from '@/lib/money';
@@ -49,6 +50,9 @@ export interface StatTileProps {
   caption?: string;
   /** Skeleton loading state — renders no data. */
   isLoading?: boolean;
+  /** When set, the whole tile becomes a link to this route (hover shadow +
+   *  focus ring affordance). Ignored while loading. */
+  to?: string;
   className?: string;
 }
 
@@ -75,8 +79,9 @@ function TrendBadge({ trend }: { trend: StatTileTrend }) {
 
 /**
  * Dashboard stat tile: pastel icon chip, small-caps label, big bold value,
- * optional trend badge and footer caption. Compose on a grid; the tile is a
- * plain surface (`shadow-card`), not an interactive element.
+ * optional trend badge and footer caption. Compose on a grid. The tile is a
+ * plain surface (`shadow-card`) by default; pass `to` to make the whole tile
+ * a link with hover/focus affordances.
  */
 export function StatTile({
   label,
@@ -87,6 +92,7 @@ export function StatTile({
   trend,
   caption,
   isLoading = false,
+  to,
   className,
 }: StatTileProps) {
   useMoneyDisplay();
@@ -110,8 +116,9 @@ export function StatTile({
   const displayValue =
     valuePaisa !== undefined ? formatPaisa(valuePaisa, { symbol: 'auto' }) : value;
 
-  return (
-    <div className={cn('rounded-xl border bg-card p-4 shadow-card', className)}>
+  const surfaceClass = cn('rounded-xl border bg-card p-4 shadow-card', className);
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
         <span className={chipVariants({ tint })}>
@@ -125,6 +132,23 @@ export function StatTile({
         </div>
       ) : null}
       {caption ? <p className="mt-2 text-xs text-muted-foreground">{caption}</p> : null}
-    </div>
+    </>
   );
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className={cn(
+          surfaceClass,
+          'block transition-shadow hover:shadow-md',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        )}
+      >
+        {body}
+      </Link>
+    );
+  }
+
+  return <div className={surfaceClass}>{body}</div>;
 }

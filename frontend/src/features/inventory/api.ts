@@ -16,8 +16,14 @@ export interface StockLevel {
   variant: string;
   variant_sku: string;
   item_name: string;
+  /** Item photo path (`/media/…`); null when the item has no photo. */
+  image_url: string | null;
   qty_on_hand: string;
   qty_reserved: string;
+  /** Decimal string (3 places); the row is "low" at or below it. Null when unset. */
+  reorder_level: string | null;
+  /** Backend-computed: a reorder level is set and on-hand is at/below it. */
+  is_low: boolean;
   /** Only present for users with `pricing.view_cost` — never assume it. */
   avg_cost?: string;
   updated_at: string;

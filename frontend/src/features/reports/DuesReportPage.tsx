@@ -1,13 +1,51 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/Card';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { AGING_BUCKETS, fetchDues } from '@/features/reports/api';
-import type { PayableRow, ReceivableRow } from '@/features/reports/api';
+import type { AgingBucketLabel, PayableRow, ReceivableRow } from '@/features/reports/api';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 import { addPaisa, formatNpr, formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
+import { cn } from '@/lib/utils';
+
+type ChipVariant = 'secondary' | 'warning' | 'destructive' | 'outline';
+
+/** Older buckets get hotter colors: muted → soft amber → solid amber → red. */
+function bucketChip(
+  bucket: AgingBucketLabel,
+  zero: boolean,
+): {
+  variant: ChipVariant;
+  className?: string;
+} {
+  if (zero) {
+    return { variant: 'outline', className: 'font-normal text-muted-foreground' };
+  }
+  switch (bucket) {
+    case '0-30':
+      return { variant: 'secondary' };
+    case '31-60':
+      return { variant: 'warning', className: 'border-warning/30 bg-warning/10 text-warning' };
+    case '61-90':
+      return { variant: 'warning' };
+    case '90+':
+      return { variant: 'destructive' };
+  }
+}
+
+/** An aging-bucket amount as a severity-colored chip. */
+function AgingChip({ bucket, amount }: { bucket: AgingBucketLabel; amount: string }) {
+  useMoneyDisplay();
+  const chip = bucketChip(bucket, toPaisa(amount) === 0);
+  return (
+    <Badge variant={chip.variant} className={cn('tabular-nums', chip.className)}>
+      {formatNpr(amount, { symbol: '' })}
+    </Badge>
+  );
+}
 
 /**
  * Dues report — customer udharo aging and supplier payables. Bucket
@@ -54,7 +92,9 @@ function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
         <>
           <TableCell className="font-medium">{row.customer_name}</TableCell>
           {AGING_BUCKETS.map((bucket) => (
-            <MoneyCell key={bucket}>{formatNpr(row.buckets[bucket], { symbol: '' })}</MoneyCell>
+            <TableCell key={bucket} className="text-right">
+              <AgingChip bucket={bucket} amount={row.buckets[bucket]} />
+            </TableCell>
           ))}
           <MoneyCell>
             <span className="font-semibold">{formatNpr(row.total_outstanding)}</span>
@@ -67,10 +107,10 @@ function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
             <p className="font-medium">{row.customer_name}</p>
             <p className="font-semibold tabular-nums">{formatNpr(row.total_outstanding)}</p>
           </div>
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {AGING_BUCKETS.filter((bucket) => toPaisa(row.buckets[bucket]) > 0).map((bucket) => (
-              <span key={bucket}>
-                {bucket}d: {formatNpr(row.buckets[bucket], { symbol: '' })}
+              <span key={bucket} className="inline-flex items-center gap-1">
+                {bucket}d: <AgingChip bucket={bucket} amount={row.buckets[bucket]} />
               </span>
             ))}
           </div>

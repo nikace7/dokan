@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PaymentsPage } from '@/features/payments/PaymentsPage';
@@ -40,11 +41,13 @@ function page(data: unknown[]): Response {
   );
 }
 
-function renderPayments() {
+function renderPayments(route = '/payments') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <PaymentsPage />
+      <MemoryRouter initialEntries={[route]}>
+        <PaymentsPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -149,6 +152,7 @@ describe('PaymentsPage', () => {
       if (url.includes('customer=')) return page([priorAllocationPayment]);
       if (url.endsWith('/v1/payments/supplier-payments')) return envelope(payment, 201);
       if (url.includes('/v1/payments?')) return page([payment]);
+      if (url.endsWith('/v1/customers/customer-1')) return envelope(customer);
       if (url.includes('/v1/customers?')) return envelope([customer]);
       if (url.endsWith('/v1/payments/receipts')) return envelope(payment, 201);
       throw new Error(`Unhandled request: ${url} ${init?.method ?? 'GET'}`);
@@ -168,6 +172,28 @@ describe('PaymentsPage', () => {
     expect((await screen.findAllByText('Khata collection')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Sita Rai').length).toBeGreaterThan(0);
     expect(screen.getAllByText('रू 2,500.00').length).toBeGreaterThan(0);
+  });
+
+  it('renders payment methods as outline badges', async () => {
+    renderPayments();
+
+    await screen.findAllByText('Khata collection');
+    const badges = screen
+      .getAllByText('CASH')
+      .filter((element) => element.className.includes('rounded-full'));
+    expect(badges.length).toBeGreaterThan(0);
+  });
+
+  it('preselects the customer from the ?customer= query param', async () => {
+    renderPayments('/payments?customer=customer-1');
+
+    // The receipt form swaps its search input for the selected-customer chip.
+    await waitFor(() =>
+      expect(screen.queryByLabelText('Search customer for receipt')).not.toBeInTheDocument(),
+    );
+    expect(
+      fetchMock.mock.calls.some(([input]) => String(input).endsWith('/v1/customers/customer-1')),
+    ).toBe(true);
   });
 
   it('searches for a customer and records a receipt', async () => {

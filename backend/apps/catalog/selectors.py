@@ -8,6 +8,7 @@ enters application memory for them, on success or error paths.
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from django.conf import settings
 from django.db.models import Count, Max, Min, Q, QuerySet
 
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
@@ -113,7 +114,7 @@ def get_variant_for_lookup(
     caller may see: ``avg_cost`` is only included — and only selected — when
     the user has ``pricing.view_cost``.
     """
-    fields = list(_LOOKUP_PUBLIC_FIELDS)
+    fields = [*_LOOKUP_PUBLIC_FIELDS, "item__image"]
     include_cost = user.has_perm("pricing.view_cost")
     if include_cost:
         fields.append("avg_cost")
@@ -125,6 +126,11 @@ def get_variant_for_lookup(
     else:
         return None
     row = qs.values(*fields).first()
+    if row is not None:
+        # The scan/exchange pickers show a thumbnail; expose the item photo
+        # as a public media URL (MEDIA_URL + storage key), never a fs path.
+        image_key = row.pop("item__image")
+        row["image_url"] = f"{settings.MEDIA_URL}{image_key}" if image_key else None
     if row is not None and include_cost:
         # Money crosses the API as a string, matching DRF's serializer
         # coercion (COERCE_DECIMAL_TO_STRING) — never as a JSON float.

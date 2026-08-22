@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PartyLedgerPage } from '@/features/payments/PartyLedgerPage';
@@ -28,11 +29,13 @@ function page(data: unknown[]): Response {
 const customer = { id: 'customer-1', name: 'Sita Rai', phone: '9800000000' };
 const supplier = { id: 'supplier-1', name: 'ABC Garments', phone: '9811111111' };
 
-function renderPage() {
+function renderPage(route = '/ledgers') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <PartyLedgerPage />
+      <MemoryRouter initialEntries={[route]}>
+        <PartyLedgerPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -43,6 +46,7 @@ describe('PartyLedgerPage', () => {
     setTokens({ access: 'a', refresh: 'r' });
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
+      if (url.endsWith('/v1/customers/customer-1')) return envelope(customer);
       if (url.includes('/v1/customers?')) return envelope([customer]);
       if (url.endsWith('/v1/customers/customer-1/ledger')) {
         return envelope([
@@ -99,6 +103,19 @@ describe('PartyLedgerPage', () => {
     expect((await screen.findAllByText('Bill 1001')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('CASH receipt').length).toBeGreaterThan(0);
     expect(screen.getAllByText('रू 2,000.00').length).toBeGreaterThan(0);
+  });
+
+  it('preselects the customer from the ?customer= query param', async () => {
+    renderPage('/ledgers?customer=customer-1');
+
+    // The customer tab stays active and the ledger loads without a search.
+    expect(screen.getByRole('tab', { name: /Customer ledger/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(await screen.findByText('Sita Rai')).toBeInTheDocument();
+    expect((await screen.findAllByText('Bill 1001')).length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText('Search customer ledger')).not.toBeInTheDocument();
   });
 
   it('loads a supplier ledger from the supplier tab', async () => {

@@ -168,4 +168,34 @@ describe('CustomersPage', () => {
       ),
     );
   });
+
+  it('renders khata quick actions for an active customer', async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/auth/me')) return Promise.resolve(envelope(me(['customer.view'])));
+      if (url.includes('/v1/customers')) return Promise.resolve(envelope([customer]));
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    renderPage();
+
+    // Phone becomes a tel: link in both the mobile card and the desktop row.
+    const callLinks = await screen.findAllByRole('link', { name: '9812345678' });
+    expect(callLinks.length).toBeGreaterThan(0);
+    for (const link of callLinks) {
+      expect(link).toHaveAttribute('href', 'tel:9812345678');
+    }
+
+    // Khata shortcuts deep-link to the payments and ledger pages.
+    const payLinks = screen.getAllByRole('link', { name: 'Receive payment' });
+    expect(payLinks.length).toBeGreaterThan(0);
+    for (const link of payLinks) {
+      expect(link).toHaveAttribute('href', '/payments?customer=customer-1');
+    }
+    const ledgerLinks = screen.getAllByRole('link', { name: 'Ledger' });
+    expect(ledgerLinks.length).toBeGreaterThan(0);
+    for (const link of ledgerLinks) {
+      expect(link).toHaveAttribute('href', '/ledgers?customer=customer-1');
+    }
+  });
 });

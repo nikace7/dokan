@@ -15,6 +15,7 @@ import { searchVariantsForSale } from '@/features/billing/api';
 import type { VariantForSale } from '@/features/billing/api';
 import { ItemImage } from '@/features/catalog/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { cn } from '@/lib/utils';
 
 const DEBOUNCE_MS = 300;
 
@@ -26,9 +27,10 @@ interface ItemPickerDialogProps {
 }
 
 /**
- * Searchable in-stock item picker for the simple sale. Only rows with
- * stock on hand come back from `GET /catalog/variants/for-sale`; picking a
- * row hands the whole variant (with its price bounds) to the caller.
+ * Searchable in-stock item picker for the simple sale, rendered as a photo
+ * grid. Only rows with stock on hand come back from
+ * `GET /catalog/variants/for-sale`; picking a cell hands the whole variant
+ * (with its price bounds) to the caller.
  */
 export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemPickerDialogProps) {
   const { t } = useTranslation();
@@ -77,11 +79,15 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
             <div
               role="status"
               aria-label={t('simpleSale.picker.loadingAria')}
-              className="space-y-2"
+              className="grid grid-cols-2 gap-2 sm:grid-cols-3"
             >
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
+              {[0, 1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="flex flex-col gap-2 rounded-md border border-border p-2">
+                  <Skeleton className="aspect-square h-auto w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              ))}
             </div>
           ) : query.isError ? (
             <p role="alert" className="py-6 text-center text-sm text-destructive">
@@ -92,43 +98,38 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
               {t('simpleSale.picker.empty')}
             </p>
           ) : (
-            <ul className="divide-y divide-border rounded-md border border-border">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {rows.map((row) => (
-                <li key={row.id}>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onClick={() => onPick(row)}
-                  >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <ItemImage
-                        imageUrl={row.image_url}
-                        alt={row.item_name}
-                        className="h-11 w-11"
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium">
-                          {row.item_name}
-                          <span className="text-muted-foreground">
-                            {' '}
-                            — {row.size} / {row.color}
-                          </span>
-                        </span>
-                        <span className="block text-xs text-muted-foreground">{row.sku}</span>
-                      </span>
+                <button
+                  key={row.id}
+                  type="button"
+                  className={cn(
+                    'flex flex-col gap-1 rounded-md border border-border p-2 text-left',
+                    'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  )}
+                  onClick={() => onPick(row)}
+                >
+                  <ItemImage
+                    imageUrl={row.image_url}
+                    alt={row.item_name}
+                    className="aspect-square h-auto w-full"
+                  />
+                  <span className="block truncate text-sm font-medium">
+                    {row.item_name}
+                    <span className="text-muted-foreground">
+                      {' '}
+                      — {row.size} / {row.color}
                     </span>
-                    <span className="shrink-0 text-right">
-                      {row.mrp ? (
-                        <span className="block text-sm font-medium">{formatNpr(row.mrp)}</span>
-                      ) : null}
-                      <span className="block text-xs text-muted-foreground">
-                        {t('common.stock', { qty: row.qty_on_hand })}
-                      </span>
-                    </span>
-                  </button>
-                </li>
+                  </span>
+                  {row.mrp ? (
+                    <span className="text-sm font-bold tabular-nums">{formatNpr(row.mrp)}</span>
+                  ) : null}
+                  <span className="text-xs text-muted-foreground">
+                    {t('common.stock', { qty: row.qty_on_hand })}
+                  </span>
+                </button>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </DialogContent>

@@ -1,4 +1,5 @@
 import { paisaToApiString, searchCustomers } from '@/features/billing/api';
+import type { Customer } from '@/features/billing/api';
 import { authedRequest, authedRequestPage } from '@/lib/api/authed';
 import type { Page } from '@/lib/api/client';
 import { addPaisa, toPaisa } from '@/lib/money';
@@ -115,6 +116,11 @@ export function listPayments(filters: PaymentListFilters = {}): Promise<Page<Pay
 
 export function recordReceipt(payload: ReceiptPayload): Promise<Payment> {
   return authedRequest<Payment>('/v1/payments/receipts', { method: 'POST', body: payload });
+}
+
+/** Read-only customer lookup by id — preselects the party from ?customer= deep links. */
+export function getCustomer(id: string): Promise<Customer> {
+  return authedRequest<Customer>(`/v1/customers/${encodeURIComponent(id)}`);
 }
 
 export function recordSupplierPayment(payload: SupplierPaymentPayload): Promise<Payment> {
