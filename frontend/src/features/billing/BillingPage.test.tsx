@@ -151,7 +151,8 @@ async function scanAndAdd(code: string) {
   const input = screen.getByLabelText(/scan barcode or type sku/i);
   fireEvent.change(input, { target: { value: code } });
   fireEvent.submit(input.closest('form') as HTMLFormElement);
-  expect(await screen.findByText('T-Shirt — M / Black')).toBeInTheDocument();
+  // The label renders twice: the cart row and the last-scanned card.
+  expect((await screen.findAllByText('T-Shirt — M / Black')).length).toBeGreaterThan(0);
 }
 
 describe('BillingPage', () => {

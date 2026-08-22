@@ -1,5 +1,6 @@
 import { Banknote } from 'lucide-react';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import { StatTile } from '@/components/ui/StatTile';
@@ -53,5 +54,26 @@ describe('StatTile', () => {
     render(<StatTile label="Sales" value="10" icon={Banknote} caption="12 bills" />);
 
     expect(screen.getByText('12 bills')).toBeInTheDocument();
+  });
+
+  it('renders as a link with hover/focus affordances when `to` is given', () => {
+    render(
+      <MemoryRouter>
+        <StatTile label="Low stock" value="14" icon={Banknote} tint="violet" to="/reports/stock" />
+      </MemoryRouter>,
+    );
+
+    const link = screen.getByRole('link', { name: /Low stock/ });
+    expect(link).toHaveAttribute('href', '/reports/stock');
+    // Same tile surface as the non-link variant, plus the affordances.
+    expect(link).toHaveClass('rounded-xl', 'border', 'bg-card', 'p-4', 'shadow-card');
+    expect(link).toHaveClass('hover:shadow-md', 'focus-visible:ring-2', 'focus-visible:ring-ring');
+    expect(screen.getByText('14')).toBeInTheDocument();
+  });
+
+  it('renders a plain surface (no link) when `to` is not given', () => {
+    render(<StatTile label="Sales" value="10" icon={Banknote} />);
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

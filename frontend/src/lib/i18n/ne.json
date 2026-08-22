@@ -76,6 +76,8 @@
     "scanPlaceholder": "स्कान गर्नुहोस्…",
     "noItemMatches": "\"{{code}}\" सँग मिल्ने वस्तु छैन।",
     "lookupFailed": "खोजी असफल भयो।",
+    "lastScanAria": "अन्तिम स्क्यान गरिएको वस्तु",
+    "inCart": "कार्टमा: {{qty}}",
     "cartEmpty": "कार्ट खाली छ — बिल सुरु गर्न वस्तु स्कान गर्नुहोस्।",
     "bill": "बिल",
     "billResumed": "बिल (रोकिएकोबाट खोलिएको)",
@@ -236,6 +238,8 @@
     "creditLimit": "उधारो सीमा",
     "unlimited": "असीमित",
     "loyalty": "लोयल्टी",
+    "receivePayment": "भुक्तानी लिनुहोस्",
+    "viewLedger": "खाता हेर्नुहोस्",
     "tableName": "नाम",
     "tablePhoneAddress": "फोन / ठेगाना",
     "tableStatus": "स्थिति",
@@ -349,6 +353,9 @@
     "statusCancelled": "रद्द",
     "empty": "अहिलेसम्म कुनै खरिद बिजक छैन।",
     "count": "{{count}} बिजक",
+    "stepper": {
+      "aria": "बिल प्रगति"
+    },
     "detail": {
       "subtotal": "उप-जम्मा",
       "vat": "कर",
@@ -384,6 +391,7 @@
       "title": "सप्लायर",
       "new": "नयाँ सप्लायर",
       "close": "बन्द गर्नुहोस्",
+      "callAria": "{{name}} लाई फोन गर्नुहोस्",
       "nameAria": "सप्लायरको नाम",
       "phoneAria": "सप्लायर फोन",
       "panAria": "सप्लायर प्यान",
@@ -675,7 +683,10 @@
       "to": "सम्म (वि.सं.)",
       "apply": "लागू गर्नुहोस्",
       "invalidFormat": "वि.सं. मिति YYYY-MM-DD ढाँचामा लेख्नुहोस् (जस्तै 2083-04-01)।",
-      "fromAfterTo": "सुरु मिति अन्त्य मितिभन्दा पछि हुन मिल्दैन।"
+      "fromAfterTo": "सुरु मिति अन्त्य मितिभन्दा पछि हुन मिल्दैन।",
+      "quickRanges": "छिटो दायरा",
+      "today": "आज",
+      "lastMonth": "अघिल्लो महिना"
     },
     "links": {
       "sales": {
@@ -746,7 +757,10 @@
       "paidAmount": "भुक्तानी {{amount}}",
       "dueAmount": "बाँकी {{amount}}",
       "returnsAmount": "फिर्ता {{amount}}",
-      "qtyShort": "परिमाण {{count}}"
+      "qtyShort": "परिमाण {{count}}",
+      "tableView": "तालिका",
+      "chartView": "चार्ट",
+      "dailyViewAria": "दैनिक नतिजा दृश्य"
     },
     "stock": {
       "title": "स्टक प्रतिवेदन",
@@ -965,6 +979,7 @@
       "movementsError": "स्टक गतिविधि लोड हुन सकेन।",
       "emptyLevels": "अहिलेसम्म स्टक छैन।",
       "outOfStock": "स्टक सकियो",
+      "low": "कम",
       "costAmount": "लागत {{amount}}",
       "reserved": "रिजर्भ {{qty}}",
       "columns": {

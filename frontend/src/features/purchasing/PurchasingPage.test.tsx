@@ -138,3 +138,109 @@ describe('PurchasingPage draft → confirm', () => {
     expect(within(row).queryByText('Draft')).not.toBeInTheDocument();
   });
 });
+
+function mockPurchasing({
+  invoices = [DRAFT_INVOICE],
+  suppliers = [SUPPLIER],
+}: { invoices?: object[]; suppliers?: object[] } = {}) {
+  fetchMock.mockImplementation((input, init) => {
+    const url = String(input);
+    const method = init?.method ?? 'GET';
+    if (url.includes('/v1/purchasing/suppliers')) {
+      return Promise.resolve(envelope(suppliers, PAGE_META));
+    }
+    if (url.includes('/v1/purchasing/invoices')) {
+      return Promise.resolve(envelope(invoices, { ...PAGE_META, count: invoices.length }));
+    }
+    return Promise.reject(new Error(`Unexpected request: ${method} ${url}`));
+  });
+}
+
+describe('PurchasingPage status stepper', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    setTokens({ access: 'a', refresh: 'r' });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fetchMock.mockReset();
+    clearTokens();
+  });
+
+  it('marks Draft current and Confirmed future on a draft invoice', async () => {
+    mockPurchasing();
+    renderPurchasing();
+    const row = await screen.findByRole('button', { name: /PI-2083-0001/ });
+    fireEvent.click(row);
+
+    const stepper = screen.getByRole('list', { name: /invoice progress/i });
+    const steps = within(stepper).getAllByRole('listitem');
+    expect(steps).toHaveLength(2);
+    expect(steps[0]).toHaveTextContent('Draft');
+    expect(steps[0]).toHaveAttribute('data-state', 'current');
+    expect(steps[0]).toHaveAttribute('aria-current', 'step');
+    expect(steps[1]).toHaveTextContent('Confirmed');
+    expect(steps[1]).toHaveAttribute('data-state', 'future');
+    expect(steps[1]).not.toHaveAttribute('aria-current');
+  });
+
+  it('marks both steps done on a confirmed invoice', async () => {
+    mockPurchasing({ invoices: [{ ...DRAFT_INVOICE, status: 'CONFIRMED' }] });
+    renderPurchasing();
+    const row = await screen.findByRole('button', { name: /PI-2083-0001/ });
+    fireEvent.click(row);
+
+    const stepper = screen.getByRole('list', { name: /invoice progress/i });
+    const steps = within(stepper).getAllByRole('listitem');
+    expect(steps[0]).toHaveAttribute('data-state', 'done');
+    expect(steps[1]).toHaveAttribute('data-state', 'done');
+    expect(steps[0]).not.toHaveAttribute('aria-current');
+    expect(steps[1]).not.toHaveAttribute('aria-current');
+  });
+
+  it('shows only the status badge for a cancelled invoice', async () => {
+    mockPurchasing({ invoices: [{ ...DRAFT_INVOICE, status: 'CANCELLED' }] });
+    renderPurchasing();
+    const row = await screen.findByRole('button', { name: /PI-2083-0001/ });
+    fireEvent.click(row);
+
+    expect(screen.queryByRole('list', { name: /invoice progress/i })).not.toBeInTheDocument();
+    // Row badge + the badge inside the expanded detail.
+    const wrapper = row.parentElement as HTMLElement;
+    expect(within(wrapper).getAllByText('Cancelled')).toHaveLength(2);
+  });
+});
+
+describe('PurchasingPage supplier phone links', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    setTokens({ access: 'a', refresh: 'r' });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fetchMock.mockReset();
+    clearTokens();
+  });
+
+  it('links a supplier phone number with tel:', async () => {
+    mockPurchasing({ suppliers: [{ ...SUPPLIER, phone: '9800000001' }] });
+    renderPurchasing();
+
+    // Mobile card list + desktop table both render the link.
+    const links = await screen.findAllByRole('link', { name: 'Call KTM Textiles' });
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', 'tel:9800000001');
+    }
+  });
+
+  it('renders no link when the supplier has no phone', async () => {
+    mockPurchasing();
+    renderPurchasing();
+
+    await screen.findAllByText('KTM Textiles');
+    expect(screen.queryByRole('link', { name: /call/i })).not.toBeInTheDocument();
+  });
+});

@@ -76,6 +76,8 @@
     "scanPlaceholder": "Scan…",
     "noItemMatches": "No item matches \"{{code}}\".",
     "lookupFailed": "Lookup failed.",
+    "lastScanAria": "Last scanned item",
+    "inCart": "In cart: {{qty}}",
     "cartEmpty": "Cart is empty — scan an item to start a bill.",
     "bill": "Bill",
     "billResumed": "Bill (resumed from held)",
@@ -236,6 +238,8 @@
     "creditLimit": "Credit limit",
     "unlimited": "Unlimited",
     "loyalty": "Loyalty",
+    "receivePayment": "Receive payment",
+    "viewLedger": "Ledger",
     "tableName": "Name",
     "tablePhoneAddress": "Phone / address",
     "tableStatus": "Status",
@@ -349,6 +353,9 @@
     "statusCancelled": "Cancelled",
     "empty": "No purchase invoices yet.",
     "count": "{{count}} invoices",
+    "stepper": {
+      "aria": "Invoice progress"
+    },
     "detail": {
       "subtotal": "Subtotal",
       "vat": "VAT",
@@ -384,6 +391,7 @@
       "title": "Suppliers",
       "new": "New supplier",
       "close": "Close",
+      "callAria": "Call {{name}}",
       "nameAria": "Supplier name",
       "phoneAria": "Supplier phone",
       "panAria": "Supplier PAN",
@@ -675,7 +683,10 @@
       "to": "To (BS)",
       "apply": "Apply",
       "invalidFormat": "Use BS dates as YYYY-MM-DD (e.g. 2083-04-01).",
-      "fromAfterTo": "From date cannot be after the to date."
+      "fromAfterTo": "From date cannot be after the to date.",
+      "quickRanges": "Quick ranges",
+      "today": "Today",
+      "lastMonth": "Last month"
     },
     "links": {
       "sales": {
@@ -746,7 +757,10 @@
       "paidAmount": "paid {{amount}}",
       "dueAmount": "due {{amount}}",
       "returnsAmount": "returns {{amount}}",
-      "qtyShort": "qty {{count}}"
+      "qtyShort": "qty {{count}}",
+      "tableView": "Table",
+      "chartView": "Chart",
+      "dailyViewAria": "Daily results view"
     },
     "stock": {
       "title": "Stock reports",
@@ -965,6 +979,7 @@
       "movementsError": "Failed to load stock movements.",
       "emptyLevels": "No stock yet.",
       "outOfStock": "Out of stock",
+      "low": "Low",
       "costAmount": "Cost {{amount}}",
       "reserved": "Reserved {{qty}}",
       "columns": {

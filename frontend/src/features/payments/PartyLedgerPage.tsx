@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import { searchCustomers } from '@/features/billing/api';
 import type { Customer } from '@/features/billing/api';
-import { getCustomerLedger, getSupplierLedger } from '@/features/payments/api';
+import { getCustomer, getCustomerLedger, getSupplierLedger } from '@/features/payments/api';
 import type { LedgerRow } from '@/features/payments/api';
 import { listSuppliers } from '@/features/purchasing/api';
 import type { Supplier } from '@/features/purchasing/api';
@@ -30,12 +31,34 @@ function errorMessage(error: unknown, fallback: string): string {
 
 export function PartyLedgerPage() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const preselectId = searchParams.get('customer');
   const [party, setParty] = useState<Party>('customer');
   const [customerSearch, setCustomerSearch] = useState('');
   const [supplierSearch, setSupplierSearch] = useState('');
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const selectedId = party === 'customer' ? customer?.id : supplier?.id;
+
+  // Deep link from the customers list (/ledgers?customer=<id>): fetch the party
+  // once and preselect it. A bad id just leaves the page in its normal state.
+  const preselectApplied = useRef(false);
+  const preselect = useQuery({
+    queryKey: ['customers', 'detail', preselectId],
+    queryFn: () => getCustomer(preselectId!),
+    enabled: Boolean(preselectId),
+    retry: false,
+    staleTime: 60_000,
+  });
+  useEffect(() => {
+    if (preselectApplied.current || !preselect.data) return;
+    preselectApplied.current = true;
+    if (!customer) {
+      setParty('customer');
+      setCustomer(preselect.data);
+    }
+  }, [preselect.data, customer]);
+
   const customerQuery = useQuery({
     queryKey: ['ledger', 'customers', customerSearch],
     queryFn: () => searchCustomers(customerSearch),

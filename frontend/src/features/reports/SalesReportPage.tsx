@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SalesTrendChart } from '@/features/dashboard/SalesTrendChart';
 import { currentBsMonthRange, currentFiscalYearBs } from '@/features/reports/api';
 import { fetchDailySales, fetchItemSales, fetchMonthlySales } from '@/features/reports/api';
 import type { BsRange, DailySalesRow, ItemSalesRow, MonthlySalesRow } from '@/features/reports/api';
@@ -17,6 +19,7 @@ import { addPaisa, formatNpr, formatPaisa, toPaisa, useMoneyDisplay } from '@/li
 import type { Paisa } from '@/lib/money';
 
 type Tab = 'daily' | 'monthly' | 'items';
+type DailyView = 'table' | 'chart';
 
 function sumMoney(amounts: readonly string[]): Paisa {
   return addPaisa(...amounts.map(toPaisa));
@@ -35,6 +38,7 @@ function qtyTotal(rows: readonly { qty: string }[]): string {
 export function SalesReportPage() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('daily');
+  const [dailyView, setDailyView] = useState<DailyView>('table');
   const [range, setRange] = useState<BsRange>(currentBsMonthRange);
   const [fiscalYear, setFiscalYear] = useState(currentFiscalYearBs);
 
@@ -85,7 +89,14 @@ export function SalesReportPage() {
 
           <TabsContent value="daily">
             {dailyQuery.data && !dailyQuery.isFetching ? (
-              <DailyTable rows={dailyQuery.data} />
+              <>
+                <DailyViewToggle view={dailyView} onChange={setDailyView} />
+                {dailyView === 'chart' ? (
+                  <SalesTrendChart rows={dailyQuery.data} />
+                ) : (
+                  <DailyTable rows={dailyQuery.data} />
+                )}
+              </>
             ) : null}
           </TabsContent>
           <TabsContent value="monthly">
@@ -104,6 +115,40 @@ export function SalesReportPage() {
         </Tabs>
       </Card>
     </main>
+  );
+}
+
+/** Table/chart switcher for the daily tab; the table stays the default. */
+function DailyViewToggle({
+  view,
+  onChange,
+}: {
+  view: DailyView;
+  onChange: (view: DailyView) => void;
+}) {
+  const { t } = useTranslation();
+  const options: readonly { value: DailyView; label: string }[] = [
+    { value: 'table', label: t('reports.sales.tableView', { defaultValue: 'Table' }) },
+    { value: 'chart', label: t('reports.sales.chartView', { defaultValue: 'Chart' }) },
+  ];
+  return (
+    <div
+      role="group"
+      aria-label={t('reports.sales.dailyViewAria', { defaultValue: 'Daily results view' })}
+      className="mb-3 flex gap-1"
+    >
+      {options.map((option) => (
+        <Button
+          key={option.value}
+          size="sm"
+          variant={view === option.value ? 'secondary' : 'outline'}
+          aria-pressed={view === option.value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </Button>
+      ))}
+    </div>
   );
 }
 

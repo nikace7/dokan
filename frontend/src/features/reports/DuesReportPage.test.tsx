@@ -93,4 +93,57 @@ describe('DuesReportPage', () => {
     expect(payables.getByText('KTM Textiles')).toBeInTheDocument();
     expect(payables.getAllByText('रू 4,500.00').length).toBeGreaterThan(0);
   });
+
+  it('renders aging bucket amounts as severity-colored chips', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <DuesReportPage />
+      </QueryClientProvider>,
+    );
+    await screen.findAllByText('Ram Sharma');
+
+    const receivables = container.querySelector('table') as HTMLTableElement;
+    const ramRow = within(receivables).getByText('Ram Sharma').closest('tr') as HTMLTableRowElement;
+    const cells = within(ramRow);
+
+    // Escalating severity: 0-30 muted, 31-60 soft warning, 90+ destructive,
+    // and an empty bucket rendered as a neutral outline chip.
+    expect(cells.getByText('1,000.00')).toHaveClass('bg-secondary');
+    expect(cells.getByText('500.00')).toHaveClass('bg-warning/10');
+    expect(cells.getByText('250.00')).toHaveClass('bg-destructive');
+    expect(cells.getByText('0.00')).toHaveClass('text-muted-foreground');
+  });
+
+  it('uses a solid warning chip for the 61-90 bucket', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        envelope({
+          receivables: [
+            {
+              customer_id: 'c-9',
+              customer_name: 'Hari Bahadur',
+              buckets: { '0-30': '0.00', '31-60': '0.00', '61-90': '700.00', '90+': '0.00' },
+              total_outstanding: '700.00',
+              unallocated: '0.00',
+            },
+          ],
+          payables: [],
+        }),
+      ),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <DuesReportPage />
+      </QueryClientProvider>,
+    );
+    await screen.findAllByText('Hari Bahadur');
+
+    const receivables = container.querySelector('table') as HTMLTableElement;
+    const row = within(receivables).getByText('Hari Bahadur').closest('tr') as HTMLTableRowElement;
+    const chip = within(row).getByText('700.00');
+    expect(chip).toHaveClass('bg-warning');
+    expect(chip.className).not.toContain('bg-warning/10');
+  });
 });

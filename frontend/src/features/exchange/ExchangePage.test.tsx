@@ -82,6 +82,7 @@ const newVariant = {
   item__name: 'Jeans',
   item__name_np: 'जिन्स',
   item__code: 'JNS',
+  image_url: '/media/tenants/t1/items/jeans.png',
 };
 
 describe('ExchangePage', () => {
@@ -117,6 +118,8 @@ describe('ExchangePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add item' }));
 
     expect(await screen.findByText('Jeans')).toBeInTheDocument();
+    const linePhoto = screen.getByRole('img', { name: 'Jeans' });
+    expect(linePhoto).toHaveAttribute('src', '/media/tenants/t1/items/jeans.png');
     fireEvent.click(screen.getByRole('button', { name: 'Record exchange' }));
 
     await waitFor(() => {
