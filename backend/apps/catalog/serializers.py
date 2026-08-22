@@ -62,6 +62,9 @@ class SizeChartSerializer(TenantContextSerializer):
 
 class ItemSerializer(TenantContextSerializer):
     image_url = serializers.SerializerMethodField()
+    variants_count = serializers.SerializerMethodField()
+    mrp_min = serializers.SerializerMethodField()
+    mrp_max = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
@@ -80,6 +83,9 @@ class ItemSerializer(TenantContextSerializer):
             "unit",
             "is_vat_applicable",
             "image_url",
+            "variants_count",
+            "mrp_min",
+            "mrp_max",
             "images",
             "attributes",
             "min_selling_price",
@@ -87,11 +93,23 @@ class ItemSerializer(TenantContextSerializer):
             "reorder_level",
             "is_active",
         )
-        read_only_fields = ("id", "image_url", "is_active")
+        read_only_fields = ("id", "image_url", "variants_count", "mrp_min", "mrp_max", "is_active")
 
     def get_image_url(self, obj: Item) -> str | None:
         """Public media URL (MEDIA_URL + storage key), never a filesystem path."""
         return obj.image.url if obj.image else None
+
+    def get_variants_count(self, obj: Item) -> int | None:
+        """Active-variant count — annotated by list_items; null on detail writes."""
+        return getattr(obj, "variants_count", None)
+
+    def get_mrp_min(self, obj: Item) -> str | None:
+        value = getattr(obj, "mrp_min", None)
+        return str(value) if value is not None else None
+
+    def get_mrp_max(self, obj: Item) -> str | None:
+        value = getattr(obj, "mrp_max", None)
+        return str(value) if value is not None else None
 
 
 class ItemVariantSerializer(TenantContextSerializer):
