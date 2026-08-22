@@ -32,6 +32,9 @@ const ITEM = {
   unit: 'PCS',
   is_vat_applicable: false,
   image_url: '/media/tenants/t1/items/ts.png',
+  variants_count: 2,
+  mrp_min: '1000.00',
+  mrp_max: '1200.00',
   min_selling_price: null,
   max_selling_price: null,
   reorder_level: null,
@@ -76,10 +79,9 @@ describe('ItemsPage', () => {
   it('lists items and refetches with the search term', async () => {
     renderItems();
 
-    // Initial load renders the row (mobile card + desktop table).
+    // Initial load renders the storefront card.
     expect((await screen.findAllByText('T-Shirt')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('TS').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Active').length).toBeGreaterThan(0);
 
     // Typing a search term refetches with `search=` on the query string.
     fetchMock.mockClear();
@@ -91,8 +93,43 @@ describe('ItemsPage', () => {
       );
       expect(searched).toBe(true);
     });
-    // Row still renders from the (mocked) filtered response.
+    // Card still renders from the (mocked) filtered response.
     expect((await screen.findAllByText('T-Shirt')).length).toBeGreaterThan(0);
+  });
+
+  it('shows the MRP range, variant count, and a detail link on each card', async () => {
+    renderItems();
+
+    await screen.findAllByText('T-Shirt');
+    expect(screen.getByText(/1,000\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/1,200\.00/)).toBeInTheDocument();
+    expect(screen.getByText('2 variants')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'T-Shirt (TS)' })).toHaveAttribute(
+      'href',
+      '/catalog/items/item-1',
+    );
+  });
+
+  it('shows a single price when the variant MRPs agree', async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/catalog/categories')) {
+        return Promise.resolve(envelope([], PAGE_META));
+      }
+      if (url.includes('/v1/catalog/items')) {
+        return Promise.resolve(
+          envelope(
+            [{ ...ITEM, image_url: null, mrp_min: '1500.00', mrp_max: '1500.00' }],
+            PAGE_META,
+          ),
+        );
+      }
+      return Promise.reject(new Error(`Unexpected request: GET ${url}`));
+    });
+    renderItems();
+
+    await screen.findAllByText('T-Shirt');
+    expect(screen.getByText('रू 1,500.00')).toBeInTheDocument();
   });
 
   it('renders the item photo, or a placeholder tile when image_url is null', async () => {

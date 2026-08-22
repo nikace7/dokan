@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
 import {
@@ -68,6 +69,7 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
   // Item photo: edit uploads immediately on select; create stashes the file
   // and uploads right after the item exists.
   const [imageUrl, setImageUrl] = useState(initial?.image_url ?? null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -104,8 +106,7 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
       }
       onSaved(item);
     },
-    onError: (err) =>
-      setError(err instanceof ApiError ? err.message : t('catalog.form.saveError')),
+    onError: (err) => setError(err instanceof ApiError ? err.message : t('catalog.form.saveError')),
   });
 
   const uploadImageMutation = useMutation({
@@ -177,10 +178,30 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
   return (
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       <div className="flex items-start gap-3 sm:col-span-2">
-        <ItemImage
-          imageUrl={imageUrl}
+        {imageUrl ? (
+          <button
+            type="button"
+            aria-label={t('catalog.photo.preview')}
+            onClick={() => setPreviewOpen(true)}
+            className="cursor-zoom-in rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ItemImage
+              imageUrl={imageUrl}
+              alt={name.trim() || t('catalog.form.image')}
+              className="h-20 w-20"
+            />
+          </button>
+        ) : (
+          <ItemImage
+            imageUrl={null}
+            alt={name.trim() || t('catalog.form.image')}
+            className="h-20 w-20"
+          />
+        )}
+        <ImageLightbox
+          imageUrl={previewOpen ? imageUrl : null}
           alt={name.trim() || t('catalog.form.image')}
-          className="h-20 w-20"
+          onClose={() => setPreviewOpen(false)}
         />
         <div className="flex flex-col gap-1.5">
           <Label>{t('catalog.form.image')}</Label>

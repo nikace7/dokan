@@ -8,7 +8,7 @@ enters application memory for them, on success or error paths.
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from django.db.models import Q, QuerySet
+from django.db.models import Count, Max, Min, Q, QuerySet
 
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 
@@ -66,7 +66,18 @@ def list_items(
     is_active: bool | None = None,
     search: str = "",
 ) -> QuerySet[Item]:
-    qs = Item.objects.filter(tenant=tenant).select_related("category", "brand", "size_chart")
+    qs = (
+        Item.objects.filter(tenant=tenant)
+        .select_related("category", "brand", "size_chart")
+        # Card-grid display annotations: active-variant count and MRP range.
+        # MRP is a selling price (never cost), so these are safe for every
+        # catalog.view user.
+        .annotate(
+            variants_count=Count("variants", filter=Q(variants__is_active=True)),
+            mrp_min=Min("variants__mrp", filter=Q(variants__is_active=True)),
+            mrp_max=Max("variants__mrp", filter=Q(variants__is_active=True)),
+        )
+    )
     if category_id:
         qs = qs.filter(category_id=category_id)
     if brand_id:
