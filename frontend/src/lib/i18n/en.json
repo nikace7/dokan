@@ -19,6 +19,7 @@
     "noPhone": "No phone",
     "walkIn": "Walk-in",
     "closeForm": "Close form",
+    "close": "Close",
     "pageOf": "Page {{page}} of {{total}}"
   },
   "language": {
@@ -812,6 +813,7 @@
       "empty": "No items yet — create the first one.",
       "open": "Open",
       "deactivate": "Deactivate",
+      "variantsCount": "{{count}} variants",
       "pageInfo": "Page {{page}} of {{pages}} ({{count}} items)",
       "columns": {
         "code": "Code",
@@ -842,7 +844,12 @@
       "emptyVariants": "No variants yet — use the matrix below to create the whole size × colour grid in one go.",
       "noBarcode": "no barcode",
       "costAmount": "Cost {{amount}}",
-      "matrixTitle": "Add variants — size × colour matrix"
+      "matrixTitle": "Add variants — size × colour matrix",
+      "mrpRange": "MRP range",
+      "deactivateConfirm": "Confirm deactivate"
+    },
+    "photo": {
+      "preview": "View full photo"
     },
     "form": {
       "editTitle": "Edit item {{code}}",
