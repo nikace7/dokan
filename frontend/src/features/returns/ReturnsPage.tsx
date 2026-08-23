@@ -180,13 +180,38 @@ export function ReturnsPage() {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [invoiceInput, setInvoiceInput] = useState('');
+  const [searchInvoice, setSearchInvoice] = useState<number | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   useMoneyDisplay();
   const salesQuery = useQuery({
-    queryKey: ['returns', 'sales', page],
-    queryFn: () => listSales(page),
+    queryKey: ['returns', 'sales', page, searchInvoice],
+    queryFn: () => listSales(page, searchInvoice ?? undefined),
   });
   const sales = (salesQuery.data?.data ?? []).filter((sale) => sale.doc_type === 'SALE');
   const meta = salesQuery.data?.meta ?? null;
+
+  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const raw = invoiceInput.trim();
+    if (!/^\d+$/.test(raw)) {
+      setSearchError(t('returns.search.invalid'));
+      return;
+    }
+    setSearchError(null);
+    setStatusMessage(null);
+    setExpandedId(null);
+    setPage(1);
+    setSearchInvoice(Number(raw));
+  }
+
+  function clearSearch() {
+    setInvoiceInput('');
+    setSearchError(null);
+    setSearchInvoice(null);
+    setPage(1);
+    setExpandedId(null);
+  }
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
@@ -197,6 +222,25 @@ export function ReturnsPage() {
       ) : null}
       <Card title={t('returns.title')}>
         <p className="mb-3 text-sm text-muted-foreground">{t('returns.help')}</p>
+        <form onSubmit={submitSearch} className="mb-3 flex flex-wrap items-end gap-2">
+          <Input
+            label={t('returns.search.label')}
+            value={invoiceInput}
+            onChange={(event) => setInvoiceInput(event.target.value)}
+            placeholder={t('returns.search.placeholder')}
+            inputMode="numeric"
+            className="w-32"
+            error={searchError ?? undefined}
+          />
+          <Button type="submit" variant="secondary" size="md">
+            {t('returns.search.button')}
+          </Button>
+          {searchInvoice != null ? (
+            <Button type="button" variant="ghost" size="md" onClick={clearSearch}>
+              {t('returns.search.clear')}
+            </Button>
+          ) : null}
+        </form>
         {salesQuery.isFetching ? (
           <p className="py-4 text-sm text-muted-foreground">{t('returns.loading')}</p>
         ) : null}
@@ -206,7 +250,11 @@ export function ReturnsPage() {
           </p>
         ) : null}
         {salesQuery.data && sales.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">{t('returns.empty')}</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            {searchInvoice != null
+              ? t('returns.search.empty', { number: searchInvoice })
+              : t('returns.empty')}
+          </p>
         ) : null}
         {sales.map((sale) => (
           <div key={sale.id} className="border-b border-border last:border-0">
