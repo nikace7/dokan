@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ExpensesPage } from '@/features/expenses/ExpensesPage';
 import { clearTokens, setTokens } from '@/lib/auth/tokens';
+import { adToBs, toBsString } from '@/lib/bs';
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -112,6 +113,29 @@ describe('ExpensesPage', () => {
       );
     });
     expect(await screen.findByText('Expense saved.')).toBeInTheDocument();
+  });
+
+  it('applies a quick BS range chip to list and summary queries', async () => {
+    renderExpenses();
+    await screen.findAllByText('Shop rent');
+
+    const todayAd = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kathmandu' });
+    const todayBs = toBsString(adToBs(todayAd));
+    fetchMock.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Today' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(`date_from_bs=${todayBs}&date_to_bs=${todayBs}`),
+        expect.anything(),
+      );
+    });
+    // Summary follows the same range.
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(`/v1/expenses/summary?date_from_bs=${todayBs}`),
+      expect.anything(),
+    );
   });
 
   it('shows the server message when the list fails', async () => {
