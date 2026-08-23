@@ -73,6 +73,8 @@ const OWNER_DASHBOARD = {
   sales: {
     today_total: '45200.00',
     bill_count: 18,
+    month_start_bs: '2083-04-01',
+    month_to_date_total: '91200.00',
     last_30_days: [
       { business_date_bs: '2083-04-19', net_total: '30000.00' },
       { business_date_bs: '2083-04-20', net_total: '45200.00' },
@@ -195,6 +197,21 @@ describe('DashboardPage', () => {
     expect(screen.getByText(/50\.7%/)).toBeInTheDocument();
     expect(screen.getByText('vs yesterday')).toBeInTheDocument();
 
+    // Month-to-date and today's profit tiles (server-filtered aggregates).
+    expect(screen.getByText('Sales this month (BS)')).toBeInTheDocument();
+    expect(screen.getByText('रू 91,200.00')).toBeInTheDocument();
+    expect(screen.getByText('Since BS 2083-04-01')).toBeInTheDocument();
+    expect(screen.getByText("Today's profit")).toBeInTheDocument();
+    expect(screen.getByText('रू 11,300.00')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Sales this month/ })).toHaveAttribute(
+      'href',
+      '/reports/sales',
+    );
+    expect(screen.getByRole('link', { name: /Today's profit/ })).toHaveAttribute(
+      'href',
+      '/reports/profit',
+    );
+
     // Tiles drill down into their reports.
     expect(screen.getByRole('link', { name: /Today's collection/ })).toHaveAttribute(
       'href',
@@ -267,6 +284,8 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Bills today')).toBeInTheDocument();
     expect(screen.getByText('Low stock')).toBeInTheDocument();
     expect(screen.queryByText("Today's collection")).not.toBeInTheDocument();
+    expect(screen.queryByText('Sales this month (BS)')).not.toBeInTheDocument();
+    expect(screen.queryByText("Today's profit")).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Last 30 days sales')).not.toBeInTheDocument();
     expect(screen.queryByText('Dues outstanding')).not.toBeInTheDocument();
     expect(screen.queryByText('Collection by method')).not.toBeInTheDocument();

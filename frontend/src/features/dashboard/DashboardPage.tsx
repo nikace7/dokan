@@ -1,5 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { Banknote, ChartBar, Package, PackageX, Plus, Receipt, Users, Wallet } from 'lucide-react';
+import {
+  Banknote,
+  CalendarDays,
+  ChartBar,
+  Package,
+  PackageX,
+  Plus,
+  Receipt,
+  TrendingUp,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -118,7 +129,7 @@ export function DashboardPage() {
       </header>
 
       <section
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3"
         aria-label={t('dashboard.todaySummary')}
       >
         {data.sales?.today_total !== undefined ? (
@@ -134,6 +145,25 @@ export function DashboardPage() {
             )}
             caption={t('dashboard.billsCount', { count: data.sales.bill_count })}
             to="/reports/sales"
+          />
+        ) : null}
+        {data.sales?.month_to_date_total !== undefined ? (
+          <StatTile
+            label={t('dashboard.monthSales')}
+            valuePaisa={toPaisa(data.sales.month_to_date_total)}
+            icon={CalendarDays}
+            tint="rose"
+            caption={t('dashboard.monthToDateSince', { date: data.sales.month_start_bs })}
+            to="/reports/sales"
+          />
+        ) : null}
+        {data.profit ? (
+          <StatTile
+            label={t('dashboard.todayProfit')}
+            valuePaisa={toPaisa(data.profit.today_net_profit)}
+            icon={TrendingUp}
+            tint="green"
+            to="/reports/profit"
           />
         ) : null}
         {data.sales ? (
@@ -322,8 +352,8 @@ function DashboardSkeleton() {
         </div>
         <Skeleton className="h-9 w-28" />
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[0, 1, 2, 3].map((i) => (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
           <StatTile key={i} label="" icon={Banknote} isLoading />
         ))}
       </div>

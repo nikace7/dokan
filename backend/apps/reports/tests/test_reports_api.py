@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Permission
@@ -184,6 +185,7 @@ class TestDashboardApi:
         # Collection aggregates are owner-level: no report.sales, no totals.
         assert "today_total" not in data["sales"]
         assert "last_30_days" not in data["sales"]
+        assert "month_to_date_total" not in data["sales"]
         # Operational bits stay: the staff's own bill count and bills.
         assert data["sales"]["bill_count"] == 1
         assert data["low_stock"]["count"] == 1
@@ -211,6 +213,10 @@ class TestDashboardApi:
         data = response.json()["data"]
         assert data["sales"]["today_total"] == "2260.00"
         assert [row["net_total"] for row in data["sales"]["last_30_days"]] == ["2260.00"]
+        assert data["sales"]["month_to_date_total"] == "2260.00"
+        # The month window starts on the current BS month's 1st.
+        expected_month_start = f"{ad_to_bs(timezone.localdate())[:7]}-01"
+        assert data["sales"]["month_start_bs"] == expected_month_start
         assert data["profit"]["today_net_profit"] == "1060.00"
         assert data["dues"] == {"customer_count": 0, "total_receivable": "0.00"}
 
