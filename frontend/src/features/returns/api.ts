@@ -32,8 +32,11 @@ export interface ReturnPayload {
   refunds?: Array<{ method: RefundMethod; amount: string }>;
 }
 
-export function listSales(page = 1): Promise<Page<SaleSummary>> {
-  return authedRequestPage<SaleSummary>(`/v1/sales?status=COMPLETED&limit=20&page=${page}`);
+export function listSales(page = 1, invoiceNo?: number): Promise<Page<SaleSummary>> {
+  const invoice = invoiceNo != null ? `&invoice_no=${invoiceNo}` : '';
+  return authedRequestPage<SaleSummary>(
+    `/v1/sales?status=COMPLETED&limit=20&page=${page}${invoice}`,
+  );
 }
 
 export function getReturnableLines(invoiceId: string): Promise<ReturnableLine[]> {
