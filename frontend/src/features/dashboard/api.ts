@@ -21,6 +21,9 @@ export interface DashboardSummary {
     /** Aggregates are present only with report.sales; staff see bill_count. */
     today_total?: string;
     bill_count: number;
+    /** Month-to-date window anchor (current BS month's 1st) and total. */
+    month_start_bs?: string;
+    month_to_date_total?: string;
     last_30_days?: DashboardSalesDay[];
   };
   profit?: { today_net_profit: string };
