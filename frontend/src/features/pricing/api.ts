@@ -12,6 +12,8 @@ export interface ItemPrice {
   variant: string | null;
   item: string | null;
   category: string | null;
+  /** Server-resolved "Item · SKU" / name — prefer over the raw FK ids. */
+  target_label?: string | null;
   price: string;
   effective_from: string;
   effective_to: string | null;
@@ -23,6 +25,8 @@ export interface PriceChange {
   id: string;
   target_type: PriceScope;
   target_id: string;
+  /** Server-resolved target name — prefer over the raw UUID. */
+  target_label?: string | null;
   rate_type: string | null;
   rate_type_code: string | null;
   old_price: string | null;
