@@ -697,7 +697,7 @@ Rules:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Tiles are role-filtered. A cashier sees two tiles and one button. Nothing else on this screen — no widgets, no news feed, no settings shortcuts.
+Tiles are role-filtered. Sales figures, bill counts, and recent bills require `report.sales` (tenant admin and equivalent roles); a cashier sees at most the low-stock tile and the New sale button. Nothing else on this screen — no widgets, no news feed, no settings shortcuts.
 
 ### 7.3 Billing screen (the screen that decides the product)
 
