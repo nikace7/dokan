@@ -334,6 +334,25 @@ class TestListAndFilters:
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "DATE_INVALID"
 
+    def test_invoice_no_filter(self, tenant: Any, user: Any) -> None:
+        SalesInvoiceFactory(tenant=tenant, invoice_no=7)
+        SalesInvoiceFactory(tenant=tenant, invoice_no=8)
+        grant(tenant, user, "sale.view")
+        client = auth_client(user)
+
+        found = client.get(SALES_URL, {"invoice_no": "7"}, **host())
+        assert found.json()["meta"]["count"] == 1
+        assert found.json()["data"][0]["invoice_no"] == 7
+
+        missing = client.get(SALES_URL, {"invoice_no": "999"}, **host())
+        assert missing.json()["meta"]["count"] == 0
+
+    def test_bad_invoice_no_param_is_400(self, tenant: Any, user: Any) -> None:
+        grant(tenant, user, "sale.view")
+        response = auth_client(user).get(SALES_URL, {"invoice_no": "abc"}, **host())
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "INVOICE_NO_INVALID"
+
 
 class TestHoldCompleteCancelFlow:
     def test_full_flow(self, tenant: Any, user: Any, shop: dict) -> None:
