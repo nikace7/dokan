@@ -6,6 +6,7 @@
  */
 
 import { ImageIcon } from 'lucide-react';
+import { useState } from 'react';
 
 import { ITEM_IMAGE_ACCEPT, ITEM_IMAGE_MAX_BYTES } from '@/features/catalog/api';
 import { cn } from '@/lib/utils';
@@ -38,19 +39,30 @@ interface ItemImageProps {
 /**
  * Small item-photo thumbnail used across catalog lists and the simple-sale
  * picker/line cards. Falls back to a neutral placeholder tile when the item
- * has no photo. Always `loading="lazy"` — list screens render many rows.
+ * has no photo OR the file fails to load (deleted media, broken path) — a
+ * broken-image icon must never reach the counter. Always `loading="lazy"` —
+ * list screens render many rows.
  */
 export function ItemImage({ imageUrl, alt, className }: ItemImageProps) {
+  const [loadFailed, setLoadFailed] = useState(false);
   const classes = cn(
     'shrink-0 overflow-hidden rounded-md border border-border bg-muted',
     className,
   );
-  if (!imageUrl) {
+  if (!imageUrl || loadFailed) {
     return (
       <span className={cn(classes, 'flex items-center justify-center')} aria-hidden="true">
         <ImageIcon className="h-1/2 w-1/2 text-muted-foreground" />
       </span>
     );
   }
-  return <img src={imageUrl} alt={alt} loading="lazy" className={cn(classes, 'object-cover')} />;
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      loading="lazy"
+      onError={() => setLoadFailed(true)}
+      className={cn(classes, 'object-cover')}
+    />
+  );
 }
