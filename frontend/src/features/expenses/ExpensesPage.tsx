@@ -23,6 +23,7 @@ import {
 } from '@/features/expenses/api';
 import type { Expense, ExpensePayload, ExpenseSummaryGroup } from '@/features/expenses/api';
 import { currentBsMonthRange } from '@/features/reports/api';
+import { BsRangeControls } from '@/features/reports/BsRangeControls';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
 
@@ -209,13 +210,6 @@ export function ExpensesPage() {
     });
   }
 
-  function resetToCurrentMonth() {
-    const range = currentBsMonthRange();
-    setDateFromBs(range.dateFromBs);
-    setDateToBs(range.dateToBs);
-    setPage(1);
-  }
-
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       {statusMessage ? (
@@ -305,7 +299,7 @@ export function ExpensesPage() {
           </form>
         ) : null}
 
-        <div className="mb-4 flex flex-wrap items-end gap-2">
+        <div className="mb-4 flex flex-wrap items-end gap-x-4 gap-y-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="expense-filter-category">{t('expenses.filterCategory')}</Label>
             <select
@@ -326,25 +320,14 @@ export function ExpensesPage() {
               ))}
             </select>
           </div>
-          <Input
-            label={t('expenses.fromBs')}
-            value={dateFromBs}
-            onChange={(event) => {
-              setDateFromBs(event.target.value);
+          <BsRangeControls
+            value={{ dateFromBs, dateToBs }}
+            onApply={(range) => {
+              setDateFromBs(range.dateFromBs);
+              setDateToBs(range.dateToBs);
               setPage(1);
             }}
           />
-          <Input
-            label={t('expenses.toBs')}
-            value={dateToBs}
-            onChange={(event) => {
-              setDateToBs(event.target.value);
-              setPage(1);
-            }}
-          />
-          <Button variant="secondary" size="sm" onClick={resetToCurrentMonth}>
-            {t('expenses.currentMonth')}
-          </Button>
         </div>
 
         {categories.length === 0 && !categoriesQuery.isFetching ? (
