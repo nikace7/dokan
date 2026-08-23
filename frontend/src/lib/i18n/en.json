@@ -637,7 +637,8 @@
       "unavailable": "Shop settings unavailable",
       "notReady": "No active branch/rate",
       "branch": "Branch",
-      "rateType": "Rate type"
+      "rateType": "Rate type",
+      "switch": "Switch branch or rate"
     }
   },
   "dashboard": {
