@@ -78,6 +78,18 @@ def _date_param(request: Request, name: str) -> date | None:
         ) from exc
 
 
+def _invoice_no_param(request: Request) -> int | None:
+    raw = request.query_params.get("invoice_no")
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise ServiceError(
+            "INVOICE_NO_INVALID", "Query parameter 'invoice_no' must be a whole number."
+        ) from exc
+
+
 def _idempotency_key(request: Request) -> str:
     """The mandatory key (#8); missing → 400 IDEMPOTENCY_KEY_REQUIRED."""
     key = request.headers.get("Idempotency-Key", "").strip()
@@ -127,6 +139,7 @@ class SaleListView(_SalesAPIView):
             status=request.query_params.get("status", ""),
             branch_id=_uuid_param(request, "branch"),
             customer_id=_uuid_param(request, "customer"),
+            invoice_no=_invoice_no_param(request),
             date_from=_date_param(request, "date_from"),
             date_to=_date_param(request, "date_to"),
             date_from_bs=request.query_params.get("date_from_bs", ""),

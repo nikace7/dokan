@@ -117,4 +117,39 @@ describe('ReturnsPage', () => {
     });
     expect(await screen.findByText('Return recorded.')).toBeInTheDocument();
   });
+
+  it('searches a completed sale by invoice number and clears back to the list', async () => {
+    renderReturns();
+    await screen.findByRole('button', { name: /Invoice 1/ });
+
+    fireEvent.change(screen.getByLabelText('Invoice no.'), { target: { value: '7' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('invoice_no=7'),
+        expect.anything(),
+      );
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.not.stringContaining('invoice_no'),
+        expect.anything(),
+      );
+    });
+  });
+
+  it('rejects a non-numeric invoice search', async () => {
+    renderReturns();
+    fireEvent.change(screen.getByLabelText('Invoice no.'), { target: { value: 'abc' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find' }));
+
+    expect(await screen.findByText('Enter a whole invoice number.')).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('invoice_no'),
+      expect.anything(),
+    );
+  });
 });

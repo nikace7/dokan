@@ -460,6 +460,14 @@
     "invoice": "Invoice {{number}}",
     "count": "{{count}} sales",
     "recorded": "Return recorded.",
+    "search": {
+      "label": "Invoice no.",
+      "placeholder": "e.g. 42",
+      "button": "Find",
+      "clear": "Show all",
+      "empty": "No completed sale with invoice {{number}}.",
+      "invalid": "Enter a whole invoice number."
+    },
     "editor": {
       "loadingLines": "Loading returnable lines…",
       "loadLinesError": "Could not load returnable lines.",
