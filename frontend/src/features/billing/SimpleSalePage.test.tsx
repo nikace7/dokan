@@ -119,7 +119,7 @@ const INVOICE = {
 };
 
 /** Route mock responses by URL + method; `saleResponse` is POST /v1/sales. */
-function installApiMock(saleResponse?: Response) {
+function installApiMock(saleResponse?: Response, forSaleRows: unknown[] = [TSHIRT, JEANS]) {
   fetchMock.mockImplementation((input, init) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
@@ -141,8 +141,8 @@ function installApiMock(saleResponse?: Response) {
       return Promise.resolve(
         new Response(
           JSON.stringify({
-            data: [TSHIRT, JEANS],
-            meta: { count: 2, page: 1, total_pages: 1, page_size: 50 },
+            data: forSaleRows,
+            meta: { count: forSaleRows.length, page: 1, total_pages: 1, page_size: 50 },
             error: null,
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
@@ -247,6 +247,37 @@ describe('SimpleSalePage', () => {
       'src',
       '/media/tenants/t1/items/tshirt.png',
     );
+  });
+
+  it('shows a tappable quick-pick photo grid on load', async () => {
+    installApiMock();
+    renderPage();
+
+    const grid = await screen.findByRole('region', { name: /quick pick/i });
+    const tshirt = await within(grid).findByRole('button', { name: /T-Shirt/ });
+    // Photo tiles carry the item image; Jeans falls back to the placeholder.
+    expect(within(tshirt).getByRole('img', { name: 'T-Shirt' })).toHaveAttribute(
+      'src',
+      '/media/tenants/t1/items/tshirt.png',
+    );
+    expect(
+      within(within(grid).getByRole('button', { name: /Jeans/ })).queryByRole('img'),
+    ).not.toBeInTheDocument();
+
+    // Tapping a tile adds the line straight away — no dialog opens.
+    fireEvent.click(tshirt);
+    expect(screen.getByRole('region', { name: 'T-Shirt — M / Black' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(completeButton()).toHaveTextContent('रू 1,500.00');
+  });
+
+  it('shows a hint when the branch has no stock yet', async () => {
+    installApiMock(undefined, []);
+    renderPage();
+
+    expect(await screen.findByText(/no items in stock at this branch yet/i)).toBeInTheDocument();
+    // The search dialog stays reachable from the dashed button.
+    expect(screen.getByRole('button', { name: /add item/i })).toBeInTheDocument();
   });
 
   it('blocks submit when the price is outside the allowed range', async () => {
