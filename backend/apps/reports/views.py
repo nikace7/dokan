@@ -99,6 +99,7 @@ class DashboardPermission(BasePermission):
         "customer.view",
         "report.ledger",
         "report.profit",
+        "report.sales",
         "sale.create",
         "sale.view",
         "stock.view",
