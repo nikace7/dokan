@@ -172,7 +172,9 @@ class TestDashboardApi:
         response = APIClient().get("/api/v1/dashboard", **host())
         assert response.status_code == 401
 
-    def test_cashier_gets_only_operational_tiles(self, tenant: Any, user: Any, shop: dict) -> None:
+    def test_cashier_gets_no_sales_or_bills_sections(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
         item = shop["variant"].item
         item.reorder_level = Decimal("25")
         item.save(update_fields=["reorder_level"])
@@ -182,16 +184,30 @@ class TestDashboardApi:
 
         assert response.status_code == 200
         data = response.json()["data"]
-        # Collection aggregates are owner-level: no report.sales, no totals.
-        assert "today_total" not in data["sales"]
-        assert "last_30_days" not in data["sales"]
-        assert "month_to_date_total" not in data["sales"]
-        # Operational bits stay: the staff's own bill count and bills.
-        assert data["sales"]["bill_count"] == 1
+        # Sales figures, bill counts, and recent bills are owner-level
+        # (report.sales): a cashier gets none of the sales section.
+        assert "sales" not in data
+        assert "recent_bills" not in data
+        # Operational stock tile stays.
         assert data["low_stock"]["count"] == 1
-        assert data["recent_bills"][0]["invoice_no"] == shop["sale"].invoice_no
         assert "profit" not in data
         assert "dues" not in data
+
+    def test_reports_only_user_gets_full_sales_sections(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        # "Similar access" roles (manager/accountant) hold report.sales
+        # without ever touching the POS — no sale.view needed.
+        grant(tenant, user, "report.sales")
+
+        response = auth_client(user).get("/api/v1/dashboard", **host())
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["sales"]["today_total"] == "2260.00"
+        assert data["sales"]["bill_count"] == 1
+        assert data["recent_bills"][0]["invoice_no"] == shop["sale"].invoice_no
+        assert "low_stock" not in data
 
     def test_owner_gets_profit_and_dues_tiles(self, tenant: Any, user: Any, shop: dict) -> None:
         tenant.plan.features = {**tenant.plan.features, "profit_reports": True}
