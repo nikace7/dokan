@@ -46,6 +46,7 @@ def list_invoices(
     status: str = "",
     branch_id: UUID | None = None,
     customer_id: UUID | None = None,
+    invoice_no: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
     date_from_bs: str = "",
@@ -64,6 +65,8 @@ def list_invoices(
         qs = qs.filter(branch_id=branch_id)
     if customer_id:
         qs = qs.filter(customer_id=customer_id)
+    if invoice_no is not None:
+        qs = qs.filter(invoice_no=invoice_no)
     if date_from:
         qs = qs.filter(business_date_ad__gte=date_from)
     if date_to:
