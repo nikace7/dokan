@@ -4,6 +4,7 @@ from typing import Any
 
 from rest_framework import serializers
 
+from apps.pricing import selectors
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
 
 
@@ -29,6 +30,7 @@ class RateTypeSerializer(serializers.ModelSerializer):
 
 class ItemPriceSerializer(serializers.ModelSerializer):
     rate_type_code = serializers.CharField(source="rate_type.code", read_only=True)
+    target_label = serializers.SerializerMethodField()
 
     class Meta:
         model = ItemPrice
@@ -40,6 +42,7 @@ class ItemPriceSerializer(serializers.ModelSerializer):
             "variant",
             "item",
             "category",
+            "target_label",
             "price",
             "effective_from",
             "effective_to",
@@ -47,6 +50,9 @@ class ItemPriceSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = ("id", "created_by", "created_at")
+
+    def get_target_label(self, obj: ItemPrice) -> str | None:
+        return selectors.item_price_target_label(obj)
 
 
 class SetPriceSerializer(serializers.Serializer):
@@ -68,6 +74,7 @@ class PriceChangeLogSerializer(serializers.ModelSerializer):
     changed_by_name = serializers.CharField(
         source="changed_by.full_name", read_only=True, allow_null=True
     )
+    target_label = serializers.SerializerMethodField()
 
     class Meta:
         model = PriceChangeLog
@@ -75,6 +82,7 @@ class PriceChangeLogSerializer(serializers.ModelSerializer):
             "id",
             "target_type",
             "target_id",
+            "target_label",
             "rate_type",
             "rate_type_code",
             "old_price",
@@ -85,6 +93,12 @@ class PriceChangeLogSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = fields
+
+    def get_target_label(self, obj: PriceChangeLog) -> str | None:
+        # Bulk-resolved by the view (context["target_labels"]) — the log uses
+        # a generic (type, id) pair, so no FK join is possible here.
+        labels = self.context.get("target_labels") or {}
+        return labels.get((obj.target_type, str(obj.target_id)))
 
 
 class BoundsSerializer(serializers.Serializer):
