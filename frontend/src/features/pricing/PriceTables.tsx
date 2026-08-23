@@ -13,12 +13,17 @@ import { formatNpr, useMoneyDisplay } from '@/lib/money';
 function target(row: {
   scope?: string;
   target_type?: string;
+  target_label?: string | null;
   variant?: string | null;
   item?: string | null;
   category?: string | null;
   target_id?: string;
 }) {
-  return `${row.scope ?? row.target_type} · ${row.variant ?? row.item ?? row.category ?? row.target_id ?? '—'}`;
+  // The server resolves names; the UUID form only survives a pre-label API.
+  return (
+    row.target_label ??
+    `${row.scope ?? row.target_type} · ${row.variant ?? row.item ?? row.category ?? row.target_id ?? '—'}`
+  );
 }
 
 export function PriceTables() {

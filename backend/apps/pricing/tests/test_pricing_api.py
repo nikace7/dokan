@@ -240,6 +240,8 @@ class TestPricesAndChanges:
             PRICES_URL, {"rate_type": str(rate_type.pk), "scope": "VARIANT"}, **host()
         )
         assert listed.json()["meta"]["count"] == 1
+        expected_label = f"{variant.item.name} · {variant.sku}"
+        assert listed.json()["data"][0]["target_label"] == expected_label
 
         changes = client.get(CHANGES_URL, **host())
         entry = changes.json()["data"][0]
@@ -247,6 +249,7 @@ class TestPricesAndChanges:
         assert entry["old_price"] is None
         assert entry["reason"] == "New season"
         assert entry["changed_by_name"] == user.full_name
+        assert entry["target_label"] == expected_label
 
     def test_set_price_validation_errors(
         self, tenant: Any, user: Any, variant: Any, rate_type: Any
@@ -326,6 +329,37 @@ class TestPricesAndChanges:
         assert filtered.json()["meta"]["count"] == 2
         empty = client.get(CHANGES_URL, {"target_type": "CATEGORY"}, **host())
         assert empty.json()["meta"]["count"] == 0
+
+    def test_item_and_category_target_labels(self, tenant: Any, user: Any, rate_type: Any) -> None:
+        grant(tenant, user, "pricing.view", "pricing.edit")
+        client = auth_client(user)
+        item = ItemFactory(tenant=tenant)
+        category = CategoryFactory(tenant=tenant)
+        for scope, key, target in (
+            ("ITEM", "item", item),
+            ("CATEGORY", "category", category),
+        ):
+            created = client.post(
+                PRICES_URL,
+                {
+                    "rate_type": str(rate_type.pk),
+                    "scope": scope,
+                    key: str(target.pk),
+                    "price": "900.00",
+                    "effective_from": "2026-01-01",
+                },
+                **host(),
+                format="json",
+            )
+            assert created.status_code == 201
+            assert created.json()["data"]["target_label"] == target.name
+
+        prices = client.get(PRICES_URL, **host()).json()["data"]
+        assert {row["target_label"] for row in prices} == {item.name, category.name}
+
+        changes = client.get(CHANGES_URL, **host()).json()["data"]
+        labels = {(row["target_type"], row["target_label"]) for row in changes}
+        assert labels == {("ITEM", item.name), ("CATEGORY", category.name)}
 
 
 class TestBounds:

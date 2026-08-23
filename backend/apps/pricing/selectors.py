@@ -4,16 +4,54 @@ No cost columns exist on these tables, so nothing to drop — but the
 explicit-user convention is kept for consistency (design §8.1).
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from django.db.models import QuerySet
 
+from apps.catalog.models import Category, Item, ItemVariant
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
     from apps.tenants.models import Tenant
+
+
+def variant_label(variant: Any) -> str:
+    """'Item name · SKU' — the one readable form of a variant everywhere."""
+    return f"{variant.item.name} · {variant.sku}"
+
+
+def item_price_target_label(price: ItemPrice) -> str | None:
+    """Human-readable target of a scoped price; FKs are select_related."""
+    if price.scope == ItemPrice.Scope.VARIANT and price.variant is not None:
+        return variant_label(price.variant)
+    if price.scope == ItemPrice.Scope.ITEM and price.item is not None:
+        return price.item.name
+    if price.scope == ItemPrice.Scope.CATEGORY and price.category is not None:
+        return price.category.name
+    return None
+
+
+def price_change_target_labels(
+    tenant: "Tenant", changes: list[PriceChangeLog]
+) -> dict[tuple[str, str], str]:
+    """Names for change-log targets, bulk-fetched per type (no N+1)."""
+    ids: dict[str, set[UUID]] = {"VARIANT": set(), "ITEM": set(), "CATEGORY": set()}
+    for change in changes:
+        if change.target_type in ids:
+            ids[change.target_type].add(change.target_id)
+    labels: dict[tuple[str, str], str] = {}
+    variants = ItemVariant.objects.filter(tenant=tenant, pk__in=ids["VARIANT"]).select_related(
+        "item"
+    )
+    for variant in variants:
+        labels[("VARIANT", str(variant.pk))] = variant_label(variant)
+    for item in Item.objects.filter(tenant=tenant, pk__in=ids["ITEM"]):
+        labels[("ITEM", str(item.pk))] = item.name
+    for category in Category.objects.filter(tenant=tenant, pk__in=ids["CATEGORY"]):
+        labels[("CATEGORY", str(category.pk))] = category.name
+    return labels
 
 
 def list_rate_types(
@@ -33,7 +71,7 @@ def list_prices(
     scope: str = "",
 ) -> QuerySet[ItemPrice]:
     qs = ItemPrice.objects.filter(tenant=tenant).select_related(
-        "rate_type", "variant", "item", "category"
+        "rate_type", "variant__item", "item", "category"
     )
     if rate_type_id:
         qs = qs.filter(rate_type_id=rate_type_id)
