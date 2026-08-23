@@ -238,6 +238,7 @@ export function SimpleSalePage() {
           column. */}
       <div
         ref={tenderBarRef}
+        data-testid="tender-bar"
         className="fixed inset-x-0 bottom-14 z-20 border-t border-border bg-card shadow-lg md:bottom-0 md:left-60"
       >
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-4 py-3">
