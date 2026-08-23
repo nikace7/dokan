@@ -171,6 +171,10 @@
       "loadError": "Could not load items. Check your connection and try again.",
       "empty": "No items in stock match that search."
     },
+    "quickPick": {
+      "title": "Quick pick",
+      "empty": "No items in stock at this branch yet."
+    },
     "line": {
       "price": "Price",
       "qty": "Qty",
