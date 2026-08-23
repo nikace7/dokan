@@ -35,10 +35,14 @@ def dashboard_summary(tenant: "Tenant", user: "User") -> dict[str, Any]:
         # data: they require report.sales. Staff ringing up sales keep the
         # operational bits — their bill count and recent bills.
         can_view_collections = user.has_perm("report.sales")
+        # Widen the window to the current BS month's 1st so month-to-date is
+        # exact even on the 31st/32nd; the 30-day trend slices it back down.
+        month_start_bs = f"{today_bs[:7]}-01"
+        trend_start_bs = ad_to_bs(today - timedelta(days=29))
         rows = daily_sales(
             tenant,
             user,
-            date_from_bs=ad_to_bs(today - timedelta(days=29)),
+            date_from_bs=min(trend_start_bs, month_start_bs),
             date_to_bs=today_bs,
         )
         current = next((row for row in rows if row["business_date_bs"] == today_bs), None)
@@ -46,13 +50,24 @@ def dashboard_summary(tenant: "Tenant", user: "User") -> dict[str, Any]:
             "bill_count": current["bill_count"] if current else 0,
         }
         if can_view_collections:
+            month_total = sum(
+                (
+                    Decimal(row["net_total"])
+                    for row in rows
+                    if row["business_date_bs"] >= month_start_bs
+                ),
+                Decimal("0"),
+            )
             sales_block["today_total"] = current["net_total"] if current else "0.00"
+            sales_block["month_start_bs"] = month_start_bs
+            sales_block["month_to_date_total"] = str(quantize_money(month_total))
             sales_block["last_30_days"] = [
                 {
                     "business_date_bs": row["business_date_bs"],
                     "net_total": row["net_total"],
                 }
                 for row in rows
+                if row["business_date_bs"] >= trend_start_bs
             ]
         result["sales"] = sales_block
         invoices = sales_selectors.list_invoices(
