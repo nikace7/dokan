@@ -89,6 +89,7 @@ describe('PricingPage', () => {
               variant: null,
               item: 'item-1',
               category: null,
+              target_label: 'Cotton Tee',
               price: '1200.00',
               effective_from: '2026-08-01',
               effective_to: null,
@@ -105,6 +106,7 @@ describe('PricingPage', () => {
               id: 'change-1',
               target_type: 'ITEM',
               target_id: 'item-1',
+              target_label: 'Cotton Tee',
               rate_type: 'retail-1',
               rate_type_code: 'retail',
               old_price: '1100.00',
@@ -126,6 +128,9 @@ describe('PricingPage', () => {
     renderPage();
 
     expect(await screen.findByText('Retail')).toBeInTheDocument();
+    // The server-resolved label renders (card + table), never the raw UUID.
+    expect((await screen.findAllByText('Cotton Tee')).length).toBeGreaterThan(1);
+    expect(screen.queryByText(/ITEM · item-1/)).not.toBeInTheDocument();
     // History rows render twice (mobile card + desktop table).
     expect((await screen.findAllByText('Season price update')).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'New rate type' })).not.toBeInTheDocument();
