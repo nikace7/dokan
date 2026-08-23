@@ -224,7 +224,14 @@ class PriceChangeListView(_PricingAPIView):
             target_type=request.query_params.get("target_type", ""),
             target_id=_uuid_param(request, "target"),
         )
-        return self._paginated(request, qs, PriceChangeLogSerializer)
+        paginator = EnvelopePageNumberPagination()
+        page: list[Any] | None = paginator.paginate_queryset(qs, request, view=self)
+        context = {
+            **self._context(request),
+            "target_labels": selectors.price_change_target_labels(tenant, page or []),
+        }
+        serializer: Any = PriceChangeLogSerializer(page, many=True, context=context)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class BoundsView(_PricingAPIView):
