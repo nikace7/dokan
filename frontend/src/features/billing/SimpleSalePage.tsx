@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -74,6 +74,22 @@ export function SimpleSalePage() {
   // One Idempotency-Key per composed bill; a failed Complete retries with the
   // SAME key (a safe replay), and only a completed/new bill rotates it.
   const idempotencyKey = useRef(crypto.randomUUID());
+
+  // The tender bar is FIXED so it stays rigid at the viewport bottom while
+  // scrolling (sticky visibly followed the scroll). An in-flow spacer of
+  // exactly the bar's height keeps the last line from sliding underneath;
+  // ResizeObserver tracks the bar growing/shrinking (error line, wraps).
+  const tenderBarRef = useRef<HTMLDivElement | null>(null);
+  const [tenderBarHeight, setTenderBarHeight] = useState(0);
+  useLayoutEffect(() => {
+    const bar = tenderBarRef.current;
+    if (!bar) return;
+    const measure = () => setTenderBarHeight(bar.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, []);
 
   const total = grandTotalPaisa(lines);
   const canSubmit = online && workspace.isReady && linesValid(lines) && total > 0;
@@ -212,13 +228,19 @@ export function SimpleSalePage() {
         />
       ) : null}
 
-      {/* In-flow sticky bar: follows the content (no floating gap on a short
-          bill) and pins above the mobile bottom tab bar (h-14) once the page
-          scrolls; flush at md+ where the tab bar hides. Being part of the
-          flow means it sizes itself — the old fixed bar needed brittle
-          bottom padding and covered content when the error line grew it. */}
-      <div className="sticky bottom-14 -mx-4 border-t border-border bg-card p-3 shadow-lg md:bottom-0">
-        <div className="flex flex-col gap-2">
+      {/* In-flow spacer exactly the bar's height, so the last line and any
+          error message stay scrollable clear of the fixed bar. */}
+      <div aria-hidden="true" style={{ height: tenderBarHeight }} />
+
+      {/* Fixed tender bar: rigid at the viewport bottom while scrolling,
+          above the mobile tab bar (h-14), flush and clearing the sidebar at
+          md+. The inner row keeps the controls centered over the page
+          column. */}
+      <div
+        ref={tenderBarRef}
+        className="fixed inset-x-0 bottom-14 z-20 border-t border-border bg-card shadow-lg md:bottom-0 md:left-60"
+      >
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-4 py-3">
           <div
             role="group"
             aria-label={t('simpleSale.paymentMethod')}
