@@ -5,6 +5,7 @@ each level (variant → item → category), the sale.create gate, cost never
 leaking (#10), and tenant isolation.
 """
 
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -12,6 +13,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Permission
+from apps.inventory.models import StockMovement
 from tests.factories import (
     DEFAULT_PASSWORD,
     BranchFactory,
@@ -21,6 +23,7 @@ from tests.factories import (
     RoleFactory,
     RolePermissionFactory,
     StockLevelFactory,
+    StockMovementFactory,
     TenantFactory,
     UserFactory,
     UserRoleFactory,
@@ -233,3 +236,75 @@ class TestForSaleList:
         # Tenant B's branch id is not addressable from tenant A's host.
         cross = auth_client(user).get(URL, {"branch_id": str(other_branch.pk)}, **host())
         assert cross.status_code == 404
+
+
+class TestBestSellerOrdering:
+    """No-search rows rank by trailing-90-day net sold qty (SALE deltas are
+    negative, so lower = better seller); ties keep the A-Z base order."""
+
+    def sold(self, tenant: Any, branch: Any, variant: Any, qty: str, days_ago: int = 1) -> None:
+        business_date = date.today() - timedelta(days=days_ago)
+        StockMovementFactory(
+            tenant=tenant,
+            branch=branch,
+            variant=variant,
+            type=StockMovement.MovementType.SALE,
+            qty_delta=Decimal(qty),
+            business_date_ad=business_date,
+        )
+
+    def named_variant(self, tenant: Any, branch: Any, name: str) -> Any:
+        item = ItemFactory(tenant=tenant, name=name)
+        variant = ItemVariantFactory(tenant=tenant, item=item)
+        StockLevelFactory(tenant=tenant, branch=branch, variant=variant, qty_on_hand=9)
+        return variant
+
+    def ids(self, user: Any, branch: Any, **params: str) -> list[str]:
+        body = auth_client(user).get(URL, {"branch_id": str(branch.pk), **params}, **host()).json()
+        return [row["id"] for row in body["data"]]
+
+    def test_sales_rank_and_ties_and_net_returns(self, tenant: Any, user: Any, branch: Any) -> None:
+        alpha = self.named_variant(tenant, branch, "Alpha")
+        beta = self.named_variant(tenant, branch, "Beta")
+        gamma = self.named_variant(tenant, branch, "Gamma")
+        delta = self.named_variant(tenant, branch, "Delta")
+        # Beta and Gamma both sold 5 (tie → A-Z); Alpha sold 3 but 4 came
+        # back (net +1, after never-sold Delta at 0).
+        for variant in (beta, gamma):
+            self.sold(tenant, branch, variant, "-5")
+        self.sold(tenant, branch, alpha, "-3")
+        StockMovementFactory(
+            tenant=tenant,
+            branch=branch,
+            variant=alpha,
+            type=StockMovement.MovementType.SALE_RETURN,
+            qty_delta=Decimal("4"),
+        )
+        grant(tenant, user, "sale.create")
+        assert self.ids(user, branch) == [
+            str(beta.pk),
+            str(gamma.pk),
+            str(delta.pk),
+            str(alpha.pk),
+        ]
+
+    def test_old_and_other_branch_sales_do_not_rank(
+        self, tenant: Any, user: Any, branch: Any
+    ) -> None:
+        alpha = self.named_variant(tenant, branch, "Alpha")
+        beta = self.named_variant(tenant, branch, "Beta")
+        gamma = self.named_variant(tenant, branch, "Gamma")
+        # Beta's 10 sales are at another branch; Gamma's 10 are 120 days out.
+        # Both score zero here, so the list stays alphabetical.
+        other_branch = BranchFactory(tenant=tenant)
+        self.sold(tenant, other_branch, beta, "-10")
+        self.sold(tenant, branch, gamma, "-10", days_ago=120)
+        grant(tenant, user, "sale.create")
+        assert self.ids(user, branch) == [str(alpha.pk), str(beta.pk), str(gamma.pk)]
+
+    def test_search_keeps_alphabetical_order(self, tenant: Any, user: Any, branch: Any) -> None:
+        a_shirt = self.named_variant(tenant, branch, "A Shirt")
+        z_shirt = self.named_variant(tenant, branch, "Z Shirt")
+        self.sold(tenant, branch, z_shirt, "-20")  # best seller, but search stays A-Z
+        grant(tenant, user, "sale.create")
+        assert self.ids(user, branch, search="shirt") == [str(a_shirt.pk), str(z_shirt.pk)]
