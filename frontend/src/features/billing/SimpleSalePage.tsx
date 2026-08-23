@@ -18,6 +18,7 @@ import { ItemPickerDialog } from '@/features/billing/ItemPickerDialog';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { ShareBillPanel } from '@/features/billing/ShareBillPanel';
 import { SimpleSaleLineCard } from '@/features/billing/SimpleSaleLineCard';
+import { SimpleSaleQuickPick } from '@/features/billing/SimpleSaleQuickPick';
 import { grandTotalPaisa, linesValid } from '@/features/billing/simpleSaleModel';
 import type { SimpleLine } from '@/features/billing/simpleSaleModel';
 import { useWorkspace } from '@/features/settings/useWorkspace';
@@ -149,7 +150,7 @@ export function SimpleSalePage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[70vh] max-w-2xl flex-col gap-3 p-4">
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-4">
       <h1 className="text-xl font-semibold">{t('simpleSale.title')}</h1>
 
       {!online ? (
@@ -201,11 +202,22 @@ export function SimpleSalePage() {
         }}
       />
 
-      {/* In-flow sticky bar: pins above the mobile bottom tab bar (h-14)
-          while scrolled, flush at md+ where the bar hides. Being part of the
+      {/* Quick-pick photo grid fills the otherwise empty page and lets the
+          counter tap items straight onto the bill; hidden while offline or
+          before the workspace resolves (the banners above explain why). */}
+      {online && workspace.isReady && workspace.branchId ? (
+        <SimpleSaleQuickPick
+          branchId={workspace.branchId}
+          onPick={(variant) => setLines((current) => [...current, newLine(variant)])}
+        />
+      ) : null}
+
+      {/* In-flow sticky bar: follows the content (no floating gap on a short
+          bill) and pins above the mobile bottom tab bar (h-14) once the page
+          scrolls; flush at md+ where the tab bar hides. Being part of the
           flow means it sizes itself — the old fixed bar needed brittle
           bottom padding and covered content when the error line grew it. */}
-      <div className="sticky bottom-14 -mx-4 mt-auto border-t border-border bg-card p-3 shadow-lg md:bottom-0">
+      <div className="sticky bottom-14 -mx-4 border-t border-border bg-card p-3 shadow-lg md:bottom-0">
         <div className="flex flex-col gap-2">
           <div
             role="group"
