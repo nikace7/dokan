@@ -5,13 +5,17 @@ dropped AT THE SELECTOR for users without ``pricing.view_cost`` — it never
 enters application memory for them, on success or error paths.
 """
 
+from datetime import timedelta
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from django.conf import settings
-from django.db.models import Count, Max, Min, Q, QuerySet
+from django.db.models import Count, Max, Min, Q, QuerySet, Sum
+from django.utils import timezone
 
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
+from core.calendar.bs import ad_to_bs
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -149,6 +153,13 @@ def list_variants_for_sale(
     selector reads no cost column and the bounds chain is MRP/selling-price
     based. Money crosses the API as strings, never JSON floats. ``image_url``
     is the item's media URL path (or None) so the picker can show thumbnails.
+
+    Ordering: with no ``search`` (the quick-pick grid), best sellers first —
+    net units sold at this branch over the trailing ``_RECENT_SALES_DAYS``
+    days — with alphabetical as the tiebreak (so new shops with no sales get
+    a plain A-Z list). A search keeps the plain alphabetical order: the
+    cashier is scanning a filtered list for a match, and stability matters
+    more than ranking there.
     """
     from apps.inventory.models import StockLevel
     from apps.pricing.services import effective_price_bounds
@@ -185,4 +196,40 @@ def list_variants_for_sale(
                 "max_selling_price": str(max_price) if max_price is not None else None,
             }
         )
+    if not search:
+        _sort_best_sellers_first(rows, tenant, branch_id)
     return rows
+
+
+# How far back "best sellers" look. A season of sales ranks the grid; a shop
+# with no sales in the window gets pure alphabetical order (all ties).
+_RECENT_SALES_DAYS = 90
+
+
+def _sort_best_sellers_first(rows: list[dict[str, Any]], tenant: "Tenant", branch_id: UUID) -> None:
+    """Order for-sale rows by recent net units sold, in place.
+
+    One aggregate query over the immutable ledger; SALE deltas are negative,
+    so ascending net qty = best seller first. Variants with no movement sort
+    as zero (after sellers, before net-returned), and Python's stable sort
+    keeps the alphabetical base order within ties. The BS date predicate
+    rides the (tenant, branch, business_date_bs) ledger index.
+    """
+    from apps.inventory.models import StockMovement
+
+    since_bs = ad_to_bs(timezone.localdate() - timedelta(days=_RECENT_SALES_DAYS))
+    sold = (
+        StockMovement.objects.filter(
+            tenant=tenant,
+            branch_id=branch_id,
+            type__in=[
+                StockMovement.MovementType.SALE,
+                StockMovement.MovementType.SALE_RETURN,
+            ],
+            business_date_bs__gte=since_bs,
+        )
+        .values("variant_id")
+        .annotate(net_qty=Sum("qty_delta"))
+    )
+    net_by_variant = {str(row["variant_id"]): row["net_qty"] for row in sold}
+    rows.sort(key=lambda row: net_by_variant.get(row["id"], Decimal("0")))
