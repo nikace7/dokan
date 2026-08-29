@@ -45,7 +45,7 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Bazaar — marquee strip, bouncy pops and wiggles, springy modal.
+ * Bazaar — slow brass marquee, gentle modal pop / bottom-sheet slide.
  * ------------------------------------------------------------------------ */
 @keyframes bazaar-marquee {
   from {
@@ -77,18 +77,6 @@
   to {
     transform: translateY(0);
     opacity: 1;
-  }
-}
-@keyframes bazaar-wiggle {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(-2deg) scale(1.04);
-  }
-  75% {
-    transform: rotate(2deg) scale(1.04);
   }
 }
 
