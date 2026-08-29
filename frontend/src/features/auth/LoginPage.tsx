@@ -154,9 +154,9 @@ export function LoginPage() {
                   type="submit"
                   size="lg"
                   className="w-full"
-                  disabled={isLoggingIn || isRestoring}
+                  loading={isLoggingIn || isRestoring}
                 >
-                  {isLoggingIn ? t('auth.signingIn') : t('auth.signIn')}
+                  {t('auth.signIn')}
                 </Button>
               </form>
             </CardContent>
