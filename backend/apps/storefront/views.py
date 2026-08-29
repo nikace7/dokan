@@ -189,7 +189,10 @@ class StoreSettingsView(APIView):
         return super().handle_exception(exc)
 
     def _payload(self, tenant: Tenant, settings_row: StoreSettings) -> dict[str, Any]:
+        from apps.catalog.models import Item
+
         subdomain = tenant.shopfront_subdomain
+        active_items = Item.objects.filter(tenant=tenant, is_active=True)
         return {
             **StoreSettingsSerializer(settings_row).data,
             "shopfront_subdomain": subdomain,
@@ -198,6 +201,9 @@ class StoreSettingsView(APIView):
                 f"https://{subdomain}.shop.{settings.ROOT_DOMAIN}" if subdomain else None
             ),
             "ecommerce_enabled": is_feature_enabled(tenant, "ecommerce"),
+            # Setup-progress hints for the tenant UI checklist.
+            "active_items_count": active_items.count(),
+            "website_price_count": active_items.filter(website_price__isnull=False).count(),
         }
 
     def get(self, request: Request) -> Response:

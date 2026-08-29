@@ -39,6 +39,33 @@ function errorMessage(error: unknown, fallback: string): string {
 const selectClasses =
   'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
+function ChecklistStep({
+  done,
+  label,
+  hint,
+}: {
+  done: boolean;
+  label: string;
+  hint?: string;
+}) {
+  return (
+    <li className="flex items-start gap-3">
+      <span
+        aria-hidden="true"
+        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+          done ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'
+        }`}
+      >
+        {done ? '✓' : '•'}
+      </span>
+      <div>
+        <p className={`text-sm font-medium ${done ? '' : 'text-muted-foreground'}`}>{label}</p>
+        {hint && !done ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      </div>
+    </li>
+  );
+}
+
 /**
  * Tenant admin's online-store control panel: website copy, announcement,
  * store-wide offer, and the website price currency. The address and the
@@ -103,6 +130,37 @@ export function OnlineStorePage() {
   }
 
   const settings = query.data;
+  const hasContent = Boolean(
+    settings.hero_title ||
+      settings.hero_subtitle ||
+      settings.announcement ||
+      settings.offer_text,
+  );
+  const checklist: Array<{ done: boolean; label: string; hint?: string }> = [
+    {
+      done: settings.shopfront_subdomain !== null,
+      label: t('settings.store.checklist.address'),
+      hint: t('settings.store.checklist.addressHint'),
+    },
+    {
+      done: settings.ecommerce_enabled,
+      label: t('settings.store.checklist.service'),
+      hint: t('settings.store.checklist.serviceHint'),
+    },
+    {
+      done: hasContent,
+      label: t('settings.store.checklist.content'),
+      hint: t('settings.store.checklist.contentHint'),
+    },
+    {
+      done: settings.website_price_count > 0,
+      label: t('settings.store.checklist.prices', {
+        count: settings.website_price_count,
+        total: settings.active_items_count,
+      }),
+      hint: t('settings.store.checklist.pricesHint'),
+    },
+  ];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -172,6 +230,14 @@ export function OnlineStorePage() {
           </div>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">{t('settings.store.status.help')}</p>
+      </Card>
+
+      <Card title={t('settings.store.checklist.title')}>
+        <ol className="flex flex-col gap-3">
+          {checklist.map((step) => (
+            <ChecklistStep key={step.label} done={step.done} label={step.label} hint={step.hint} />
+          ))}
+        </ol>
       </Card>
 
       <Card title={t('settings.store.content.title')}>

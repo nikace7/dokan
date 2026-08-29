@@ -52,6 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Public tracking at `GET /storefront/orders/<token>`, order history at
   `GET /storefront/my/orders`. Order confirmation + OTP emails via
   Django's email backend (console locally, SMTP env vars in production)
+- `platformadmin` — the Online store card is now a guided 4-step setup
+  (enable service → assign address → pick template → live link with
+  hand-off note), with an inline one-click "Enable e-commerce" override
+  for SUPER_ADMINs
+- `frontend` — the tenant's Online store screen gains a setup checklist
+  (address assigned, service active, content added, website prices set
+  with live counts) so shops see exactly what is left to do
 - `edge` — Caddy serves `*.shop.<root>` with its own wildcard certificate
   (Cloudflare DNS-01 in production, internal CA locally); the existing
   wildcard DNS record already covers the extra label
