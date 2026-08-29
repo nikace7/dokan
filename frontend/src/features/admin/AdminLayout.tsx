@@ -23,18 +23,44 @@ const NAV_ITEMS: AdminNavItem[] = [
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
   return cn(
-    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+    'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
     isActive
-      ? 'bg-accent text-accent-foreground shadow-sm'
+      ? 'bg-accent font-semibold text-accent-foreground shadow-sm'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+  );
+}
+
+function AdminNavLink({ item }: { item: AdminNavItem }) {
+  return (
+    <NavLink to={item.to} className={navLinkClass}>
+      {({ isActive }) => (
+        <>
+          <span
+            aria-hidden="true"
+            className={cn(
+              'absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-primary transition-opacity',
+              isActive ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+          <item.icon
+            className={cn(
+              'h-4 w-4 shrink-0 transition-colors',
+              isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-foreground',
+            )}
+          />
+          {item.label}
+        </>
+      )}
+    </NavLink>
   );
 }
 
 function BrandMark() {
   return (
-    <span className="flex items-center gap-2 font-bold text-foreground">
-      <img src={brandMark} alt="" className="h-8 w-8" />
-      <span className="text-lg">mero-pasal Control</span>
+    <span className="flex items-center gap-2.5 font-bold text-foreground">
+      <img src={brandMark} alt="" className="h-9 w-9" />
+      <span className="text-lg tracking-tight">mero-pasal Control</span>
     </span>
   );
 }
@@ -57,8 +83,14 @@ export function AdminLayout() {
   };
 
   const userBlock = (
-    <div className="flex items-center justify-between gap-2">
-      <div className="min-w-0 space-y-0.5">
+    <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 p-2">
+      <span
+        aria-hidden="true"
+        className="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-accent text-xs font-bold uppercase text-accent-foreground"
+      >
+        {(auth.user?.full_name ?? '?').trim().charAt(0) || '?'}
+      </span>
+      <div className="min-w-0 flex-1 space-y-0.5">
         <p className="truncate text-sm font-medium text-foreground">{auth.user?.full_name}</p>
         <p className="truncate text-xs text-muted-foreground">{auth.user?.email}</p>
       </div>
@@ -71,7 +103,8 @@ export function AdminLayout() {
         type="button"
         onClick={signOut}
         aria-label="Sign out"
-        className="shrink-0 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        title="Sign out"
+        className="shrink-0 rounded-md p-2 text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <LogOut className="h-4 w-4" />
       </button>
@@ -82,22 +115,22 @@ export function AdminLayout() {
     <div className="min-h-screen bg-muted/40">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background md:flex">
-        <div className="flex h-14 items-center border-b px-4">
+        <div className="flex h-16 items-center border-b px-4">
           <BrandMark />
         </div>
-        <nav aria-label="Platform administration" className="flex-1 space-y-0.5 overflow-y-auto p-3">
+        <nav
+          aria-label="Platform administration"
+          className="flex-1 space-y-0.5 overflow-y-auto p-3"
+        >
           {items.map((item) => (
-            <NavLink key={item.to} to={item.to} className={navLinkClass}>
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </NavLink>
+            <AdminNavLink key={item.to} item={item} />
           ))}
         </nav>
         <div className="border-t p-3">{userBlock}</div>
       </aside>
 
       {/* Mobile top bar + horizontal nav */}
-      <header className="sticky top-0 z-30 border-b bg-background md:hidden">
+      <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur-md md:hidden">
         <div className="flex h-14 items-center justify-between gap-3 px-4">
           <BrandMark />
           <div className="flex items-center gap-2">
@@ -124,9 +157,10 @@ export function AdminLayout() {
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-all',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   isActive
-                    ? 'bg-accent text-accent-foreground'
+                    ? 'bg-accent font-semibold text-accent-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )
               }
