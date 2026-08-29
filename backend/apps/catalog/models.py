@@ -15,6 +15,7 @@ import uuid
 from typing import ClassVar
 
 from django.contrib.postgres.fields import ArrayField
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 
@@ -136,6 +137,19 @@ class Item(TenantScopedModel):
     # Single price shown on the online store (in the store's configured
     # website currency) instead of the counter selling-price range.
     website_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    # Per-product online offer. When set, it beats the store-wide offer from
+    # StoreSettings; the discounted price is computed at read/checkout time.
+    website_discount_pct = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+    )
+    # Online-store merchandising switches — they steer the public grid
+    # without touching the POS catalog (deactivation stays the POS switch).
+    website_visible = models.BooleanField(default=True)
+    website_featured = models.BooleanField(default=False)
     reorder_level = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(

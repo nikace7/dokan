@@ -18,6 +18,9 @@ const SITE: SiteInfo = {
     announcement: '',
     offer_text: '',
     offer_discount_pct: null,
+    offer_ends_at: null,
+    popup: null,
+    banners: [],
   },
   categories: [{ id: 'cat-1', name: 'Jackets', name_np: null, product_count: 1 }],
 };
@@ -34,23 +37,28 @@ const PRODUCT = {
   price_max: null,
   website_price: null,
   website_compare_at: null,
+  offer_pct: null,
+  featured: false,
   in_stock: false,
 };
 
-function mockProducts() {
+function productsResponse(data: unknown[]) {
+  return new Response(
+    JSON.stringify({
+      data,
+      meta: { count: data.length, page: 1, total_pages: 1, page_size: 12 },
+      error: null,
+    }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  );
+}
+
+function mockProducts(featured: unknown[] = []) {
   fetchMock.mockImplementation((input) => {
     const url = String(input);
     if (url.includes('/api/v1/storefront/products')) {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            data: [PRODUCT],
-            meta: { count: 1, page: 1, total_pages: 1, page_size: 12 },
-            error: null,
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
-      );
+      // The featured rail fetches separately — empty unless the test opts in.
+      return Promise.resolve(productsResponse(url.includes('featured=1') ? featured : [PRODUCT]));
     }
     return Promise.reject(new Error(`Unexpected request: ${url}`));
   });
@@ -82,9 +90,8 @@ describe('BazaarTemplate', () => {
     const site: SiteInfo = {
       ...SITE,
       store: {
+        ...SITE.store,
         hero_title: 'Big Winter Drop',
-        hero_subtitle: '',
-        announcement: '',
         offer_text: 'Clearance',
         offer_discount_pct: '10.00',
       },
@@ -93,13 +100,10 @@ describe('BazaarTemplate', () => {
       const url = String(input);
       if (url.includes('/api/v1/storefront/products')) {
         return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              data: [{ ...PRODUCT, website_price: '900.00', website_compare_at: null }],
-              meta: { count: 1, page: 1, total_pages: 1, page_size: 12 },
-              error: null,
-            }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          productsResponse(
+            url.includes('featured=1')
+              ? []
+              : [{ ...PRODUCT, website_price: '900.00', website_compare_at: null }],
           ),
         );
       }
@@ -112,5 +116,39 @@ describe('BazaarTemplate', () => {
     expect(screen.getByText('Clearance · 10% off')).toBeInTheDocument();
     expect(await screen.findByText('₹900')).toBeInTheDocument();
     expect(screen.queryByText('Price on request')).not.toBeInTheDocument();
+  });
+
+  it('renders linked banners and the featured rail with a badge', async () => {
+    const featuredProduct = {
+      ...PRODUCT,
+      id: 'p-10',
+      name: 'Pashmina Shawl',
+      featured: true,
+      in_stock: true,
+      website_price: '2125.00',
+      website_compare_at: '2500.00',
+      offer_pct: '15.00',
+    };
+    const site: SiteInfo = {
+      ...SITE,
+      store: {
+        ...SITE.store,
+        banners: [
+          {
+            title: 'New arrivals',
+            text: 'Fresh from the loom',
+            cta_text: 'Shop the drop',
+            cta_link: '#shop',
+          },
+        ],
+      },
+    };
+    mockProducts([featuredProduct]);
+
+    render(<BazaarTemplate site={site} />);
+
+    expect(screen.getByRole('link', { name: /New arrivals/ })).toHaveAttribute('href', '#shop');
+    expect(await screen.findByText('Pashmina Shawl')).toBeInTheDocument();
+    expect(screen.getByText('−15%')).toBeInTheDocument();
   });
 });

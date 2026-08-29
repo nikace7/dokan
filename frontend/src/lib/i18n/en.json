@@ -605,7 +605,32 @@
         "text": "Offer name (optional)",
         "textHint": "e.g. Dashain Sale",
         "discount": "Discount % (optional)",
-        "help": "The discount applies to website prices only — counter prices are unchanged. The original price shows struck-through."
+        "endsAt": "Offer last day (optional)",
+        "help": "The discount applies to website prices only — counter prices are unchanged. The original price shows struck-through. Set a last day and the offer switches itself off after it."
+      },
+      "promotions": {
+        "title": "Popup & promo banners"
+      },
+      "popup": {
+        "enable": "Show an offer popup to visitors (once per visit)",
+        "title": "Popup heading",
+        "text": "Popup message",
+        "ctaText": "Button text",
+        "ctaLink": "Button link",
+        "ctaLinkHint": "#shop, /page or https://…",
+        "help": "The popup appears once per visitor session. Leave heading and message empty and it stays hidden."
+      },
+      "banners": {
+        "heading": "Promo banners",
+        "item": "Banner {{index}}",
+        "add": "Add banner",
+        "remove": "Remove",
+        "title": "Title",
+        "text": "Text",
+        "ctaText": "Button text (optional)",
+        "ctaLink": "Button link (optional)",
+        "ctaLinkHint": "#shop, /page or https://…",
+        "help": "Up to 5 small promo cards between the hero and the product grid — good for delivery notes, new arrivals, or festival greetings."
       },
       "currency": "Website price currency",
       "currencyHelp": "Website prices are entered and shown in this currency. If it differs from the shop currency, the selling-price range converts at the NPR/INR peg.",
@@ -940,6 +965,10 @@
       "minPrice": "Min selling price (रू)",
       "maxPrice": "Max selling price (रू)",
       "websitePrice": "Website price (optional)",
+      "websiteDiscount": "Website offer % (optional)",
+      "websiteVisible": "Show on online store",
+      "websiteFeatured": "Featured on online store",
+      "websiteHelp": "Website price and offer apply online only — counter prices are unchanged. A product offer beats the store-wide offer; the original price shows struck-through.",
       "reorderLevel": "Reorder level",
       "vatApplicable": "VAT applicable",
       "image": "Photo",

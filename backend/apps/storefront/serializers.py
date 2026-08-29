@@ -15,9 +15,9 @@ from apps.storefront.models import CURRENCY_CHOICES, StoreSettings
 
 
 class PublicProductSerializer(serializers.Serializer):
-    """Public grid row. Display-currency conversion and the store-wide offer
-    are applied here from the view's context (``display_currency``,
-    ``tenant_currency``, ``discount_pct``) so money math stays server-side.
+    """Public grid row. Display-currency conversion and offer discounts are
+    applied here from the view's context (``display_currency``,
+    ``tenant_currency``, ``settings``) so money math stays server-side.
     """
 
     id = serializers.UUIDField()
@@ -31,6 +31,8 @@ class PublicProductSerializer(serializers.Serializer):
     price_max = serializers.SerializerMethodField()
     website_price = serializers.SerializerMethodField()
     website_compare_at = serializers.SerializerMethodField()
+    offer_pct = serializers.SerializerMethodField()
+    featured = serializers.BooleanField(source="website_featured")
     in_stock = serializers.BooleanField()
 
     def get_image(self, obj: Item) -> str | None:
@@ -47,6 +49,10 @@ class PublicProductSerializer(serializers.Serializer):
         )
         return str(converted)
 
+    def _pricing(self, obj: Item) -> tuple[Decimal | None, Decimal | None, Decimal | None]:
+        """(price, compare_at, applied offer pct) — pure arithmetic, no DB."""
+        return selectors.website_pricing(obj, self.context.get("settings"))
+
     def get_price_min(self, obj: Item) -> str | None:
         return self._display(obj.min_selling_price)
 
@@ -54,16 +60,17 @@ class PublicProductSerializer(serializers.Serializer):
         return self._display(obj.max_selling_price)
 
     def get_website_price(self, obj: Item) -> str | None:
-        price, _ = selectors.website_price_display(
-            obj, discount_pct=self.context.get("discount_pct")
-        )
+        price, _, _ = self._pricing(obj)
         return str(price) if price is not None else None
 
     def get_website_compare_at(self, obj: Item) -> str | None:
-        _, compare_at = selectors.website_price_display(
-            obj, discount_pct=self.context.get("discount_pct")
-        )
+        _, compare_at, _ = self._pricing(obj)
         return str(compare_at) if compare_at is not None else None
+
+    def get_offer_pct(self, obj: Item) -> str | None:
+        """The discount driving the price — templates render it as a badge."""
+        _, _, pct = self._pricing(obj)
+        return str(pct) if pct is not None else None
 
 
 class StoreSettingsSerializer(serializers.Serializer):
@@ -76,6 +83,13 @@ class StoreSettingsSerializer(serializers.Serializer):
     offer_discount_pct = serializers.DecimalField(
         max_digits=5, decimal_places=2, required=False, allow_null=True, default=None
     )
+    offer_ends_at = serializers.DateField(required=False, allow_null=True, default=None)
+    popup_enabled = serializers.BooleanField(required=False, default=False)
+    popup_title = serializers.CharField(required=False, allow_blank=True, default="")
+    popup_text = serializers.CharField(required=False, allow_blank=True, default="")
+    popup_cta_text = serializers.CharField(required=False, allow_blank=True, default="")
+    popup_cta_link = serializers.CharField(required=False, allow_blank=True, default="")
+    banners = serializers.JSONField(required=False, allow_null=True, default=None)
     currency = serializers.ChoiceField(choices=CURRENCY_CHOICES, required=False)
 
     def to_representation(self, instance: StoreSettings) -> dict[str, Any]:
@@ -89,5 +103,14 @@ class StoreSettingsSerializer(serializers.Serializer):
                 if instance.offer_discount_pct is not None
                 else None
             ),
+            "offer_ends_at": (
+                instance.offer_ends_at.isoformat() if instance.offer_ends_at else None
+            ),
+            "popup_enabled": instance.popup_enabled,
+            "popup_title": instance.popup_title,
+            "popup_text": instance.popup_text,
+            "popup_cta_text": instance.popup_cta_text,
+            "popup_cta_link": instance.popup_cta_link,
+            "banners": instance.banners or [],
             "currency": instance.currency,
         }

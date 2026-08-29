@@ -1,6 +1,7 @@
 """Ordering flow tests — OTP login, checkout, tracking, order history."""
 
 import re
+from datetime import timedelta
 from decimal import Decimal
 from typing import Any, cast
 
@@ -75,6 +76,7 @@ class TestProductDetail:
         assert data["name"] == "Puffer"
         assert data["website_price"] == "1000.00"
         assert data["website_compare_at"] == "2000.00"
+        assert data["offer_pct"] == "50.00"
         assert data["variants"] == [
             {
                 "id": str(variant.pk),
@@ -238,6 +240,52 @@ class TestCheckout:
         assert data["currency"] == "NPR"
         assert data["items"][0]["unit_price"] == "160.00"  # peg-converted
         assert data["items"][0]["compare_at"] is None
+
+    def test_per_product_offer_beats_store_offer_at_checkout(self) -> None:
+        shop = make_shop()
+        StoreSettingsFactory(
+            tenant=shop, offer_text="Store Sale", offer_discount_pct=Decimal("25.00")
+        )
+        variant = make_sellable(
+            shop,
+            name="Own Deal",
+            website_price=Decimal("1000.00"),
+            website_discount_pct=Decimal("10.00"),
+        )
+
+        response = post_order(checkout_payload(variant))
+
+        assert response.status_code == 201
+        item = response.json()["data"]["items"][0]
+        assert item["unit_price"] == "900.00"  # the 10% product offer, not 25%
+        assert item["compare_at"] == "1000.00"
+
+    def test_expired_store_offer_charges_full_price(self) -> None:
+        shop = make_shop()
+        StoreSettingsFactory(
+            tenant=shop,
+            offer_text="Old Sale",
+            offer_discount_pct=Decimal("50.00"),
+            offer_ends_at=timezone.localdate() - timedelta(days=1),
+        )
+        variant = make_sellable(shop, website_price=Decimal("2000.00"))
+
+        response = post_order(checkout_payload(variant))
+
+        assert response.status_code == 201
+        data = response.json()["data"]
+        assert data["items"][0]["unit_price"] == "2000.00"
+        assert data["items"][0]["compare_at"] is None
+        assert data["offer_text"] == ""
+
+    def test_hidden_item_is_not_orderable_online(self) -> None:
+        shop = make_shop()
+        variant = make_sellable(shop, website_price=Decimal("1000.00"), website_visible=False)
+
+        response = post_order(checkout_payload(variant))
+
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "VARIANT_NOT_FOUND"
 
     def test_missing_price_is_409(self) -> None:
         shop = make_shop()

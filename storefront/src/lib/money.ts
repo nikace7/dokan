@@ -102,3 +102,33 @@ export function offerLabel(store: StoreContent): string | null {
   const label = parts.filter(Boolean).join(' · ');
   return label === '' ? null : label;
 }
+
+/** "−15%" badge text for a discounted product; null when no offer applies. */
+export function offerBadge(product: { offer_pct: string | null }): string | null {
+  if (product.offer_pct === null) {
+    return null;
+  }
+  const pct = Number(product.offer_pct);
+  return Number.isFinite(pct) && pct > 0 ? `−${pct}%` : null;
+}
+
+/**
+ * Urgency line for a scheduled offer: "Ends today" / "Ends in N days".
+ * Null when the offer has no end date or the date can't be parsed. Compares
+ * calendar dates, not instants — the offer runs through its last day.
+ */
+export function offerCountdown(offerEndsAt: string | null, now: Date = new Date()): string | null {
+  if (offerEndsAt === null) {
+    return null;
+  }
+  const end = new Date(`${offerEndsAt}T00:00:00`);
+  if (Number.isNaN(end.getTime())) {
+    return null;
+  }
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((end.getTime() - today.getTime()) / 86_400_000);
+  if (days < 0) {
+    return null;
+  }
+  return days === 0 ? 'Ends today' : `Ends in ${days} day${days === 1 ? '' : 's'}`;
+}

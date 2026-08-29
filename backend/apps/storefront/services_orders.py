@@ -20,7 +20,7 @@ from django.db.models import Sum
 from apps.catalog.models import ItemVariant
 from apps.inventory.models import StockLevel
 from apps.storefront import selectors
-from apps.storefront.models import StoreCustomer, StoreOrder, StoreOrderItem
+from apps.storefront.models import StoreCustomer, StoreOrder, StoreOrderItem, StoreSettings
 from apps.tenants.models import Branch
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from core.money import quantize_money
@@ -39,14 +39,13 @@ ORDER_PREFIX = "ORD"
 def _line_price(
     variant: ItemVariant,
     *,
-    discount_pct: Decimal | None,
+    settings_row: StoreSettings | None,
     display_currency: str,
     tenant_currency: str,
 ) -> tuple[Decimal, Decimal | None]:
-    """(unit_price, compare_at) for checkout — same rule the grid displays."""
-    price, compare_at = selectors.website_price_display(
-        variant.item, discount_pct=discount_pct
-    )
+    """(unit_price, compare_at) for checkout — same rule the grid displays,
+    including per-product offers and store-offer expiry."""
+    price, compare_at, _ = selectors.website_pricing(variant.item, settings_row)
     if price is not None:
         return price, compare_at
     fallback = variant.min_selling_price or variant.item.min_selling_price
@@ -115,7 +114,7 @@ def place_order(
 
     store = selectors.get_settings(tenant)
     display_currency = selectors.display_currency(tenant, store)
-    discount_pct = store.offer_discount_pct if store else None
+    offer_live = selectors.offer_is_live(store)
 
     email = customer_fields["email"].strip().lower()
     customer, _ = StoreCustomer.objects.get_or_create(
@@ -145,7 +144,11 @@ def place_order(
     variants = {
         v.pk: v
         for v in ItemVariant.objects.filter(
-            tenant=tenant, pk__in=variant_ids, is_active=True, item__is_active=True
+            tenant=tenant,
+            pk__in=variant_ids,
+            is_active=True,
+            item__is_active=True,
+            item__website_visible=True,  # POS-only items are not orderable online
         ).select_related("item")
     }
     missing = [str(v) for v in variant_ids if v not in variants]
@@ -176,7 +179,7 @@ def place_order(
             )
         unit_price, compare_at = _line_price(
             variant,
-            discount_pct=discount_pct,
+            settings_row=store,
             display_currency=display_currency,
             tenant_currency=tenant.currency,
         )
@@ -219,7 +222,11 @@ def place_order(
         currency=display_currency,
         subtotal=subtotal,
         total=subtotal,
-        offer_text=store.offer_text if store and discount_pct else "",
+        offer_text=(
+            store.offer_text
+            if store and offer_live and store.offer_discount_pct
+            else ""
+        ),
         idempotency_key=idempotency_key,
         note=note,
         business_date_ad=today,

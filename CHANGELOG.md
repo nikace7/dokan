@@ -59,6 +59,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `frontend` — the tenant's Online store screen gains a setup checklist
   (address assigned, service active, content added, website prices set
   with live counts) so shops see exactly what is left to do
+- `storefront` — merchandising suite: per-product online offers
+  (`Item.website_discount_pct` beats the store-wide offer), product
+  visibility and featured flags on the website (`website_visible` hides a
+  POS item online and blocks checkout for it; featured products sort
+  first and fill a storefront rail via `GET /storefront/products?featured=1`),
+  a schedulable store-wide offer (`offer_ends_at` — a lapsed offer stops
+  discounting and disappears automatically), an offer popup shown once per
+  visitor session (`popup_*`, CTA links vetted against `javascript:` URLs),
+  and up to five promo banner cards (`banners` JSON, shape-validated in the
+  service). Checkout prices lines with the same canonical rule the grid
+  shows (`selectors.website_pricing`), and the public payloads gain
+  `offer_pct` badges. The tenant panel edits it all from the item form
+  (website offer %, show/featured switches) and the Online store screen
+  (offer last day, popup form, banner editor); both templates render
+  banners, the featured rail, discount badges, and an "Ends in N days"
+  urgency line
 - `edge` — Caddy serves `*.shop.<root>` with its own wildcard certificate
   (Cloudflare DNS-01 in production, internal CA locally); the existing
   wildcard DNS record already covers the extra label

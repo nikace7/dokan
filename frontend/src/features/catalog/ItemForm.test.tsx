@@ -33,6 +33,9 @@ const ITEM: Item = {
   min_selling_price: null,
   max_selling_price: null,
   website_price: null,
+  website_discount_pct: null,
+  website_visible: true,
+  website_featured: false,
   reorder_level: null,
   is_active: true,
 };
@@ -147,9 +150,7 @@ describe('ItemForm — item photo', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove photo' }));
 
     await waitFor(() => expect(imageRequests('DELETE')).toHaveLength(1));
-    expect(String(imageRequests('DELETE')[0][0])).toContain(
-      `/v1/catalog/items/${ITEM.id}/image`,
-    );
+    expect(String(imageRequests('DELETE')[0][0])).toContain(`/v1/catalog/items/${ITEM.id}/image`);
     await waitFor(() =>
       expect(screen.queryByRole('img', { name: 'T-Shirt' })).not.toBeInTheDocument(),
     );
@@ -178,5 +179,51 @@ describe('ItemForm — item photo', () => {
     expect(onSaved).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'item-9', image_url: IMAGE_URL }),
     );
+  });
+
+  it('posts the online-store fields with the item payload', async () => {
+    renderForm();
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'TS' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'T-Shirt' } });
+    fireEvent.change(screen.getByLabelText('Website price (optional)'), {
+      target: { value: '1500' },
+    });
+    fireEvent.change(screen.getByLabelText('Website offer % (optional)'), {
+      target: { value: '10' },
+    });
+    fireEvent.click(screen.getByLabelText('Featured on online store'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create item' }));
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) => String(url).endsWith('/api/v1/catalog/items') && init?.method === 'POST',
+        ),
+      ).toBe(true),
+    );
+    const [, init] = fetchMock.mock.calls.find(
+      ([url, i]) => String(url).endsWith('/api/v1/catalog/items') && i?.method === 'POST',
+    )!;
+    const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    expect(body.website_price).toBe('1500');
+    expect(body.website_discount_pct).toBe('10');
+    expect(body.website_visible).toBe(true);
+    expect(body.website_featured).toBe(true);
+  });
+
+  it('editing pre-fills the online-store fields', () => {
+    renderForm({
+      ...ITEM,
+      website_price: '1200.00',
+      website_discount_pct: '15.00',
+      website_visible: false,
+      website_featured: true,
+    });
+
+    expect(screen.getByLabelText('Website price (optional)')).toHaveValue('1200.00');
+    expect(screen.getByLabelText('Website offer % (optional)')).toHaveValue('15.00');
+    expect(screen.getByLabelText('Show on online store')).not.toBeChecked();
+    expect(screen.getByLabelText('Featured on online store')).toBeChecked();
   });
 });

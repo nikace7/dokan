@@ -22,6 +22,43 @@ from tests.factories import (
 pytestmark = pytest.mark.django_db
 
 
+class TestWebsiteOffer:
+    def test_out_of_range_discount_rejected_on_create(self) -> None:
+        tenant = TenantFactory()
+        with pytest.raises(ServiceError) as exc:
+            services.create_item(
+                tenant,
+                created_by=UserFactory(tenant=tenant),
+                code="A1",
+                name="Bad offer",
+                website_discount_pct=Decimal("95.00"),
+            )
+        assert exc.value.code == "DISCOUNT_OUT_OF_RANGE"
+
+    def test_zero_discount_rejected_on_update(self) -> None:
+        item = ItemFactory()
+        with pytest.raises(ServiceError) as exc:
+            services.update_item(item.tenant, item, website_discount_pct=Decimal("0"))
+        assert exc.value.code == "DISCOUNT_OUT_OF_RANGE"
+
+    def test_merchandising_fields_round_trip(self) -> None:
+        tenant = TenantFactory()
+        item = services.create_item(
+            tenant,
+            created_by=UserFactory(tenant=tenant),
+            code="A2",
+            name="Featured",
+            website_price=Decimal("1500.00"),
+            website_discount_pct=Decimal("20.00"),
+            website_featured=True,
+        )
+        assert item.website_visible is True  # default: online unless hidden
+        assert item.website_featured is True
+
+        updated = services.update_item(tenant, item, website_visible=False)
+        assert updated.website_visible is False
+
+
 class TestPriceBounds:
     def test_min_above_max_rejected_on_create(self) -> None:
         tenant = TenantFactory()

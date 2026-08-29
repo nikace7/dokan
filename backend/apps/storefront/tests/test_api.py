@@ -1,9 +1,11 @@
 """Public storefront API tests — host resolution, plan gate, cost-safe payloads."""
 
+from datetime import timedelta
 from decimal import Decimal
 from typing import Any, cast
 
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Permission
@@ -147,6 +149,8 @@ class TestStorefrontProducts:
                 "price_max",
                 "website_price",
                 "website_compare_at",
+                "offer_pct",
+                "featured",
                 "in_stock",
             }
 
@@ -188,6 +192,9 @@ class TestStoreContent:
             "announcement": "",
             "offer_text": "",
             "offer_discount_pct": None,
+            "offer_ends_at": None,
+            "popup": None,
+            "banners": [],
         }
 
     def test_site_uses_store_content_and_currency(self) -> None:
@@ -249,6 +256,132 @@ class TestStoreContent:
 
         assert rows[0]["price_min"] == "160.00"  # INR → NPR at the 1.6 peg
         assert rows[0]["price_max"] == "320.00"
+
+    def test_per_product_offer_beats_the_store_wide_offer(self) -> None:
+        shop = make_shop()
+        StoreSettingsFactory(tenant=shop, offer_discount_pct=Decimal("25.00"))
+        ItemFactory(
+            tenant=shop,
+            name="Own Offer",
+            website_price=Decimal("1000.00"),
+            website_discount_pct=Decimal("10.00"),
+        )
+        ItemFactory(tenant=shop, name="Store Offer", website_price=Decimal("1000.00"))
+
+        response = APIClient().get(PRODUCTS_URL, **shopfront_host("yak"))
+        rows = {row["name"]: row for row in response.json()["data"]}
+
+        assert rows["Own Offer"]["website_price"] == "900.00"  # 10%, not 25%
+        assert rows["Own Offer"]["offer_pct"] == "10.00"
+        assert rows["Store Offer"]["website_price"] == "750.00"
+        assert rows["Store Offer"]["offer_pct"] == "25.00"
+
+    def test_expired_store_offer_stops_discounting(self) -> None:
+        shop = make_shop()
+        StoreSettingsFactory(
+            tenant=shop,
+            offer_text="Old Sale",
+            offer_discount_pct=Decimal("50.00"),
+            offer_ends_at=timezone.localdate() - timedelta(days=1),
+        )
+        ItemFactory(tenant=shop, name="Puffer", website_price=Decimal("2000.00"))
+
+        site = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]["store"]
+        assert site["offer_text"] == ""
+        assert site["offer_discount_pct"] is None
+        assert site["offer_ends_at"] is None
+
+        rows = APIClient().get(PRODUCTS_URL, **shopfront_host("yak")).json()["data"]
+        assert rows[0]["website_price"] == "2000.00"
+        assert rows[0]["website_compare_at"] is None
+        assert rows[0]["offer_pct"] is None
+
+    def test_live_offer_exposes_its_end_date(self) -> None:
+        shop = make_shop()
+        ends = timezone.localdate() + timedelta(days=5)
+        StoreSettingsFactory(
+            tenant=shop,
+            offer_text="Week Deal",
+            offer_discount_pct=Decimal("15.00"),
+            offer_ends_at=ends,
+        )
+
+        site = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]["store"]
+        assert site["offer_text"] == "Week Deal"
+        assert site["offer_discount_pct"] == "15.00"
+        assert site["offer_ends_at"] == ends.isoformat()
+
+    def test_site_exposes_popup_and_banners(self) -> None:
+        shop = make_shop()
+        StoreSettingsFactory(
+            tenant=shop,
+            popup_enabled=True,
+            popup_title="Namaste!",
+            popup_text="10% off your first order",
+            popup_cta_text="Shop now",
+            popup_cta_link="#shop",
+            banners=[
+                {
+                    "title": "Free delivery",
+                    "text": "Inside the valley",
+                    "cta_text": "",
+                    "cta_link": "",
+                }
+            ],
+        )
+
+        store = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]["store"]
+        assert store["popup"] == {
+            "title": "Namaste!",
+            "text": "10% off your first order",
+            "cta_text": "Shop now",
+            "cta_link": "#shop",
+        }
+        assert store["banners"] == [
+            {"title": "Free delivery", "text": "Inside the valley", "cta_text": "", "cta_link": ""}
+        ]
+
+    def test_disabled_or_empty_popup_stays_hidden(self) -> None:
+        shop = make_shop()
+        StoreSettingsFactory(tenant=shop, popup_enabled=True)  # enabled but no copy
+        store = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]["store"]
+        assert store["popup"] is None
+
+
+class TestMerchandising:
+    def test_hidden_items_leave_the_grid_and_nav_counts(self) -> None:
+        shop = make_shop()
+        jackets = CategoryFactory(tenant=shop, name="Jacket")
+        ItemFactory(tenant=shop, name="Online", category=jackets)
+        ItemFactory(tenant=shop, name="Counter Only", category=jackets, website_visible=False)
+
+        rows = APIClient().get(PRODUCTS_URL, **shopfront_host("yak")).json()["data"]
+        assert [row["name"] for row in rows] == ["Online"]
+
+        site = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]
+        assert site["categories"][0]["product_count"] == 1
+
+    def test_hidden_item_detail_is_404(self) -> None:
+        shop = make_shop()
+        item = ItemFactory(tenant=shop, website_visible=False)
+        response = APIClient().get(
+            f"/api/v1/storefront/products/{item.pk}", **shopfront_host("yak")
+        )
+        assert response.status_code == 404
+
+    def test_featured_products_sort_first_and_filter(self) -> None:
+        shop = make_shop()
+        ItemFactory(tenant=shop, name="Alpha")
+        ItemFactory(tenant=shop, name="Zed", website_featured=True)
+        ItemFactory(tenant=shop, name="Mid", website_featured=True)
+
+        rows = APIClient().get(PRODUCTS_URL, **shopfront_host("yak")).json()["data"]
+        assert [row["name"] for row in rows] == ["Mid", "Zed", "Alpha"]
+        assert rows[0]["featured"] is True
+        assert rows[2]["featured"] is False
+
+        featured = APIClient().get(PRODUCTS_URL, {"featured": "1"}, **shopfront_host("yak"))
+        assert [row["name"] for row in featured.json()["data"]] == ["Mid", "Zed"]
 
 
 SETTINGS_URL = "/api/v1/storefront/settings"
@@ -360,3 +493,87 @@ class TestStoreSettingsApi:
 
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "DISCOUNT_OUT_OF_RANGE"
+
+    def test_patch_popup_banners_and_offer_end_date(self) -> None:
+        tenant = TenantFactory()
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+        client = auth_client(user, tenant.slug)
+        ends = (timezone.localdate() + timedelta(days=10)).isoformat()
+
+        response = client.patch(
+            SETTINGS_URL,
+            {
+                "popup_enabled": True,
+                "popup_title": "Namaste!",
+                "popup_text": "First order treat",
+                "popup_cta_text": "Shop now",
+                "popup_cta_link": "#shop",
+                "offer_ends_at": ends,
+                "banners": [{"title": "Free delivery", "text": "Inside Ring Road"}],
+            },
+            format="json",
+            **pos_host(tenant.slug),
+        )
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["popup_enabled"] is True
+        assert data["popup_cta_link"] == "#shop"
+        assert data["offer_ends_at"] == ends
+        # Missing optional keys normalise to empty strings.
+        assert data["banners"] == [
+            {"title": "Free delivery", "text": "Inside Ring Road", "cta_text": "", "cta_link": ""}
+        ]
+        entry = AuditLog.objects.get(tenant=tenant, action="store.settings.update")
+        after = cast("dict[str, Any]", entry.after)
+        assert after["popup_enabled"] is True
+        assert after["banners"][0]["title"] == "Free delivery"
+
+    def test_patch_rejects_bad_banners(self) -> None:
+        tenant = TenantFactory()
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+        client = auth_client(user, tenant.slug)
+
+        too_many = client.patch(
+            SETTINGS_URL,
+            {"banners": [{"title": f"B{n}"} for n in range(6)]},
+            format="json",
+            **pos_host(tenant.slug),
+        )
+        assert too_many.status_code == 400
+        assert too_many.json()["error"]["code"] == "BANNERS_INVALID"
+
+        no_title = client.patch(
+            SETTINGS_URL,
+            {"banners": [{"text": "oops"}]},
+            format="json",
+            **pos_host(tenant.slug),
+        )
+        assert no_title.status_code == 400
+        assert no_title.json()["error"]["code"] == "BANNERS_INVALID"
+
+        bad_link = client.patch(
+            SETTINGS_URL,
+            {"banners": [{"title": "X", "cta_link": "javascript:alert(1)"}]},
+            format="json",
+            **pos_host(tenant.slug),
+        )
+        assert bad_link.status_code == 400
+        assert bad_link.json()["error"]["code"] == "LINK_INVALID"
+
+    def test_patch_rejects_unsafe_popup_link(self) -> None:
+        tenant = TenantFactory()
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+
+        response = auth_client(user, tenant.slug).patch(
+            SETTINGS_URL,
+            {"popup_cta_link": "javascript:alert(1)"},
+            format="json",
+            **pos_host(tenant.slug),
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "LINK_INVALID"
