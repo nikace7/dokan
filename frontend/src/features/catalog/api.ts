@@ -63,6 +63,11 @@ export interface Item {
   max_selling_price: string | null;
   /** Single price shown on the online store (website currency), null to hide. */
   website_price: string | null;
+  /** Per-product online offer percent; beats the store-wide offer when set. */
+  website_discount_pct: string | null;
+  /** Online-store merchandising switches (POS catalog is unaffected). */
+  website_visible: boolean;
+  website_featured: boolean;
   reorder_level: string | null;
   is_active: boolean;
 }
@@ -84,6 +89,9 @@ export interface ItemPayload {
   min_selling_price?: string | null;
   max_selling_price?: string | null;
   website_price?: string | null;
+  website_discount_pct?: string | null;
+  website_visible?: boolean;
+  website_featured?: boolean;
   reorder_level?: string | null;
 }
 
