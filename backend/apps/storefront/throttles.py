@@ -8,3 +8,10 @@ class StorefrontThrottle(AnonRateThrottle):
 
     scope = "storefront"
     rate = "120/min"
+
+
+class StorefrontAuthThrottle(AnonRateThrottle):
+    """OTP endpoints — tight: every request can send a real email."""
+
+    scope = "storefront_auth"
+    rate = "6/min"
