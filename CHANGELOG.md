@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Platform
+
+- `platformadmin` — tenants can now carry a `shopfront_subdomain` (SUPER_ADMIN
+  PATCH on `/admin/tenants/<id>`): the reserved public address of the shop's
+  future online store, validated for format/reserved names and collision-checked
+  against every tenant slug and shopfront (shared wildcard host). Changes are
+  audited with before/after snapshots
+- `admin frontend` — tenant detail gains an "Online store" panel: assign,
+  change, or disable the storefront address with a live URL preview
+
+### Accounts
+
+- `frontend` — the sidebar, mobile tabs, new-sale FAB, and the reports home
+  grid are now permission-aware: staff only see the screens their role's
+  permission codenames actually allow (enforcement stays server-side)
+
 ### Catalog
 
 - `catalog` — one-transaction `POST /catalog/products/quick-create`:
@@ -20,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### What shopkeepers get
 
+- **Staff see only what they can use.** A cashier sees Billing and Stock;
+  collection and profit figures stay with admin-level roles — no more
+  dead-end menu entries hinting at numbers meant for the owner.
 - **Add a product once, sell it a minute later.** Name, photo, price range,
   sizes, colours, and how many pieces are on the shelf — all on one screen,
   one save. No more hopping between three pages before the first bill.
