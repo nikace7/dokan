@@ -88,6 +88,7 @@ The shop. Resolved by slug in `TenantMiddleware` before any RLS context exists.
 | locale | text | no | CHECK IN (`np`,`en`), default `np` |
 | currency | text | no | CHECK IN (`NPR`,`INR`), default `NPR` |
 | shopfront_subdomain | text | yes | UNIQUE when set; public online-store host label under the root domain; NULL = no storefront. Must never equal any tenant `slug` (shared wildcard host) — enforced in the service layer |
+| shopfront_template | text | no | `aurora`/`bazaar`, default `aurora` — storefront design, SUPER_ADMIN-assigned |
 | onboarded_at | timestamptz | yes | |
 | created_at | timestamptz | no | default now() |
 | deleted_at | timestamptz | yes | soft delete only |
@@ -349,6 +350,7 @@ The style. Never stocked or sold directly — variants are.
 | attributes | jsonb | yes | **deliberate escape hatch instead of EAV**: fabric, fit, care, … Display only |
 | min_selling_price | numeric(14,2) | yes | NULL = inherit from category |
 | max_selling_price | numeric(14,2) | yes | NULL = inherit from category |
+| website_price | numeric(14,2) | yes | single price shown on the online store (in the `store_settings.currency` website currency) instead of the selling-price range; NULL = grid falls back to the range |
 | reorder_level | numeric(12,3) | yes | |
 | is_active | boolean | no | default true |
 | created_by | uuid FK → user | yes | |
@@ -898,6 +900,26 @@ financial rows.
 | updated_at | timestamptz | no | last status transition |
 
 Indexes: `(tenant_id, created_at DESC)`, `(tenant_id, status)`.
+
+### 9.7 `store_settings`
+
+One row per tenant (`UNIQUE (tenant_id)`) — the tenant admin's online-store
+control panel. The address (`tenant.shopfront_subdomain`) and design
+(`tenant.shopfront_template`) stay platform-admin decisions; everything here
+is editable by the shop and read anonymously by the public storefront.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| id | bigint PK | no | |
+| tenant_id | uuid FK → tenant | no | RLS isolation key; UNIQUE |
+| hero_title | text | no | `''` = fall back to the shop name |
+| hero_subtitle | text | no | `''` = template default copy |
+| announcement | text | no | `''` = hidden (top strip / marquee) |
+| offer_text | text | no | e.g. `Dashain Sale` |
+| offer_discount_pct | numeric(5,2) | yes | 0 < pct ≤ 90 (service-enforced); applies to `item.website_price` only, never counter prices |
+| currency | text | no | `NPR`/`INR`, default `NPR` — website price entry + display currency; when ≠ tenant currency the public range converts at the 1.6 peg for display |
+| created_at | timestamptz | no | default now() |
+| updated_at | timestamptz | no | |
 
 ---
 
