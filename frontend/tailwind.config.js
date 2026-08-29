@@ -91,10 +91,10 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        // System stack + Noto Sans Devanagari fallback for Nepali labels
-        // (docs/SYSTEM_DESIGN.md §7.2). No webfont downloads — the OS font is
-        // used when present, otherwise the system falls back gracefully.
+        // Inter Variable for Latin UI text + Noto Sans Devanagari fallback for
+        // Nepali labels (docs/SYSTEM_DESIGN.md §7.2). Self-hosted — no CDN.
         sans: [
+          'Inter Variable',
           'system-ui',
           '-apple-system',
           'Segoe UI',
