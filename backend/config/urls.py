@@ -32,6 +32,7 @@ urlpatterns = [
     path("api/v1/", include("apps.audit.urls")),
     path("api/v1/", include("apps.notifications.urls")),
     path("api/v1/", include("apps.compliance.urls")),
+    path("api/v1/", include("apps.storefront.urls")),
 ]
 
 # Local dev only: serve uploaded media from Django (production serves the

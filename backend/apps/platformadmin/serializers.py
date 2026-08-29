@@ -110,6 +110,7 @@ class TenantSerializer(serializers.ModelSerializer):
             "locale",
             "currency",
             "shopfront_subdomain",
+            "shopfront_template",
             "onboarded_at",
             "created_at",
         )
@@ -162,6 +163,9 @@ class TenantUpdateSerializer(serializers.Serializer):
     currency = serializers.ChoiceField(choices=Tenant.Currency.choices, required=False)
     shopfront_subdomain = serializers.CharField(
         required=False, allow_null=True, allow_blank=True, max_length=30
+    )
+    shopfront_template = serializers.ChoiceField(
+        choices=Tenant.ShopfrontTemplate.choices, required=False
     )
 
 
