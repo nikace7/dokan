@@ -27,6 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tenants` — `shopfront_template` chooses the design (SUPER_ADMIN via
   tenant PATCH); the admin panel's Online store card now shows the live
   `*.shop.<root>` URL and a template picker
+- `storefront` — shops now control their own store: `StoreSettings`
+  (hero title/subtitle, announcement strip, one store-wide offer with a
+  ≤90% discount that applies to website prices only, and the website
+  price currency) edited from the tenant panel's new Online store screen
+  (`GET/PATCH /storefront/settings`, `settings.manage`, audited). Catalog
+  items gain a `website_price` — the single online price the storefront
+  shows instead of the counter range (struck-through original while an
+  offer runs); when the store and shop currencies differ the range
+  converts at the NPR/INR peg for display. Both templates render the
+  dynamic hero, announcement, offer badge, and sale prices
 - `edge` — Caddy serves `*.shop.<root>` with its own wildcard certificate
   (Cloudflare DNS-01 in production, internal CA locally); the existing
   wildcard DNS record already covers the extra label
