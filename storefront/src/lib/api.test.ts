@@ -73,6 +73,12 @@ describe('storefront api', () => {
     expect(page.meta?.total_pages).toBe(3);
   });
 
+  it('sends featured=1 for the featured rail feed', async () => {
+    fetchMock.mockResolvedValueOnce(envelope([], 200, { count: 0, page: 1, total_pages: 0 }));
+    await getProducts({ featured: true });
+    expect(String(fetchMock.mock.calls[0][0])).toContain('featured=1');
+  });
+
   it('throws on a products error envelope too', async () => {
     fetchMock.mockResolvedValueOnce(failure(400, 'BAD_FILTER', 'Unknown category.'));
     await expect(getProducts({})).rejects.toMatchObject({ code: 'BAD_FILTER' });

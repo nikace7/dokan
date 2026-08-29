@@ -1,11 +1,13 @@
 import { useState } from 'react';
 
 import { QuickViewModal } from '../../components/QuickViewModal';
+import { OfferPopup } from '../../components/OfferPopup';
 import { ProductImage } from '../../components/ProductImage';
 import { useDebouncedValue, useRevealOnScroll, useScrolledPast } from '../../components/hooks';
+import { useFeaturedProducts } from '../../components/useFeaturedProducts';
 import { useProducts } from '../../components/useProducts';
 import type { Product, SiteCategory } from '../../lib/api';
-import { offerLabel, productPriceDisplay } from '../../lib/money';
+import { offerBadge, offerCountdown, offerLabel, productPriceDisplay } from '../../lib/money';
 import type { TemplateProps } from '..';
 
 const INK = 'text-[#1a1a18]';
@@ -25,7 +27,12 @@ export function AuroraTemplate({ site }: TemplateProps) {
     debouncedSearch,
   );
   const [quickView, setQuickView] = useState<Product | null>(null);
+  const { products: featured } = useFeaturedProducts();
   const offer = offerLabel(site.store);
+  const countdown = offerCountdown(site.store.offer_ends_at);
+  const offerLine = [offer, countdown].filter(Boolean).join(' · ');
+  // The featured rail only makes sense on the unfiltered storefront.
+  const showRail = !category && !debouncedSearch && featured.length > 0;
 
   return (
     <div className={`min-h-screen bg-[#faf9f6] font-sans ${INK} antialiased`}>
@@ -71,11 +78,11 @@ export function AuroraTemplate({ site }: TemplateProps) {
           {site.shop_name_np ? (
             <p className="mt-4 font-serif text-2xl text-[#1a1a18]/60">{site.shop_name_np}</p>
           ) : null}
-          {offer ? (
+          {offerLine ? (
             <p
               className={`mt-6 inline-block border border-[#6d2b2b]/40 px-4 py-1.5 text-xs uppercase tracking-[0.25em] ${ACCENT}`}
             >
-              {offer}
+              {offerLine}
             </p>
           ) : null}
           <hr className="my-8 w-24 border-t border-[#1a1a18]/30" />
@@ -100,6 +107,62 @@ export function AuroraTemplate({ site }: TemplateProps) {
           </svg>
         </a>
       </section>
+
+      {/* Promo banners — the tenant's own cards, hidden when none are set. */}
+      {site.store.banners.length > 0 ? (
+        <section className="mx-auto max-w-6xl px-5 pt-12" aria-label="Offers and notices">
+          <div className="grid gap-px border border-[#1a1a18]/15 bg-[#1a1a18]/15 sm:grid-cols-2 lg:grid-cols-3">
+            {site.store.banners.map((banner) => {
+              const card = (
+                <div className="h-full bg-[#faf9f6] p-6 transition-colors group-hover:bg-[#f3f0e8]">
+                  <h3 className="font-serif text-lg tracking-tight">{banner.title}</h3>
+                  {banner.text ? (
+                    <p className="mt-2 text-sm leading-relaxed text-[#1a1a18]/65">{banner.text}</p>
+                  ) : null}
+                  {banner.cta_text ? (
+                    <p
+                      className={`mt-3 text-[11px] uppercase tracking-[0.25em] ${ACCENT}`}
+                    >
+                      {banner.cta_text} →
+                    </p>
+                  ) : null}
+                </div>
+              );
+              return banner.cta_link ? (
+                <a key={banner.title} href={banner.cta_link} className="group block h-full">
+                  {card}
+                </a>
+              ) : (
+                <div key={banner.title} className="group h-full">
+                  {card}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Featured rail — the shop's hand-picked pieces, unfiltered view only. */}
+      {showRail ? (
+        <section aria-label="Featured pieces" className="mx-auto max-w-6xl px-5 pt-16">
+          <div className="mb-6 flex items-baseline gap-4 border-b border-[#1a1a18]/15 pb-4">
+            <h2 className="font-serif text-2xl tracking-tight">Featured</h2>
+            <span className="text-xs uppercase tracking-[0.25em] text-[#1a1a18]/50">
+              Hand-picked
+            </span>
+          </div>
+          <div className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2">
+            {featured.slice(0, 10).map((product) => (
+              <AuroraRailCard
+                key={product.id}
+                product={product}
+                currency={site.currency}
+                onQuickView={() => setQuickView(product)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Collection */}
       <main id="collection" className="mx-auto max-w-6xl px-5 pb-24 pt-16">
@@ -225,6 +288,41 @@ export function AuroraTemplate({ site }: TemplateProps) {
           />
         ) : null}
       </QuickViewModal>
+
+      <OfferPopup
+        popup={site.store.popup}
+        backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-[#1a1a18]/40 p-4 backdrop-blur-sm"
+        panelClassName="w-full max-w-md border border-[#1a1a18]/15 bg-[#faf9f6] shadow-2xl outline-none"
+      >
+        {(close) => (
+          <div className="relative p-8 text-center sm:p-10">
+            <button
+              type="button"
+              onClick={close}
+              aria-label="Close"
+              className="absolute right-3 top-3 text-2xl leading-none text-[#1a1a18]/50 transition-colors hover:text-[#1a1a18]"
+            >
+              ×
+            </button>
+            <h2 className="font-serif text-2xl tracking-tight sm:text-3xl">
+              {site.store.popup?.title}
+            </h2>
+            <hr className="mx-auto my-5 w-12 border-t border-[#1a1a18]/30" aria-hidden="true" />
+            {site.store.popup?.text ? (
+              <p className="text-sm leading-relaxed text-[#1a1a18]/70">{site.store.popup.text}</p>
+            ) : null}
+            {site.store.popup?.cta_text ? (
+              <a
+                href={site.store.popup.cta_link || '#collection'}
+                onClick={close}
+                className="mt-6 inline-block border border-[#1a1a18] px-7 py-3 text-xs uppercase tracking-[0.25em] transition-colors hover:bg-[#1a1a18] hover:text-[#faf9f6]"
+              >
+                {site.store.popup.cta_text}
+              </a>
+            ) : null}
+          </div>
+        )}
+      </OfferPopup>
     </div>
   );
 }
@@ -271,6 +369,7 @@ function AuroraCard({
   const { ref, visible } = useRevealOnScroll<HTMLElement>();
   const muted = !product.in_stock;
   const price = productPriceDisplay(product, currency);
+  const badge = offerBadge(product);
   return (
     <article
       ref={ref}
@@ -291,6 +390,11 @@ function AuroraCard({
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
             fallbackClassName="flex h-full w-full items-center justify-center font-serif text-6xl text-[#1a1a18]/25"
           />
+          {badge ? (
+            <span className="absolute right-3 top-3 border border-[#6d2b2b]/30 bg-[#faf9f6]/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6d2b2b]">
+              {badge}
+            </span>
+          ) : null}
           {muted ? (
             <span className="absolute left-3 top-3 border border-[#1a1a18]/20 bg-[#faf9f6]/90 px-2 py-1 text-[10px] uppercase tracking-[0.2em]">
               Out of stock
@@ -316,6 +420,48 @@ function AuroraCard({
         </div>
       </button>
     </article>
+  );
+}
+
+function AuroraRailCard({
+  product,
+  currency,
+  onQuickView,
+}: {
+  product: Product;
+  currency: 'NPR' | 'INR';
+  onQuickView: () => void;
+}) {
+  const price = productPriceDisplay(product, currency);
+  const badge = offerBadge(product);
+  return (
+    <button
+      type="button"
+      onClick={onQuickView}
+      aria-label={`Quick view ${product.name}`}
+      className="group w-40 shrink-0 snap-start text-left sm:w-48"
+    >
+      <div className="relative aspect-square overflow-hidden bg-[#efece4]">
+        <ProductImage
+          src={product.image}
+          alt={product.name}
+          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          fallbackClassName="flex h-full w-full items-center justify-center font-serif text-4xl text-[#1a1a18]/25"
+        />
+        {badge ? (
+          <span className="absolute right-2 top-2 border border-[#6d2b2b]/30 bg-[#faf9f6]/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#6d2b2b]">
+            {badge}
+          </span>
+        ) : null}
+      </div>
+      <h3 className="mt-2.5 truncate font-serif text-sm tracking-tight">{product.name}</h3>
+      <p className="text-[13px] text-[#1a1a18]/70">
+        {price.compareAt ? (
+          <span className="mr-1 text-[11px] text-[#1a1a18]/40 line-through">{price.compareAt}</span>
+        ) : null}
+        <span className={price.compareAt ? ACCENT : ''}>{price.text}</span>
+      </p>
+    </button>
   );
 }
 

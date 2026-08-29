@@ -18,6 +18,22 @@ export interface SiteContact {
   address: string | null;
 }
 
+/** The offer popup, present only while enabled with some copy to show. */
+export interface StorePopup {
+  title: string;
+  text: string;
+  cta_text: string;
+  cta_link: string;
+}
+
+/** One promo banner card between the hero and the grid. */
+export interface StoreBanner {
+  title: string;
+  text: string;
+  cta_text: string;
+  cta_link: string;
+}
+
 /** Tenant-controlled website content (empty string / null = hidden). */
 export interface StoreContent {
   hero_title: string;
@@ -26,6 +42,10 @@ export interface StoreContent {
   offer_text: string;
   /** Decimal string like "20.00", null when no store-wide offer. */
   offer_discount_pct: string | null;
+  /** ISO date of the offer's last day, null when open-ended or lapsed. */
+  offer_ends_at: string | null;
+  popup: StorePopup | null;
+  banners: StoreBanner[];
 }
 
 export interface SiteInfo {
@@ -52,6 +72,10 @@ export interface Product {
   website_price: string | null;
   /** Original website price, present only while an offer discounts it. */
   website_compare_at: string | null;
+  /** The discount percent driving the price, for badge display. */
+  offer_pct: string | null;
+  /** Merchandised into the featured rail and sorted first in the grid. */
+  featured: boolean;
   in_stock: boolean;
 }
 
@@ -119,10 +143,12 @@ export async function getProducts(params: {
   category?: string;
   q?: string;
   page?: number;
+  featured?: boolean;
 }): Promise<ProductsPage> {
   const search = new URLSearchParams();
   if (params.category) search.set('category', params.category);
   if (params.q) search.set('q', params.q);
+  if (params.featured) search.set('featured', '1');
   if (params.page && params.page > 1) search.set('page', String(params.page));
   const suffix = search.toString();
   const path = `/api/v1/storefront/products${suffix ? `?${suffix}` : ''}`;
