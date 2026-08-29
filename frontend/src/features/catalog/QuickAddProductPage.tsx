@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import {
@@ -215,8 +216,11 @@ export function QuickAddProductPage() {
         <Link className="text-sm text-primary hover:underline" to="/catalog">
           ← {t('catalog.detail.back')}
         </Link>
-        <h1 className="mt-1 text-xl font-semibold">{t('catalog.quickCreate.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('catalog.quickCreate.subtitle')}</p>
+        <PageHeader
+          className="mt-1"
+          title={t('catalog.quickCreate.title')}
+          description={t('catalog.quickCreate.subtitle')}
+        />
       </div>
 
       {result ? (

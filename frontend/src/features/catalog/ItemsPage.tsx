@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -52,12 +53,15 @@ export function ItemsPage() {
 
   return (
     <main className="mx-auto max-w-6xl p-4">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{t('catalog.items.title')}</h1>
-        <Button asChild size="sm">
-          <Link to="/catalog/items/new">{t('catalog.items.new')}</Link>
-        </Button>
-      </div>
+      <PageHeader
+        className="mb-4"
+        title={t('catalog.items.title')}
+        actions={
+          <Button asChild size="sm">
+            <Link to="/catalog/items/new">{t('catalog.items.new')}</Link>
+          </Button>
+        }
+      />
 
       <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_200px_160px]">
         <Input
