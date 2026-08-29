@@ -8,6 +8,12 @@ and call the store to order. No login, no cart (yet).
 - Data: same-origin fetches of `GET /api/v1/storefront/site` and
   `GET /api/v1/storefront/products` (envelope `{ data, meta, error }`).
   Product images come from same-origin `/media/...` paths.
+- Tenant-controlled content: the site payload's `store` block carries the
+  shop's own hero title/subtitle, announcement, and offer (text + discount
+  %). Products carry `website_price` (single online price, already
+  discounted server-side) + `website_compare_at`; when absent the templates
+  fall back to the `price_min`–`price_max` range. All money math happens
+  server-side — templates only format (`lib/money.ts`).
 
 ## Commands
 
