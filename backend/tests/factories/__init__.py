@@ -58,7 +58,13 @@ from tests.factories.sales import (
     SalesInvoiceFactory,
     SalesInvoiceItemFactory,
 )
-from tests.factories.storefront import StoreSettingsFactory
+from tests.factories.storefront import (
+    StoreCustomerFactory,
+    StoreOrderFactory,
+    StoreOrderItemFactory,
+    StoreOtpFactory,
+    StoreSettingsFactory,
+)
 from tests.factories.tenant import PlanFactory, TenantFactory
 
 __all__ = [
@@ -97,6 +103,10 @@ __all__ = [
     "StockMovementFactory",
     "StockTransferFactory",
     "StockTransferItemFactory",
+    "StoreCustomerFactory",
+    "StoreOrderFactory",
+    "StoreOrderItemFactory",
+    "StoreOtpFactory",
     "StoreSettingsFactory",
     "SupplierFactory",
     "TenantFactory",
