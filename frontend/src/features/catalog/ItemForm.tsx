@@ -65,6 +65,9 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
   const [minPrice, setMinPrice] = useState(initial?.min_selling_price ?? '');
   const [maxPrice, setMaxPrice] = useState(initial?.max_selling_price ?? '');
   const [websitePrice, setWebsitePrice] = useState(initial?.website_price ?? '');
+  const [websiteDiscount, setWebsiteDiscount] = useState(initial?.website_discount_pct ?? '');
+  const [websiteVisible, setWebsiteVisible] = useState(initial?.website_visible ?? true);
+  const [websiteFeatured, setWebsiteFeatured] = useState(initial?.website_featured ?? false);
   const [reorderLevel, setReorderLevel] = useState(initial?.reorder_level ?? '');
   const [error, setError] = useState<string | null>(null);
   // Item photo: edit uploads immediately on select; create stashes the file
@@ -170,6 +173,9 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
       min_selling_price: blankToNull(minPrice),
       max_selling_price: blankToNull(maxPrice),
       website_price: blankToNull(websitePrice),
+      website_discount_pct: blankToNull(websiteDiscount),
+      website_visible: websiteVisible,
+      website_featured: websiteFeatured,
       reorder_level: blankToNull(reorderLevel),
     });
   };
@@ -386,11 +392,41 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
         inputMode="decimal"
       />
       <Input
+        label={t('catalog.form.websiteDiscount')}
+        value={websiteDiscount}
+        onChange={(e) => setWebsiteDiscount(e.target.value)}
+        inputMode="decimal"
+      />
+      <Input
         label={t('catalog.form.reorderLevel')}
         value={reorderLevel}
         onChange={(e) => setReorderLevel(e.target.value)}
         inputMode="decimal"
       />
+
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 self-end pb-2 sm:col-span-2">
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={websiteVisible}
+            onChange={(e) => setWebsiteVisible(e.target.checked)}
+            className="h-4 w-4 accent-primary"
+          />
+          {t('catalog.form.websiteVisible')}
+        </label>
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={websiteFeatured}
+            onChange={(e) => setWebsiteFeatured(e.target.checked)}
+            className="h-4 w-4 accent-primary"
+          />
+          {t('catalog.form.websiteFeatured')}
+        </label>
+      </div>
+      <p className="-mt-2 text-xs text-muted-foreground sm:col-span-2">
+        {t('catalog.form.websiteHelp')}
+      </p>
 
       <label className="flex items-center gap-2 self-end pb-2 text-sm text-foreground">
         <input

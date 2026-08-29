@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { getStoreSettings, updateStoreSettings } from '@/features/settings/api';
 import type { StoreSettings } from '@/features/settings/api';
+import { StorePromotionsCard } from '@/features/settings/StorePromotionsCard';
 import { useAuth } from '@/features/auth/useAuth';
 import { ApiError } from '@/lib/api/client';
 import { hasPermission } from '@/lib/permissions';
@@ -18,6 +19,7 @@ type StoreForm = {
   announcement: string;
   offer_text: string;
   offer_discount_pct: string;
+  offer_ends_at: string;
   currency: StoreSettings['currency'];
 };
 
@@ -28,6 +30,7 @@ function toForm(settings: StoreSettings): StoreForm {
     announcement: settings.announcement,
     offer_text: settings.offer_text,
     offer_discount_pct: settings.offer_discount_pct ?? '',
+    offer_ends_at: settings.offer_ends_at ?? '',
     currency: settings.currency,
   };
 }
@@ -39,15 +42,7 @@ function errorMessage(error: unknown, fallback: string): string {
 const selectClasses =
   'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
-function ChecklistStep({
-  done,
-  label,
-  hint,
-}: {
-  done: boolean;
-  label: string;
-  hint?: string;
-}) {
+function ChecklistStep({ done, label, hint }: { done: boolean; label: string; hint?: string }) {
   return (
     <li className="flex items-start gap-3">
       <span
@@ -131,10 +126,7 @@ export function OnlineStorePage() {
 
   const settings = query.data;
   const hasContent = Boolean(
-    settings.hero_title ||
-      settings.hero_subtitle ||
-      settings.announcement ||
-      settings.offer_text,
+    settings.hero_title || settings.hero_subtitle || settings.announcement || settings.offer_text,
   );
   const checklist: Array<{ done: boolean; label: string; hint?: string }> = [
     {
@@ -179,6 +171,7 @@ export function OnlineStorePage() {
       announcement: currentForm.announcement.trim(),
       offer_text: currentForm.offer_text.trim(),
       offer_discount_pct: pct === '' ? null : pct,
+      offer_ends_at: currentForm.offer_ends_at === '' ? null : currentForm.offer_ends_at,
       currency: currentForm.currency,
     });
   }
@@ -245,7 +238,9 @@ export function OnlineStorePage() {
           <Input
             label={t('settings.store.content.heroTitle')}
             value={form.hero_title}
-            placeholder={settings.shopfront_subdomain ? '' : t('settings.store.content.heroTitleHint')}
+            placeholder={
+              settings.shopfront_subdomain ? '' : t('settings.store.content.heroTitleHint')
+            }
             onChange={(event) => setForm({ ...form, hero_title: event.target.value })}
           />
           <Input
@@ -276,6 +271,17 @@ export function OnlineStorePage() {
               value={form.offer_discount_pct}
               onChange={(event) => setForm({ ...form, offer_discount_pct: event.target.value })}
             />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
+              {t('settings.store.offer.endsAt')}
+              <input
+                type="date"
+                value={form.offer_ends_at}
+                onChange={(event) => setForm({ ...form, offer_ends_at: event.target.value })}
+                className={`${selectClasses} font-normal`}
+              />
+            </label>
           </div>
           <p className="text-xs text-muted-foreground">{t('settings.store.offer.help')}</p>
 
@@ -308,6 +314,8 @@ export function OnlineStorePage() {
           </div>
         </form>
       </Card>
+
+      <StorePromotionsCard settings={settings} />
     </main>
   );
 }
