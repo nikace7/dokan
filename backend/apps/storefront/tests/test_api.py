@@ -6,15 +6,23 @@ from typing import Any, cast
 import pytest
 from rest_framework.test import APIClient
 
+from apps.accounts.models import Permission
+from apps.audit.models import AuditLog
 from apps.storefront.selectors import extract_shopfront_label
 from apps.tenants.models import Tenant, TenantFeatureOverride
 from tests.factories import (
+    DEFAULT_PASSWORD,
     BranchFactory,
     CategoryFactory,
     ItemFactory,
     ItemVariantFactory,
+    RoleFactory,
+    RolePermissionFactory,
     StockLevelFactory,
+    StoreSettingsFactory,
     TenantFactory,
+    UserFactory,
+    UserRoleFactory,
 )
 
 pytestmark = pytest.mark.django_db
@@ -137,6 +145,8 @@ class TestStorefrontProducts:
                 "brand",
                 "price_min",
                 "price_max",
+                "website_price",
+                "website_compare_at",
                 "in_stock",
             }
 
@@ -163,3 +173,185 @@ class TestStorefrontProducts:
         response = APIClient().get(PRODUCTS_URL, **shopfront_host("yak"))
 
         assert [row["name"] for row in response.json()["data"]] == ["Mine"]
+
+
+class TestStoreContent:
+    """Dynamic store settings flow into the public site + product payloads."""
+
+    def test_site_defaults_when_unconfigured(self) -> None:
+        make_shop(currency="INR")
+        data = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]
+        assert data["currency"] == "INR"
+        assert data["store"] == {
+            "hero_title": "",
+            "hero_subtitle": "",
+            "announcement": "",
+            "offer_text": "",
+            "offer_discount_pct": None,
+        }
+
+    def test_site_uses_store_content_and_currency(self) -> None:
+        shop = make_shop(currency="INR")
+        StoreSettingsFactory(
+            tenant=shop,
+            hero_title="Winter Drop",
+            announcement="Free alteration this week",
+            offer_text="Tihar Sale",
+            offer_discount_pct=Decimal("20.00"),
+            currency="NPR",
+        )
+
+        data = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]
+
+        assert data["currency"] == "NPR"  # website currency wins for display
+        assert data["store"]["hero_title"] == "Winter Drop"
+        assert data["store"]["announcement"] == "Free alteration this week"
+        assert data["store"]["offer_text"] == "Tihar Sale"
+        assert data["store"]["offer_discount_pct"] == "20.00"
+
+    def test_website_price_replaces_range_and_offer_discounts_it(self) -> None:
+        shop = make_shop()
+        StoreSettingsFactory(tenant=shop, offer_discount_pct=Decimal("25.00"))
+        ItemFactory(
+            tenant=shop,
+            name="Puffer",
+            min_selling_price=Decimal("800.00"),
+            max_selling_price=Decimal("1600.00"),
+            website_price=Decimal("1200.00"),
+        )
+
+        rows = APIClient().get(PRODUCTS_URL, **shopfront_host("yak")).json()["data"]
+
+        assert rows[0]["website_price"] == "900.00"  # 1200 − 25%
+        assert rows[0]["website_compare_at"] == "1200.00"
+        assert rows[0]["price_min"] == "800.00"  # range stays the counter reference
+
+    def test_website_price_without_offer_has_no_compare_at(self) -> None:
+        shop = make_shop()
+        ItemFactory(tenant=shop, name="Cap", website_price=Decimal("500.00"))
+
+        rows = APIClient().get(PRODUCTS_URL, **shopfront_host("yak")).json()["data"]
+
+        assert rows[0]["website_price"] == "500.00"
+        assert rows[0]["website_compare_at"] is None
+
+    def test_range_converts_to_store_currency_at_the_peg(self) -> None:
+        shop = make_shop(currency="INR")
+        StoreSettingsFactory(tenant=shop, currency="NPR")
+        ItemFactory(
+            tenant=shop,
+            name="Shawl",
+            min_selling_price=Decimal("100.00"),
+            max_selling_price=Decimal("200.00"),
+        )
+
+        rows = APIClient().get(PRODUCTS_URL, **shopfront_host("yak")).json()["data"]
+
+        assert rows[0]["price_min"] == "160.00"  # INR → NPR at the 1.6 peg
+        assert rows[0]["price_max"] == "320.00"
+
+
+SETTINGS_URL = "/api/v1/storefront/settings"
+
+
+def pos_host(slug: str) -> dict[str, str]:
+    return {"HTTP_HOST": f"{slug}.{ROOT}"}
+
+
+def grant(tenant: Any, user: Any, *codes: str) -> None:
+    role = RoleFactory(tenant=tenant)
+    for code in codes:
+        RolePermissionFactory(
+            tenant=tenant, role=role, permission=Permission.objects.get(code=code)
+        )
+    UserRoleFactory(tenant=tenant, user=user, role=role)
+
+
+def auth_client(user: Any, slug: str) -> APIClient:
+    tokens = (
+        APIClient()
+        .post(
+            "/api/v1/auth/token",
+            {"phone": user.phone, "password": DEFAULT_PASSWORD},
+            **pos_host(slug),
+        )
+        .json()["data"]
+    )
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+    return client
+
+
+class TestStoreSettingsApi:
+    def test_unauthenticated_is_401(self) -> None:
+        tenant = TenantFactory()
+        assert APIClient().get(SETTINGS_URL, **pos_host(tenant.slug)).status_code == 401
+
+    def test_missing_settings_manage_is_403(self) -> None:
+        tenant = TenantFactory()
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "sale.create")
+        client = auth_client(user, tenant.slug)
+        assert client.get(SETTINGS_URL, **pos_host(tenant.slug)).status_code == 403
+
+    def test_get_returns_defaults_plus_platform_readings(self) -> None:
+        tenant = cast(
+            "Tenant", TenantFactory(shopfront_subdomain="yak", shopfront_template="bazaar")
+        )
+        TenantFeatureOverride.objects.create(tenant=tenant, key="features.ecommerce", value=True)
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+
+        data = auth_client(user, tenant.slug).get(SETTINGS_URL, **pos_host(tenant.slug)).json()[
+            "data"
+        ]
+
+        assert data["hero_title"] == ""
+        assert data["offer_discount_pct"] is None
+        assert data["currency"] == "NPR"
+        assert data["shopfront_subdomain"] == "yak"
+        assert data["template"] == "bazaar"
+        assert data["store_url"] == f"https://yak.shop.{ROOT}"
+        assert data["ecommerce_enabled"] is True
+
+    def test_patch_updates_and_audits(self) -> None:
+        tenant = TenantFactory()
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+        client = auth_client(user, tenant.slug)
+
+        response = client.patch(
+            SETTINGS_URL,
+            {
+                "hero_title": "Dashain Collection",
+                "offer_text": "Dashain Sale",
+                "offer_discount_pct": "15.00",
+                "currency": "INR",
+            },
+            format="json",
+            **pos_host(tenant.slug),
+        )
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["hero_title"] == "Dashain Collection"
+        assert data["offer_discount_pct"] == "15.00"
+        assert data["currency"] == "INR"
+        entry = AuditLog.objects.get(tenant=tenant, action="store.settings.update")
+        after = cast("dict[str, Any]", entry.after)
+        assert after["hero_title"] == "Dashain Collection"
+
+    def test_patch_rejects_out_of_range_discount(self) -> None:
+        tenant = TenantFactory()
+        user = UserFactory(tenant=tenant)
+        grant(tenant, user, "settings.manage")
+
+        response = auth_client(user, tenant.slug).patch(
+            SETTINGS_URL,
+            {"offer_discount_pct": "95.00"},
+            format="json",
+            **pos_host(tenant.slug),
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "DISCOUNT_OUT_OF_RANGE"
