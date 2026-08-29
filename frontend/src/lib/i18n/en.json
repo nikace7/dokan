@@ -608,7 +608,18 @@
         "help": "The discount applies to website prices only — counter prices are unchanged. The original price shows struck-through."
       },
       "currency": "Website price currency",
-      "currencyHelp": "Website prices are entered and shown in this currency. If it differs from the shop currency, the selling-price range converts at the NPR/INR peg."
+      "currencyHelp": "Website prices are entered and shown in this currency. If it differs from the shop currency, the selling-price range converts at the NPR/INR peg.",
+      "checklist": {
+        "title": "Setup checklist",
+        "address": "Store address assigned",
+        "addressHint": "mero-pasal.online support assigns your store address — contact us.",
+        "service": "E-commerce service active",
+        "serviceHint": "Not in your current plan — contact mero-pasal.online support to enable it.",
+        "content": "Headline, announcement, or offer added",
+        "contentHint": "Fill at least one content field below so the store feels like yours.",
+        "prices": "Website prices set ({{count}} of {{total}} items)",
+        "pricesHint": "Edit an item in Catalog and set its website price — the store shows it as a single price."
+      }
     },
     "staff": {
       "title": "Staff & roles",

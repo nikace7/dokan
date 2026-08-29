@@ -168,6 +168,9 @@ export interface StoreSettings {
   template: string;
   store_url: string | null;
   ecommerce_enabled: boolean;
+  /** Setup-progress hints for the checklist. */
+  active_items_count: number;
+  website_price_count: number;
 }
 
 export type StoreSettingsPayload = Partial<
