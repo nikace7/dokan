@@ -213,6 +213,7 @@ def _tenant_snapshot(tenant: Tenant) -> dict[str, Any]:
         "locale": tenant.locale,
         "currency": tenant.currency,
         "shopfront_subdomain": tenant.shopfront_subdomain,
+        "shopfront_template": tenant.shopfront_template,
     }
 
 
@@ -244,6 +245,7 @@ def update_tenant(
             "locale",
             "currency",
             "shopfront_subdomain",
+            "shopfront_template",
         }
     }
     if "plan" in fields and not fields["plan"].is_active:
