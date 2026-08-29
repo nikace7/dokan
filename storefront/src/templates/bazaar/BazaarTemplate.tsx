@@ -2,28 +2,28 @@ import { useState } from 'react';
 
 import { QuickViewModal } from '../../components/QuickViewModal';
 import { ProductImage } from '../../components/ProductImage';
-import { useDebouncedValue, useRevealOnScroll } from '../../components/hooks';
+import { useDebouncedValue, useRevealOnScroll, useScrolledPast } from '../../components/hooks';
 import { useProducts } from '../../components/useProducts';
 import type { Product, SiteCategory } from '../../lib/api';
 import { formatPriceRange } from '../../lib/money';
 import type { TemplateProps } from '..';
 
-const MARQUEE_ITEMS = ['NEW ARRIVALS', 'GENUINE BRANDS', 'VISIT OUR STORE', 'BEST PRICES IN TOWN'];
+/**
+ * Bazaar palette — warm ivory base, deep emerald ink, brushed-brass accents.
+ * Kept as constants so every section shares the same tonal decisions.
+ */
+const INK = 'text-[#17241f]';
+const ACCENT = 'text-[#a5812e]';
 
-const CHIP_COLORS = [
-  'bg-indigo-600',
-  'bg-fuchsia-600',
-  'bg-amber-500',
-  'bg-emerald-600',
-  'bg-rose-500',
-  'bg-sky-600',
-];
+const MARQUEE_ITEMS = ['New arrivals', 'Genuine brands', 'Fair prices', 'Visit us in store'];
 
 /**
- * Bazaar — vibrant marketplace. Big gradient hero, marquee strip, playful
- * tilt-lift cards, punchy price chips, springy modal.
+ * Bazaar — refined grand-bazaar elegance. Ivory/emerald/brass palette, serif
+ * display type, arch-framed hero imagery, a slow brass marquee, and quiet
+ * lift-on-hover cards. The warm, formal counterpart to Aurora's minimalism.
  */
 export function BazaarTemplate({ site }: TemplateProps) {
+  const scrolled = useScrolledPast(24);
   const [category, setCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
@@ -33,103 +33,174 @@ export function BazaarTemplate({ site }: TemplateProps) {
   );
   const [quickView, setQuickView] = useState<Product | null>(null);
 
+  const heroProduct = products[0] ?? null;
+  const heroSecond = products[1] ?? null;
+
   return (
-    <div className="min-h-screen bg-[#fff7ed] font-sans text-slate-900 antialiased [background-image:radial-gradient(#f5d0fe_1px,transparent_1px)] [background-size:22px_22px]">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b-4 border-slate-900 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <a href="#top" className="text-xl font-black tracking-tight">
+    <div className={`min-h-screen bg-[#f7f3eb] font-sans ${INK} antialiased`}>
+      {/* Fixed header — gains a hairline + blur once the hero scrolls away. */}
+      <header
+        className={`fixed inset-x-0 top-0 z-40 transition-all duration-300 ${
+          scrolled
+            ? 'border-b border-[#17241f]/10 bg-[#f7f3eb]/85 backdrop-blur-md'
+            : 'border-b border-transparent'
+        }`}
+      >
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+          <a href="#top" className="font-serif text-lg tracking-tight">
             {site.shop_name}
           </a>
-          <a
-            href="#shop"
-            className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition-transform motion-safe:hover:animate-[bazaar-wiggle_0.4s_ease-in-out]"
-          >
-            Shop now ↓
-          </a>
+          <nav className="flex items-center gap-6">
+            <a
+              href="#shop"
+              className={`hidden text-xs uppercase tracking-[0.25em] ${ACCENT} hover:underline sm:inline`}
+            >
+              Collection
+            </a>
+            {site.contact.phone ? (
+              <a
+                href={`tel:${site.contact.phone}`}
+                className="rounded-full bg-[#17241f] px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#f7f3eb] transition-colors hover:bg-[#24382f]"
+              >
+                Call us
+              </a>
+            ) : null}
+          </nav>
         </div>
       </header>
 
-      {/* Gradient hero + marquee */}
-      <section id="top" className="relative overflow-hidden bg-[linear-gradient(120deg,#4f46e5_0%,#c026d3_55%,#f59e0b_100%)] text-white">
-        <div className="mx-auto max-w-6xl px-4 pb-20 pt-16 sm:pb-24 sm:pt-20">
-          <p className="mb-4 inline-block rounded-full bg-white/20 px-4 py-1 text-xs font-bold uppercase tracking-[0.2em]">
-            Online store
-          </p>
-          <h1 className="max-w-3xl text-5xl font-black leading-[1.02] tracking-tight sm:text-7xl">
-            {site.shop_name}
-          </h1>
-          {site.shop_name_np ? (
-            <p className="mt-3 text-2xl font-bold text-white/85">{site.shop_name_np}</p>
-          ) : null}
-          <p className="mt-5 max-w-xl text-base font-medium text-white/90 sm:text-lg">
-            Everything you love from our racks — scroll, tap, and grab it before it&apos;s gone.
-            Call us and we&apos;ll keep it aside!
-          </p>
-        </div>
-        <div className="border-t-4 border-slate-900 bg-amber-400 py-2 text-slate-900">
-          <div
-            className="flex w-max whitespace-nowrap font-black uppercase tracking-wider motion-safe:animate-[bazaar-marquee_18s_linear_infinite]"
-            aria-hidden="true"
-          >
-            {[0, 1].map((copy) => (
-              <span key={copy} className="flex">
-                {MARQUEE_ITEMS.map((item) => (
-                  <span key={`${copy}-${item}`} className="mx-6">
-                    {item} ✦
-                  </span>
-                ))}
-              </span>
-            ))}
+      {/* Hero — editorial text beside an arch-framed product portrait. */}
+      <section id="top" className="relative overflow-hidden pb-16 pt-28 sm:pt-32">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-[#c9a84c]/15 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-32 top-40 h-80 w-80 rounded-full bg-[#2f5d4a]/15 blur-3xl"
+        />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 lg:grid-cols-[1.05fr_0.95fr]">
+          <div>
+            <p className={`flex items-center gap-3 text-xs uppercase tracking-[0.3em] ${ACCENT}`}>
+              <span className="h-px w-8 bg-[#a5812e]/60" aria-hidden="true" />
+              Online store
+            </p>
+            <h1 className="mt-5 font-serif text-5xl leading-[1.04] tracking-tight sm:text-6xl lg:text-7xl">
+              {site.shop_name}
+            </h1>
+            {site.shop_name_np ? (
+              <p className="mt-3 font-serif text-2xl text-[#17241f]/55">{site.shop_name_np}</p>
+            ) : null}
+            <p className="mt-6 max-w-md text-sm leading-relaxed text-[#17241f]/70 sm:text-base">
+              A hand-picked rail of genuine clothing at honest prices. Browse the collection
+              online — then call us or visit the store to take it home.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <a
+                href="#shop"
+                className="rounded-full bg-[#17241f] px-7 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#f7f3eb] transition-colors hover:bg-[#24382f]"
+              >
+                Browse the collection
+              </a>
+              {site.contact.phone ? (
+                <a
+                  href={`tel:${site.contact.phone}`}
+                  className="rounded-full border border-[#17241f]/25 px-7 py-3 text-xs font-semibold uppercase tracking-[0.2em] transition-colors hover:border-[#17241f] hover:bg-white/60"
+                >
+                  {site.contact.phone}
+                </a>
+              ) : null}
+            </div>
           </div>
-          <span className="sr-only">{MARQUEE_ITEMS.join(' · ')}</span>
+
+          <div className="relative mx-auto w-full max-w-sm pb-8 lg:max-w-none">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-b-[1.5rem] rounded-t-[999px] border border-[#c9a84c]/30 bg-[#ece5d8] shadow-[0_30px_60px_-30px_rgba(23,36,31,0.35)]">
+              <ProductImage
+                src={heroProduct?.image ?? null}
+                alt={heroProduct?.name ?? site.shop_name}
+                loading="eager"
+                className="h-full w-full object-cover"
+                fallbackClassName="flex h-full w-full items-center justify-center font-serif text-8xl text-[#17241f]/20"
+              />
+            </div>
+            {heroSecond?.image ? (
+              <div className="absolute -bottom-2 -left-4 w-32 overflow-hidden rounded-b-[1.25rem] rounded-t-[999px] border-4 border-[#f7f3eb] bg-[#ece5d8] shadow-lg sm:-left-8 sm:w-40">
+                <div className="aspect-[4/5]">
+                  <ProductImage
+                    src={heroSecond.image}
+                    alt={heroSecond.name}
+                    className="h-full w-full object-cover"
+                    fallbackClassName="flex h-full w-full items-center justify-center font-serif text-4xl text-[#17241f]/20"
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
 
-      {/* Shop section */}
-      <main id="shop" className="mx-auto max-w-6xl px-4 pb-24 pt-10">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
-            Fresh on the rack 🛍️
-          </h2>
+      {/* Brass marquee — slow, quiet, aria-hidden with an sr-only equivalent. */}
+      <div className="border-y border-[#c9a84c]/25 bg-[#17241f] py-3 text-[#e6d3a3]">
+        <div
+          className="flex w-max whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.35em] motion-safe:animate-[bazaar-marquee_36s_linear_infinite]"
+          aria-hidden="true"
+        >
+          {[0, 1].map((copy) => (
+            <span key={copy} className="flex">
+              {MARQUEE_ITEMS.map((item) => (
+                <span key={`${copy}-${item}`} className="mx-8 flex items-center gap-16">
+                  {item}
+                  <span className="text-[#c9a84c]">✦</span>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+        <span className="sr-only">{MARQUEE_ITEMS.join(' · ')}</span>
+      </div>
+
+      {/* Collection */}
+      <main id="shop" className="mx-auto max-w-6xl px-5 pb-24 pt-14">
+        <div className="mb-10 flex flex-col gap-6 border-b border-[#17241f]/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-serif text-3xl tracking-tight sm:text-4xl">The Collection</h2>
+            <p className="mt-1 text-xs uppercase tracking-[0.25em] text-[#17241f]/50">
+              {meta ? `${meta.count} pieces` : 'Browse everything'}
+            </p>
+          </div>
           <label className="block w-full sm:max-w-xs">
             <span className="sr-only">Search products</span>
             <input
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search shirts, jeans…"
-              className="w-full rounded-full border-2 border-slate-900 bg-white px-4 py-2 text-sm font-semibold outline-none transition-shadow placeholder:text-slate-400 focus:ring-4 focus:ring-fuchsia-400/60"
+              placeholder="Search the collection…"
+              className="w-full rounded-full border border-[#17241f]/15 bg-[#fffdf8] px-5 py-2.5 text-sm outline-none transition-all placeholder:text-[#17241f]/40 focus:border-[#a5812e] focus:ring-4 focus:ring-[#c9a84c]/20"
             />
           </label>
         </div>
 
         {/* Category pills */}
-        <div className="mb-10 flex flex-wrap gap-2" aria-label="Categories">
-          <BazaarChip
-            color="bg-slate-900"
-            active={category === null}
-            onClick={() => setCategory(null)}
-            label="✨ All"
-          />
-          {site.categories.map((cat: SiteCategory, i: number) => (
-            <BazaarChip
+        <div className="mb-12 flex flex-wrap gap-2" aria-label="Categories">
+          <BazaarPill active={category === null} onClick={() => setCategory(null)} label="All" />
+          {site.categories.map((cat: SiteCategory) => (
+            <BazaarPill
               key={cat.id}
-              color={CHIP_COLORS[i % CHIP_COLORS.length]}
               active={category === cat.id}
               onClick={() => setCategory(cat.id)}
-              label={`${cat.name} (${cat.product_count})`}
+              label={cat.name}
+              count={cat.product_count}
             />
           ))}
         </div>
 
         {error ? (
-          <div className="rounded-3xl border-4 border-rose-300 bg-white p-10 text-center">
-            <p className="font-bold text-rose-600">{error}</p>
+          <div className="rounded-3xl border border-[#8c2f2f]/25 bg-[#fffdf8] p-12 text-center">
+            <p className="font-serif text-xl text-[#8c2f2f]">{error}</p>
             <button
               type="button"
               onClick={retry}
-              className="mt-4 rounded-full bg-rose-500 px-6 py-2 font-bold text-white transition-transform motion-safe:hover:animate-[bazaar-wiggle_0.4s_ease-in-out]"
+              className="mt-5 rounded-full border border-[#17241f] px-6 py-2.5 text-xs uppercase tracking-[0.2em] transition-colors hover:bg-[#17241f] hover:text-[#f7f3eb]"
             >
               Try again
             </button>
@@ -137,9 +208,11 @@ export function BazaarTemplate({ site }: TemplateProps) {
         ) : loading ? (
           <BazaarSkeleton />
         ) : products.length === 0 ? (
-          <div className="rounded-3xl border-4 border-dashed border-slate-300 bg-white/70 p-12 text-center">
-            <p className="text-2xl font-black">Hmm… nothing found 😅</p>
-            <p className="mt-2 font-semibold text-slate-500">Try a different search or category.</p>
+          <div className="rounded-3xl border border-dashed border-[#17241f]/20 bg-[#fffdf8]/60 p-16 text-center">
+            <p className="font-serif text-2xl text-[#17241f]/70">Nothing matches that search</p>
+            <p className="mt-2 text-sm text-[#17241f]/50">
+              Try another word, or browse a different category.
+            </p>
           </div>
         ) : (
           <>
@@ -154,9 +227,9 @@ export function BazaarTemplate({ site }: TemplateProps) {
                 />
               ))}
             </div>
-            <div className="mt-12 flex flex-col items-center gap-3">
+            <div className="mt-16 flex flex-col items-center gap-3">
               {meta ? (
-                <p className="rounded-full bg-white px-4 py-1 text-sm font-bold text-slate-600 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.25em] text-[#17241f]/50">
                   {products.length} of {meta.count} products
                 </p>
               ) : null}
@@ -165,9 +238,9 @@ export function BazaarTemplate({ site }: TemplateProps) {
                   type="button"
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-8 py-3 font-black text-white shadow-lg transition-transform motion-safe:hover:animate-[bazaar-wiggle_0.4s_ease-in-out] disabled:opacity-50"
+                  className="rounded-full border border-[#17241f] px-8 py-3 text-xs font-semibold uppercase tracking-[0.25em] transition-colors hover:bg-[#17241f] hover:text-[#f7f3eb] disabled:opacity-40"
                 >
-                  {loadingMore ? 'Loading…' : 'Show me more!'}
+                  {loadingMore ? 'Loading…' : 'Load more'}
                 </button>
               ) : null}
             </div>
@@ -175,23 +248,24 @@ export function BazaarTemplate({ site }: TemplateProps) {
         )}
       </main>
 
-      <footer className="bg-indigo-950 text-indigo-100">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-12 sm:flex-row sm:items-end sm:justify-between">
+      <footer className="border-t border-[#c9a84c]/20 bg-[#17241f] text-[#f7f3eb]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-14 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-2xl font-black">{site.shop_name} 🎉</p>
+            <p className="font-serif text-2xl tracking-tight">{site.shop_name}</p>
+            <div className="mt-2 h-px w-12 bg-[#c9a84c]/60" aria-hidden="true" />
             {site.contact.address ? (
-              <p className="mt-2 text-sm font-semibold text-indigo-300">{site.contact.address}</p>
+              <p className="mt-3 text-sm text-[#f7f3eb]/60">{site.contact.address}</p>
             ) : null}
             {site.contact.phone ? (
               <a
                 href={`tel:${site.contact.phone}`}
-                className="mt-1 inline-block rounded-full bg-indigo-900 px-3 py-1 text-sm font-bold text-amber-300 hover:underline"
+                className="mt-1 inline-block text-sm font-medium text-[#e6d3a3] hover:underline"
               >
-                📞 {site.contact.phone}
+                {site.contact.phone}
               </a>
             ) : null}
           </div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400">
+          <p className="text-[11px] uppercase tracking-[0.3em] text-[#f7f3eb]/40">
             Powered by Mero Pasal
           </p>
         </div>
@@ -201,8 +275,8 @@ export function BazaarTemplate({ site }: TemplateProps) {
         open={quickView !== null}
         onClose={() => setQuickView(null)}
         label={quickView?.name ?? 'Product details'}
-        backdropClassName="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-6"
-        panelClassName="w-full max-w-lg overflow-hidden rounded-t-3xl bg-white shadow-2xl outline-none motion-safe:animate-[bazaar-slide-up_0.25s_ease-out] sm:max-w-2xl sm:rounded-3xl sm:motion-safe:animate-[bazaar-pop_0.3s_ease-out]"
+        backdropClassName="fixed inset-0 z-50 flex items-end justify-center bg-[#17241f]/50 backdrop-blur-sm sm:items-center sm:p-6"
+        panelClassName="w-full max-w-lg overflow-hidden rounded-t-[1.75rem] bg-[#f7f3eb] shadow-2xl outline-none motion-safe:animate-[bazaar-slide-up_0.25s_ease-out] sm:max-w-3xl sm:rounded-[1.75rem] sm:motion-safe:animate-[bazaar-pop_0.3s_ease-out]"
       >
         {quickView ? (
           <BazaarQuickView
@@ -217,29 +291,32 @@ export function BazaarTemplate({ site }: TemplateProps) {
   );
 }
 
-function BazaarChip({
-  color,
+function BazaarPill({
   active,
   onClick,
   label,
+  count,
 }: {
-  color: string;
   active: boolean;
   onClick: () => void;
   label: string;
+  count?: number;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full px-4 py-2 text-sm font-bold transition-all ${
+      className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-all ${
         active
-          ? `${color} scale-105 text-white shadow-md ring-2 ring-slate-900 ring-offset-2`
-          : 'bg-white text-slate-700 shadow-sm hover:-translate-y-0.5 hover:shadow-md'
+          ? 'bg-[#17241f] text-[#f7f3eb] shadow-md'
+          : 'border border-[#17241f]/15 bg-[#fffdf8]/70 text-[#17241f]/70 hover:border-[#17241f]/40 hover:text-[#17241f]'
       }`}
     >
       {label}
+      {count !== undefined ? (
+        <span className={`ml-1.5 ${active ? 'text-[#c9a84c]' : 'text-[#17241f]/40'}`}>{count}</span>
+      ) : null}
     </button>
   );
 }
@@ -268,35 +345,35 @@ function BazaarCard({
         type="button"
         onClick={onQuickView}
         aria-label={`Quick view ${product.name}`}
-        className="group relative block w-full rounded-2xl bg-white p-2 pb-4 text-left shadow-md transition-all duration-300 hover:-translate-y-1.5 hover:rotate-[-0.5deg] hover:shadow-[0_18px_35px_-12px_rgba(192,38,211,0.45)]"
+        className="group block w-full rounded-[1.4rem] bg-[#fffdf8] p-3 text-left shadow-[0_1px_3px_rgba(23,36,31,0.08)] ring-1 ring-[#17241f]/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-20px_rgba(23,36,31,0.35)]"
       >
-        <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-gradient-to-br from-indigo-100 to-fuchsia-100">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-[1rem] bg-[#ece5d8]">
           <ProductImage
             src={product.image}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            fallbackClassName="flex h-full w-full items-center justify-center text-6xl font-black text-fuchsia-300"
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+            fallbackClassName="flex h-full w-full items-center justify-center font-serif text-6xl text-[#17241f]/20"
           />
           {muted ? (
-            <span className="absolute -right-9 top-4 rotate-45 bg-rose-500 px-10 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow">
+            <span className="absolute left-3 top-3 rounded-full bg-[#17241f]/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f7f3eb]">
               Sold out
             </span>
           ) : null}
+          <span className="absolute inset-x-0 bottom-0 translate-y-full bg-[#17241f]/90 py-2.5 text-center text-[11px] font-medium uppercase tracking-[0.25em] text-[#f7f3eb] transition-transform duration-300 group-hover:translate-y-0">
+            Quick view
+          </span>
         </div>
-        <div className="px-2 pt-3">
-          <h3 className="truncate text-base font-black sm:text-lg">{product.name}</h3>
-          <div className="mt-1.5 flex items-center justify-between gap-2">
-            <p className="truncate text-xs font-bold uppercase tracking-wide text-slate-400">
-              {product.brand ?? ' '}
+        <div className="px-1.5 pb-1 pt-4">
+          <h3 className="font-serif text-lg leading-snug tracking-tight">{product.name}</h3>
+          <div className="mt-1.5 flex items-baseline justify-between gap-2">
+            <p className="truncate text-[11px] uppercase tracking-[0.18em] text-[#17241f]/45">
+              {product.brand ?? ' '}
             </p>
-            <span className="shrink-0 rounded-full bg-amber-400 px-2.5 py-1 text-xs font-black text-slate-900 shadow-sm">
+            <p className="shrink-0 font-serif text-[15px]">
               {formatPriceRange(product.price_min, product.price_max, currency)}
-            </span>
+            </p>
           </div>
         </div>
-        <span className="pointer-events-none absolute inset-x-2 bottom-14 rounded-xl bg-slate-900/85 py-1.5 text-center text-xs font-bold text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-          Quick view 👀
-        </span>
       </button>
     </article>
   );
@@ -306,10 +383,13 @@ function BazaarSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3" aria-hidden="true">
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} className="animate-pulse rounded-2xl bg-white p-2 pb-4 shadow-md">
-          <div className="aspect-[4/5] rounded-xl bg-slate-200" />
-          <div className="mx-2 mt-3 h-4 w-2/3 rounded bg-slate-200" />
-          <div className="mx-2 mt-2 h-3 w-1/3 rounded bg-slate-200" />
+        <div
+          key={i}
+          className="animate-pulse rounded-[1.4rem] bg-[#fffdf8] p-3 ring-1 ring-[#17241f]/5"
+        >
+          <div className="aspect-[4/5] rounded-[1rem] bg-[#ece5d8]" />
+          <div className="mx-1.5 mt-4 h-4 w-2/3 rounded bg-[#ece5d8]" />
+          <div className="mx-1.5 mb-1 mt-2 h-3 w-1/3 rounded bg-[#ece5d8]" />
         </div>
       ))}
     </div>
@@ -328,61 +408,68 @@ function BazaarQuickView({
   onClose: () => void;
 }) {
   return (
-    <div>
-      <div className="relative aspect-[4/3] bg-gradient-to-br from-indigo-100 to-fuchsia-100">
+    <div className="grid sm:grid-cols-2">
+      <div className="relative aspect-[4/3] bg-[#ece5d8] sm:aspect-[4/5]">
         <ProductImage
           src={product.image}
           alt={product.name}
           className="h-full w-full object-cover"
-          fallbackClassName="flex h-full w-full items-center justify-center text-8xl font-black text-fuchsia-300"
+          fallbackClassName="flex h-full w-full items-center justify-center font-serif text-8xl text-[#17241f]/20"
         />
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-lg font-black text-white shadow-lg transition-transform hover:scale-110"
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#f7f3eb]/90 text-xl leading-none text-[#17241f] shadow-md transition-transform hover:scale-105"
         >
           ×
         </button>
         {!product.in_stock ? (
-          <span className="absolute left-3 top-3 rounded-full bg-rose-500 px-3 py-1 text-xs font-black uppercase text-white">
+          <span className="absolute left-3 top-3 rounded-full bg-[#17241f]/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f7f3eb]">
             Sold out
           </span>
         ) : null}
       </div>
-      <div className="p-6">
-        <h3 className="text-2xl font-black tracking-tight">{product.name}</h3>
-        {product.name_np ? <p className="mt-1 font-semibold text-slate-500">{product.name_np}</p> : null}
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
-          <span className="rounded-full bg-indigo-100 px-3 py-1 text-indigo-700">
-            {product.brand ?? 'Unbranded'}
-          </span>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">
-            Code {product.code}
-          </span>
-          <span
-            className={`rounded-full px-3 py-1 ${
-              product.in_stock ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-            }`}
-          >
-            {product.in_stock ? 'In stock ✓' : 'Out of stock'}
-          </span>
-        </div>
-        <p className="mt-5 text-3xl font-black text-slate-900">
+      <div className="flex flex-col p-6 sm:p-8">
+        <p className={`text-[11px] uppercase tracking-[0.25em] ${ACCENT}`}>
+          {product.brand ?? 'Unbranded'}
+        </p>
+        <h3 className="mt-1 font-serif text-2xl tracking-tight sm:text-3xl">{product.name}</h3>
+        {product.name_np ? <p className="mt-1 text-[#17241f]/60">{product.name_np}</p> : null}
+        <div className="my-5 h-px w-12 bg-[#c9a84c]/60" aria-hidden="true" />
+        <dl className="space-y-2.5 text-sm">
+          <div className="flex justify-between border-b border-[#17241f]/10 pb-2">
+            <dt className="text-[#17241f]/50">Code</dt>
+            <dd>{product.code}</dd>
+          </div>
+          <div className="flex justify-between border-b border-[#17241f]/10 pb-2">
+            <dt className="text-[#17241f]/50">Category</dt>
+            <dd>{product.category ?? '—'}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-[#17241f]/50">Availability</dt>
+            <dd className={product.in_stock ? 'text-[#2f5d4a]' : 'text-[#8c2f2f]'}>
+              {product.in_stock ? 'In stock' : 'Out of stock'}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-6 font-serif text-2xl tracking-tight sm:text-3xl">
           {formatPriceRange(product.price_min, product.price_max, currency)}
         </p>
-        {phone ? (
-          <a
-            href={`tel:${phone}`}
-            className="mt-6 block rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 py-3.5 text-center font-black text-white shadow-lg transition-transform motion-safe:hover:animate-[bazaar-wiggle_0.4s_ease-in-out]"
-          >
-            📞 Call to order · {phone}
-          </a>
-        ) : (
-          <p className="mt-6 rounded-2xl bg-amber-100 py-3 text-center font-bold text-amber-800">
-            Visit our store to order!
-          </p>
-        )}
+        <div className="mt-auto pt-7">
+          {phone ? (
+            <a
+              href={`tel:${phone}`}
+              className="block rounded-full bg-[#17241f] py-3.5 text-center text-xs font-semibold uppercase tracking-[0.25em] text-[#f7f3eb] transition-colors hover:bg-[#24382f]"
+            >
+              Call to order · {phone}
+            </a>
+          ) : (
+            <p className="text-center text-xs uppercase tracking-[0.25em] text-[#17241f]/50">
+              Visit our store to order
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
