@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.notifications",
     "apps.compliance",
+    "apps.storefront",
 ]
 
 MIDDLEWARE = [

@@ -153,6 +153,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       frontend: ${{ steps.probe.outputs.frontend }}
+      storefront: ${{ steps.probe.outputs.storefront }}
     steps:
       - uses: actions/checkout@v4
       - id: probe
@@ -161,6 +162,11 @@ jobs:
             echo "frontend=true" >> "$GITHUB_OUTPUT"
           else
             echo "frontend=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -f storefront/package.json ]; then
+            echo "storefront=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "storefront=false" >> "$GITHUB_OUTPUT"
           fi
 
   frontend:
@@ -188,5 +194,26 @@ jobs:
         working-directory: .
         run: |
           docker build --tag dokan-frontend:test frontend
+          docker build --tag dokan-storefront:test storefront
           docker build --tag dokan-caddy:test docker/caddy
           sh docker/test-edge-stack.sh
+
+  storefront:
+    needs: changes
+    if: needs.changes.outputs.storefront == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: storefront
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: storefront/package-lock.json
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=critical
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build
