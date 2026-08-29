@@ -133,6 +133,9 @@ class Item(TenantScopedModel):
     attributes = models.JSONField(null=True, blank=True)  # fabric, fit, care — escape hatch
     min_selling_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     max_selling_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    # Single price shown on the online store (in the store's configured
+    # website currency) instead of the counter selling-price range.
+    website_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     reorder_level = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(

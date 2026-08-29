@@ -1,3 +1,5 @@
+import type { StoreContent } from './api';
+
 /**
  * Price display for the storefront: ranges from the catalog resolve to a
  * single amount or an "Rs A – B" range; nothing set means "Price on request".
@@ -55,4 +57,48 @@ export function formatPriceRange(
   }
   const [from, to] = lo <= hi ? [lo, hi] : [hi, lo];
   return `${prefix}${formatAmount(from)} – ${formatAmount(to)}`;
+}
+
+export interface ProductPriceView {
+  /** What to render as the price. */
+  text: string;
+  /** Original price to strike through while an offer runs, else null. */
+  compareAt: string | null;
+}
+
+interface PriceFields {
+  price_min: string | null;
+  price_max: string | null;
+  website_price: string | null;
+  website_compare_at: string | null;
+}
+
+/**
+ * The one price rule of the storefront: a website price (already discounted
+ * server-side when an offer runs) wins over the counter selling-price range.
+ */
+export function productPriceDisplay(
+  product: PriceFields,
+  currency: StorefrontCurrency,
+): ProductPriceView {
+  if (product.website_price !== null) {
+    return {
+      text: formatPriceRange(product.website_price, null, currency),
+      compareAt:
+        product.website_compare_at !== null
+          ? formatPriceRange(product.website_compare_at, null, currency)
+          : null,
+    };
+  }
+  return { text: formatPriceRange(product.price_min, product.price_max, currency), compareAt: null };
+}
+
+/** "Tihar Sale · 20% off" from the tenant's offer settings; null when unset. */
+export function offerLabel(store: StoreContent): string | null {
+  const parts = [store.offer_text.trim()];
+  if (store.offer_discount_pct !== null) {
+    parts.push(`${String(Number(store.offer_discount_pct))}% off`);
+  }
+  const label = parts.filter(Boolean).join(' · ');
+  return label === '' ? null : label;
 }

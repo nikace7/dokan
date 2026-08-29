@@ -5,7 +5,7 @@ import { ProductImage } from '../../components/ProductImage';
 import { useDebouncedValue, useRevealOnScroll, useScrolledPast } from '../../components/hooks';
 import { useProducts } from '../../components/useProducts';
 import type { Product, SiteCategory } from '../../lib/api';
-import { formatPriceRange } from '../../lib/money';
+import { offerLabel, productPriceDisplay } from '../../lib/money';
 import type { TemplateProps } from '..';
 
 const INK = 'text-[#1a1a18]';
@@ -25,6 +25,7 @@ export function AuroraTemplate({ site }: TemplateProps) {
     debouncedSearch,
   );
   const [quickView, setQuickView] = useState<Product | null>(null);
+  const offer = offerLabel(site.store);
 
   return (
     <div className={`min-h-screen bg-[#faf9f6] font-sans ${INK} antialiased`}>
@@ -36,6 +37,11 @@ export function AuroraTemplate({ site }: TemplateProps) {
             : 'border-b border-transparent'
         }`}
       >
+        {site.store.announcement ? (
+          <div className="bg-[#1a1a18] px-4 py-1.5 text-center text-[11px] uppercase tracking-[0.25em] text-[#faf9f6]">
+            {site.store.announcement}
+          </div>
+        ) : null}
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <a href="#top" className="font-serif text-lg tracking-tight">
             {site.shop_name}
@@ -60,15 +66,22 @@ export function AuroraTemplate({ site }: TemplateProps) {
             Est. in Nepal · Curated clothing
           </p>
           <h1 className="font-serif text-[13vw] leading-[0.95] tracking-tight sm:text-7xl lg:text-8xl">
-            {site.shop_name}
+            {site.store.hero_title || site.shop_name}
           </h1>
           {site.shop_name_np ? (
             <p className="mt-4 font-serif text-2xl text-[#1a1a18]/60">{site.shop_name_np}</p>
           ) : null}
+          {offer ? (
+            <p
+              className={`mt-6 inline-block border border-[#6d2b2b]/40 px-4 py-1.5 text-xs uppercase tracking-[0.25em] ${ACCENT}`}
+            >
+              {offer}
+            </p>
+          ) : null}
           <hr className="my-8 w-24 border-t border-[#1a1a18]/30" />
           <p className="max-w-md text-sm leading-relaxed text-[#1a1a18]/70">
-            A quiet edit of everyday clothing — genuine brands, honest prices. Browse the
-            collection, then visit us in store.
+            {site.store.hero_subtitle ||
+              'A quiet edit of everyday clothing — genuine brands, honest prices. Browse the collection, then visit us in store.'}
           </p>
         </div>
         <a
@@ -257,6 +270,7 @@ function AuroraCard({
 }) {
   const { ref, visible } = useRevealOnScroll<HTMLElement>();
   const muted = !product.in_stock;
+  const price = productPriceDisplay(product, currency);
   return (
     <article
       ref={ref}
@@ -292,7 +306,12 @@ function AuroraCard({
             <p className="text-xs uppercase tracking-[0.2em] text-[#1a1a18]/50">
               {product.brand ?? ' '}
             </p>
-            <p className="text-sm">{formatPriceRange(product.price_min, product.price_max, currency)}</p>
+            <p className="text-sm">
+              {price.compareAt ? (
+                <span className="mr-1.5 text-[#1a1a18]/40 line-through">{price.compareAt}</span>
+              ) : null}
+              <span className={price.compareAt ? ACCENT : ''}>{price.text}</span>
+            </p>
           </div>
         </div>
       </button>
@@ -325,6 +344,7 @@ function AuroraQuickView({
   phone: string | null;
   onClose: () => void;
 }) {
+  const price = productPriceDisplay(product, currency);
   return (
     <div className="grid sm:grid-cols-2">
       <div className="relative aspect-[4/5] bg-[#efece4]">
@@ -364,7 +384,10 @@ function AuroraQuickView({
           </div>
         </dl>
         <p className="mt-6 font-serif text-2xl tracking-tight">
-          {formatPriceRange(product.price_min, product.price_max, currency)}
+          {price.compareAt ? (
+            <span className="mr-2 text-lg text-[#1a1a18]/40 line-through">{price.compareAt}</span>
+          ) : null}
+          <span className={price.compareAt ? ACCENT : ''}>{price.text}</span>
         </p>
         <div className="mt-auto pt-8">
           {phone ? (

@@ -18,12 +18,23 @@ export interface SiteContact {
   address: string | null;
 }
 
+/** Tenant-controlled website content (empty string / null = hidden). */
+export interface StoreContent {
+  hero_title: string;
+  hero_subtitle: string;
+  announcement: string;
+  offer_text: string;
+  /** Decimal string like "20.00", null when no store-wide offer. */
+  offer_discount_pct: string | null;
+}
+
 export interface SiteInfo {
   shop_name: string;
   shop_name_np: string | null;
   currency: 'NPR' | 'INR';
   template: string;
   contact: SiteContact;
+  store: StoreContent;
   categories: SiteCategory[];
 }
 
@@ -37,6 +48,10 @@ export interface Product {
   brand: string | null;
   price_min: string | null;
   price_max: string | null;
+  /** Single online-store price (already discounted when an offer runs). */
+  website_price: string | null;
+  /** Original website price, present only while an offer discounts it. */
+  website_compare_at: string | null;
   in_stock: boolean;
 }
 

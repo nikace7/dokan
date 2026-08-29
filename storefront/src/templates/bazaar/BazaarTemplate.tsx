@@ -5,7 +5,7 @@ import { ProductImage } from '../../components/ProductImage';
 import { useDebouncedValue, useRevealOnScroll, useScrolledPast } from '../../components/hooks';
 import { useProducts } from '../../components/useProducts';
 import type { Product, SiteCategory } from '../../lib/api';
-import { formatPriceRange } from '../../lib/money';
+import { offerLabel, productPriceDisplay } from '../../lib/money';
 import type { TemplateProps } from '..';
 
 /**
@@ -35,6 +35,9 @@ export function BazaarTemplate({ site }: TemplateProps) {
 
   const heroProduct = products[0] ?? null;
   const heroSecond = products[1] ?? null;
+  const offer = offerLabel(site.store);
+  // A configured announcement takes over the marquee; otherwise the defaults roll.
+  const marqueeItems = site.store.announcement ? [site.store.announcement] : MARQUEE_ITEMS;
 
   return (
     <div className={`min-h-screen bg-[#f7f3eb] font-sans ${INK} antialiased`}>
@@ -86,14 +89,21 @@ export function BazaarTemplate({ site }: TemplateProps) {
               Online store
             </p>
             <h1 className="mt-5 font-serif text-5xl leading-[1.04] tracking-tight sm:text-6xl lg:text-7xl">
-              {site.shop_name}
+              {site.store.hero_title || site.shop_name}
             </h1>
             {site.shop_name_np ? (
               <p className="mt-3 font-serif text-2xl text-[#17241f]/55">{site.shop_name_np}</p>
             ) : null}
+            {offer ? (
+              <p
+                className={`mt-6 inline-block rounded-full border border-[#a5812e]/50 bg-[#c9a84c]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] ${ACCENT}`}
+              >
+                {offer}
+              </p>
+            ) : null}
             <p className="mt-6 max-w-md text-sm leading-relaxed text-[#17241f]/70 sm:text-base">
-              A hand-picked rail of genuine clothing at honest prices. Browse the collection
-              online — then call us or visit the store to take it home.
+              {site.store.hero_subtitle ||
+                'A hand-picked rail of genuine clothing at honest prices. Browse the collection online — then call us or visit the store to take it home.'}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
@@ -147,7 +157,7 @@ export function BazaarTemplate({ site }: TemplateProps) {
         >
           {[0, 1].map((copy) => (
             <span key={copy} className="flex">
-              {MARQUEE_ITEMS.map((item) => (
+              {marqueeItems.map((item) => (
                 <span key={`${copy}-${item}`} className="mx-8 flex items-center gap-16">
                   {item}
                   <span className="text-[#c9a84c]">✦</span>
@@ -156,7 +166,7 @@ export function BazaarTemplate({ site }: TemplateProps) {
             </span>
           ))}
         </div>
-        <span className="sr-only">{MARQUEE_ITEMS.join(' · ')}</span>
+        <span className="sr-only">{marqueeItems.join(' · ')}</span>
       </div>
 
       {/* Collection */}
@@ -334,6 +344,7 @@ function BazaarCard({
 }) {
   const { ref, visible } = useRevealOnScroll<HTMLElement>();
   const muted = !product.in_stock;
+  const price = productPriceDisplay(product, currency);
   return (
     <article
       ref={ref}
@@ -370,7 +381,12 @@ function BazaarCard({
               {product.brand ?? ' '}
             </p>
             <p className="shrink-0 font-serif text-[15px]">
-              {formatPriceRange(product.price_min, product.price_max, currency)}
+              {price.compareAt ? (
+                <span className="mr-1.5 text-[13px] text-[#17241f]/40 line-through">
+                  {price.compareAt}
+                </span>
+              ) : null}
+              <span className={price.compareAt ? 'text-[#8c2f2f]' : ''}>{price.text}</span>
             </p>
           </div>
         </div>
@@ -407,6 +423,7 @@ function BazaarQuickView({
   phone: string | null;
   onClose: () => void;
 }) {
+  const price = productPriceDisplay(product, currency);
   return (
     <div className="grid sm:grid-cols-2">
       <div className="relative aspect-[4/3] bg-[#ece5d8] sm:aspect-[4/5]">
@@ -454,7 +471,10 @@ function BazaarQuickView({
           </div>
         </dl>
         <p className="mt-6 font-serif text-2xl tracking-tight sm:text-3xl">
-          {formatPriceRange(product.price_min, product.price_max, currency)}
+          {price.compareAt ? (
+            <span className="mr-2 text-lg text-[#17241f]/40 line-through">{price.compareAt}</span>
+          ) : null}
+          <span className={price.compareAt ? 'text-[#8c2f2f]' : ''}>{price.text}</span>
         </p>
         <div className="mt-auto pt-7">
           {phone ? (
