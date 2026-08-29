@@ -1,16 +1,23 @@
 """Write-side tenant settings, plan limits, and usage reconciliation."""
 
+import uuid
 from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Any, Literal
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from apps.audit.services import audit
 from apps.tenants.constants import TenantStatus
-from apps.tenants.models import Branch, Plan, Tenant, TenantUsageSnapshot
+from apps.tenants.models import (
+    Branch,
+    Plan,
+    Tenant,
+    TenantUsageSnapshot,
+    validate_shopfront_slug,
+)
 from apps.tenants.selectors import get_effective_plan_value, invalidate_tenant_cache
 from core.responses import ServiceError
 
@@ -219,6 +226,28 @@ def _required_platform_text(value: str, label: str) -> str:
 
 
 @transaction.atomic
+def validate_shopfront_subdomain(candidate: str, *, tenant_id: uuid.UUID | None = None) -> str:
+    """Normalise and validate an online-store subdomain.
+
+    Collision-checked against BOTH tenant slugs and other shopfronts — the
+    two namespaces share one wildcard host, so they must never overlap.
+    ``tenant_id`` excludes the tenant being updated from the clash check.
+    """
+    value = candidate.strip().lower()
+    try:
+        validate_shopfront_slug(value)
+    except ValidationError as exc:
+        raise ServiceError("SHOPFRONT_INVALID", "; ".join(exc.messages)) from exc
+    clashes = Tenant.objects.filter(Q(slug=value) | Q(shopfront_subdomain=value))
+    if tenant_id is not None:
+        clashes = clashes.exclude(pk=tenant_id)
+    if clashes.exists():
+        raise ServiceError(
+            "SHOPFRONT_TAKEN", "This online-store address is already in use.", http_status=409
+        )
+    return value
+
+
 def create_platform_tenant(
     *,
     plan: Plan,
@@ -239,8 +268,13 @@ def create_platform_tenant(
         raise ServiceError("PLAN_INACTIVE", "Inactive plans cannot be assigned.", http_status=409)
     if status == TenantStatus.TRIAL and (trial_ends_at is None or trial_ends_at <= timezone.now()):
         raise ServiceError("TRIAL_END_REQUIRED", "A trial tenant requires a future trial end time.")
+    normalized_slug = slug.strip().lower()
+    # A slug must never shadow another tenant's online-store address — both
+    # resolve on the same wildcard host.
+    if Tenant.objects.filter(shopfront_subdomain=normalized_slug).exists():
+        raise ServiceError("ALREADY_EXISTS", "This shop subdomain is already in use.", 409)
     tenant = Tenant(
-        slug=slug.strip().lower(),
+        slug=normalized_slug,
         name=_required_platform_text(name, "Shop name"),
         name_np=name_np.strip() if name_np else None,
         legal_name=legal_name.strip() if legal_name else None,
