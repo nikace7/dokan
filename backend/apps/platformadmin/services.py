@@ -18,6 +18,7 @@ from apps.tenants.models import (
     Tenant,
 )
 from apps.tenants.selectors import invalidate_tenant_cache
+from apps.tenants.services import validate_shopfront_subdomain
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -210,6 +211,8 @@ def _tenant_snapshot(tenant: Tenant) -> dict[str, Any]:
         "trial_ends_at": tenant.trial_ends_at.isoformat() if tenant.trial_ends_at else None,
         "calendar_pref": tenant.calendar_pref,
         "locale": tenant.locale,
+        "currency": tenant.currency,
+        "shopfront_subdomain": tenant.shopfront_subdomain,
     }
 
 
@@ -240,12 +243,20 @@ def update_tenant(
             "calendar_pref",
             "locale",
             "currency",
+            "shopfront_subdomain",
         }
     }
     if "plan" in fields and not fields["plan"].is_active:
         raise ServiceError("PLAN_INACTIVE", "Inactive plans cannot be assigned.", http_status=409)
     if "name" in fields:
         fields["name"] = _required(fields["name"], "Shop name")
+    if "shopfront_subdomain" in fields:
+        raw = fields["shopfront_subdomain"]
+        fields["shopfront_subdomain"] = (
+            None
+            if raw is None or not str(raw).strip()
+            else validate_shopfront_subdomain(str(raw), tenant_id=locked.pk)
+        )
     status = fields.get("status", locked.status)
     trial_end = fields.get("trial_ends_at", locked.trial_ends_at)
     if status == TenantStatus.TRIAL and (trial_end is None or trial_end <= timezone.now()):

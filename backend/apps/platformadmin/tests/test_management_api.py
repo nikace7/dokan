@@ -264,6 +264,72 @@ class TestTenantManagement:
         tenant.refresh_from_db()
         assert tenant.currency == "INR"
 
+    def test_superadmin_can_set_and_clear_shopfront_subdomain(self) -> None:
+        tenant = TenantFactory(slug="store-shop")
+        client, _ = client_for()
+        response = client.patch(
+            f"{TENANTS_URL}/{tenant.pk}",
+            {"shopfront_subdomain": "Yak-Store"},
+            format="json",
+            **admin_host(),
+        )
+        assert response.status_code == 200
+        # Normalised to lowercase before persistence.
+        assert response.json()["data"]["shopfront_subdomain"] == "yak-store"
+        tenant.refresh_from_db()
+        assert tenant.shopfront_subdomain == "yak-store"
+        audit = PlatformAuditLog.objects.get(action="tenant.update", tenant=tenant)
+        assert audit.payload["after"]["shopfront_subdomain"] == "yak-store"
+
+        cleared = client.patch(
+            f"{TENANTS_URL}/{tenant.pk}",
+            {"shopfront_subdomain": None},
+            format="json",
+            **admin_host(),
+        )
+        assert cleared.status_code == 200
+        tenant.refresh_from_db()
+        assert tenant.shopfront_subdomain is None
+
+    def test_shopfront_rejects_bad_format_and_reserved(self) -> None:
+        tenant = TenantFactory()
+        client, _ = client_for()
+        for bad in ("Bad_Slug", "ab", "admin"):
+            response = client.patch(
+                f"{TENANTS_URL}/{tenant.pk}",
+                {"shopfront_subdomain": bad},
+                format="json",
+                **admin_host(),
+            )
+            assert response.status_code == 400, bad
+        tenant.refresh_from_db()
+        assert tenant.shopfront_subdomain is None
+
+    def test_shopfront_conflicts_with_slug_and_other_shopfront(self) -> None:
+        TenantFactory(slug="taken-shop")
+        TenantFactory(slug="other-shop", shopfront_subdomain="mall")
+        tenant = TenantFactory(slug="needy-shop")
+        client, _ = client_for()
+        for taken in ("taken-shop", "mall"):
+            response = client.patch(
+                f"{TENANTS_URL}/{tenant.pk}",
+                {"shopfront_subdomain": taken},
+                format="json",
+                **admin_host(),
+            )
+            assert response.status_code == 409, taken
+
+    def test_provisioned_slug_cannot_shadow_existing_shopfront(self) -> None:
+        TenantFactory(slug="host-shop", shopfront_subdomain="yak-store")
+        client, _ = client_for()
+        response = client.post(
+            TENANTS_URL,
+            tenant_payload(PlanFactory(), slug="yak-store"),
+            format="json",
+            **admin_host(),
+        )
+        assert response.status_code == 409
+
     def test_list_filters_by_status_and_search(self) -> None:
         TenantFactory(slug="alpha-shop", name="Alpha Fashion", status="ACTIVE")
         TenantFactory(slug="beta-shop", name="Beta Fashion", status="SUSPENDED")

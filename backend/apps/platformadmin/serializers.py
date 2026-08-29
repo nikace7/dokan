@@ -109,6 +109,7 @@ class TenantSerializer(serializers.ModelSerializer):
             "calendar_pref",
             "locale",
             "currency",
+            "shopfront_subdomain",
             "onboarded_at",
             "created_at",
         )
@@ -159,6 +160,9 @@ class TenantUpdateSerializer(serializers.Serializer):
     calendar_pref = serializers.ChoiceField(choices=Tenant.CalendarPref.choices, required=False)
     locale = serializers.ChoiceField(choices=Tenant.Locale.choices, required=False)
     currency = serializers.ChoiceField(choices=Tenant.Currency.choices, required=False)
+    shopfront_subdomain = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True, max_length=30
+    )
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
