@@ -7,7 +7,7 @@
 	{$CADDY_GLOBAL_OPTIONS}
 }
 
-(app_routes) {
+(backend_routes) {
 	@backend path /api/* /django-admin*
 	handle @backend {
 		reverse_proxy backend:8000 {
@@ -29,9 +29,23 @@
 		root * /srv/django-media
 		file_server
 	}
+}
+
+(app_routes) {
+	import backend_routes
 
 	handle {
 		reverse_proxy frontend:8080
+	}
+}
+
+# Public online stores: same backend/media plumbing, but the static site is
+# the storefront SPA, not the POS app.
+(shopfront_routes) {
+	import backend_routes
+
+	handle {
+		reverse_proxy storefront:8080
 	}
 }
 
@@ -53,6 +67,16 @@
 # CADDY_ADDRESS_SCHEME=http:// and CADDY_TLS_CONFIG=/etc/caddy/tls-off.
 {$CADDY_ADDRESS_SCHEME}*.{$ROOT_DOMAIN} {
 	import app_routes
+	import security_headers
+	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
+}
+
+# Online storefronts live on the separate *.shop.<root> namespace so POS hosts
+# and public shop hosts can never collide. Caddy issues its own wildcard cert
+# (*.shop.<root>) — Cloudflare DNS-01 in production, internal CA locally, and
+# the existing *. DNS record already covers the extra label.
+{$CADDY_ADDRESS_SCHEME}*.shop.{$ROOT_DOMAIN} {
+	import shopfront_routes
 	import security_headers
 	import {$CADDY_TLS_CONFIG:/etc/caddy/tls-local}
 }
