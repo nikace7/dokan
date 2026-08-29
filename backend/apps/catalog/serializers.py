@@ -65,6 +65,9 @@ class ItemSerializer(TenantContextSerializer):
     variants_count = serializers.SerializerMethodField()
     mrp_min = serializers.SerializerMethodField()
     mrp_max = serializers.SerializerMethodField()
+    website_price = serializers.DecimalField(
+        max_digits=14, decimal_places=2, required=False, allow_null=True, min_value=0
+    )
 
     class Meta:
         model = Item
@@ -90,6 +93,7 @@ class ItemSerializer(TenantContextSerializer):
             "attributes",
             "min_selling_price",
             "max_selling_price",
+            "website_price",
             "reorder_level",
             "is_active",
         )
@@ -182,6 +186,9 @@ class QuickCreateProductSerializer(serializers.Serializer):
     )
     max_selling_price = serializers.DecimalField(
         max_digits=14, decimal_places=2, required=False, allow_null=True
+    )
+    website_price = serializers.DecimalField(
+        max_digits=14, decimal_places=2, required=False, allow_null=True, min_value=0
     )
     reorder_level = serializers.DecimalField(
         max_digits=12, decimal_places=3, required=False, allow_null=True

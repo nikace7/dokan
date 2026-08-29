@@ -23,6 +23,7 @@ from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.expenses.models import ExpenseCategory
 from apps.inventory.services import post_opening_stock
 from apps.pricing.models import RateType
+from apps.storefront.models import StoreSettings
 from apps.tenants.models import Branch, Plan, Tenant
 
 DEMO_PHONE = "9800000000"
@@ -116,11 +117,11 @@ class Command(BaseCommand):
             ExpenseCategory.objects.get_or_create(tenant=tenant, name=expense_category)
 
         catalog = [
-            ("TEE-01", "Plain T-Shirt", Decimal("1500.00"), Decimal("600.00")),
-            ("SH-01", "Oxford Shirt", Decimal("2800.00"), Decimal("1200.00")),
-            ("JW-01", "Denim Jacket", Decimal("4500.00"), Decimal("2200.00")),
+            ("TEE-01", "Plain T-Shirt", Decimal("1500.00"), Decimal("600.00"), Decimal("1200.00")),
+            ("SH-01", "Oxford Shirt", Decimal("2800.00"), Decimal("1200.00"), Decimal("2200.00")),
+            ("JW-01", "Denim Jacket", Decimal("4500.00"), Decimal("2200.00"), Decimal("3600.00")),
         ]
-        for code, name, mrp, cost in catalog:
+        for code, name, mrp, cost, website_price in catalog:
             item, _ = Item.objects.get_or_create(
                 tenant=tenant,
                 code=code,
@@ -129,6 +130,7 @@ class Command(BaseCommand):
                     "category": category,
                     "brand": brand,
                     "size_chart": chart,
+                    "website_price": website_price,
                     "created_by": owner,
                 },
             )
@@ -150,4 +152,16 @@ class Command(BaseCommand):
                         created_by=owner,
                         note="Demo seed",
                     )
+
+        # Demo online-store content: a visible offer + website prices (set on
+        # the items above) so the storefront shows the full feature set.
+        StoreSettings.objects.get_or_create(
+            tenant=tenant,
+            defaults={
+                "announcement": "Free delivery inside Kathmandu valley",
+                "offer_text": "Dashain Sale",
+                "offer_discount_pct": Decimal("10.00"),
+                "currency": "NPR",
+            },
+        )
         return owner

@@ -575,6 +575,41 @@
       "help": "Review every time mero-pasal.online support entered this shop and who ended the session.",
       "viewLog": "View support access log"
     },
+    "storeCard": {
+      "title": "Online store",
+      "help": "Control what customers see on your online store: headline, announcement, offers, and the website price currency.",
+      "manage": "Manage online store"
+    },
+    "store": {
+      "title": "Online store",
+      "discountInvalid": "Discount must be between 0 and 90 percent.",
+      "status": {
+        "title": "Store status",
+        "address": "Store address",
+        "noAddress": "Not assigned yet",
+        "template": "Design template",
+        "service": "E-commerce service",
+        "serviceOn": "Active",
+        "serviceOff": "Not in your plan",
+        "help": "The store address and design template are set by mero-pasal.online support — contact us to change them."
+      },
+      "content": {
+        "title": "Website content",
+        "heroTitle": "Headline (optional)",
+        "heroTitleHint": "Defaults to your shop name",
+        "heroSubtitle": "Sub-headline (optional)",
+        "announcement": "Announcement (optional)",
+        "help": "Leave a field empty to hide it on the website."
+      },
+      "offer": {
+        "text": "Offer name (optional)",
+        "textHint": "e.g. Dashain Sale",
+        "discount": "Discount % (optional)",
+        "help": "The discount applies to website prices only — counter prices are unchanged. The original price shows struck-through."
+      },
+      "currency": "Website price currency",
+      "currencyHelp": "Website prices are entered and shown in this currency. If it differs from the shop currency, the selling-price range converts at the NPR/INR peg."
+    },
     "staff": {
       "title": "Staff & roles",
       "ownerOnly": "Only the shop owner can manage staff accounts.",
@@ -893,6 +928,7 @@
       "hsnCode": "HSN code",
       "minPrice": "Min selling price (रू)",
       "maxPrice": "Max selling price (रू)",
+      "websitePrice": "Website price (optional)",
       "reorderLevel": "Reorder level",
       "vatApplicable": "VAT applicable",
       "image": "Photo",
