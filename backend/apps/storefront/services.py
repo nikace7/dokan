@@ -5,13 +5,14 @@ as ``apps.tenants.services.update_tenant_settings``. Business validation
 (discount bounds) lives here, not in the serializer.
 """
 
+from datetime import date
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
 
 from apps.audit.services import audit
-from apps.storefront.models import MAX_OFFER_PCT, StoreSettings
+from apps.storefront.models import MAX_BANNERS, MAX_OFFER_PCT, StoreSettings
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -26,8 +27,53 @@ _EDITABLE_FIELDS = (
     "announcement",
     "offer_text",
     "offer_discount_pct",
+    "offer_ends_at",
+    "popup_enabled",
+    "popup_title",
+    "popup_text",
+    "popup_cta_text",
+    "popup_cta_link",
+    "banners",
     "currency",
 )
+
+#: Per-banner field caps — banners are rendered as small cards, so copy must
+#: stay short; links may be in-page anchors, site paths, or absolute URLs.
+_BANNER_LIMITS = {"title": 120, "text": 280, "cta_text": 60, "cta_link": 200}
+
+
+def _validate_link(link: str, *, what: str) -> None:
+    """CTA links may be in-page anchors, site paths, or absolute URLs only —
+    anything else (``javascript:`` and friends) is refused."""
+    if link and not link.startswith(("#", "/", "http://", "https://")):
+        raise ServiceError(
+            "LINK_INVALID", f"{what} must be an anchor, a site path, or an http(s) URL."
+        )
+
+
+def _clean_banners(value: Any) -> list[dict[str, str]] | None:
+    """Validate + normalise the promo-banner list; bad shapes are 400s."""
+    if value is None:
+        return None
+    if not isinstance(value, list) or len(value) > MAX_BANNERS:
+        raise ServiceError(
+            "BANNERS_INVALID", f"Banners must be a list of at most {MAX_BANNERS} entries."
+        )
+    cleaned: list[dict[str, str]] = []
+    for entry in value:
+        if not isinstance(entry, dict):
+            raise ServiceError("BANNERS_INVALID", "Each banner must be an object.")
+        banner = {name: str(entry.get(name) or "").strip() for name in _BANNER_LIMITS}
+        if not banner["title"]:
+            raise ServiceError("BANNERS_INVALID", "Each banner needs a title.")
+        for name, limit in _BANNER_LIMITS.items():
+            if len(banner[name]) > limit:
+                raise ServiceError(
+                    "BANNERS_INVALID", f"Banner {name} must be at most {limit} characters."
+                )
+        _validate_link(banner["cta_link"], what="Banner links")
+        cleaned.append(banner)
+    return cleaned
 
 
 def get_or_create_settings(tenant: "Tenant") -> StoreSettings:
@@ -46,6 +92,10 @@ def update_settings(
 ) -> StoreSettings:
     """Apply the changed fields and record one audited diff in the same transaction."""
     settings_row = get_or_create_settings(tenant)
+    if "banners" in fields:
+        fields["banners"] = _clean_banners(fields["banners"])
+    if "popup_cta_link" in fields:
+        _validate_link(str(fields["popup_cta_link"] or ""), what="The popup link")
     changes = {
         name: value
         for name, value in fields.items()
@@ -66,8 +116,16 @@ def update_settings(
     settings_row.save(update_fields=[*changes, "updated_at"])
 
     def _jsonable(diff: dict[str, Any]) -> dict[str, Any]:
-        # AuditLog diffs serialize with plain json — Decimals must go as strings.
-        return {k: str(v) if isinstance(v, Decimal) else v for k, v in diff.items()}
+        # AuditLog diffs serialize with plain json — Decimals go as strings,
+        # dates as ISO strings; lists (banners) are already json-native.
+        def one(value: Any) -> Any:
+            if isinstance(value, Decimal):
+                return str(value)
+            if isinstance(value, date):
+                return value.isoformat()
+            return value
+
+        return {k: one(v) for k, v in diff.items()}
 
     audit(
         tenant,
