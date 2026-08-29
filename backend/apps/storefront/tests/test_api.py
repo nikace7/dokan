@@ -299,6 +299,9 @@ class TestStoreSettingsApi:
             "Tenant", TenantFactory(shopfront_subdomain="yak", shopfront_template="bazaar")
         )
         TenantFeatureOverride.objects.create(tenant=tenant, key="features.ecommerce", value=True)
+        ItemFactory(tenant=tenant, website_price=Decimal("900.00"))
+        ItemFactory(tenant=tenant)
+        ItemFactory(tenant=tenant, is_active=False, website_price=Decimal("100.00"))
         user = UserFactory(tenant=tenant)
         grant(tenant, user, "settings.manage")
 
@@ -313,6 +316,8 @@ class TestStoreSettingsApi:
         assert data["template"] == "bazaar"
         assert data["store_url"] == f"https://yak.shop.{ROOT}"
         assert data["ecommerce_enabled"] is True
+        assert data["active_items_count"] == 2
+        assert data["website_price_count"] == 1
 
     def test_patch_updates_and_audits(self) -> None:
         tenant = TenantFactory()
