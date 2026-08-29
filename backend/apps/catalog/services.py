@@ -16,6 +16,7 @@ from django.db import IntegrityError, transaction
 from apps.catalog.barcodes import BarcodeValidationError, validate_barcode
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.tenants.services import enforce_creation_limit
+from core.money import MAX_OFFER_PCT
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -31,6 +32,15 @@ def validate_price_bounds(min_price: Decimal | None, max_price: Decimal | None) 
         raise ServiceError(
             "PRICE_BOUNDS_INVALID",
             "Minimum selling price cannot be higher than maximum selling price.",
+        )
+
+
+def validate_website_discount(pct: Decimal | None) -> None:
+    """Per-product online offers obey the same cap as the store-wide offer."""
+    if pct is not None and not Decimal(0) < pct <= Decimal(MAX_OFFER_PCT):
+        raise ServiceError(
+            "DISCOUNT_OUT_OF_RANGE",
+            f"Website offer discount must be between 0 and {MAX_OFFER_PCT} percent.",
         )
 
 
@@ -180,6 +190,7 @@ def create_item(tenant: "Tenant", *, created_by: "User", **fields: Any) -> Item:
         label="active items",
     )
     validate_price_bounds(fields.get("min_selling_price"), fields.get("max_selling_price"))
+    validate_website_discount(fields.get("website_discount_pct"))
     for fk, model, what in (
         ("category", Category, "Category"),
         ("brand", Brand, "Brand"),
@@ -198,6 +209,7 @@ def update_item(tenant: "Tenant", item: Item, **fields: Any) -> Item:
     new_min = fields.get("min_selling_price", item.min_selling_price)
     new_max = fields.get("max_selling_price", item.max_selling_price)
     validate_price_bounds(new_min, new_max)
+    validate_website_discount(fields.get("website_discount_pct", item.website_discount_pct))
     for fk, model, what in (
         ("category", Category, "Category"),
         ("brand", Brand, "Brand"),
