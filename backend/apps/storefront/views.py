@@ -116,6 +116,7 @@ class StorefrontSiteView(_StorefrontView):
                 for c in counted
                 if c.product_count > 0
             ]
+            offer_live = selectors.offer_is_live(store)
             return ok(
                 {
                     "shop_name": tenant.name,
@@ -130,12 +131,32 @@ class StorefrontSiteView(_StorefrontView):
                         "hero_title": store.hero_title if store else "",
                         "hero_subtitle": store.hero_subtitle if store else "",
                         "announcement": store.announcement if store else "",
-                        "offer_text": store.offer_text if store else "",
+                        # A lapsed offer disappears from the storefront whole —
+                        # text and percentage alike.
+                        "offer_text": store.offer_text if store and offer_live else "",
                         "offer_discount_pct": (
                             str(store.offer_discount_pct)
-                            if store and store.offer_discount_pct is not None
+                            if store and offer_live and store.offer_discount_pct is not None
                             else None
                         ),
+                        "offer_ends_at": (
+                            store.offer_ends_at.isoformat()
+                            if store and offer_live and store.offer_ends_at
+                            else None
+                        ),
+                        "popup": (
+                            {
+                                "title": store.popup_title,
+                                "text": store.popup_text,
+                                "cta_text": store.popup_cta_text,
+                                "cta_link": store.popup_cta_link,
+                            }
+                            if store
+                            and store.popup_enabled
+                            and (store.popup_title or store.popup_text)
+                            else None
+                        ),
+                        "banners": (store.banners or []) if store else [],
                     },
                     "categories": categories,
                 }
@@ -154,12 +175,13 @@ class StorefrontProductListView(_StorefrontView):
             context = {
                 "display_currency": selectors.display_currency(tenant, store),
                 "tenant_currency": tenant.currency,
-                "discount_pct": store.offer_discount_pct if store else None,
+                "settings": store,
             }
             products = selectors.public_products(
                 tenant,
                 category_id=request.query_params.get("category"),
                 q=request.query_params.get("q"),
+                featured=request.query_params.get("featured") == "1",
             )
             paginator = _StorefrontPagination()
             page = paginator.paginate_queryset(products, request, view=self)
