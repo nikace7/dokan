@@ -17,7 +17,14 @@ function BrandPanel() {
     { icon: Lock, text: 'Restricted networks, mandatory authenticator codes, full audit trail.' },
   ];
   return (
-    <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
+    <div
+      className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at 20% 20%, hsl(var(--tint-green) / 0.18), transparent 45%),' +
+          'radial-gradient(circle at 80% 70%, hsl(var(--tint-blue) / 0.14), transparent 40%)',
+      }}
+    >
       {/* Subtle dot texture */}
       <div
         aria-hidden="true"
@@ -97,9 +104,7 @@ export function PlatformLoginPage() {
           <Card className="w-full shadow-card">
             <CardHeader className="space-y-1 pb-4 text-center">
               <CardTitle className="text-xl">Platform sign in</CardTitle>
-              <CardDescription>
-                Password and authenticator code are required.
-              </CardDescription>
+              <CardDescription>Password and authenticator code are required.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={submit} className="flex flex-col gap-4">
@@ -129,6 +134,8 @@ export function PlatformLoginPage() {
                   required
                   value={otp}
                   onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="text-center font-mono text-lg tracking-[0.5em]"
+                  placeholder="••••••"
                 />
                 {auth.loginError ? (
                   <p
@@ -142,9 +149,10 @@ export function PlatformLoginPage() {
                   type="submit"
                   size="lg"
                   className="w-full"
+                  loading={auth.isLoggingIn}
                   disabled={auth.isLoggingIn || otp.length !== 6}
                 >
-                  {auth.isLoggingIn ? 'Verifying…' : 'Sign in securely'}
+                  Sign in securely
                 </Button>
               </form>
             </CardContent>
