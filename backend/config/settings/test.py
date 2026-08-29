@@ -41,3 +41,6 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     }
 }
+
+# OTP and order-confirmation emails land in django.core.mail.outbox.
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
