@@ -1,11 +1,13 @@
 import { useState } from 'react';
 
 import { QuickViewModal } from '../../components/QuickViewModal';
+import { OfferPopup } from '../../components/OfferPopup';
 import { ProductImage } from '../../components/ProductImage';
 import { useDebouncedValue, useRevealOnScroll, useScrolledPast } from '../../components/hooks';
+import { useFeaturedProducts } from '../../components/useFeaturedProducts';
 import { useProducts } from '../../components/useProducts';
 import type { Product, SiteCategory } from '../../lib/api';
-import { offerLabel, productPriceDisplay } from '../../lib/money';
+import { offerBadge, offerCountdown, offerLabel, productPriceDisplay } from '../../lib/money';
 import type { TemplateProps } from '..';
 
 /**
@@ -32,12 +34,17 @@ export function BazaarTemplate({ site }: TemplateProps) {
     debouncedSearch,
   );
   const [quickView, setQuickView] = useState<Product | null>(null);
+  const { products: featured } = useFeaturedProducts();
 
   const heroProduct = products[0] ?? null;
   const heroSecond = products[1] ?? null;
   const offer = offerLabel(site.store);
+  const countdown = offerCountdown(site.store.offer_ends_at);
+  const offerLine = [offer, countdown].filter(Boolean).join(' · ');
   // A configured announcement takes over the marquee; otherwise the defaults roll.
   const marqueeItems = site.store.announcement ? [site.store.announcement] : MARQUEE_ITEMS;
+  // The featured rail only makes sense on the unfiltered storefront.
+  const showRail = !category && !debouncedSearch && featured.length > 0;
 
   return (
     <div className={`min-h-screen bg-[#f7f3eb] font-sans ${INK} antialiased`}>
@@ -94,11 +101,11 @@ export function BazaarTemplate({ site }: TemplateProps) {
             {site.shop_name_np ? (
               <p className="mt-3 font-serif text-2xl text-[#17241f]/55">{site.shop_name_np}</p>
             ) : null}
-            {offer ? (
+            {offerLine ? (
               <p
                 className={`mt-6 inline-block rounded-full border border-[#a5812e]/50 bg-[#c9a84c]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] ${ACCENT}`}
               >
-                {offer}
+                {offerLine}
               </p>
             ) : null}
             <p className="mt-6 max-w-md text-sm leading-relaxed text-[#17241f]/70 sm:text-base">
@@ -168,6 +175,61 @@ export function BazaarTemplate({ site }: TemplateProps) {
         </div>
         <span className="sr-only">{marqueeItems.join(' · ')}</span>
       </div>
+
+      {/* Promo banners — the tenant's own cards, hidden when none are set. */}
+      {site.store.banners.length > 0 ? (
+        <section className="mx-auto max-w-6xl px-5 pt-12" aria-label="Offers and notices">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {site.store.banners.map((banner) => {
+              const card = (
+                <div className="h-full rounded-[1.25rem] border border-[#c9a84c]/30 bg-[#fffdf8] p-5 shadow-[0_1px_3px_rgba(23,36,31,0.08)] transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-[0_16px_32px_-20px_rgba(23,36,31,0.35)]">
+                  <div className="h-0.5 w-8 bg-[#c9a84c]/70" aria-hidden="true" />
+                  <h3 className="mt-3 font-serif text-lg tracking-tight">{banner.title}</h3>
+                  {banner.text ? (
+                    <p className="mt-1 text-sm leading-relaxed text-[#17241f]/65">{banner.text}</p>
+                  ) : null}
+                  {banner.cta_text ? (
+                    <p
+                      className={`mt-3 text-[11px] font-semibold uppercase tracking-[0.2em] ${ACCENT}`}
+                    >
+                      {banner.cta_text} →
+                    </p>
+                  ) : null}
+                </div>
+              );
+              return banner.cta_link ? (
+                <a key={banner.title} href={banner.cta_link} className="group block h-full">
+                  {card}
+                </a>
+              ) : (
+                <div key={banner.title} className="group h-full">
+                  {card}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Featured rail — the shop's hand-picked pieces, unfiltered view only. */}
+      {showRail ? (
+        <section aria-label="Featured pieces" className="mx-auto max-w-6xl px-5 pt-14">
+          <div className="mb-6 flex items-baseline gap-4">
+            <h2 className="font-serif text-2xl tracking-tight">Featured pieces</h2>
+            <span className="h-px flex-1 bg-[#c9a84c]/40" aria-hidden="true" />
+          </div>
+          <div className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2">
+            {featured.slice(0, 10).map((product) => (
+              <BazaarRailCard
+                key={product.id}
+                product={product}
+                currency={site.currency}
+                onQuickView={() => setQuickView(product)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Collection */}
       <main id="shop" className="mx-auto max-w-6xl px-5 pb-24 pt-14">
@@ -297,6 +359,43 @@ export function BazaarTemplate({ site }: TemplateProps) {
           />
         ) : null}
       </QuickViewModal>
+
+      <OfferPopup
+        popup={site.store.popup}
+        backdropClassName="fixed inset-0 z-50 flex items-end justify-center bg-[#17241f]/50 backdrop-blur-sm sm:items-center sm:p-6"
+        panelClassName="w-full max-w-md overflow-hidden rounded-t-[1.75rem] bg-[#f7f3eb] shadow-2xl outline-none motion-safe:animate-[bazaar-slide-up_0.25s_ease-out] sm:rounded-[1.75rem] sm:motion-safe:animate-[bazaar-pop_0.3s_ease-out]"
+      >
+        {(close) => (
+          <div className="relative p-8 text-center sm:p-10">
+            <button
+              type="button"
+              onClick={close}
+              aria-label="Close"
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#17241f]/5 text-xl leading-none text-[#17241f] transition-transform hover:scale-105"
+            >
+              ×
+            </button>
+            <div className="mx-auto h-0.5 w-10 bg-[#c9a84c]/70" aria-hidden="true" />
+            <h2 className="mt-4 font-serif text-2xl tracking-tight sm:text-3xl">
+              {site.store.popup?.title}
+            </h2>
+            {site.store.popup?.text ? (
+              <p className="mt-3 text-sm leading-relaxed text-[#17241f]/70">
+                {site.store.popup.text}
+              </p>
+            ) : null}
+            {site.store.popup?.cta_text ? (
+              <a
+                href={site.store.popup.cta_link || '#shop'}
+                onClick={close}
+                className="mt-6 inline-block rounded-full bg-[#17241f] px-7 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#f7f3eb] transition-colors hover:bg-[#24382f]"
+              >
+                {site.store.popup.cta_text}
+              </a>
+            ) : null}
+          </div>
+        )}
+      </OfferPopup>
     </div>
   );
 }
@@ -345,6 +444,7 @@ function BazaarCard({
   const { ref, visible } = useRevealOnScroll<HTMLElement>();
   const muted = !product.in_stock;
   const price = productPriceDisplay(product, currency);
+  const badge = offerBadge(product);
   return (
     <article
       ref={ref}
@@ -365,6 +465,11 @@ function BazaarCard({
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
             fallbackClassName="flex h-full w-full items-center justify-center font-serif text-6xl text-[#17241f]/20"
           />
+          {badge ? (
+            <span className="absolute right-3 top-3 rounded-full bg-[#a5812e] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#fffdf8] shadow-sm">
+              {badge}
+            </span>
+          ) : null}
           {muted ? (
             <span className="absolute left-3 top-3 rounded-full bg-[#17241f]/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f7f3eb]">
               Sold out
@@ -392,6 +497,48 @@ function BazaarCard({
         </div>
       </button>
     </article>
+  );
+}
+
+function BazaarRailCard({
+  product,
+  currency,
+  onQuickView,
+}: {
+  product: Product;
+  currency: 'NPR' | 'INR';
+  onQuickView: () => void;
+}) {
+  const price = productPriceDisplay(product, currency);
+  const badge = offerBadge(product);
+  return (
+    <button
+      type="button"
+      onClick={onQuickView}
+      aria-label={`Quick view ${product.name}`}
+      className="group w-40 shrink-0 snap-start rounded-[1.1rem] bg-[#fffdf8] p-2.5 text-left ring-1 ring-[#17241f]/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(23,36,31,0.35)] sm:w-48"
+    >
+      <div className="relative aspect-square overflow-hidden rounded-[0.8rem] bg-[#ece5d8]">
+        <ProductImage
+          src={product.image}
+          alt={product.name}
+          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+          fallbackClassName="flex h-full w-full items-center justify-center font-serif text-4xl text-[#17241f]/20"
+        />
+        {badge ? (
+          <span className="absolute right-2 top-2 rounded-full bg-[#a5812e] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#fffdf8]">
+            {badge}
+          </span>
+        ) : null}
+      </div>
+      <h3 className="mt-2.5 truncate px-1 font-serif text-sm tracking-tight">{product.name}</h3>
+      <p className="px-1 pb-1 font-serif text-[13px] text-[#17241f]/75">
+        {price.compareAt ? (
+          <span className="mr-1 text-[11px] text-[#17241f]/40 line-through">{price.compareAt}</span>
+        ) : null}
+        <span className={price.compareAt ? 'text-[#8c2f2f]' : ''}>{price.text}</span>
+      </p>
+    </button>
   );
 }
 
