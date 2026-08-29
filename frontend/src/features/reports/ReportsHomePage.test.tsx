@@ -67,4 +67,36 @@ describe('ReportsHomePage plan visibility', () => {
     expect(await screen.findByRole('link', { name: /profit/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /vat register/i })).toBeInTheDocument();
   });
+
+  it('shows only the reports the role may view', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: 'user-2',
+            phone: '9811111111',
+            full_name: 'Store Auditor',
+            email: null,
+            must_change_password: false,
+            permissions: ['report.stock'],
+            plan: {
+              code: 'pro',
+              name: 'Pro',
+              features: { profit_reports: true, vat_module: true },
+            },
+          },
+          error: null,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    renderReports();
+
+    expect(await screen.findByRole('link', { name: /^stock/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^sales/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /profit/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /dues/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /vat register/i })).not.toBeInTheDocument();
+  });
 });

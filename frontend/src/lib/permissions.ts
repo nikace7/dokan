@@ -11,10 +11,13 @@
  */
 
 export type PermissionCodename =
+  | 'sale.view'
   | 'sale.create'
   | 'sale.void'
   | 'sale.return'
   | 'sale.discount'
+  | 'catalog.view'
+  | 'catalog.manage'
   | 'pricing.view'
   | 'pricing.view_cost'
   | 'pricing.edit'
@@ -22,19 +25,28 @@ export type PermissionCodename =
   | 'pricing.set_bounds'
   | 'stock.view'
   | 'stock.adjust'
+  | 'stock.purchase'
   | 'customer.view'
   | 'customer.manage'
   | 'customer.credit'
+  | 'payment.receive'
+  | 'payment.pay'
+  | 'payment.view'
+  | 'payment.reverse'
+  | 'cash.manage'
+  | 'expense.view'
+  | 'expense.manage'
+  | 'report.sales'
+  | 'report.staff'
+  | 'report.stock'
   | 'report.profit'
   | 'report.ledger'
-  | 'report.sales'
-  | 'report.stock'
-  | 'report.staff'
   | 'report.cash'
   | 'report.vat'
   | 'report.expense'
   | 'user.manage'
-  | 'settings.manage';
+  | 'settings.manage'
+  | 'compliance.view';
 
 /** Minimal user shape needed for permission checks. */
 export interface PermissionUser {

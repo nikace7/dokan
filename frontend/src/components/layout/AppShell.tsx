@@ -27,13 +27,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import brandMark from '@/assets/brand-mark.webp';
 import { CurrencyToggle } from '@/components/layout/CurrencyToggle';
 import { LanguageToggle } from '@/components/layout/LanguageToggle';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/features/auth/useAuth';
 import { WorkspaceSelector } from '@/features/settings/WorkspaceSelector';
 import { SupportAccessBanner } from '@/features/support/SupportAccessBanner';
@@ -57,10 +51,21 @@ interface NavItem {
   feature?: PlanFeature;
 }
 
+const REPORT_VIEW_CODES: PermissionCodename[] = [
+  'report.sales',
+  'report.staff',
+  'report.stock',
+  'report.profit',
+  'report.ledger',
+  'report.cash',
+  'report.vat',
+  'report.expense',
+];
+
 const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'dashboard', icon: LayoutDashboard, end: true },
-  { to: '/billing', labelKey: 'billing', icon: ScanLine },
-  { to: '/catalog', labelKey: 'catalog', icon: Package },
+  { to: '/billing', labelKey: 'billing', icon: ScanLine, anyOf: ['sale.create'] },
+  { to: '/catalog', labelKey: 'catalog', icon: Package, anyOf: ['catalog.view'] },
   { to: '/pricing', labelKey: 'pricing', icon: Tag, anyOf: ['pricing.view'] },
   { to: '/customers', labelKey: 'customers', icon: Users, anyOf: ['customer.view'] },
   { to: '/stock', labelKey: 'stock', icon: Boxes, anyOf: ['stock.view'], end: true },
@@ -71,13 +76,18 @@ const NAV_ITEMS: NavItem[] = [
     anyOf: ['stock.view'],
     feature: 'multi_branch',
   },
-  { to: '/purchasing', labelKey: 'purchasing', icon: Truck },
-  { to: '/expenses', labelKey: 'expenses', icon: Wallet },
-  { to: '/payments', labelKey: 'payments', icon: Banknote },
-  { to: '/ledgers', labelKey: 'ledgers', icon: BookOpen },
-  { to: '/returns', labelKey: 'returns', icon: Undo2 },
-  { to: '/exchanges', labelKey: 'exchanges', icon: Repeat },
-  { to: '/reports', labelKey: 'reports', icon: BarChart3 },
+  { to: '/purchasing', labelKey: 'purchasing', icon: Truck, anyOf: ['stock.purchase'] },
+  { to: '/expenses', labelKey: 'expenses', icon: Wallet, anyOf: ['expense.view'] },
+  {
+    to: '/payments',
+    labelKey: 'payments',
+    icon: Banknote,
+    anyOf: ['payment.view', 'payment.receive', 'cash.manage'],
+  },
+  { to: '/ledgers', labelKey: 'ledgers', icon: BookOpen, anyOf: ['customer.view'] },
+  { to: '/returns', labelKey: 'returns', icon: Undo2, anyOf: ['sale.return'] },
+  { to: '/exchanges', labelKey: 'exchanges', icon: Repeat, anyOf: ['sale.return'] },
+  { to: '/reports', labelKey: 'reports', icon: BarChart3, anyOf: REPORT_VIEW_CODES },
   { to: '/audit', labelKey: 'audit', icon: ScrollText, anyOf: ['settings.manage'] },
   {
     to: '/settings',
@@ -314,10 +324,14 @@ function MobileTab({ item }: { item: NavItem }) {
 /**
  * Raised center FAB in the mobile tab bar — the counter's "new sale" action.
  * Targets billingPath(user), so it follows the tenant's POS plan mode.
+ * Hidden without sale.create: a viewer-only role gets no dead-end button.
  */
 function NewSaleFab() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  if (!hasPermission(user, 'sale.create')) {
+    return null;
+  }
   return (
     <div className="relative flex-1">
       <Link
