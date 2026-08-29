@@ -52,7 +52,9 @@ class StorefrontProductDetailView(_StorefrontView):
         def build() -> Response:
             tenant = self._shop_tenant
             item = (
-                Item.objects.filter(tenant=tenant, pk=pk, is_active=True)
+                Item.objects.filter(
+                    tenant=tenant, pk=pk, is_active=True, website_visible=True
+                )
                 .select_related("category", "brand")
                 .first()
             )
@@ -61,9 +63,7 @@ class StorefrontProductDetailView(_StorefrontView):
                     "PRODUCT_NOT_FOUND", "We could not find this product.", http_status=404
                 )
             store = selectors.get_settings(tenant)
-            price, compare_at = selectors.website_price_display(
-                item, discount_pct=store.offer_discount_pct if store else None
-            )
+            price, compare_at, offer_pct = selectors.website_pricing(item, store)
             stock = dict(
                 StockLevel.objects.filter(tenant=tenant, variant__item=item)
                 .values_list("variant_id")
@@ -93,6 +93,7 @@ class StorefrontProductDetailView(_StorefrontView):
                     "brand": item.brand.name if item.brand else None,
                     "website_price": str(price) if price is not None else None,
                     "website_compare_at": str(compare_at) if compare_at is not None else None,
+                    "offer_pct": str(offer_pct) if offer_pct is not None else None,
                     "variants": variants,
                 }
             )

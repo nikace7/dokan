@@ -155,12 +155,29 @@ export function listStaff(): Promise<Page<StaffUser>> {
   return authedRequestPage<StaffUser>('/v1/users?limit=200');
 }
 
+export interface StoreBanner {
+  title: string;
+  text: string;
+  cta_text: string;
+  cta_link: string;
+}
+
 export interface StoreSettings {
   hero_title: string;
   hero_subtitle: string;
   announcement: string;
   offer_text: string;
   offer_discount_pct: string | null;
+  /** Optional last day of the store-wide offer (ISO date), null = no expiry. */
+  offer_ends_at: string | null;
+  /** Once-per-session offer popup on the storefront. */
+  popup_enabled: boolean;
+  popup_title: string;
+  popup_text: string;
+  popup_cta_text: string;
+  popup_cta_link: string;
+  /** Promo banner cards between the hero and the grid. */
+  banners: StoreBanner[];
   /** Currency website prices are entered in and the store displays. */
   currency: 'NPR' | 'INR';
   /** Read-only platform decisions, shown for context. */
@@ -181,6 +198,13 @@ export type StoreSettingsPayload = Partial<
     | 'announcement'
     | 'offer_text'
     | 'offer_discount_pct'
+    | 'offer_ends_at'
+    | 'popup_enabled'
+    | 'popup_title'
+    | 'popup_text'
+    | 'popup_cta_text'
+    | 'popup_cta_link'
+    | 'banners'
     | 'currency'
   >
 >;

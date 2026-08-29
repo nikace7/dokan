@@ -117,11 +117,15 @@ class Command(BaseCommand):
             ExpenseCategory.objects.get_or_create(tenant=tenant, name=expense_category)
 
         catalog = [
-            ("TEE-01", "Plain T-Shirt", Decimal("1500.00"), Decimal("600.00"), Decimal("1200.00")),
-            ("SH-01", "Oxford Shirt", Decimal("2800.00"), Decimal("1200.00"), Decimal("2200.00")),
-            ("JW-01", "Denim Jacket", Decimal("4500.00"), Decimal("2200.00"), Decimal("3600.00")),
+            # code, name, mrp, cost, website price, per-item offer %, featured
+            ("TEE-01", "Plain T-Shirt", Decimal("1500.00"), Decimal("600.00"),
+             Decimal("1200.00"), None, True),
+            ("SH-01", "Oxford Shirt", Decimal("2800.00"), Decimal("1200.00"),
+             Decimal("2200.00"), Decimal("15.00"), True),  # own offer beats the store one
+            ("JW-01", "Denim Jacket", Decimal("4500.00"), Decimal("2200.00"),
+             Decimal("3600.00"), None, False),
         ]
-        for code, name, mrp, cost, website_price in catalog:
+        for code, name, mrp, cost, website_price, offer_pct, featured in catalog:
             item, _ = Item.objects.get_or_create(
                 tenant=tenant,
                 code=code,
@@ -131,6 +135,8 @@ class Command(BaseCommand):
                     "brand": brand,
                     "size_chart": chart,
                     "website_price": website_price,
+                    "website_discount_pct": offer_pct,
+                    "website_featured": featured,
                     "created_by": owner,
                 },
             )
@@ -153,14 +159,35 @@ class Command(BaseCommand):
                         note="Demo seed",
                     )
 
-        # Demo online-store content: a visible offer + website prices (set on
-        # the items above) so the storefront shows the full feature set.
+        # Demo online-store content: a visible offer + popup + banners +
+        # website prices (set on the items above) so the storefront shows the
+        # full feature set.
         StoreSettings.objects.get_or_create(
             tenant=tenant,
             defaults={
                 "announcement": "Free delivery inside Kathmandu valley",
                 "offer_text": "Dashain Sale",
                 "offer_discount_pct": Decimal("10.00"),
+                "popup_enabled": True,
+                "popup_title": "Dashain Sale is live",
+                "popup_text": "10% off all website prices — plus free delivery "
+                "inside Kathmandu valley.",
+                "popup_cta_text": "Shop the sale",
+                "popup_cta_link": "#shop",
+                "banners": [
+                    {
+                        "title": "Free delivery",
+                        "text": "On every order inside Kathmandu valley.",
+                        "cta_text": "",
+                        "cta_link": "",
+                    },
+                    {
+                        "title": "New arrivals",
+                        "text": "Fresh shirts and jackets for the season.",
+                        "cta_text": "Browse the collection",
+                        "cta_link": "#shop",
+                    },
+                ],
                 "currency": "NPR",
             },
         )

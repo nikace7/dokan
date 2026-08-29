@@ -22,6 +22,11 @@ NPR_PER_INR: Final = Decimal("1.6")
 #: Display symbol used on receipts and screens.
 CURRENCY_SYMBOL: Final = "Rs"
 
+#: Cap on any offer discount percentage — the store-wide online-store offer
+#: and per-product website offers alike. A "100% off" shop is a data-entry
+#: mistake, not a promotion.
+MAX_OFFER_PCT: Final = 90
+
 _TWO_PLACES: Final = Decimal("0.01")
 
 _DEVANAGARI_DIGITS: Final = str.maketrans("0123456789", "०१२३४५६७८९")

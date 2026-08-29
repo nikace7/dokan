@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { StoreContent } from './api';
-import { formatPriceRange, offerLabel, productPriceDisplay } from './money';
+import {
+  formatPriceRange,
+  offerBadge,
+  offerCountdown,
+  offerLabel,
+  productPriceDisplay,
+} from './money';
 
 describe('formatPriceRange', () => {
   it('returns "Price on request" when both bounds are null', () => {
@@ -80,6 +86,9 @@ describe('offerLabel', () => {
     announcement: '',
     offer_text: '',
     offer_discount_pct: null,
+    offer_ends_at: null,
+    popup: null,
+    banners: [],
   };
 
   it('is null when nothing is configured', () => {
@@ -94,5 +103,41 @@ describe('offerLabel', () => {
 
   it('keeps fractional percentages and works without text', () => {
     expect(offerLabel({ ...base, offer_discount_pct: '12.50' })).toBe('12.5% off');
+  });
+});
+
+describe('offerBadge', () => {
+  it('is null without an offer', () => {
+    expect(offerBadge({ offer_pct: null })).toBeNull();
+  });
+
+  it('renders a whole-number percent with a minus sign', () => {
+    expect(offerBadge({ offer_pct: '15.00' })).toBe('−15%');
+  });
+
+  it('keeps fractional percentages', () => {
+    expect(offerBadge({ offer_pct: '12.50' })).toBe('−12.5%');
+  });
+});
+
+describe('offerCountdown', () => {
+  const now = new Date('2026-08-29T10:00:00');
+
+  it('is null without an end date or with an unparseable one', () => {
+    expect(offerCountdown(null, now)).toBeNull();
+    expect(offerCountdown('not-a-date', now)).toBeNull();
+  });
+
+  it('says "Ends today" on the last day', () => {
+    expect(offerCountdown('2026-08-29', now)).toBe('Ends today');
+  });
+
+  it('counts the days left and pluralises', () => {
+    expect(offerCountdown('2026-08-30', now)).toBe('Ends in 1 day');
+    expect(offerCountdown('2026-09-03', now)).toBe('Ends in 5 days');
+  });
+
+  it('is null once the offer has lapsed', () => {
+    expect(offerCountdown('2026-08-28', now)).toBeNull();
   });
 });
