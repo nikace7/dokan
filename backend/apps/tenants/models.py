@@ -83,6 +83,10 @@ class Tenant(models.Model):
         NPR = "NPR"
         INR = "INR"
 
+    class ShopfrontTemplate(models.TextChoices):
+        AURORA = "aurora"
+        BAZAAR = "bazaar"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.TextField(
         unique=True,
@@ -113,6 +117,11 @@ class Tenant(models.Model):
         blank=True,
         validators=[validate_shopfront_slug],
         help_text="Online-store subdomain under the root domain; NULL = no storefront.",
+    )
+    # Which design template the public storefront renders (apps/storefront).
+    shopfront_template = models.TextField(
+        choices=ShopfrontTemplate.choices,
+        default=ShopfrontTemplate.AURORA,
     )
     onboarded_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
