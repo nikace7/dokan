@@ -32,6 +32,7 @@ const ITEM: Item = {
   image_url: null,
   min_selling_price: null,
   max_selling_price: null,
+  website_price: null,
   reorder_level: null,
   is_active: true,
 };
