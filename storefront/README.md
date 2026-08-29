@@ -27,7 +27,7 @@ site payload). The registry lives in `src/templates/index.ts`:
 ```ts
 export const TEMPLATES: Record<string, ComponentType<TemplateProps>> = {
   aurora: AuroraTemplate,   // premium minimal boutique
-  bazaar: BazaarTemplate,   // vibrant marketplace
+  bazaar: BazaarTemplate,   // refined grand-bazaar elegance (emerald/brass)
 };
 export const DEFAULT_TEMPLATE = 'aurora';
 ```

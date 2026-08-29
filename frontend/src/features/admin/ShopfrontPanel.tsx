@@ -11,7 +11,7 @@ import { ApiError } from '@/lib/api/client';
 const SUBDOMAIN_RE = /^[a-z0-9-]{3,30}$/;
 const TEMPLATES = [
   { value: 'aurora', label: 'Aurora — minimal boutique' },
-  { value: 'bazaar', label: 'Bazaar — vibrant marketplace' },
+  { value: 'bazaar', label: 'Bazaar — elegant marketplace' },
 ] as const;
 
 /** Root host for storefront URLs — strip the `admin.` prefix, keep the port. */
