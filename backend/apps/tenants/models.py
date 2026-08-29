@@ -36,6 +36,12 @@ def validate_slug_not_reserved(slug: str) -> None:
         raise ValidationError(msg, code="reserved_slug")
 
 
+def validate_shopfront_slug(slug: str) -> None:
+    """Format + reserved validation shared by online-store subdomains."""
+    _slug_format(slug)
+    validate_slug_not_reserved(slug)
+
+
 class Plan(models.Model):
     """Subscription plan definition (platform scope)."""
 
@@ -97,6 +103,17 @@ class Tenant(models.Model):
     # The shop's money currency. Storage stays in this currency; the other
     # supported currency is a display-time conversion (core/money.py peg).
     currency = models.TextField(choices=Currency.choices, default=Currency.NPR)
+    # Public online-store host label under the root domain (e.g. "yak-store"
+    # → yak-store.<root>). NULL = no storefront. Assigned by the platform
+    # admin; the service layer also collision-checks it against every tenant
+    # slug because both namespaces share the same wildcard host.
+    shopfront_subdomain = models.TextField(
+        unique=True,
+        null=True,
+        blank=True,
+        validators=[validate_shopfront_slug],
+        help_text="Online-store subdomain under the root domain; NULL = no storefront.",
+    )
     onboarded_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True, blank=True)  # soft delete only

@@ -29,6 +29,7 @@ import {
   StatusBadge,
 } from '@/features/admin/components';
 import { FeatureTogglesPanel } from '@/features/admin/FeatureTogglesPanel';
+import { ShopfrontPanel } from '@/features/admin/ShopfrontPanel';
 import { SupportAccessPanel } from '@/features/admin/SupportAccessPanel';
 import { TenantBillingPanel } from '@/features/admin/TenantBillingPanel';
 import { TenantOverridesPanel } from '@/features/admin/TenantOverridesPanel';
@@ -99,7 +100,10 @@ export function TenantDetailPage() {
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {tenant.error instanceof Error ? tenant.error.message : 'Tenant not found.'}
         </p>
-        <Link className="mt-2 inline-block text-sm text-primary hover:underline" to="/admin/tenants">
+        <Link
+          className="mt-2 inline-block text-sm text-primary hover:underline"
+          to="/admin/tenants"
+        >
           ← All tenants
         </Link>
       </main>
@@ -153,9 +157,7 @@ export function TenantDetailPage() {
                 <select
                   value={current.currency}
                   disabled={currencyMutation.isPending}
-                  onChange={(event) =>
-                    currencyMutation.mutate(event.target.value as 'NPR' | 'INR')
-                  }
+                  onChange={(event) => currencyMutation.mutate(event.target.value as 'NPR' | 'INR')}
                   aria-label="Currency"
                   className="rounded-md border border-input bg-background px-2 py-1 text-sm"
                 >
@@ -224,6 +226,7 @@ export function TenantDetailPage() {
           canWrite={user.role === 'SUPER_ADMIN'}
         />
       ) : null}
+      {user ? <ShopfrontPanel tenant={current} canWrite={user.role === 'SUPER_ADMIN'} /> : null}
       {user ? (
         <details className="group">
           <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">

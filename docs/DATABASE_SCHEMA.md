@@ -86,6 +86,8 @@ The shop. Resolved by slug in `TenantMiddleware` before any RLS context exists.
 | timezone | text | no | default `'Asia/Kathmandu'` |
 | calendar_pref | text | no | CHECK IN (`BS`,`AD`,`BOTH`), default `BS` |
 | locale | text | no | CHECK IN (`np`,`en`), default `np` |
+| currency | text | no | CHECK IN (`NPR`,`INR`), default `NPR` |
+| shopfront_subdomain | text | yes | UNIQUE when set; public online-store host label under the root domain; NULL = no storefront. Must never equal any tenant `slug` (shared wildcard host) — enforced in the service layer |
 | onboarded_at | timestamptz | yes | |
 | created_at | timestamptz | no | default now() |
 | deleted_at | timestamptz | yes | soft delete only |

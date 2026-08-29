@@ -68,6 +68,9 @@ class Command(BaseCommand):
                     "max_rate_types": 10,
                     "multi_branch": True,
                     "vat_module": True,
+                    # Online storefront — off until the shop gets a shopfront
+                    # subdomain from the platform admin.
+                    "ecommerce": False,
                 },
             },
         )

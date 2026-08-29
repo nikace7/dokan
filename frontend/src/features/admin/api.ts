@@ -45,6 +45,7 @@ export interface Tenant {
   calendar_pref: 'BS' | 'AD' | 'BOTH';
   locale: 'np' | 'en';
   currency: 'NPR' | 'INR';
+  shopfront_subdomain: string | null;
   onboarded_at?: string | null;
   created_at: string;
 }
