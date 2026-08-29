@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Storefront (new)
+
+- `storefront` — the public online store is born: anonymous, read-only
+  catalog browsing on the separate `*.shop.<root>` namespace
+  (`<address>.shop.mero-pasal.online`), resolved from the tenant's
+  `shopfront_subdomain`, plan-gated on the `ecommerce` feature (402 when
+  off). `GET /storefront/site` (shop identity, template, contact, category
+  nav) and `GET /storefront/products` (paged grid: name, photo, brand,
+  selling-price range, in/out-of-stock boolean — never cost, never exact
+  quantities), anonymous-throttled at 120/min
+- `storefront/` — a new Vite + React SPA for the shop website with a
+  template registry and the first two design templates: **Aurora**
+  (premium minimal boutique: serif hero, editorial grid, reveal-on-scroll)
+  and **Bazaar** (vibrant marketplace: gradient hero, marquee, playful
+  cards). Category filters, search, quick-view with call-to-order,
+  mobile-first, reduced-motion aware
+- `tenants` — `shopfront_template` chooses the design (SUPER_ADMIN via
+  tenant PATCH); the admin panel's Online store card now shows the live
+  `*.shop.<root>` URL and a template picker
+- `edge` — Caddy serves `*.shop.<root>` with its own wildcard certificate
+  (Cloudflare DNS-01 in production, internal CA locally); the existing
+  wildcard DNS record already covers the extra label
+
 ### Platform
 
 - `platformadmin` — tenants can now carry a `shopfront_subdomain` (SUPER_ADMIN
@@ -36,6 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### What shopkeepers get
 
+- **Your shop, online.** Ask us for the online store and we switch on your
+  own shop website — your products, photos, prices, and live stock, in a
+  design you pick. Customers browse and call to order; you keep selling at
+  the counter exactly as today.
 - **Staff see only what they can use.** A cashier sees Billing and Stock;
   collection and profit figures stay with admin-level roles — no more
   dead-end menu entries hinting at numbers meant for the owner.

@@ -172,7 +172,8 @@ than the middleware's cached tenant lookup.
 ## 7. Subdomains and slugs
 
 Host map (SYSTEM_DESIGN §2.3): `www` marketing/signup, `app` tenant selector,
-`<slug>` tenant app, `admin` super-admin portal, `api` optional public API.
+`<slug>` tenant app, `admin` super-admin portal, `api` optional public API,
+and `<shopfront>.shop` for the public online stores (`apps/storefront`).
 
 Slug rules:
 
@@ -183,6 +184,19 @@ Slug rules:
 - Custom domains (`billing.myshop.com.np`) are a Phase 3 add-on with per-domain
   certificate issuance; the middleware must still resolve host → tenant the same
   way, so host parsing is the only lookup point.
+
+Shopfront rules (online stores):
+
+- `Tenant.shopfront_subdomain` follows the same format/reserved validation and
+  is **mutable by SUPER_ADMIN only**; it must never equal any tenant slug or
+  another shopfront (the service layer checks both directions).
+- Shopfront hosts are the nested `*.shop.<root>` namespace, which
+  `extract_subdomain` deliberately rejects (non-single-label) — the POS
+  middleware passes them through tenant-less and the storefront views resolve
+  `shopfront_subdomain` themselves before opening the RLS context.
+- Caddy serves the namespace with its own wildcard certificate
+  (`*.shop.<root>`; Cloudflare DNS-01 in production). The existing `*.<root>`
+  DNS record already covers the extra label, so no DNS change is needed.
 
 Provisioning / suspension / deletion:
 
