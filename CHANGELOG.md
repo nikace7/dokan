@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `storefront/` — a new Vite + React SPA for the shop website with a
   template registry and the first two design templates: **Aurora**
   (premium minimal boutique: serif hero, editorial grid, reveal-on-scroll)
-  and **Bazaar** (vibrant marketplace: gradient hero, marquee, playful
-  cards). Category filters, search, quick-view with call-to-order,
+  and **Bazaar** (refined grand-bazaar elegance: emerald/brass palette,
+  arch-framed hero portrait, brass marquee, serif display type). Category filters, search, quick-view with call-to-order,
   mobile-first, reduced-motion aware
 - `tenants` — `shopfront_template` chooses the design (SUPER_ADMIN via
   tenant PATCH); the admin panel's Online store card now shows the live
