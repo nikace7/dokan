@@ -11,7 +11,34 @@ const fetchMock = vi.fn<typeof fetch>();
 
 let features: Record<string, unknown> = {};
 
-function me(features: Record<string, unknown>) {
+/** Every codename the nav can check — the resolved set an owner gets. */
+const OWNER_PERMISSIONS = [
+  'sale.view',
+  'sale.create',
+  'sale.void',
+  'sale.return',
+  'catalog.view',
+  'pricing.view',
+  'stock.view',
+  'stock.purchase',
+  'customer.view',
+  'expense.view',
+  'payment.view',
+  'payment.receive',
+  'cash.manage',
+  'report.sales',
+  'report.staff',
+  'report.stock',
+  'report.profit',
+  'report.ledger',
+  'report.cash',
+  'report.vat',
+  'report.expense',
+  'settings.manage',
+  'user.manage',
+];
+
+function me(features: Record<string, unknown>, perms: string[] = OWNER_PERMISSIONS) {
   return {
     id: 'user-1',
     phone: '9800000000',
@@ -19,7 +46,7 @@ function me(features: Record<string, unknown>) {
     email: null,
     must_change_password: false,
     is_owner: true,
-    permissions: [],
+    permissions: perms,
     plan: { code: 'pro', name: 'Pro', features },
     shop_name: 'Shree Ganesh Vastralaya',
     shop_name_np: null,
@@ -167,5 +194,105 @@ describe('AppShell new-sale FAB', () => {
     await waitFor(() => {
       expect(fab).toHaveAttribute('href', '/billing/simple');
     });
+  });
+});
+
+describe('AppShell permission-aware nav', () => {
+  let perms: string[] = [];
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    setTokens({ access: 'access', refresh: 'refresh' });
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/auth/me')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: me(features, perms), error: null }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fetchMock.mockReset();
+    clearTokens();
+    features = {};
+    perms = [];
+    void i18n.changeLanguage('en');
+  });
+
+  it('shows a cashier only the screens they can actually use', async () => {
+    features = { simple_sale: true, advanced_pos: false };
+    perms = ['sale.create', 'sale.view', 'stock.view', 'catalog.view'];
+    renderShell();
+
+    expect(await screen.findAllByRole('link', { name: 'Dashboard' })).not.toHaveLength(0);
+    // Await a gated link too — Dashboard renders before /auth/me lands, so a
+    // synchronous query here would race the permission fetch.
+    expect(await screen.findAllByRole('link', { name: 'Billing' })).not.toHaveLength(0);
+    expect(screen.getAllByRole('link', { name: 'Stock' })).not.toHaveLength(0);
+    expect(screen.getAllByRole('link', { name: 'Catalog' })).not.toHaveLength(0);
+
+    for (const label of [
+      'Pricing',
+      'Customers',
+      'Purchasing',
+      'Expenses',
+      'Payments',
+      'Ledgers',
+      'Returns',
+      'Exchanges',
+      'Reports',
+      'Audit',
+      'Settings',
+    ]) {
+      expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument();
+    }
+    // Transfers additionally need the multi_branch plan feature.
+    expect(screen.queryByRole('link', { name: 'Transfers' })).not.toBeInTheDocument();
+  });
+
+  it('shows a reports-only role Dashboard + Reports and no new-sale FAB', async () => {
+    perms = ['report.sales'];
+    renderShell();
+
+    expect(await screen.findAllByRole('link', { name: 'Dashboard' })).not.toHaveLength(0);
+    // Awaited for the same reason as above — /auth/me must land first.
+    expect(await screen.findAllByRole('link', { name: 'Reports' })).not.toHaveLength(0);
+    expect(screen.queryByRole('link', { name: 'Billing' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument();
+    // No dead-end FAB for someone who cannot create sales.
+    expect(screen.queryByRole('link', { name: 'New sale' })).not.toBeInTheDocument();
+  });
+
+  it('shows the full nav to an owner-role user', async () => {
+    features = { simple_sale: true, advanced_pos: true, multi_branch: true };
+    perms = OWNER_PERMISSIONS;
+    renderShell();
+
+    for (const label of [
+      'Dashboard',
+      'Billing',
+      'Catalog',
+      'Pricing',
+      'Customers',
+      'Purchasing',
+      'Expenses',
+      'Payments',
+      'Ledgers',
+      'Returns',
+      'Exchanges',
+      'Reports',
+      'Audit',
+      'Settings',
+    ]) {
+      expect(await screen.findAllByRole('link', { name: label })).not.toHaveLength(0);
+    }
+    expect(screen.getAllByRole('link', { name: 'Transfers' })).not.toHaveLength(0);
   });
 });
