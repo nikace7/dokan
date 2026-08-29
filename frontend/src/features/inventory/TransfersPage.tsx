@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -79,17 +80,15 @@ export function TransfersPage() {
   const transfers = transfersQuery.data?.data ?? [];
   return (
     <main className="mx-auto max-w-6xl space-y-4 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('inventory.transfers.title')}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('inventory.transfers.subtitle')}
-          </p>
-        </div>
-        <Link className="text-sm text-primary hover:underline" to="/stock">
-          {t('inventory.backToStock')}
-        </Link>
-      </div>
+      <PageHeader
+        title={t('inventory.transfers.title')}
+        description={t('inventory.transfers.subtitle')}
+        actions={
+          <Link className="text-sm text-primary hover:underline" to="/stock">
+            {t('inventory.backToStock')}
+          </Link>
+        }
+      />
       {canAdjust ? (
         <TransferCreateCard
           branches={workspace.branches}
@@ -171,8 +170,7 @@ function TransferCreateCard({
     onError: (reason) => setError(message(reason, t('inventory.transfers.createError'))),
   });
   const addLine = () => {
-    if (!variant || Number(qty) <= 0)
-      return setError(t('inventory.transfers.pickAndQty'));
+    if (!variant || Number(qty) <= 0) return setError(t('inventory.transfers.pickAndQty'));
     setLines((current) => [
       ...current.filter((line) => line.variant !== variant.id),
       { variant: variant.id, qty, label: `${variant.itemName} — ${variant.sku}` },
@@ -347,9 +345,7 @@ function TransferCard({
       <h2 className="text-lg font-semibold">
         {transfer.from_branch_code} → {transfer.to_branch_code}
       </h2>
-      {transfer.note ? (
-        <p className="text-sm text-muted-foreground">{transfer.note}</p>
-      ) : null}
+      {transfer.note ? <p className="text-sm text-muted-foreground">{transfer.note}</p> : null}
       <div className="mt-3">
         <ReportTable
           columns={columns}
@@ -361,9 +357,7 @@ function TransferCard({
               <TableCell className="font-medium">{item.item_name}</TableCell>
               <TableCell className="text-muted-foreground">{item.variant_sku}</TableCell>
               <TableCell className="text-right tabular-nums">{item.qty_sent}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {item.qty_received ?? '0'}
-              </TableCell>
+              <TableCell className="text-right tabular-nums">{item.qty_received ?? '0'}</TableCell>
               {receiving ? (
                 <TableCell>{receiptInput(item.variant, item.variant_sku)}</TableCell>
               ) : null}

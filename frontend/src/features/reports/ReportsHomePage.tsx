@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuth } from '@/features/auth/useAuth';
 import { hasPermission } from '@/lib/permissions';
 import type { PermissionCodename } from '@/lib/permissions';
@@ -64,13 +65,13 @@ export function ReportsHomePage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl p-4">
-      <h1 className="mb-4 text-xl font-semibold sm:text-2xl">{t('reports.title')}</h1>
+      <PageHeader className="mb-4" title={t('reports.title')} />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((report) => (
           <Link
             key={report.to}
             to={report.to}
-            className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm transition-shadow hover:shadow-md sm:p-5"
+            className="rounded-lg border bg-card p-4 text-card-foreground shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover sm:p-5"
           >
             <h2 className="text-base font-semibold text-primary">{t(report.titleKey)}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t(report.descriptionKey)}</p>

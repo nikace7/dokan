@@ -180,15 +180,33 @@ function SideNavLink({ item }: { item: NavItem }) {
       end={item.end}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+          'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           isActive
-            ? 'bg-accent text-accent-foreground shadow-sm'
+            ? 'bg-accent font-semibold text-accent-foreground shadow-sm'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
         )
       }
     >
-      <item.icon className="h-4 w-4 shrink-0" />
-      {t(`nav.${item.labelKey}`)}
+      {({ isActive }) => (
+        <>
+          {/* Active-route marker — the rail on the pill's leading edge. */}
+          <span
+            aria-hidden="true"
+            className={cn(
+              'absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-primary transition-opacity',
+              isActive ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+          <item.icon
+            className={cn(
+              'h-4 w-4 shrink-0 transition-colors',
+              isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-foreground',
+            )}
+          />
+          {t(`nav.${item.labelKey}`)}
+        </>
+      )}
     </NavLink>
   );
 }
@@ -198,7 +216,7 @@ function SideNav({ items }: { items: NavItem[] }) {
   const { t } = useTranslation();
   const topItems = items.filter((item) => !NAV_SECTION_BY_PATH[item.to]);
   return (
-    <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+    <nav className="flex-1 space-y-5 overflow-y-auto p-3">
       {topItems.length > 0 ? (
         <div className="space-y-0.5">
           {topItems.map((item) => (
@@ -213,7 +231,7 @@ function SideNav({ items }: { items: NavItem[] }) {
         }
         return (
           <div key={section}>
-            <p className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+            <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
               {t(`nav.sections.${section}`)}
             </p>
             <div className="space-y-0.5">
@@ -310,13 +328,25 @@ function MobileTab({ item }: { item: NavItem }) {
       end={item.end}
       className={({ isActive }) =>
         cn(
-          'flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium',
+          'relative flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           isActive ? 'text-primary' : 'text-muted-foreground',
         )
       }
     >
-      <item.icon className="h-5 w-5" />
-      {t(`nav.${item.labelKey}`)}
+      {({ isActive }) => (
+        <>
+          <span
+            aria-hidden="true"
+            className={cn(
+              'absolute top-0 h-0.5 w-8 rounded-full bg-primary transition-opacity',
+              isActive ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+          <item.icon className="h-5 w-5" />
+          {t(`nav.${item.labelKey}`)}
+        </>
+      )}
     </NavLink>
   );
 }
@@ -340,7 +370,7 @@ function NewSaleFab() {
         className={cn(
           'absolute -top-5 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center',
           'rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background',
-          'transition-transform active:scale-95',
+          'transition-transform motion-safe:hover:scale-105 active:scale-95',
         )}
       >
         <Plus className="h-7 w-7" />
@@ -380,8 +410,8 @@ export function AppShell() {
 
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background md:flex">
-        <div className="flex h-14 items-center gap-2 border-b px-4">
-          <img src={brandMark} alt="" className="h-8 w-8 shrink-0" />
+        <div className="flex h-16 items-center gap-2.5 border-b px-4">
+          <img src={brandMark} alt="" className="h-9 w-9 shrink-0" />
           <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
         </div>
         <SideNav items={items} />
@@ -391,13 +421,22 @@ export function AppShell() {
             <LanguageToggle />
             <CurrencyToggle />
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-sm text-muted-foreground">{user?.full_name}</span>
+          <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 p-2">
+            <span className="flex min-w-0 items-center gap-2">
+              <span
+                aria-hidden="true"
+                className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-accent text-xs font-bold uppercase text-accent-foreground"
+              >
+                {(user?.full_name ?? '?').trim().charAt(0) || '?'}
+              </span>
+              <span className="truncate text-sm font-medium">{user?.full_name}</span>
+            </span>
             <button
               type="button"
               onClick={signOut}
               aria-label={t('nav.signOut')}
-              className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title={t('nav.signOut')}
+              className="shrink-0 rounded-md p-2 text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -407,7 +446,7 @@ export function AppShell() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b bg-background px-4 md:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/85 px-4 backdrop-blur-md md:hidden">
         <span className="flex min-w-0 max-w-32 items-center gap-2 sm:max-w-56">
           <img src={brandMark} alt="" className="h-7 w-7 shrink-0" />
           <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
@@ -426,7 +465,7 @@ export function AppShell() {
       </main>
 
       {/* Mobile bottom tab bar with center new-sale FAB */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background/85 backdrop-blur-md md:hidden">
         {tabsBeforeFab.map((item) => (
           <MobileTab key={item.to} item={item} />
         ))}

@@ -21,7 +21,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   return (
     <div
       ref={ref}
-      className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)}
+      className={cn('rounded-lg border bg-card text-card-foreground shadow-card', className)}
       {...props}
     >
       {title || actions ? (
@@ -37,9 +37,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
 
 export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   function CardHeader({ className, ...props }, ref) {
-    return (
-      <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6', className)} {...props} />
-    );
+    return <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6', className)} {...props} />;
   },
 );
 
@@ -57,9 +55,7 @@ export const CardTitle = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElemen
 
 export const CardDescription = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   function CardDescription({ className, ...props }, ref) {
-    return (
-      <div ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />
-    );
+    return <div ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />;
   },
 );
 
@@ -71,8 +67,6 @@ export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElem
 
 export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   function CardFooter({ className, ...props }, ref) {
-    return (
-      <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
-    );
+    return <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />;
   },
 );

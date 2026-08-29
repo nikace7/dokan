@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuth } from '@/features/auth/useAuth';
 import { ApiError } from '@/lib/api/client';
 import { createSale, currentSaleContext, paisaToApiString } from '@/features/billing/api';
@@ -167,7 +168,7 @@ export function SimpleSalePage() {
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-4">
-      <h1 className="text-xl font-semibold">{t('simpleSale.title')}</h1>
+      <PageHeader title={t('simpleSale.title')} />
 
       {!online ? (
         <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">

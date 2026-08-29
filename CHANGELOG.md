@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Design system
+
+- `frontend` — UI/UX refinement pass across the tenant panel and the
+  platform-admin portal: Inter Variable typography (self-hosted, so the
+  offline POS never needs a CDN; Devanagari keeps its Noto fallback),
+  antialiasing + brand-tinted text selection + slim scrollbars, buttons
+  with a proper `loading` spinner state and native-style press feedback,
+  cards on the layered `--shadow-card` token, refined table headers and
+  cell rhythm, a shared tenant `PageHeader` replacing seven hand-rolled
+  screen headers, sidebar/nav polish in both shells (active-route rail,
+  avatar user blocks, blurred mobile chrome, hover-lift FAB), and
+  international-style sign-in screens (tracked one-time-code entry on
+  the admin portal)
+
 ### Storefront (new)
 
 - `storefront` — the public online store is born: anonymous, read-only
