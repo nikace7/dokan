@@ -61,6 +61,8 @@ export interface Item {
   mrp_max?: string | null;
   min_selling_price: string | null;
   max_selling_price: string | null;
+  /** Single price shown on the online store (website currency), null to hide. */
+  website_price: string | null;
   reorder_level: string | null;
   is_active: boolean;
 }
@@ -81,6 +83,7 @@ export interface ItemPayload {
   is_vat_applicable?: boolean;
   min_selling_price?: string | null;
   max_selling_price?: string | null;
+  website_price?: string | null;
   reorder_level?: string | null;
 }
 

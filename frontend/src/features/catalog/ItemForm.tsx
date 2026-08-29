@@ -64,6 +64,7 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
   const [isVatApplicable, setIsVatApplicable] = useState(initial?.is_vat_applicable ?? false);
   const [minPrice, setMinPrice] = useState(initial?.min_selling_price ?? '');
   const [maxPrice, setMaxPrice] = useState(initial?.max_selling_price ?? '');
+  const [websitePrice, setWebsitePrice] = useState(initial?.website_price ?? '');
   const [reorderLevel, setReorderLevel] = useState(initial?.reorder_level ?? '');
   const [error, setError] = useState<string | null>(null);
   // Item photo: edit uploads immediately on select; create stashes the file
@@ -168,6 +169,7 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
       is_vat_applicable: isVatApplicable,
       min_selling_price: blankToNull(minPrice),
       max_selling_price: blankToNull(maxPrice),
+      website_price: blankToNull(websitePrice),
       reorder_level: blankToNull(reorderLevel),
     });
   };
@@ -375,6 +377,12 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
         label={t('catalog.form.maxPrice')}
         value={maxPrice}
         onChange={(e) => setMaxPrice(e.target.value)}
+        inputMode="decimal"
+      />
+      <Input
+        label={t('catalog.form.websitePrice')}
+        value={websitePrice}
+        onChange={(e) => setWebsitePrice(e.target.value)}
         inputMode="decimal"
       />
       <Input

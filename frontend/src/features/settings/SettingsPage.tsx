@@ -245,6 +245,12 @@ export function SettingsPage() {
           </div>
         </form>
       </Card>
+      <Card title={t('settings.storeCard.title')}>
+        <p className="mb-3 text-sm text-muted-foreground">{t('settings.storeCard.help')}</p>
+        <Button asChild>
+          <Link to="/settings/online-store">{t('settings.storeCard.manage')}</Link>
+        </Button>
+      </Card>
       {hasPermission(user, 'user.manage') ? (
         <Card title={t('settings.staffCard.title')}>
           <p className="mb-3 text-sm text-muted-foreground">{t('settings.staffCard.help')}</p>

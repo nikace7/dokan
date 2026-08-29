@@ -155,6 +155,44 @@ export function listStaff(): Promise<Page<StaffUser>> {
   return authedRequestPage<StaffUser>('/v1/users?limit=200');
 }
 
+export interface StoreSettings {
+  hero_title: string;
+  hero_subtitle: string;
+  announcement: string;
+  offer_text: string;
+  offer_discount_pct: string | null;
+  /** Currency website prices are entered in and the store displays. */
+  currency: 'NPR' | 'INR';
+  /** Read-only platform decisions, shown for context. */
+  shopfront_subdomain: string | null;
+  template: string;
+  store_url: string | null;
+  ecommerce_enabled: boolean;
+}
+
+export type StoreSettingsPayload = Partial<
+  Pick<
+    StoreSettings,
+    | 'hero_title'
+    | 'hero_subtitle'
+    | 'announcement'
+    | 'offer_text'
+    | 'offer_discount_pct'
+    | 'currency'
+  >
+>;
+
+export function getStoreSettings(): Promise<StoreSettings> {
+  return authedRequest<StoreSettings>('/v1/storefront/settings');
+}
+
+export function updateStoreSettings(payload: StoreSettingsPayload): Promise<StoreSettings> {
+  return authedRequest<StoreSettings>('/v1/storefront/settings', {
+    method: 'PATCH',
+    body: payload,
+  });
+}
+
 export function createStaff(payload: CreateStaffPayload): Promise<StaffUser> {
   return authedRequest<StaffUser>('/v1/users', { method: 'POST', body: payload });
 }

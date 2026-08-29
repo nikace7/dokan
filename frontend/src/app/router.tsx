@@ -30,6 +30,7 @@ import { SalesReportPage } from '@/features/reports/SalesReportPage';
 import { StockReportsPage } from '@/features/reports/StockReportsPage';
 import { VatRegisterPage } from '@/features/reports/VatRegisterPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { OnlineStorePage } from '@/features/settings/OnlineStorePage';
 import { StaffPage } from '@/features/settings/StaffPage';
 import { SupportAccessPage } from '@/features/support/SupportAccessPage';
 import { SupportLoginPage } from '@/features/support/SupportLoginPage';
@@ -89,6 +90,7 @@ function getRouter() {
         { path: '/audit', element: <AuditPage /> },
         { path: '/settings', element: <SettingsPage /> },
         { path: '/settings/staff', element: <StaffPage /> },
+        { path: '/settings/online-store', element: <OnlineStorePage /> },
         { path: '/settings/support-access', element: <SupportAccessPage /> },
         { path: '/exchanges', element: <ExchangePage /> },
         { path: '/reports', element: <ReportsHomePage /> },
