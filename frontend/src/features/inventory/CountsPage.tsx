@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -68,17 +69,15 @@ export function CountsPage() {
   const branch = workspace.branches.find((item) => item.id === workspace.branchId);
   return (
     <main className="mx-auto max-w-6xl space-y-4 p-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('inventory.counts.title')}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('inventory.counts.subtitle')}
-          </p>
-        </div>
-        <Link className="text-sm text-primary hover:underline" to="/stock">
-          {t('inventory.backToStock')}
-        </Link>
-      </div>
+      <PageHeader
+        title={t('inventory.counts.title')}
+        description={t('inventory.counts.subtitle')}
+        actions={
+          <Link className="text-sm text-primary hover:underline" to="/stock">
+            {t('inventory.backToStock')}
+          </Link>
+        }
+      />
       <Card
         title={`${t('inventory.counts.branch')}: ${branch?.code ?? t('common.loading')}`}
         actions={
@@ -93,9 +92,7 @@ export function CountsPage() {
           ) : undefined
         }
       >
-        <p className="text-sm text-muted-foreground">
-          {t('inventory.counts.startBody')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('inventory.counts.startBody')}</p>
       </Card>
       {error ? (
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -183,9 +180,7 @@ function CountCard({
       min="0"
       step="0.001"
       value={values[variant] ?? ''}
-      onChange={(event) =>
-        setValues((current) => ({ ...current, [variant]: event.target.value }))
-      }
+      onChange={(event) => setValues((current) => ({ ...current, [variant]: event.target.value }))}
       className={cn(cellInputClasses, 'w-28 text-right')}
     />
   );
@@ -193,9 +188,7 @@ function CountCard({
     <input
       aria-label={t('inventory.counts.noteAria', { sku })}
       value={notes[variant] ?? ''}
-      onChange={(event) =>
-        setNotes((current) => ({ ...current, [variant]: event.target.value }))
-      }
+      onChange={(event) => setNotes((current) => ({ ...current, [variant]: event.target.value }))}
       className={cn(cellInputClasses, 'w-44')}
     />
   );

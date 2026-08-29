@@ -14,34 +14,29 @@ const Table = forwardRef<HTMLTableElement, HTMLAttributes<HTMLTableElement>>(fun
   );
 });
 
-const TableHeader = forwardRef<
-  HTMLTableSectionElement,
-  HTMLAttributes<HTMLTableSectionElement>
->(function TableHeader({ className, ...props }, ref) {
-  return <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />;
-});
+const TableHeader = forwardRef<HTMLTableSectionElement, HTMLAttributes<HTMLTableSectionElement>>(
+  function TableHeader({ className, ...props }, ref) {
+    return <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />;
+  },
+);
 
-const TableBody = forwardRef<
-  HTMLTableSectionElement,
-  HTMLAttributes<HTMLTableSectionElement>
->(function TableBody({ className, ...props }, ref) {
-  return (
-    <tbody ref={ref} className={cn('[&_tr:last-child]:border-0', className)} {...props} />
-  );
-});
+const TableBody = forwardRef<HTMLTableSectionElement, HTMLAttributes<HTMLTableSectionElement>>(
+  function TableBody({ className, ...props }, ref) {
+    return <tbody ref={ref} className={cn('[&_tr:last-child]:border-0', className)} {...props} />;
+  },
+);
 
-const TableFooter = forwardRef<
-  HTMLTableSectionElement,
-  HTMLAttributes<HTMLTableSectionElement>
->(function TableFooter({ className, ...props }, ref) {
-  return (
-    <tfoot
-      ref={ref}
-      className={cn('border-t bg-muted/50 font-medium [&>tr]:last:border-b-0', className)}
-      {...props}
-    />
-  );
-});
+const TableFooter = forwardRef<HTMLTableSectionElement, HTMLAttributes<HTMLTableSectionElement>>(
+  function TableFooter({ className, ...props }, ref) {
+    return (
+      <tfoot
+        ref={ref}
+        className={cn('border-t bg-muted/50 font-medium [&>tr]:last:border-b-0', className)}
+        {...props}
+      />
+    );
+  },
+);
 
 const TableRow = forwardRef<HTMLTableRowElement, HTMLAttributes<HTMLTableRowElement>>(
   function TableRow({ className, ...props }, ref) {
@@ -64,7 +59,7 @@ const TableHead = forwardRef<HTMLTableCellElement, ThHTMLAttributes<HTMLTableCel
       <th
         ref={ref}
         className={cn(
-          'h-10 px-2 text-left align-middle font-medium text-muted-foreground',
+          'h-10 px-3 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground',
           '[&:has([role=checkbox])]:pr-0',
           className,
         )}
@@ -79,20 +74,23 @@ const TableCell = forwardRef<HTMLTableCellElement, TdHTMLAttributes<HTMLTableCel
     return (
       <td
         ref={ref}
-        className={cn('p-2 align-middle [&:has([role=checkbox])]:pr-0', className)}
+        className={cn('px-3 py-2.5 align-middle [&:has([role=checkbox])]:pr-0', className)}
         {...props}
       />
     );
   },
 );
 
-const TableCaption = forwardRef<
-  HTMLTableCaptionElement,
-  HTMLAttributes<HTMLTableCaptionElement>
->(function TableCaption({ className, ...props }, ref) {
-  return (
-    <caption ref={ref} className={cn('mt-4 text-sm text-muted-foreground', className)} {...props} />
-  );
-});
+const TableCaption = forwardRef<HTMLTableCaptionElement, HTMLAttributes<HTMLTableCaptionElement>>(
+  function TableCaption({ className, ...props }, ref) {
+    return (
+      <caption
+        ref={ref}
+        className={cn('mt-4 text-sm text-muted-foreground', className)}
+        {...props}
+      />
+    );
+  },
+);
 
 export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption };

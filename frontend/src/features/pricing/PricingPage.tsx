@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { PriceEditor } from '@/features/pricing/PriceEditor';
 import { PriceTables } from '@/features/pricing/PriceTables';
 import { RateTypesPanel } from '@/features/pricing/RateTypesPanel';
@@ -27,7 +28,7 @@ export function PricingPage() {
   if (!canView) {
     return (
       <main className="mx-auto max-w-xl p-6">
-        <h1 className="text-2xl font-semibold">{t('pricing.title')}</h1>
+        <PageHeader title={t('pricing.title')} />
         <p role="alert" className="mt-3 rounded-md bg-warning/10 p-3 text-sm text-warning">
           {t('pricing.noPermission')}
         </p>
@@ -37,12 +38,7 @@ export function PricingPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
-      <div>
-        <h1 className="text-2xl font-semibold">{t('pricing.title')}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t('pricing.subtitle')}
-        </p>
-      </div>
+      <PageHeader title={t('pricing.title')} description={t('pricing.subtitle')} />
       {rateTypes.isError ? (
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {rateTypes.error instanceof Error ? rateTypes.error.message : t('pricing.loadError')}
