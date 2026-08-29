@@ -43,7 +43,13 @@ from apps.payments.models import CashSession, Payment, PaymentAllocation
 from apps.pricing.models import ItemPrice, PriceChangeLog, RateType
 from apps.purchasing.models import PurchaseInvoice, PurchaseInvoiceItem, Supplier
 from apps.sales.models import NumberSequence, SalesInvoice, SalesInvoiceItem
-from apps.storefront.models import StoreSettings
+from apps.storefront.models import (
+    StoreCustomer,
+    StoreOrder,
+    StoreOrderItem,
+    StoreOtp,
+    StoreSettings,
+)
 from apps.tenants.models import Branch
 from core.db.rls import set_local_tenant
 from core.models import TenantScopedModel
@@ -80,6 +86,10 @@ from tests.factories import (
     StockMovementFactory,
     StockTransferFactory,
     StockTransferItemFactory,
+    StoreCustomerFactory,
+    StoreOrderFactory,
+    StoreOrderItemFactory,
+    StoreOtpFactory,
     StoreSettingsFactory,
     SupplierFactory,
     TenantFactory,
@@ -124,6 +134,10 @@ FACTORIES: dict[type[Any], Any] = {
     SalesInvoice: SalesInvoiceFactory,
     SalesInvoiceItem: SalesInvoiceItemFactory,
     SmsLog: SmsLogFactory,
+    StoreCustomer: StoreCustomerFactory,
+    StoreOrder: StoreOrderFactory,
+    StoreOrderItem: StoreOrderItemFactory,
+    StoreOtp: StoreOtpFactory,
     StoreSettings: StoreSettingsFactory,
 }
 

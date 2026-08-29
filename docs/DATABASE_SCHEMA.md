@@ -921,6 +921,63 @@ is editable by the shop and read anonymously by the public storefront.
 | created_at | timestamptz | no | default now() |
 | updated_at | timestamptz | no | |
 
+### 9.8 `store_customer`
+
+An online shopper, identified by email per tenant. No password — login is a
+6-digit email OTP; the row is auto-created on first OTP login or first order.
+Distinct from `user` (shop staff) and `customer` (the udharo khata).
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| id | uuid PK | no | |
+| tenant_id | uuid FK → tenant | no | RLS isolation key; UNIQUE `(tenant_id, email)` |
+| email | text | no | login + order contact |
+| full_name | text | no | refreshed from the latest order |
+| phone | text | no | |
+| default_address | jsonb | yes | last delivery address — pre-fills the next checkout |
+
+### 9.9 `store_otp`
+
+One-time login codes: stored hashed (salted SHA-256), 10-minute TTL,
+single-use, 5-attempt cap, 60-second resend cooldown.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| id | uuid PK | no | |
+| tenant_id | uuid FK → tenant | no | RLS isolation key |
+| email | text | no | |
+| code_hash | char(64) | no | |
+| expires_at | timestamptz | no | |
+| attempts | integer | no | default 0 |
+| consumed_at | timestamptz | yes | NULL = still usable |
+
+Index: `(tenant_id, email, created_at)`.
+
+### 9.10 `store_order` / 9.11 `store_order_item`
+
+An online order. Placement validates stock but never decrements it — the
+shop confirms in the POS, which posts the SALE through the existing
+pipeline (invariant 1). Numbering is the gapless per-branch series
+(`doc_type = STORE_ORDER`, prefix `ORD`). Customer-facing payload fields are
+snapshotted at placement (address, prices, item names) so later catalog or
+profile edits never rewrite order history.
+
+`store_order` columns beyond the conventions: `branch_id` (fulfilling
+branch), `customer_id` FK → store_customer, `order_number` + `number_text`
+(UNIQUE `(tenant_id, branch_id, fiscal_year_bs, order_number)`), `status`
+(`PLACED,CONFIRMED,PACKED,SHIPPED,DELIVERED,CANCELLED`), `fulfillment`
+(`DELIVERY,PICKUP`), `payment_method` (`COD,ONLINE`), `payment_status`
+(`PENDING,PAID,REFUNDED`), `address` jsonb (delivery snapshot incl. lat/lng,
+NULL for pickup), `currency`, `subtotal`/`total`, `offer_text` (snapshot),
+`tracking_token` uuid UNIQUE (public tracking link), `idempotency_key`
+(UNIQUE when set — mandatory at checkout), plus the standard BS
+denormalization (`business_date_ad`, `business_date_bs`, `fiscal_year_bs`).
+
+`store_order_item`: `order_id` FK CASCADE, `variant_id` FK PROTECT,
+`name`/`size`/`color` snapshots, `unit_price` (discounted website price or
+peg-converted min selling price), `compare_at` (pre-offer price, display
+only), `qty`, `line_total`.
+
 ---
 
 ## 10. Reporting rollups (Phase 2 — created when a tenant crosses ~100k invoice lines)

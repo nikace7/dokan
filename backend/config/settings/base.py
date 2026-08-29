@@ -235,3 +235,14 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
+
+# Email — storefront OTP login codes and order confirmations. Dev/tests use
+# the console backend; production sets EMAIL_BACKEND=smtp plus the standard
+# EMAIL_HOST/PORT/USER/PASSWORD/USE_TLS env vars.
+EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "mero-pasal.online <no-reply@mero-pasal.online>")
+EMAIL_HOST = env("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(env("EMAIL_PORT", "25") or "25")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = (env("EMAIL_USE_TLS", "false") or "false").lower() == "true"

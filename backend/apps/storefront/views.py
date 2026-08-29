@@ -61,7 +61,7 @@ class _StorefrontView(APIView):
 
     authentication_classes: tuple = ()
     permission_classes = (AllowAny,)
-    throttle_classes = (StorefrontThrottle,)
+    throttle_classes: tuple[type[Any], ...] = (StorefrontThrottle,)
 
     _shop_tenant: Tenant
 

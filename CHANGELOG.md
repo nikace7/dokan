@@ -37,6 +37,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   offer runs); when the store and shop currencies differ the range
   converts at the NPR/INR peg for display. Both templates render the
   dynamic hero, announcement, offer badge, and sale prices
+- `storefront` — ordering backend: shoppers buy with **email-OTP login,
+  no passwords** (`StoreCustomer` auto-created on first login or first
+  order; 6-digit codes, hashed, 10-min TTL, 5 attempts, 60s cooldown;
+  signed 30-day customer tokens). `GET /storefront/products/<id>` exposes
+  the variant matrix (size/colour, per-variant stock boolean, offer
+  price) for the size picker. Checkout (`POST /storefront/orders`,
+  mandatory Idempotency-Key with 200-replay) validates stock, prices
+  every line server-side (discounted website price, peg-converted
+  fallback), supports **delivery (address + lat/lng snapshot) or store
+  pickup, COD or online-payment (manual confirm until a gateway lands)**,
+  and numbers orders gaplessly (`ORD-000001`). Orders never touch stock
+  at placement — POS confirmation posts the SALE later (invariant 1).
+  Public tracking at `GET /storefront/orders/<token>`, order history at
+  `GET /storefront/my/orders`. Order confirmation + OTP emails via
+  Django's email backend (console locally, SMTP env vars in production)
 - `edge` — Caddy serves `*.shop.<root>` with its own wildcard certificate
   (Cloudflare DNS-01 in production, internal CA locally); the existing
   wildcard DNS record already covers the extra label
