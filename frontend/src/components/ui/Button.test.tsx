@@ -46,4 +46,19 @@ describe('Button', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Go' }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it('loading shows a spinner, keeps the label, and blocks presses', () => {
+    const onClick = vi.fn();
+    render(
+      <Button onClick={onClick} loading>
+        Save
+      </Button>,
+    );
+    const button = screen.getByRole('button', { name: 'Save' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button.querySelector('svg.animate-spin')).not.toBeNull();
+    fireEvent.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });
