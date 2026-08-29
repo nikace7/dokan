@@ -46,6 +46,7 @@ export interface Tenant {
   locale: 'np' | 'en';
   currency: 'NPR' | 'INR';
   shopfront_subdomain: string | null;
+  shopfront_template: 'aurora' | 'bazaar';
   onboarded_at?: string | null;
   created_at: string;
 }
