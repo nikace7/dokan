@@ -13,6 +13,7 @@ from pathlib import Path
 
 from celery.schedules import crontab
 
+from core.observability.sentry import configure_sentry
 from core.openapi_components import OPENAPI_COMPONENTS
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -27,6 +28,26 @@ def env_list(name: str, default: str = "") -> list[str]:
     """Read a comma-separated environment variable into a list."""
     raw = env(name, default) or ""
     return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    """Read a strict boolean environment variable."""
+    raw = (env(name, str(default)) or "").lower()
+    if raw not in {"true", "false"}:
+        raise RuntimeError(f"{name} must be 'true' or 'false'")
+    return raw == "true"
+
+
+def env_float(name: str, default: float = 0.0) -> float:
+    """Read a bounded zero-to-one environment ratio."""
+    raw = env(name, str(default)) or str(default)
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a number") from exc
+    if not 0 <= value <= 1:
+        raise RuntimeError(f"{name} must be between 0 and 1")
+    return value
 
 
 # The secrets every deployment must provide. prod.py asserts they exist.
@@ -90,6 +111,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # Outermost so redirects and middleware-denied requests still receive a
+    # correlation id and a bounded route/status metric.
+    "core.observability.middleware.ObservabilityMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -109,6 +133,29 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# Prometheus is off unless the internal monitoring profile explicitly enables
+# it. Caddy also denies /api/metrics so this endpoint is never public.
+METRICS_ENABLED = env_bool("METRICS_ENABLED")
+
+# JSON logs serialize only the allowlisted fields in JsonFormatter. Django's
+# raw-path request loggers are disabled because URLs can contain share tokens.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"json": {"()": "core.observability.logging.JsonFormatter"}},
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "json"},
+        "null": {"class": "logging.NullHandler"},
+    },
+    "root": {"handlers": ["console"], "level": env("LOG_LEVEL", "INFO")},
+    "loggers": {
+        "dokan.request": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "dokan.health": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.server": {"handlers": ["null"], "propagate": False},
+        "django.request": {"handlers": ["null"], "propagate": False},
+    },
+}
 
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
@@ -167,6 +214,7 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_SEND_SENT_EVENT = True
 
 # CBMS sync provider: "local" (no network, default) or "cbms" (live IRD —
 # verify requirements with a Nepali CA/IRD before enabling, design §1185).
@@ -286,3 +334,16 @@ EMAIL_PORT = int(env("EMAIL_PORT", "25") or "25")
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = (env("EMAIL_USE_TLS", "false") or "false").lower() == "true"
+
+# Error reporting is optional and inert without a DSN. Request bodies, user
+# identity, secrets, and cost/price fields are removed by scrub_event.
+SENTRY_DSN = env("SENTRY_DSN", "") or ""
+SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", "development") or "development"
+SENTRY_RELEASE = env("SENTRY_RELEASE", "") or ""
+SENTRY_TRACES_SAMPLE_RATE = env_float("SENTRY_TRACES_SAMPLE_RATE")
+configure_sentry(
+    dsn=SENTRY_DSN,
+    environment=SENTRY_ENVIRONMENT,
+    release=SENTRY_RELEASE,
+    traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+)
