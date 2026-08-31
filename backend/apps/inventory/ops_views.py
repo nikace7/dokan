@@ -30,7 +30,7 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, not_found_code, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "stock.view",
@@ -47,7 +47,7 @@ def _user(request: Request) -> Any:
 def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
     instance = model.objects.filter(tenant=tenant, pk=pk).first()
     if instance is None:
-        raise ServiceError(f"{what.upper()}_NOT_FOUND", f"{what} not found.", http_status=404)
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
     return instance
 
 

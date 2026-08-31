@@ -43,7 +43,7 @@ class PlatformTokenRefreshSerializer(TokenRefreshSerializer):
         if not PlatformUser.objects.filter(pk=refresh.get("sub"), is_active=True).exists():
             raise AuthenticationFailed(
                 "No active platform account was found.",
-                code="no_active_account",
+                code="NO_ACTIVE_ACCOUNT",
             )
         return super().validate(attrs)
 
