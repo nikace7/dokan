@@ -9,6 +9,13 @@ from typing import Any
 from rest_framework import status
 from rest_framework.response import Response
 
+from core.error_codes import canonical_error_code
+
+
+def not_found_code(label: str) -> str:
+    """Convert a human label into a stable machine-readable NOT_FOUND code."""
+    return f"{canonical_error_code(label)}_NOT_FOUND"
+
 
 def ok(data: Any, http_status: int = status.HTTP_200_OK) -> Response:
     """Success envelope."""

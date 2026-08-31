@@ -130,7 +130,7 @@ def test_auth_limit_is_enforced_per_tenant_and_ip(monkeypatch: pytest.MonkeyPatc
     blocked = client.post("/api/v1/auth/token", payload, **_host(first.slug))
 
     assert blocked.status_code == 429
-    assert blocked.json()["error"]["code"] == "throttled"
+    assert blocked.json()["error"]["code"] == "THROTTLED"
     assert client.post("/api/v1/auth/token", payload, **_host(second.slug)).status_code == 401
 
 
