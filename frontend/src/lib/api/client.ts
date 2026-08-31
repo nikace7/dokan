@@ -7,18 +7,15 @@
  * (docs/SYSTEM_DESIGN.md §8.4).
  */
 
+import type { components } from './schema';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 /** Endpoints where a retry/double-tap must never create two records. */
 const IDEMPOTENT_POST_PATHS = ['/v1/sales', '/v1/payments'] as const;
 
 /** Matches the API error envelope: `{ data: null, error: {...} }`. */
-export interface ApiErrorBody {
-  code: string;
-  message: string;
-  field?: string;
-  details?: Record<string, unknown>;
-}
+export type ApiErrorBody = components['schemas']['ApiError'];
 
 export class ApiError extends Error {
   readonly status: number;
@@ -31,7 +28,7 @@ export class ApiError extends Error {
     this.body = body;
   }
 
-  /** Machine-readable code the UI branches on, e.g. PRICE_BELOW_MINIMUM. */
+  /** Machine-readable code the UI branches on, e.g. PRICE_BELOW_MIN. */
   get code(): string | null {
     return this.body?.code ?? null;
   }
@@ -140,12 +137,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 }
 
 /** Pagination block carried in the envelope `meta` of list endpoints. */
-export interface PageMeta {
-  count: number;
-  page: number;
-  total_pages: number;
-  page_size: number;
-}
+export type PageMeta = components['schemas']['PageMeta'];
 
 export interface Page<T> {
   data: T[];

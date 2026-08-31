@@ -13,7 +13,7 @@ from typing import Any, ClassVar
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter
+from drf_spectacular.utils import Direction, OpenApiParameter
 from rest_framework import serializers
 
 
@@ -106,12 +106,25 @@ class ContractAutoSchema(AutoSchema):
         view_name = re.sub(r"(?<!^)(?=[A-Z])", "_", self.view.__class__.__name__).lower()
         return f"{app}_{view_name}_{self.method.lower()}"
 
+    def _get_response_bodies(self, direction: Direction = "response") -> dict[str, Any]:
+        responses = super()._get_response_bodies(direction=direction)
+        responses.setdefault(
+            "default",
+            {
+                "description": "Machine-readable API error.",
+                "content": {
+                    "application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}
+                },
+            },
+        )
+        return responses
+
     def _get_response_for_code(
         self,
         serializer: Any,
         status_code: str,
         media_types: Any = None,
-        direction: str = "response",
+        direction: Direction = "response",
     ) -> dict[str, Any]:
         response = super()._get_response_for_code(
             serializer, status_code, media_types=media_types, direction=direction

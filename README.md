@@ -120,7 +120,12 @@ mypy .                                  # type gate
 pytest --cov                            # tests (coverage floor 80%)
 python scripts/generate_bs_golden.py    # regenerate the AD↔BS golden fixture
 python manage.py export_tenant demo --output demo-export.zip
+python manage.py spectacular --file ../openapi/schema.yaml --validate
 ```
+
+Run `npm run api:gen` from `frontend/` after changing an API serializer or
+operation. CI verifies that both the committed OpenAPI schema and generated
+TypeScript declarations are current.
 
 Production database recovery runs under the Compose `production` profile:
 verified nightly logical dumps, weekly physical base backups, and continuous
@@ -140,6 +145,7 @@ backend/
 └── scripts/           # e.g. golden-fixture generator
 docs/                  # architecture, tenancy, schema, deployment, ADRs, …
 frontend/              # React PWA (tenant app + platform control plane)
+openapi/                # reviewable generated OpenAPI 3.1 contract
 e2e/                   # Playwright smoke suite (local, not in CI)
 loadtests/             # k6 load scripts for the POS hot paths
 docker/postgres/init/  # app/migration role bootstrap
@@ -155,6 +161,8 @@ docker/postgres/init/  # app/migration role bootstrap
   Postgres RLS model
 - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) — tables, constraints,
   and indexing rules
+- [`docs/API_SPEC.md`](docs/API_SPEC.md) — generated contract, auth, envelopes,
+  error codes, idempotency, and versioning
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — VPS layout, TLS, backups,
   restore drill
 - [`docs/RATE_RULES.md`](docs/RATE_RULES.md) — rate types and price resolution

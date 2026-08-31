@@ -48,6 +48,13 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: config.settings.test
 
+      - name: OpenAPI contract is current
+        run: |
+          python manage.py spectacular --file ../openapi/schema.yaml --validate
+          git diff --exit-code -- ../openapi/schema.yaml
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
+
       - name: Tests with coverage (floor 80%)
         run: pytest --cov --cov-report=term-missing --cov-fail-under=80
         env:
@@ -184,6 +191,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - run: npm run api:check
       # The remaining high React Router advisory is RSC-only; Dokan is a client-rendered SPA.
       - run: npm audit --omit=dev --audit-level=critical
       - run: npm test
