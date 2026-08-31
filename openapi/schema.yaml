@@ -926,10 +926,178 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/login-otp:
+    get:
+      operationId: accounts_login_otp_view_get
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginOtpStatus'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    delete:
+      operationId: accounts_login_otp_view_delete
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginOtpStatus'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/login-otp/confirm:
+    post:
+      operationId: accounts_login_otp_confirm_view_post
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpCode'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OtpCode'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OtpCode'
+        required: true
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginOtpStatus'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/login-otp/request:
+    post:
+      operationId: accounts_login_otp_request_view_post
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Accepted'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/logout:
+    post:
+      operationId: accounts_logout_view_post
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenInput'
+        required: true
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Accepted'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/auth/me:
     get:
       operationId: accounts_me_view_get
-      description: Current user plus their resolved permission codenames.
+      description: Translate service failures into the shared API envelope.
       tags:
       - v1
       security:
@@ -955,10 +1123,230 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/password-reset/confirm:
+    post:
+      operationId: accounts_password_reset_confirm_view_post
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Accepted'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/password-reset/request:
+    post:
+      operationId: accounts_password_reset_request_view_post
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Accepted'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/password/change:
+    post:
+      operationId: accounts_password_change_view_post
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+        required: true
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Accepted'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/sessions:
+    get:
+      operationId: accounts_session_list_view_get
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuthSession'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/sessions/{id}/revoke:
+    post:
+      operationId: accounts_session_revoke_view_post
+      description: Translate service failures into the shared API envelope.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AuthSession'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/sessions/revoke-others:
+    post:
+      operationId: accounts_session_revoke_others_view_post
+      description: Translate service failures into the shared API envelope.
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/auth/token:
     post:
       operationId: accounts_token_obtain_view_post
-      description: Phone+password login, scoped to the request's tenant (from subdomain).
+      description: Translate service failures into the shared API envelope.
       tags:
       - v1
       requestBody:
@@ -986,8 +1374,7 @@ paths:
                 - error
                 properties:
                   data:
-                    type: object
-                    additionalProperties: {}
+                    $ref: '#/components/schemas/TokenPair'
                   error:
                     type: 'null'
           description: ''
@@ -1000,20 +1387,22 @@ paths:
   /api/v1/auth/token/refresh:
     post:
       operationId: accounts_tenant_token_refresh_view_post
-      description: Rotating refresh; the response is wrapped in the API envelope.
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
       tags:
       - v1
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TenantTokenRefresh'
+              $ref: '#/components/schemas/RefreshTokenInput'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TenantTokenRefresh'
+              $ref: '#/components/schemas/RefreshTokenInput'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TenantTokenRefresh'
+              $ref: '#/components/schemas/RefreshTokenInput'
         required: true
       responses:
         '200':
@@ -1026,7 +1415,7 @@ paths:
                 - error
                 properties:
                   data:
-                    $ref: '#/components/schemas/TenantTokenRefresh'
+                    $ref: '#/components/schemas/RefreshedTokens'
                   error:
                     type: 'null'
           description: ''
@@ -6760,6 +7149,13 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
+    Accepted:
+      type: object
+      properties:
+        accepted:
+          type: boolean
+      required:
+      - accepted
     Adjustment:
       type: object
       description: POST /inventory/adjustments payload.
@@ -6848,6 +7244,7 @@ components:
       - COUNT_QTY_INVALID
       - COUNT_STATE_INVALID
       - COUNT_VARIANT_UNKNOWN
+      - CURRENT_PASSWORD_INVALID
       - CREDIT_LIMIT_EXCEEDED
       - CREDIT_NOTE_EXCEEDS_DUES
       - CREDIT_NOTE_WITHOUT_CUSTOMER
@@ -6901,6 +7298,7 @@ components:
       - ORDER_NOT_FOUND
       - OTP_INVALID
       - OTP_LOCKED
+      - OTP_REQUIRED
       - OTP_RESEND_TOO_SOON
       - OUT_OF_STOCK
       - OVERPAYMENT
@@ -6909,6 +7307,7 @@ components:
       - OVER_RETURN
       - OWNER_NOTIFICATION_UNAVAILABLE
       - PARAM_INVALID
+      - PASSWORD_INVALID
       - PAYMENT_ALREADY_REVERSED
       - PAYMENT_AMOUNT_INVALID
       - PAYMENT_METHOD_INVALID
@@ -6950,6 +7349,8 @@ components:
       - SCOPE_TARGET_REQUIRED
       - SESSION_ALREADY_CLOSED
       - SESSION_ALREADY_OPEN
+      - SESSION_NOT_FOUND
+      - SESSION_REVOKED
       - SHOPFRONT_INACTIVE
       - SHOPFRONT_INVALID
       - SHOPFRONT_NOT_FOUND
@@ -7056,6 +7457,56 @@ components:
       - target_id
       - target_type
       - user_agent
+    AuthSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_name:
+          type: string
+          readOnly: true
+        ip:
+          type:
+          - string
+          - 'null'
+          readOnly: true
+        last_seen_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        revoked_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          readOnly: true
+        current:
+          type: boolean
+          readOnly: true
+      required:
+      - created_at
+      - current
+      - device_id
+      - device_name
+      - expires_at
+      - id
+      - ip
+      - last_seen_at
+      - revoked_at
     BillingCycleEnum:
       enum:
       - monthly
@@ -8300,6 +8751,13 @@ components:
       description: |-
         * `np` - Np
         * `en` - En
+    LoginOtpStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+      required:
+      - enabled
     Me:
       type: object
       description: Current user + resolved permissions for GET /auth/me.
@@ -8316,6 +8774,8 @@ components:
           - string
           - 'null'
         must_change_password:
+          type: boolean
+        login_otp_required:
           type: boolean
         is_owner:
           type: boolean
@@ -8338,6 +8798,7 @@ components:
       - full_name
       - id
       - is_owner
+      - login_otp_required
       - must_change_password
       - permissions
       - phone
@@ -8372,6 +8833,14 @@ components:
       - qty
       - unit_cost
       - variant
+    OtpCode:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: ^\d{6}$
+      required:
+      - code
     OtpRequest:
       type: object
       properties:
@@ -8422,6 +8891,47 @@ components:
       description: |-
         * `CUSTOMER` - Customer
         * `SUPPLIER` - Supplier
+    PasswordChange:
+      type: object
+      properties:
+        current_password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        new_password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+          minLength: 10
+      required:
+      - current_password
+      - new_password
+    PasswordResetConfirm:
+      type: object
+      properties:
+        phone:
+          type: string
+          maxLength: 32
+        code:
+          type: string
+          pattern: ^\d{6}$
+        new_password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+          minLength: 10
+      required:
+      - code
+      - new_password
+      - phone
+    PasswordResetRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          maxLength: 32
+      required:
+      - phone
     PatchedBounds:
       type: object
       description: PATCH /pricing/bounds payload — at least one bound required.
@@ -10100,6 +10610,23 @@ components:
           maxLength: 32
       required:
       - invoice
+    RefreshTokenInput:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - refresh
+    RefreshedTokens:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
     Refund:
       type: object
       description: One refund settlement entry for a return's refunds list.
@@ -11338,6 +11865,9 @@ components:
         must_change_password:
           type: boolean
           readOnly: true
+        login_otp_required:
+          type: boolean
+          readOnly: true
         roles:
           type: array
           items:
@@ -11349,6 +11879,7 @@ components:
       - full_name
       - id
       - is_active
+      - login_otp_required
       - must_change_password
       - phone
       - roles
@@ -12244,21 +12775,8 @@ components:
         * `PAST_DUE` - Past due
         * `SUSPENDED` - Suspended
         * `CANCELLED` - Cancelled
-    TenantTokenRefresh:
-      type: object
-      description: Rotate only tenant-realm refresh tokens.
-      properties:
-        refresh:
-          type: string
-        access:
-          type: string
-          readOnly: true
-      required:
-      - access
-      - refresh
     TokenObtain:
       type: object
-      description: 'Login payload: phone + password, scoped to the request''s tenant.'
       properties:
         phone:
           type: string
@@ -12267,9 +12785,39 @@ components:
           type: string
           writeOnly: true
           maxLength: 128
+        device_id:
+          type: string
+          format: uuid
+        device_name:
+          type: string
+          default: Unknown device
+          maxLength: 100
+        challenge_id:
+          type: string
+          format: uuid
+        otp:
+          type: string
+          pattern: ^\d{6}$
       required:
       - password
       - phone
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        token_type:
+          type: string
+        session_id:
+          type: string
+          format: uuid
+      required:
+      - access
+      - refresh
+      - session_id
+      - token_type
     TransferCreate:
       type: object
       description: POST /inventory/transfers payload.

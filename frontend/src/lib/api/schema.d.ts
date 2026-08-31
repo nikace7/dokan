@@ -281,6 +281,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/login-otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Translate service failures into the shared API envelope. */
+        get: operations["accounts_login_otp_view_get"];
+        put?: never;
+        post?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        delete: operations["accounts_login_otp_view_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login-otp/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        post: operations["accounts_login_otp_confirm_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login-otp/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        post: operations["accounts_login_otp_request_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        post: operations["accounts_logout_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -288,10 +357,112 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Current user plus their resolved permission codenames. */
+        /** @description Translate service failures into the shared API envelope. */
         get: operations["accounts_me_view_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        post: operations["accounts_password_reset_confirm_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        post: operations["accounts_password_reset_request_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        post: operations["accounts_password_change_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Translate service failures into the shared API envelope. */
+        get: operations["accounts_session_list_view_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        post: operations["accounts_session_revoke_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/revoke-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Translate service failures into the shared API envelope. */
+        post: operations["accounts_session_revoke_others_view_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -307,7 +478,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Phone+password login, scoped to the request's tenant (from subdomain). */
+        /** @description Translate service failures into the shared API envelope. */
         post: operations["accounts_token_obtain_view_post"];
         delete?: never;
         options?: never;
@@ -324,7 +495,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Rotating refresh; the response is wrapped in the API envelope. */
+        /**
+         * @description Takes a refresh type JSON web token and returns an access type JSON web
+         *     token if the refresh token is valid.
+         */
         post: operations["accounts_tenant_token_refresh_view_post"];
         delete?: never;
         options?: never;
@@ -2249,6 +2423,9 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Accepted: {
+            accepted: boolean;
+        };
         /** @description POST /inventory/adjustments payload. */
         Adjustment: {
             /** Format: uuid */
@@ -2276,7 +2453,7 @@ export interface components {
             };
         };
         /** @enum {string} */
-        ApiErrorCode: "ACCOUNT_LOCKED" | "ALLOCATION_AMOUNT_INVALID" | "ALLOCATION_EXCEEDS_AMOUNT" | "ALLOCATION_EXCEEDS_OUTSTANDING" | "ALLOCATION_INVOICE_INVALID" | "ALREADY_EXISTS" | "AMOUNT_INVALID" | "AUTHENTICATION_FAILED" | "BANNERS_INVALID" | "BARCODE_INVALID" | "BILL_NOT_FOUND" | "BRANCH_NOT_FOUND" | "BRANCH_REQUIRED" | "BRAND_NOT_FOUND" | "CASH_SESSION_NOT_FOUND" | "CASH_SESSION_REQUIRED" | "CATEGORY_CYCLE" | "CATEGORY_NOT_FOUND" | "CBMS_DOC_TYPE_INVALID" | "CBMS_NOT_COMPLETED" | "COST_INVALID" | "COST_VISIBILITY_REQUIRED" | "COUNT_ALREADY_OPEN" | "COUNT_EMPTY_BRANCH" | "COUNT_INCOMPLETE" | "COUNT_INVALID" | "COUNT_NOT_FOUND" | "COUNT_QTY_INVALID" | "COUNT_STATE_INVALID" | "COUNT_VARIANT_UNKNOWN" | "CREDIT_LIMIT_EXCEEDED" | "CREDIT_NOTE_EXCEEDS_DUES" | "CREDIT_NOTE_WITHOUT_CUSTOMER" | "CREDIT_TENDER_MISMATCH" | "CUSTOMER_CREDIT_PERMISSION_REQUIRED" | "CUSTOMER_NOT_FOUND" | "DATE_INVALID" | "DATE_RANGE_INCOMPLETE" | "DATE_RANGE_INVALID" | "DISCOUNT_INVALID" | "DISCOUNT_OUT_OF_RANGE" | "EXPENSE_NOT_FOUND" | "FEATURE_OVERRIDE_INVALID" | "FILTER_INVALID" | "FLOAT_INVALID" | "FROM_BRANCH_NOT_FOUND" | "GROUP_BY_INVALID" | "IDEMPOTENCY_KEY_REQUIRED" | "IDEMPOTENCY_KEY_REUSED" | "IMAGE_REQUIRED" | "IMAGE_TOO_LARGE" | "IMAGE_TYPE_UNSUPPORTED" | "IMPERSONATION_ACTION_BLOCKED" | "IMPERSONATION_DURATION_INVALID" | "IMPERSONATION_ENDED" | "IMPERSONATION_END_FORBIDDEN" | "IMPERSONATION_READ_ONLY" | "IMPERSONATION_REASON_INVALID" | "IMPERSONATION_SCOPE_INVALID" | "IMPERSONATION_TARGET_NOT_FOUND" | "IMPERSONATION_WRITE_FORBIDDEN" | "INVALID_CREDENTIALS" | "INVALID_PERMISSIONS" | "INVALID_ROLE_CODE" | "INVOICE_NOT_EDITABLE" | "INVOICE_NOT_FOUND" | "INVOICE_NOT_SHAREABLE" | "INVOICE_NO_INVALID" | "ITEM_NOT_FOUND" | "ITEM_REQUIRED" | "LAST_OWNER_ROLE" | "LINES_REQUIRED" | "LINK_INVALID" | "LOGIN_REQUIRED" | "LOOKUP_PARAM_REQUIRED" | "MATRIX_EMPTY" | "MISSING_IDEMPOTENCY_KEY" | "NOT_AUTHENTICATED" | "NOT_FOUND" | "NO_ACTIVE_ACCOUNT" | "ORDER_NOT_FOUND" | "OTP_INVALID" | "OTP_LOCKED" | "OTP_RESEND_TOO_SOON" | "OUT_OF_STOCK" | "OVERPAYMENT" | "OVERRIDE_REASON_REQUIRED" | "OVER_RECEIVE" | "OVER_RETURN" | "OWNER_NOTIFICATION_UNAVAILABLE" | "PARAM_INVALID" | "PAYMENT_ALREADY_REVERSED" | "PAYMENT_AMOUNT_INVALID" | "PAYMENT_METHOD_INVALID" | "PAYMENT_NOT_FOUND" | "PERMISSION_CATALOG_INCOMPLETE" | "PERMISSION_DENIED" | "PERMISSION_NOT_FOUND" | "PLAN_CONFIGURATION_ERROR" | "PLAN_CONFIGURATION_INVALID" | "PLAN_FEATURE_REQUIRED" | "PLAN_INACTIVE" | "PLAN_LIMIT_REACHED" | "PLATFORM_HOST_REQUIRED" | "PLATFORM_IP_FORBIDDEN" | "PLATFORM_ROLE_FORBIDDEN" | "PRICE_ABOVE_MAX" | "PRICE_BELOW_MIN" | "PRICE_BOUNDS_INVALID" | "PRICE_INVALID" | "PRICE_NOT_SET" | "PRICING_RATE_FORBIDDEN" | "PRODUCT_NOT_FOUND" | "PURCHASE_INVOICE_NOT_FOUND" | "QTY_INVALID" | "QUANTITY_KEY_INVALID" | "RATE_TYPE_IN_USE" | "RATE_TYPE_NOT_FOUND" | "REALM_MISMATCH" | "REASON_REQUIRED" | "RECEIPT_NOT_PRINTABLE" | "REFUND_AMOUNT_INVALID" | "REFUND_EXCEEDS_CREDIT" | "REFUND_METHOD_INVALID" | "RETURN_LINE_NOT_INVOICED" | "RETURN_NOT_ALLOWED" | "REVERSAL_REASON_REQUIRED" | "ROLE_IN_USE" | "SCOPE_INVALID" | "SCOPE_TARGET_REQUIRED" | "SESSION_ALREADY_CLOSED" | "SESSION_ALREADY_OPEN" | "SHOPFRONT_INACTIVE" | "SHOPFRONT_INVALID" | "SHOPFRONT_NOT_FOUND" | "SHOPFRONT_TAKEN" | "SHOP_NOT_READY" | "SIZE_CHART_EMPTY" | "SIZE_CHART_NOT_FOUND" | "SMS_PHONE_INVALID" | "SMS_RECEIPT_NOT_ALLOWED" | "SMS_TEMPLATE_CONTEXT_INVALID" | "SMS_TEMPLATE_INVALID" | "STOCK_INSUFFICIENT" | "SUBSCRIPTION_AMOUNT_INVALID" | "SUBSCRIPTION_PAID_TERMINAL" | "SUBSCRIPTION_PERIOD_INVALID" | "SUPPLIER_NOT_FOUND" | "SUPPORT_SESSION_REQUIRED" | "SYSTEM_ROLE" | "TARGET_INVALID" | "TENANT_INVALID" | "TENANT_REQUIRED" | "THROTTLED" | "TOKEN_NOT_VALID" | "TOKEN_TENANT_MISMATCH" | "TO_BRANCH_NOT_FOUND" | "TRANSFER_LINE_UNKNOWN" | "TRANSFER_NOT_FOUND" | "TRANSFER_SAME_BRANCH" | "TRANSFER_STATE_INVALID" | "TRIAL_END_REQUIRED" | "TWO_FACTOR_NOT_CONFIGURED" | "UDHARO_REQUIRES_CUSTOMER" | "VALIDATION_ERROR" | "VARIANT_NOT_FOUND" | "VARIANT_REQUIRED";
+        ApiErrorCode: "ACCOUNT_LOCKED" | "ALLOCATION_AMOUNT_INVALID" | "ALLOCATION_EXCEEDS_AMOUNT" | "ALLOCATION_EXCEEDS_OUTSTANDING" | "ALLOCATION_INVOICE_INVALID" | "ALREADY_EXISTS" | "AMOUNT_INVALID" | "AUTHENTICATION_FAILED" | "BANNERS_INVALID" | "BARCODE_INVALID" | "BILL_NOT_FOUND" | "BRANCH_NOT_FOUND" | "BRANCH_REQUIRED" | "BRAND_NOT_FOUND" | "CASH_SESSION_NOT_FOUND" | "CASH_SESSION_REQUIRED" | "CATEGORY_CYCLE" | "CATEGORY_NOT_FOUND" | "CBMS_DOC_TYPE_INVALID" | "CBMS_NOT_COMPLETED" | "COST_INVALID" | "COST_VISIBILITY_REQUIRED" | "COUNT_ALREADY_OPEN" | "COUNT_EMPTY_BRANCH" | "COUNT_INCOMPLETE" | "COUNT_INVALID" | "COUNT_NOT_FOUND" | "COUNT_QTY_INVALID" | "COUNT_STATE_INVALID" | "COUNT_VARIANT_UNKNOWN" | "CURRENT_PASSWORD_INVALID" | "CREDIT_LIMIT_EXCEEDED" | "CREDIT_NOTE_EXCEEDS_DUES" | "CREDIT_NOTE_WITHOUT_CUSTOMER" | "CREDIT_TENDER_MISMATCH" | "CUSTOMER_CREDIT_PERMISSION_REQUIRED" | "CUSTOMER_NOT_FOUND" | "DATE_INVALID" | "DATE_RANGE_INCOMPLETE" | "DATE_RANGE_INVALID" | "DISCOUNT_INVALID" | "DISCOUNT_OUT_OF_RANGE" | "EXPENSE_NOT_FOUND" | "FEATURE_OVERRIDE_INVALID" | "FILTER_INVALID" | "FLOAT_INVALID" | "FROM_BRANCH_NOT_FOUND" | "GROUP_BY_INVALID" | "IDEMPOTENCY_KEY_REQUIRED" | "IDEMPOTENCY_KEY_REUSED" | "IMAGE_REQUIRED" | "IMAGE_TOO_LARGE" | "IMAGE_TYPE_UNSUPPORTED" | "IMPERSONATION_ACTION_BLOCKED" | "IMPERSONATION_DURATION_INVALID" | "IMPERSONATION_ENDED" | "IMPERSONATION_END_FORBIDDEN" | "IMPERSONATION_READ_ONLY" | "IMPERSONATION_REASON_INVALID" | "IMPERSONATION_SCOPE_INVALID" | "IMPERSONATION_TARGET_NOT_FOUND" | "IMPERSONATION_WRITE_FORBIDDEN" | "INVALID_CREDENTIALS" | "INVALID_PERMISSIONS" | "INVALID_ROLE_CODE" | "INVOICE_NOT_EDITABLE" | "INVOICE_NOT_FOUND" | "INVOICE_NOT_SHAREABLE" | "INVOICE_NO_INVALID" | "ITEM_NOT_FOUND" | "ITEM_REQUIRED" | "LAST_OWNER_ROLE" | "LINES_REQUIRED" | "LINK_INVALID" | "LOGIN_REQUIRED" | "LOOKUP_PARAM_REQUIRED" | "MATRIX_EMPTY" | "MISSING_IDEMPOTENCY_KEY" | "NOT_AUTHENTICATED" | "NOT_FOUND" | "NO_ACTIVE_ACCOUNT" | "ORDER_NOT_FOUND" | "OTP_INVALID" | "OTP_LOCKED" | "OTP_REQUIRED" | "OTP_RESEND_TOO_SOON" | "OUT_OF_STOCK" | "OVERPAYMENT" | "OVERRIDE_REASON_REQUIRED" | "OVER_RECEIVE" | "OVER_RETURN" | "OWNER_NOTIFICATION_UNAVAILABLE" | "PARAM_INVALID" | "PASSWORD_INVALID" | "PAYMENT_ALREADY_REVERSED" | "PAYMENT_AMOUNT_INVALID" | "PAYMENT_METHOD_INVALID" | "PAYMENT_NOT_FOUND" | "PERMISSION_CATALOG_INCOMPLETE" | "PERMISSION_DENIED" | "PERMISSION_NOT_FOUND" | "PLAN_CONFIGURATION_ERROR" | "PLAN_CONFIGURATION_INVALID" | "PLAN_FEATURE_REQUIRED" | "PLAN_INACTIVE" | "PLAN_LIMIT_REACHED" | "PLATFORM_HOST_REQUIRED" | "PLATFORM_IP_FORBIDDEN" | "PLATFORM_ROLE_FORBIDDEN" | "PRICE_ABOVE_MAX" | "PRICE_BELOW_MIN" | "PRICE_BOUNDS_INVALID" | "PRICE_INVALID" | "PRICE_NOT_SET" | "PRICING_RATE_FORBIDDEN" | "PRODUCT_NOT_FOUND" | "PURCHASE_INVOICE_NOT_FOUND" | "QTY_INVALID" | "QUANTITY_KEY_INVALID" | "RATE_TYPE_IN_USE" | "RATE_TYPE_NOT_FOUND" | "REALM_MISMATCH" | "REASON_REQUIRED" | "RECEIPT_NOT_PRINTABLE" | "REFUND_AMOUNT_INVALID" | "REFUND_EXCEEDS_CREDIT" | "REFUND_METHOD_INVALID" | "RETURN_LINE_NOT_INVOICED" | "RETURN_NOT_ALLOWED" | "REVERSAL_REASON_REQUIRED" | "ROLE_IN_USE" | "SCOPE_INVALID" | "SCOPE_TARGET_REQUIRED" | "SESSION_ALREADY_CLOSED" | "SESSION_ALREADY_OPEN" | "SESSION_NOT_FOUND" | "SESSION_REVOKED" | "SHOPFRONT_INACTIVE" | "SHOPFRONT_INVALID" | "SHOPFRONT_NOT_FOUND" | "SHOPFRONT_TAKEN" | "SHOP_NOT_READY" | "SIZE_CHART_EMPTY" | "SIZE_CHART_NOT_FOUND" | "SMS_PHONE_INVALID" | "SMS_RECEIPT_NOT_ALLOWED" | "SMS_TEMPLATE_CONTEXT_INVALID" | "SMS_TEMPLATE_INVALID" | "STOCK_INSUFFICIENT" | "SUBSCRIPTION_AMOUNT_INVALID" | "SUBSCRIPTION_PAID_TERMINAL" | "SUBSCRIPTION_PERIOD_INVALID" | "SUPPLIER_NOT_FOUND" | "SUPPORT_SESSION_REQUIRED" | "SYSTEM_ROLE" | "TARGET_INVALID" | "TENANT_INVALID" | "TENANT_REQUIRED" | "THROTTLED" | "TOKEN_NOT_VALID" | "TOKEN_TENANT_MISMATCH" | "TO_BRANCH_NOT_FOUND" | "TRANSFER_LINE_UNKNOWN" | "TRANSFER_NOT_FOUND" | "TRANSFER_SAME_BRANCH" | "TRANSFER_STATE_INVALID" | "TRIAL_END_REQUIRED" | "TWO_FACTOR_NOT_CONFIGURED" | "UDHARO_REQUIRES_CUSTOMER" | "VALIDATION_ERROR" | "VARIANT_NOT_FOUND" | "VARIANT_REQUIRED";
         AuditLog: {
             /** Format: uuid */
             readonly id: string;
@@ -2295,6 +2472,23 @@ export interface components {
             readonly user_agent: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        AuthSession: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly device_id: string;
+            readonly device_name: string;
+            readonly ip: string | null;
+            /** Format: date-time */
+            readonly last_seen_at: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly expires_at: string;
+            /** Format: date-time */
+            readonly revoked_at: string | null;
+            readonly current: boolean;
         };
         /**
          * @description * `monthly` - Monthly
@@ -2786,6 +2980,9 @@ export interface components {
          * @enum {string}
          */
         LocaleEnum: "np" | "en";
+        LoginOtpStatus: {
+            enabled: boolean;
+        };
         /** @description Current user + resolved permissions for GET /auth/me. */
         Me: {
             /** Format: uuid */
@@ -2794,6 +2991,7 @@ export interface components {
             full_name: string;
             email: string | null;
             must_change_password: boolean;
+            login_otp_required: boolean;
             is_owner: boolean;
             permissions: string[];
             plan: unknown;
@@ -2814,6 +3012,9 @@ export interface components {
             unit_cost: string;
             /** @default  */
             note: string;
+        };
+        OtpCode: {
+            code: string;
         };
         OtpRequest: {
             /** Format: email */
@@ -2836,6 +3037,18 @@ export interface components {
          * @enum {string}
          */
         PartyTypeEnum: "CUSTOMER" | "SUPPLIER";
+        PasswordChange: {
+            current_password: string;
+            new_password: string;
+        };
+        PasswordResetConfirm: {
+            phone: string;
+            code: string;
+            new_password: string;
+        };
+        PasswordResetRequest: {
+            phone: string;
+        };
         /** @description PATCH /pricing/bounds payload — at least one bound required. */
         PatchedBounds: {
             /** Format: decimal */
@@ -3487,6 +3700,13 @@ export interface components {
             invoice: string;
             to_phone?: string;
         };
+        RefreshTokenInput: {
+            refresh: string;
+        };
+        RefreshedTokens: {
+            access: string;
+            refresh?: string;
+        };
         /** @description One refund settlement entry for a return's refunds list. */
         Refund: {
             method: components["schemas"]["RefundMethodEnum"];
@@ -3918,6 +4138,7 @@ export interface components {
             readonly full_name: string;
             readonly is_active: boolean;
             readonly must_change_password: boolean;
+            readonly login_otp_required: boolean;
             readonly roles: {
                 [key: string]: unknown;
             }[];
@@ -4254,15 +4475,23 @@ export interface components {
          * @enum {string}
          */
         TenantStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | "SUSPENDED" | "CANCELLED";
-        /** @description Rotate only tenant-realm refresh tokens. */
-        TenantTokenRefresh: {
-            refresh: string;
-            readonly access: string;
-        };
-        /** @description Login payload: phone + password, scoped to the request's tenant. */
         TokenObtain: {
             phone: string;
             password: string;
+            /** Format: uuid */
+            device_id?: string;
+            /** @default Unknown device */
+            device_name: string;
+            /** Format: uuid */
+            challenge_id?: string;
+            otp?: string;
+        };
+        TokenPair: {
+            access: string;
+            refresh: string;
+            token_type: string;
+            /** Format: uuid */
+            session_id: string;
         };
         /** @description POST /inventory/transfers payload. */
         TransferCreate: {
@@ -5163,6 +5392,173 @@ export interface operations {
             };
         };
     };
+    accounts_login_otp_view_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LoginOtpStatus"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_login_otp_view_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LoginOtpStatus"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_login_otp_confirm_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtpCode"];
+                "application/x-www-form-urlencoded": components["schemas"]["OtpCode"];
+                "multipart/form-data": components["schemas"]["OtpCode"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LoginOtpStatus"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_login_otp_request_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Accepted"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_logout_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenInput"];
+                "application/x-www-form-urlencoded": components["schemas"]["RefreshTokenInput"];
+                "multipart/form-data": components["schemas"]["RefreshTokenInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Accepted"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     accounts_me_view_get: {
         parameters: {
             query?: never;
@@ -5179,6 +5575,214 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Me"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_password_reset_confirm_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirm"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetConfirm"];
+                "multipart/form-data": components["schemas"]["PasswordResetConfirm"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Accepted"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_password_reset_request_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Accepted"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_password_change_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordChange"];
+                "multipart/form-data": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Accepted"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_session_list_view_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AuthSession"][];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_session_revoke_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AuthSession"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accounts_session_revoke_others_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        };
                         error: null;
                     };
                 };
@@ -5215,9 +5819,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: {
-                            [key: string]: unknown;
-                        };
+                        data: components["schemas"]["TokenPair"];
                         error: null;
                     };
                 };
@@ -5242,9 +5844,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TenantTokenRefresh"];
-                "application/x-www-form-urlencoded": components["schemas"]["TenantTokenRefresh"];
-                "multipart/form-data": components["schemas"]["TenantTokenRefresh"];
+                "application/json": components["schemas"]["RefreshTokenInput"];
+                "application/x-www-form-urlencoded": components["schemas"]["RefreshTokenInput"];
+                "multipart/form-data": components["schemas"]["RefreshTokenInput"];
             };
         };
         responses: {
@@ -5254,7 +5856,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["TenantTokenRefresh"];
+                        data: components["schemas"]["RefreshedTokens"];
                         error: null;
                     };
                 };
