@@ -52,10 +52,10 @@ docker compose exec backend sh -c 'DATABASE_USER=postgres DATABASE_PASSWORD="$PO
 
 Then open:
 
-| URL                     | What                        | Login                                                                       |
-| ----------------------- | --------------------------- | --------------------------------------------------------------------------- |
-| `https://demo.localhost`  | Tenant app (demo shop)      | phone `9800000000`, password `demo1234`                                     |
-| `https://admin.localhost` | Platform control plane      | create with `python manage.py create_platform_user …`, TOTP required        |
+| URL                       | What                   | Login                                                                |
+| ------------------------- | ---------------------- | -------------------------------------------------------------------- |
+| `https://demo.localhost`  | Tenant app (demo shop) | phone `9800000000`, password `demo1234`                              |
+| `https://admin.localhost` | Platform control plane | create with `python manage.py create_platform_user …`, TOTP required |
 
 Two platform gotchas:
 
@@ -157,7 +157,7 @@ backend/
 docs/                  # architecture, tenancy, schema, deployment, ADRs, …
 frontend/              # React PWA (tenant app + platform control plane)
 openapi/                # reviewable generated OpenAPI 3.1 contract
-e2e/                   # Playwright smoke suite (local, not in CI)
+e2e/                   # Playwright smoke suite (local + isolated Compose CI)
 loadtests/             # k6 load scripts for the POS hot paths
 docker/postgres/init/  # app/migration role bootstrap
 .github/workflows/     # CI gates: ruff, mypy, pytest+coverage, frontend tests,

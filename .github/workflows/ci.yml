@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
+      - name: Architecture source-size boundary
+        run: python ../scripts/check_source_size.py
+
       - name: Ruff lint
         run: ruff check .
 
@@ -252,3 +255,58 @@ jobs:
       - run: npm test
       - run: npm run lint
       - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Build and seed isolated Compose stack
+        run: |
+          cp .env.example .env
+          sed -i 's/^ROOT_DOMAIN=.*/ROOT_DOMAIN=localhost/' .env
+          sed -i 's/^ALLOWED_HOSTS=.*/ALLOWED_HOSTS=.localhost,localhost,backend/' .env
+          docker compose -p dokan-e2e-ci up -d --build db redis backend frontend storefront caddy
+          docker compose -p dokan-e2e-ci exec -T backend sh -c \
+            'DATABASE_USER=dokan_migrator DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" python manage.py migrate --noinput'
+          docker compose -p dokan-e2e-ci exec -T backend sh -c \
+            'DATABASE_USER=postgres DATABASE_PASSWORD="$POSTGRES_PASSWORD" python manage.py seed_demo'
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Type-check E2E suite
+        working-directory: e2e
+        run: npm run typecheck
+
+      - name: Run browser smoke suite
+        working-directory: e2e
+        run: npm test
+        env:
+          E2E_BASE_URL: https://demo.localhost
+          E2E_API_URL: http://127.0.0.1:8000
+          E2E_TENANT_HOST: demo.localhost
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: ignore
+
+      - name: Stop isolated stack
+        if: always()
+        run: docker compose -p dokan-e2e-ci down --volumes --remove-orphans
