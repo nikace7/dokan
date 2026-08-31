@@ -109,6 +109,7 @@
     margin: 3mm;
   }
 
+  html[data-report-print],
   html[data-report-print] body {
     width: auto;
     background: white;
