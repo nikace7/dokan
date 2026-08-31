@@ -3,6 +3,7 @@ import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { AuditPage } from '@/features/audit/AuditPage';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { PasswordResetPage } from '@/features/auth/PasswordResetPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { BillingPage } from '@/features/billing/BillingPage';
 import { SharedBillPage } from '@/features/billing/SharedBillPage';
@@ -30,6 +31,7 @@ import { SalesReportPage } from '@/features/reports/SalesReportPage';
 import { StockReportsPage } from '@/features/reports/StockReportsPage';
 import { VatRegisterPage } from '@/features/reports/VatRegisterPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { SecurityPage } from '@/features/settings/SecurityPage';
 import { OnlineStorePage } from '@/features/settings/OnlineStorePage';
 import { StaffPage } from '@/features/settings/StaffPage';
 import { SupportAccessPage } from '@/features/support/SupportAccessPage';
@@ -59,6 +61,7 @@ let router: ReturnType<typeof createBrowserRouter> | null = null;
 function getRouter() {
   router ??= createBrowserRouter([
     { path: '/login', element: <LoginPage /> },
+    { path: '/forgot-password', element: <PasswordResetPage /> },
     { path: '/support-login', element: <SupportLoginPage /> },
     // Public online bill: the share token is the capability, so this route
     // deliberately sits OUTSIDE RequireAuth (no login redirect for customers).
@@ -89,6 +92,7 @@ function getRouter() {
         { path: '/returns', element: <ReturnsPage /> },
         { path: '/audit', element: <AuditPage /> },
         { path: '/settings', element: <SettingsPage /> },
+        { path: '/settings/security', element: <SecurityPage /> },
         { path: '/settings/staff', element: <StaffPage /> },
         { path: '/settings/online-store', element: <OnlineStorePage /> },
         { path: '/settings/support-access', element: <SupportAccessPage /> },

@@ -12,6 +12,7 @@ import {
   Repeat,
   ScanLine,
   ScrollText,
+  ShieldCheck,
   Settings as SettingsIcon,
   Tag,
   Truck,
@@ -89,6 +90,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/exchanges', labelKey: 'exchanges', icon: Repeat, anyOf: ['sale.return'] },
   { to: '/reports', labelKey: 'reports', icon: BarChart3, anyOf: REPORT_VIEW_CODES },
   { to: '/audit', labelKey: 'audit', icon: ScrollText, anyOf: ['settings.manage'] },
+  { to: '/settings/security', labelKey: 'security', icon: ShieldCheck },
   {
     to: '/settings',
     labelKey: 'settings',
@@ -122,6 +124,7 @@ const NAV_SECTION_BY_PATH: Record<string, NavSectionKey> = {
   '/reports': 'manage',
   '/audit': 'manage',
   '/settings': 'manage',
+  '/settings/security': 'manage',
   '/settings/staff': 'manage',
 };
 

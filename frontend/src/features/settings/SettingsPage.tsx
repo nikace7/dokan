@@ -138,7 +138,9 @@ export function SettingsPage() {
             <span className="font-medium">{query.data.slug}</span>
           </div>
           <div>
-            <span className="block text-xs text-muted-foreground">{t('settings.profile.plan')}</span>
+            <span className="block text-xs text-muted-foreground">
+              {t('settings.profile.plan')}
+            </span>
             <span className="font-medium">{query.data.plan_code}</span>
           </div>
           <div>
@@ -249,6 +251,12 @@ export function SettingsPage() {
         <p className="mb-3 text-sm text-muted-foreground">{t('settings.storeCard.help')}</p>
         <Button asChild>
           <Link to="/settings/online-store">{t('settings.storeCard.manage')}</Link>
+        </Button>
+      </Card>
+      <Card title={t('settings.securityCard.title')}>
+        <p className="mb-3 text-sm text-muted-foreground">{t('settings.securityCard.help')}</p>
+        <Button asChild variant="secondary">
+          <Link to="/settings/security">{t('settings.securityCard.manage')}</Link>
         </Button>
       </Card>
       {hasPermission(user, 'user.manage') ? (
