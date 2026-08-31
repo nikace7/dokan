@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { authedRequest, onSignedOut } from '@/lib/api/authed';
+import { authedDownload, authedRequest, onSignedOut } from '@/lib/api/authed';
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/lib/auth/tokens';
 
 function envelope(data: unknown, status = 200): Response {
@@ -84,5 +84,25 @@ describe('authedRequest', () => {
 
     await expect(authedRequest('/v1/auth/me')).rejects.toMatchObject({ status: 400 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('downloads a binary response with the same authenticated transport', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(new Blob(['workbook']), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': 'attachment; filename="daily-sales-2083-04-15.xlsx"',
+        },
+      }),
+    );
+
+    const download = await authedDownload('/v1/reports/export?report=daily-sales');
+
+    expect(await download.blob.text()).toBe('workbook');
+    expect(download.filename).toBe('daily-sales-2083-04-15.xlsx');
+    const [, init] = fetchMock.mock.calls[0];
+    expect((init?.headers as Headers).get('Authorization')).toBe('Bearer access-1');
+    expect((init?.headers as Headers).get('Accept')).toContain('spreadsheetml');
   });
 });
