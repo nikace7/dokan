@@ -208,6 +208,18 @@ MEDIA_ROOT = Path(env("MEDIA_ROOT", str(BASE_DIR / "media")) or str(BASE_DIR / "
 # apps.platformadmin.PlatformUser — a separate table and token audience.
 AUTH_USER_MODEL = "accounts.User"
 
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 10},
+    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
 # Phone is unique PER TENANT (UNIQUE(tenant_id, phone)), not globally —
 # two shops may both have a "Ram" with the same number idea, and global
 # uniqueness would leak which shops a phone belongs to.

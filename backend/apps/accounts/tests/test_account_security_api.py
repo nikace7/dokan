@@ -72,9 +72,7 @@ def user(tenant: Any) -> Any:
 
 
 class TestDeviceSessions:
-    def test_login_registers_device_and_binds_both_tokens(
-        self, tenant: Any, user: Any
-    ) -> None:
+    def test_login_registers_device_and_binds_both_tokens(self, tenant: Any, user: Any) -> None:
         response = login(tenant, user)
 
         assert response.status_code == 200
@@ -123,9 +121,7 @@ class TestDeviceSessions:
         assert response.status_code == 403
         assert response.json()["error"]["code"] == "TOKEN_TENANT_MISMATCH"
 
-    def test_list_marks_current_and_can_revoke_another_device(
-        self, tenant: Any, user: Any
-    ) -> None:
+    def test_list_marks_current_and_can_revoke_another_device(self, tenant: Any, user: Any) -> None:
         current = login(tenant, user).json()["data"]
         other = login(
             tenant,
@@ -249,9 +245,7 @@ class TestPasswordChange:
 
 
 class TestOptionalLoginOtp:
-    def test_user_can_enable_complete_otp_login_and_disable(
-        self, tenant: Any, user: Any
-    ) -> None:
+    def test_user_can_enable_complete_otp_login_and_disable(self, tenant: Any, user: Any) -> None:
         initial = login(tenant, user).json()["data"]
         client = authed_client(initial)
         requested = client.post("/api/v1/auth/login-otp/request", **host(tenant.slug))

@@ -10,6 +10,8 @@ cross-tenant data::
 
 from tests.factories.accounts import (
     DEFAULT_PASSWORD,
+    AccountOtpFactory,
+    AuthSessionFactory,
     RoleFactory,
     RolePermissionFactory,
     UserFactory,
@@ -69,7 +71,9 @@ from tests.factories.tenant import PlanFactory, TenantFactory
 
 __all__ = [
     "DEFAULT_PASSWORD",
+    "AccountOtpFactory",
     "AuditLogFactory",
+    "AuthSessionFactory",
     "BranchFactory",
     "BrandFactory",
     "CashSessionFactory",

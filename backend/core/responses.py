@@ -22,9 +22,21 @@ def ok(data: Any, http_status: int = status.HTTP_200_OK) -> Response:
     return Response({"data": data, "error": None}, status=http_status)
 
 
-def error(http_status: int, code: str, message: str) -> Response:
+def error(
+    http_status: int,
+    code: str,
+    message: str,
+    *,
+    field: str | None = None,
+    details: dict[str, Any] | None = None,
+) -> Response:
     """Error envelope with a machine-readable code."""
-    return Response({"data": None, "error": {"code": code, "message": message}}, status=http_status)
+    payload: dict[str, Any] = {"code": code, "message": message}
+    if field is not None:
+        payload["field"] = field
+    if details is not None:
+        payload["details"] = details
+    return Response({"data": None, "error": payload}, status=http_status)
 
 
 class ServiceError(Exception):

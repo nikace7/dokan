@@ -102,6 +102,7 @@ class User(TenantScopedModel, AbstractBaseUser):
     full_name = models.TextField()
     is_active = models.BooleanField(default=True)
     must_change_password = models.BooleanField(default=False)
+    login_otp_required = models.BooleanField(default=False)
     last_login = models.DateTimeField(null=True, blank=True, db_column="last_login_at")
     failed_login_count = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
@@ -138,6 +139,70 @@ class User(TenantScopedModel, AbstractBaseUser):
     def has_module_perms(self, app_label: str) -> bool:
         """Django admin compatibility — tenant users never use django-admin."""
         return False
+
+
+class AuthSession(TenantScopedModel):
+    """One registered tenant-user device and its revocation state."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="auth_sessions")
+    device_id = models.UUIDField()
+    device_name = models.CharField(max_length=100)
+    user_agent = models.TextField(blank=True, default="")
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    last_seen_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "auth_session"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "user", "device_id"],
+                condition=models.Q(revoked_at__isnull=True),
+                name="auth_session_active_device_uniq",
+            )
+        ]
+        indexes: ClassVar = [
+            models.Index(
+                fields=["tenant", "user", "-created_at"],
+                name="auth_session_user_idx",
+            ),
+            models.Index(
+                fields=["tenant", "expires_at"],
+                name="auth_session_expiry_idx",
+            ),
+        ]
+
+
+class AccountOtp(TenantScopedModel):
+    """Hashed, short-lived OTP for recovery and optional login verification."""
+
+    class Purpose(models.TextChoices):
+        PASSWORD_RESET = "PASSWORD_RESET"
+        LOGIN = "LOGIN"
+        LOGIN_ENABLE = "LOGIN_ENABLE"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="account_otps")
+    purpose = models.CharField(max_length=20, choices=Purpose.choices)
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "account_otp"
+        indexes: ClassVar = [
+            models.Index(
+                fields=["tenant", "user", "purpose", "-created_at"],
+                name="account_otp_lookup_idx",
+            ),
+            models.Index(
+                fields=["tenant", "expires_at"],
+                name="account_otp_expiry_idx",
+            ),
+        ]
 
 
 class RolePermission(TenantScopedModel):
