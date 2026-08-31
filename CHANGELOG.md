@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Account security
+
+- `accounts` — tenant access and rotating refresh tokens now carry a registered
+  device session id. Logout, password reset, password change, and self-service
+  device revocation invalidate affected tokens immediately under tenant RLS;
+  successful/failed login, logout, password, OTP, and revocation actions are
+  explicit audit events
+- `accounts` / `notifications` — enumeration-safe password reset and optional
+  login verification use six-digit SMS codes stored only as HMAC hashes, with a
+  ten-minute expiry, five-attempt lock, and resend cooldown. Security delivery
+  bypasses subscription SMS quotas
+- `frontend` — every tenant user gets a bilingual Account security screen for
+  password changes, SMS login-code setup, and registered-device review, plus
+  OTP-aware login and a complete forgot-password flow
+
 ### API contract
 
 - `api` — all tenant, platform-admin, and storefront operations now publish a

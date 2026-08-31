@@ -163,6 +163,10 @@ than the middleware's cached tenant lookup.
   asserts `token.tenant == request.tenant` (from the subdomain). **A token
   replayed against another subdomain is a hard 403 plus an audit event** — token
   theft across tenants must be loud, not silent.
+- Normal tenant JWTs carry an `sid` claim. The referenced `auth_session` is
+  selected under the request's tenant RLS context and must belong to the token
+  user, be unexpired, and not be revoked. This gives immediate per-device
+  revocation without weakening subdomain-derived tenancy.
 - Impersonation tokens add an `act` claim (the platform user acting), are
   read-only by default, expire in ≤ 60 minutes, and are jti-denylisted in Redis
   so "End now" is instant. Full flow: SYSTEM_DESIGN §2.6; claims: ADR 0001.

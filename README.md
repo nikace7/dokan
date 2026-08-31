@@ -22,6 +22,8 @@ and an offline-tolerant POS that runs as a PWA on any phone or laptop.
   subscriptions, toggle per-tenant features, inspect usage, and open
   time-boxed, fully audited support sessions into any tenant.
 - **Bilingual UI** — English/नेपाली toggle across the tenant app.
+- **Account security** — optional SMS code at login, enumeration-safe password
+  reset, strong-password validation, and immediate per-device session revocation.
 
 ## Stack
 
@@ -85,9 +87,11 @@ and enroll the one-time TOTP secret printed by that command. Platform and
 tenant tokens use separate storage, and tenant support sessions are handed off
 through a short-lived URL fragment that is cleared immediately after use.
 
-Local SMS uses the no-network `log` provider: receipt requests are queued and
-delivery state is persisted without sending real messages. A real provider
-adapter is required before enabling SMS in production.
+Local SMS uses the no-network `log` provider: receipt and account-security
+messages are queued and delivery state is persisted without sending real
+messages. Codes therefore appear in the local SMS log instead of reaching a
+phone. A real provider adapter is required before production; security codes
+bypass plan SMS quotas so recovery remains available.
 
 ## Local development (hot reload)
 
