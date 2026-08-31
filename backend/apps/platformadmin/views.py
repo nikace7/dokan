@@ -21,7 +21,6 @@ from apps.platformadmin.serializers import (
     PlanCreateSerializer,
     PlanSerializer,
     PlanUpdateSerializer,
-    PlatformAuditSerializer,
     PlatformLoginSerializer,
     PlatformMeSerializer,
     PlatformTokenRefreshSerializer,
@@ -385,27 +384,3 @@ class FeatureOverrideDetailView(_PlatformAPIView):
             request=request,
         )
         return ok({"deleted": str(pk)})
-
-
-class PlatformAuditListView(_PlatformAPIView):
-    roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
-        "GET": (PlatformUser.Role.SUPER_ADMIN,)
-    }
-    schema_contract: ClassVar[dict[str, Any]] = {
-        "GET": operation(
-            response=PlatformAuditSerializer,
-            response_many=True,
-            paginated=True,
-        ),
-    }
-
-    def get(self, request: Request) -> Response:
-        queryset = selectors.list_platform_audit(
-            _actor(request),
-            tenant_id=_optional_uuid(request.query_params.get("tenant"), "tenant"),
-            action=request.query_params.get("action", "").strip(),
-            platform_user_id=_optional_uuid(
-                request.query_params.get("platform_user"), "platform_user"
-            ),
-        )
-        return _paginated(request, self, queryset, PlatformAuditSerializer)
