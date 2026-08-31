@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Observability and operations
+
+- `core` — every response now carries a validated UUID4 request id; production
+  emits allowlist-only JSON request/health logs and bounded Prometheus metrics.
+  Separate liveness and dependency-readiness endpoints support safe orchestration,
+  while the metrics endpoint is disabled by default and denied at the public edge
+- `core` — optional Sentry reporting strips user identity, request bodies,
+  cookies, URLs and query strings, arbitrary messages, exception text,
+  non-allowlisted headers, secrets, cost and price data before transmission.
+  Production also rejects email backends that would print OTPs into logs
+- `ops` — the monitoring profile now provisions Prometheus alert rules,
+  Grafana dashboards, PostgreSQL/Redis/Celery/node/container exporters, Uptime
+  Kuma, and 30-day Loki log retention through allowlisted Docker discovery in
+  Grafana Alloy. Recovery scripts publish verified backup, WAL-upload and
+  restore-drill timestamps; a non-RLS-bypassing `pg_monitor` role supplies only
+  server statistics
+
 ### Account security
 
 - `accounts` — tenant access and rotating refresh tokens now carry a registered
