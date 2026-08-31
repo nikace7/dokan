@@ -65,6 +65,7 @@ class Command(BaseCommand):
                     "advanced_pos": False,
                     "sms": True,
                     "profit_reports": True,
+                    "export_excel": True,
                     "custom_rate_types": True,
                     "max_rate_types": 10,
                     "multi_branch": True,

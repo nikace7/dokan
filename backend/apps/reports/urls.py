@@ -13,6 +13,7 @@ from apps.reports.views import (
     MonthlySalesView,
     ProfitReportView,
     PurchaseVatRegisterView,
+    ReportExportView,
     SalesVatRegisterView,
     StockSummaryView,
 )
@@ -32,6 +33,7 @@ urlpatterns = [
     path("reports/stock-summary", StockSummaryView.as_view(), name="stock-summary"),
     path("reports/low-stock", LowStockView.as_view(), name="low-stock"),
     path("reports/dead-stock", DeadStockView.as_view(), name="dead-stock"),
+    path("reports/export", ReportExportView.as_view(), name="export"),
     path("reports/profit", ProfitReportView.as_view(), name="profit"),
     path("reports/dues", DuesReportView.as_view(), name="dues"),
     path("reports/vat-register/sales", SalesVatRegisterView.as_view(), name="vat-sales"),

@@ -18,6 +18,7 @@ dependencies = [
     "nepali-datetime>=1.0.7",
     "drf-spectacular>=0.27",
     "Pillow>=10.4",
+    "openpyxl>=3.1,<4",
 ]
 
 [project.optional-dependencies]
@@ -30,6 +31,7 @@ dev = [
     "mypy>=2.1,<2.2",
     "django-stubs[compatible-mypy]>=6.0,<6.1",
     "djangorestframework-stubs[compatible-mypy]>=3.17,<3.18",
+    "types-openpyxl>=3.1,<4",
 ]
 
 [tool.setuptools.packages.find]

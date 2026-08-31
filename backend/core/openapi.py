@@ -27,6 +27,8 @@ class OperationContract:
     paginated: bool = False
     status_codes: tuple[int, ...] = (200,)
     idempotent: bool = False
+    raw_response: bool = False
+    response_media_type: str | None = None
 
 
 def operation(
@@ -37,6 +39,8 @@ def operation(
     paginated: bool = False,
     status_code: int | tuple[int, ...] = 200,
     idempotent: bool = False,
+    raw_response: bool = False,
+    response_media_type: str | None = None,
 ) -> OperationContract:
     """Build a concise, immutable schema declaration for a view method."""
     return OperationContract(
@@ -46,6 +50,8 @@ def operation(
         paginated=paginated,
         status_codes=status_code if isinstance(status_code, tuple) else (status_code,),
         idempotent=idempotent,
+        raw_response=raw_response,
+        response_media_type=response_media_type,
     )
 
 
@@ -126,13 +132,20 @@ class ContractAutoSchema(AutoSchema):
         media_types: Any = None,
         direction: Direction = "response",
     ) -> dict[str, Any]:
+        contract = self._contract()
+        if (
+            contract is not None
+            and contract.raw_response
+            and status_code.startswith("2")
+            and contract.response_media_type
+        ):
+            media_types = [contract.response_media_type]
         response = super()._get_response_for_code(
             serializer, status_code, media_types=media_types, direction=direction
         )
-        if not status_code.startswith("2"):
+        if not status_code.startswith("2") or (contract is not None and contract.raw_response):
             return response
 
-        contract = self._contract()
         for media in response.get("content", {}).values():
             payload = media.get("schema", {})
             properties: dict[str, Any] = {
