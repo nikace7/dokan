@@ -1,13 +1,16 @@
 """JWT authentication with tenant binding (ADR 0001).
 
-After SimpleJWT verifies the signature, two pure claim checks run — no DB
-calls on the hot path:
+After SimpleJWT verifies the signature, tenant/realm claims are checked before
+the registered device session is resolved:
 
 1. ``aud`` must be ``tenant`` — platform-realm tokens are mutually rejected
    from tenant endpoints (the admin portal will enforce the mirror image).
 2. ``tenant`` must equal the subdomain-derived request tenant. A mismatch is
    a hard 403 plus a security audit event — token theft across tenants must
    be loud, not silent (docs/MULTI_TENANCY.md §6).
+3. Normal user tokens carry ``sid`` and are rejected immediately after that
+   device session is revoked. Support impersonation keeps its separate durable
+   and Redis-backed revocation path.
 """
 
 import logging
@@ -17,6 +20,8 @@ from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from apps.accounts.services.auth import touch_session
+from apps.accounts.session_selectors import active_session_for_token
 from apps.accounts.tokens import AUDIENCE_TENANT
 from core.middleware.tenant import get_request_tenant
 
@@ -133,4 +138,16 @@ class TenantJWTAuthentication(JWTAuthentication):
             )
         if token.get("act"):
             _enforce_impersonation(request, token)
+        else:
+            session = active_session_for_token(
+                request_tenant,
+                session_id=token.get("sid"),
+                user_id=token.get("user_id"),
+            )
+            if session is None:
+                raise AuthenticationFailed(
+                    "This device session has ended.",
+                    code="SESSION_REVOKED",
+                )
+            touch_session(session)
         return self.get_user(token), token

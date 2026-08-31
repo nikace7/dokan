@@ -1,26 +1,16 @@
-"""DRF views for accounts — thin: parse, authorize, delegate.
-
-Endpoints (docs/SYSTEM_DESIGN.md §8.4):
-- ``POST /api/v1/auth/token``         phone+password login (tenant-scoped)
-- ``POST /api/v1/auth/token/refresh`` rotating refresh
-- ``GET  /api/v1/auth/me``            current user + permissions
-"""
+"""Thin tenant role and staff-management views."""
 
 from typing import Any, ClassVar, cast
 from uuid import UUID
 
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts import selectors, services
 from apps.accounts.models import Role, User, UserRole
-from apps.accounts.selectors import get_permission_codes
 from apps.accounts.serializers import (
-    MeSerializer,
     PermissionSerializer,
     RoleCreateSerializer,
     RoleSerializer,
@@ -28,111 +18,17 @@ from apps.accounts.serializers import (
     StaffCreateSerializer,
     StaffRoleAssignmentSerializer,
     StaffUserSerializer,
-    TenantTokenRefreshSerializer,
-    TokenObtainSerializer,
 )
-from apps.accounts.services import AuthError, authenticate_tenant_user
-from apps.accounts.tokens import issue_tokens_for_user
 from apps.tenants.models import Branch
-from apps.tenants.selectors import get_effective_plan_features
-from core.middleware.tenant import get_request_tenant, require_request_tenant
+from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
-from core.throttles import TenantAuthThrottle
-
-
-def _ok(data: Any, http_status: int = status.HTTP_200_OK) -> Response:
-    """Success envelope (docs/SYSTEM_DESIGN.md §8.4)."""
-    return Response({"data": data, "error": None}, status=http_status)
-
-
-def _error(http_status: int, code: str, message: str) -> Response:
-    """Error envelope with a machine-readable code."""
-    return Response({"data": None, "error": {"code": code, "message": message}}, status=http_status)
 
 
 def _user(request: Request) -> User:
     return cast("User", request.user)  # HasPermission authenticates the request
-
-
-class TokenObtainView(APIView):
-    """Phone+password login, scoped to the request's tenant (from subdomain)."""
-
-    permission_classes = (AllowAny,)
-    authentication_classes: tuple = ()
-    throttle_classes = (TenantAuthThrottle,)
-    schema_contract: ClassVar[dict[str, Any]] = {
-        "POST": operation(request=TokenObtainSerializer),
-    }
-
-    def post(self, request: Request) -> Response:
-        tenant = get_request_tenant(request)
-        if tenant is None:
-            return _error(
-                status.HTTP_400_BAD_REQUEST,
-                "TENANT_REQUIRED",
-                "Log in from your shop's subdomain.",
-            )
-
-        serializer = TokenObtainSerializer(data=request.data)
-        if not serializer.is_valid():
-            return _error(status.HTTP_400_BAD_REQUEST, "VALIDATION_ERROR", str(serializer.errors))
-
-        try:
-            user = authenticate_tenant_user(tenant=tenant, **serializer.validated_data)
-        except AuthError as exc:
-            http_status = (
-                status.HTTP_423_LOCKED
-                if exc.code == "ACCOUNT_LOCKED"
-                else status.HTTP_401_UNAUTHORIZED
-            )
-            return _error(http_status, exc.code, exc.message)
-
-        return _ok(issue_tokens_for_user(user))
-
-
-class TenantTokenRefreshView(TokenRefreshView):
-    """Rotating refresh; the response is wrapped in the API envelope."""
-
-    serializer_class = TenantTokenRefreshSerializer
-    throttle_classes = (TenantAuthThrottle,)
-
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == status.HTTP_200_OK:
-            response.data = {"data": response.data, "error": None}
-        return response
-
-
-class MeView(APIView):
-    """Current user plus their resolved permission codenames."""
-
-    permission_classes = (IsAuthenticated,)
-    schema_contract: ClassVar[dict[str, Any]] = {
-        "GET": operation(response=MeSerializer),
-    }
-
-    def get(self, request: Request) -> Response:
-        user = cast("User", request.user)  # IsAuthenticated guarantees a User
-        tenant = require_request_tenant(request)
-        plan = {
-            "code": tenant.plan.code,
-            "name": tenant.plan.name,
-            "features": get_effective_plan_features(tenant),
-        }
-        return _ok(
-            MeSerializer.for_user(
-                user,
-                get_permission_codes(user),
-                plan,
-                is_owner=selectors.is_owner(user),
-                shop_name=tenant.name,
-                shop_name_np=tenant.name_np,
-                currency=tenant.currency,
-            )
-        )
 
 
 class _AccountsManagementAPIView(APIView):

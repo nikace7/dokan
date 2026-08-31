@@ -93,6 +93,29 @@ def queue_support_access_sms(
     )
 
 
+def queue_account_otp_sms(
+    tenant: Tenant,
+    *,
+    to_phone: str,
+    template: str,
+    code: str,
+    expires_minutes: int,
+) -> SmsLog:
+    """Queue a security OTP without depending on optional plan SMS credits."""
+    if template not in {"password_reset", "login_otp", "login_otp_enable"}:
+        raise ServiceError("SMS_TEMPLATE_INVALID", "Unknown account OTP template.")
+    return _persist_sms(
+        tenant,
+        to_phone=to_phone,
+        template=template,
+        context={
+            "shop_name": tenant.name,
+            "code": code,
+            "expires_minutes": str(expires_minutes),
+        },
+    )
+
+
 def queue_receipt_sms(
     tenant: Tenant, *, invoice: SalesInvoice, to_phone: str | None = None
 ) -> SmsLog:
