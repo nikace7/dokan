@@ -1,0 +1,2 @@
+# Entrypoint scripts execute inside Linux containers, including from Windows checkouts.
+*.sh text eol=lf
