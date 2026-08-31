@@ -8,31 +8,33 @@
 }
 
 (backend_routes) {
-	route {
-		# Metrics are scraped directly on the private Compose network. Never proxy
-		# them from a tenant, storefront, admin, or apex public host.
-		@metrics path /api/metrics
+	# Metrics are scraped directly on the private Compose network. Never proxy
+	# them from a tenant, storefront, admin, or apex public host.
+	@metrics path /api/metrics
+	handle @metrics {
 		respond @metrics 404
+	}
 
-		@backend path /api/* /django-admin*
-		reverse_proxy @backend backend:8000 {
+	@backend path /api/* /django-admin*
+	handle @backend {
+		reverse_proxy backend:8000 {
 			# Deployment-specific header directives (empty by default). Behind an
 			# outer TLS edge: pin X-Forwarded-Proto and pass the outer XFF chain.
 			{$CADDY_PROXY_HEADER_PROTO}
 			{$CADDY_PROXY_HEADER_XFF}
 		}
+	}
 
-		handle_path /static/* {
-			root * /srv/django-static
-			file_server
-		}
+	handle_path /static/* {
+		root * /srv/django-static
+		file_server
+	}
 
-		# Uploaded media (item images): shared volume with the backend, served
-		# read-only — mirrors the staticfiles pattern above.
-		handle_path /media/* {
-			root * /srv/django-media
-			file_server
-		}
+	# Uploaded media (item images): shared volume with the backend, served
+	# read-only — mirrors the staticfiles pattern above.
+	handle_path /media/* {
+		root * /srv/django-media
+		file_server
 	}
 }
 
