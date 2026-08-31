@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### API contract
+
+- `api` — all tenant, platform-admin, and storefront operations now publish a
+  warning-free OpenAPI 3.1 contract with stable operation IDs, both JWT realms,
+  standard success/error envelopes, required idempotency headers, and a
+  canonical machine-readable error-code enum. The reviewable schema and
+  generated TypeScript declarations are committed; backend and frontend CI
+  regenerate them and fail on drift. Framework and resource-not-found errors
+  are normalized to stable `UPPER_SNAKE_CASE` codes
+
 ### Operations and integrity
 
 - `inventory` — a monthly Celery reconciliation now rebuilds each active
