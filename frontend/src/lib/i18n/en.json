@@ -824,7 +824,15 @@
       "fromAfterTo": "From date cannot be after the to date.",
       "quickRanges": "Quick ranges",
       "today": "Today",
-      "lastMonth": "Last month"
+      "lastMonth": "Last month",
+      "previousMonth": "Previous BS month",
+      "nextMonth": "Next BS month"
+    },
+    "actions": {
+      "excel": "Download Excel",
+      "printA4": "Print A4",
+      "printThermal": "Print 80mm",
+      "downloadFailed": "Could not download the report."
     },
     "links": {
       "sales": {

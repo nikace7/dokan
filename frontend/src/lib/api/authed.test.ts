@@ -88,7 +88,7 @@ describe('authedRequest', () => {
 
   it('downloads a binary response with the same authenticated transport', async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response(new Blob(['workbook']), {
+      new Response('workbook', {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

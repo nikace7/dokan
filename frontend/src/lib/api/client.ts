@@ -63,6 +63,11 @@ export interface RequestOptions {
   onResponse?: (response: Response) => void;
 }
 
+export interface BinaryDownload {
+  blob: Blob;
+  filename: string;
+}
+
 function newIdempotencyKey(): string {
   // crypto.randomUUID is available in all supported browsers + Node 20 (tests).
   return crypto.randomUUID();
@@ -193,5 +198,52 @@ export async function apiRequestPage<T>(
   return {
     data: (parsed.data ?? []) as T[],
     meta: meta && typeof meta.count === 'number' ? (meta as unknown as PageMeta) : null,
+  };
+}
+
+function downloadFilename(header: string | null): string {
+  const encoded = header?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const quoted = header?.match(/filename="([^"]+)"/i)?.[1];
+  const plain = header?.match(/filename=([^;]+)/i)?.[1];
+  const raw = encoded ? decodeURIComponent(encoded) : (quoted ?? plain ?? 'report.xlsx');
+  return (
+    raw
+      .trim()
+      .replace(/^['"]|['"]$/g, '')
+      .split(/[\\/]/)
+      .pop() || 'report.xlsx'
+  );
+}
+
+/** Fetch an authenticated-compatible binary response without JSON coercion. */
+export async function apiRequestBlob(
+  path: string,
+  options: RequestOptions = {},
+): Promise<BinaryDownload> {
+  const { accessToken, signal, onResponse } = options;
+  const headers = new Headers({
+    Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'GET',
+    headers,
+    credentials: 'include',
+    signal,
+  });
+  onResponse?.(response);
+  if (!response.ok) {
+    const parsed: unknown = await response.json().catch(() => null);
+    const errorBody =
+      isEnvelope(parsed) && parsed.error
+        ? parsed.error
+        : ({ message: response.statusText } as ApiErrorBody);
+    throw new ApiError(response.status, errorBody);
+  }
+  return {
+    blob: await response.blob(),
+    filename: downloadFilename(response.headers.get('Content-Disposition')),
   };
 }

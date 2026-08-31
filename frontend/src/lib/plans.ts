@@ -1,6 +1,7 @@
 export type PlanFeature =
   | 'sms'
   | 'profit_reports'
+  | 'export_excel'
   | 'vat_module'
   | 'multi_branch'
   | 'custom_rate_types'
@@ -44,6 +45,11 @@ export const PLAN_FEATURE_CATALOG: readonly {
     key: 'profit_reports',
     label: 'Profit reports',
     description: 'Cost-based profit reports for the owner, hidden from counter staff.',
+  },
+  {
+    key: 'export_excel',
+    label: 'Excel exports',
+    description: 'Download report data as Excel workbooks for filing and analysis.',
   },
   {
     key: 'vat_module',
