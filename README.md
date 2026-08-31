@@ -17,7 +17,8 @@ and an offline-tolerant POS that runs as a PWA on any phone or laptop.
   linked reversals, and receivables aging; supplier ledgers and cash
   day-close sessions.
 - **Reports** — daily/monthly/top-item sales, stock summary/low/dead, profit,
-  dues, and IRD VAT registers — all native to the BS fiscal calendar.
+  dues, and IRD VAT registers — all native to the BS fiscal calendar, with a
+  BS calendar picker, permission-safe Excel exports, and A4/80mm printing.
 - **Platform control plane** — provision tenants, manage plans and custom
   subscriptions, toggle per-tenant features, inspect usage, and open
   time-boxed, fully audited support sessions into any tenant.

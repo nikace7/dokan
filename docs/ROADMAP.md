@@ -3,7 +3,7 @@
 Where the product is going and where it stands. Phase definitions and exit
 criteria live in `docs/SYSTEM_DESIGN.md` §11 — this doc tracks **status
 against the shipped code**, it does not re-specify the phases. Status as of
-1.0.0 (2026-08-05), reflecting 37 merged PRs.
+2026-08-31 on the current release branch.
 
 Legend: ✅ shipped · 🔨 in progress · ⬜ not started
 
@@ -25,7 +25,7 @@ One shop can run its entire counter on Dokan. Shipped:
 | Sales | One-transaction POS billing, held bills, gapless numbering, `Idempotency-Key` with 200-replay, open-cash-session guard, F9 quick-complete, on-demand 80mm bilingual receipts |
 | Customers | CRUD with partial-unique phone, credit limit gated on `customer.credit` |
 | Payments | Append-only payments + allocations, canonical ledger-derived outstanding, reversals, cash sessions with tender-aware day close |
-| Reports | Daily/monthly/item sales, stock summary/low/dead, profit (gated), dues, VAT registers, role-filtered dashboard |
+| Reports | Daily/monthly/item sales, stock summary/low/dead, profit (gated), dues, VAT registers, role-filtered dashboard; canonical BS picker, permission-safe Excel export, A4/80mm print |
 | Audit | Append-only `audit_log` with request context, wired to high-value mutations |
 | Notifications | SMS receipts behind a vendor-neutral provider (ADR 0004), Celery delivery with bounded retry |
 | Ops | Tenant export (no-overwrite ZIP), verified nightly dumps + weekly base backups + continuous WAL with CI-exercised restore drill, production frontend behind Caddy with edge-stack smoke test |
@@ -45,7 +45,7 @@ start) are counted in the Phase 2 table below.
 | VAT rule (13%) on sales and purchases; sales + purchase VAT registers | ✅ |
 | Expenses + net profit report | ✅ |
 | Branches + branch-aware roles + consolidated reporting | 🔨 (branches, assignments, and branch-scoped numbering exist) |
-| **IRD/CBMS real-time sync with retry queue** | 🔨 landing concurrently (`apps/compliance` is still an empty skeleton on `main`) |
+| **IRD/CBMS real-time sync with retry queue** | ✅ durable frozen-payload queue, bounded retry, status/failure APIs; live IRD provider remains environment integration work |
 | Materialized-view (electronic log) of all bill activity | ⬜ |
 | Fonepay / eSewa / Khalti QR tender integration | ⬜ (payment recording exists; gateway integrations do not) |
 | Loyalty points, festival/birthday SMS campaigns, segments | ⬜ |
@@ -59,7 +59,7 @@ start) are counted in the Phase 2 table below.
 
 | Item | Status |
 |---|---|
-| **Offline-first POS** (Dexie queue, idempotent drain against `POST /sales`, server-side invoice numbering, server-wins conflicts — [ADR 0006](DECISIONS/0006-offline-sync-policy.md)) | 🔨 in progress |
+| **Offline-first POS** (Dexie queue, idempotent drain against `POST /sales`, server-side invoice numbering, server-wins conflicts — [ADR 0006](DECISIONS/0006-offline-sync-policy.md)) | ✅ |
 | Nightly rollup tables, read replica, `fiscal_year_bs` partitioning | ⬜ (trigger-based, not calendar-based) |
 | Automation, intelligence, platform/ecosystem items | ⬜ (see SYSTEM_DESIGN §11 Phase 3 for the full list) |
 

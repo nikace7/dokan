@@ -50,6 +50,12 @@ through the conversion table once per request. Report endpoints accept BS
 parameters (e.g. a `'YYYY-MM'` BS month) and validate/convert at the
 boundary.
 
+Tenant report screens use the shared `BsDatePicker`; it validates the real
+number of days in each BS month through `frontend/src/lib/bs/` and converts the
+chosen endpoints to AD before calling the API. Excel exports receive those same
+AD filters, so screen, print, and workbook results cannot drift because of a
+second calendar implementation.
+
 ---
 
 ## 3. Conversion contract
