@@ -67,6 +67,14 @@ describe('sign out', () => {
           }),
         );
       }
+      if (String(input).includes('/v1/auth/logout')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: { accepted: true }, error: null }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
       return Promise.reject(new Error(`Unexpected request: ${String(input)}`));
     });
   });
@@ -83,5 +91,9 @@ describe('sign out', () => {
     expect(await screen.findByText('protected page')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'sign out' }));
     expect(await screen.findByText('login page')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/auth/logout'),
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 });

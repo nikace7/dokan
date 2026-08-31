@@ -68,10 +68,12 @@ describe('LoginPage', () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toContain('/v1/auth/token');
-    expect(JSON.parse(String(init?.body))).toEqual({
+    expect(JSON.parse(String(init?.body))).toEqual(expect.objectContaining({
       phone: '9800000000',
       password: 'demo1234',
-    });
+      device_id: expect.any(String),
+      device_name: expect.any(String),
+    }));
   });
 
   it('shows the server error message on bad credentials', async () => {
@@ -93,5 +95,52 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('Phone number or password is incorrect.')).toBeInTheDocument();
     expect(getAccessToken()).toBeNull();
+  });
+
+  it('completes an OTP challenge on a protected login', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: null,
+            error: {
+              code: 'OTP_REQUIRED',
+              message: 'Enter the six-digit code sent to your phone.',
+              details: { challenge_id: '11111111-1111-4111-8111-111111111111' },
+            },
+          }),
+          { status: 428, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(envelope({ access: 'access-otp', refresh: 'refresh-otp' }))
+      .mockResolvedValueOnce(
+        envelope({
+          id: 'u-1',
+          phone: '9800000000',
+          full_name: 'Demo Owner',
+          email: null,
+          must_change_password: false,
+          login_otp_required: true,
+          permissions: [],
+        }),
+      );
+
+    renderLogin();
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '9800000000' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'demo1234' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    const code = await screen.findByLabelText(/verification code/i);
+    fireEvent.change(code, { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: /verify and sign in/i }));
+
+    expect(await screen.findByText('home screen')).toBeInTheDocument();
+    const secondBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body));
+    expect(secondBody).toEqual(
+      expect.objectContaining({
+        challenge_id: '11111111-1111-4111-8111-111111111111',
+        otp: '123456',
+      }),
+    );
   });
 });
