@@ -174,7 +174,11 @@ CELERY_BEAT_SCHEDULE = {
     "tenants-reconcile-usage-nightly": {
         "task": "apps.tenants.tasks.reconcile_usage_snapshots",
         "schedule": crontab(hour=0, minute=15),
-    }
+    },
+    "inventory-reconcile-stock-monthly": {
+        "task": "apps.inventory.tasks.reconcile_stock_levels",
+        "schedule": crontab(day_of_month="1", hour=1, minute=30),
+    },
 }
 
 # ADR 0004. "log" is the no-network local/staging adapter; production must
