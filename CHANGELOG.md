@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Operations and integrity
+
+- `inventory` — a monthly Celery reconciliation now rebuilds each active
+  tenant's `stock_level` quantity and branch moving-average cost from the
+  immutable movement ledger, recreates missing projection rows, repairs drift
+  under tenant RLS, keeps sent stock explicitly in transit, and emits a
+  structured error-level alert whenever a repair is required
+
 ### Design system
 
 - `frontend` — UI/UX refinement pass across the tenant panel and the
