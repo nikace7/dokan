@@ -89,6 +89,8 @@ jobs:
           cp .env.example .env
           docker compose --profile production --profile ops config --quiet
           docker compose --profile monitoring config --quiet
+          docker compose --profile production --profile ops --profile dev config --format json |
+            python scripts/check_compose_secret_boundaries.py
           sh docker/test-pgbouncer.sh
           docker run --rm --entrypoint promtool \
             -v "$PWD/docker/monitoring:/etc/prometheus:ro" \
@@ -274,10 +276,8 @@ jobs:
           sed -i 's/^ROOT_DOMAIN=.*/ROOT_DOMAIN=localhost/' .env
           sed -i 's/^ALLOWED_HOSTS=.*/ALLOWED_HOSTS=.localhost,localhost,backend/' .env
           docker compose -p dokan-e2e-ci up -d --build db redis backend frontend storefront caddy
-          docker compose -p dokan-e2e-ci exec -T backend sh -c \
-            'DATABASE_HOST=db DATABASE_PORT=5432 DATABASE_USER=dokan_migrator DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" python manage.py migrate --noinput'
-          docker compose -p dokan-e2e-ci exec -T backend sh -c \
-            'DATABASE_HOST=db DATABASE_PORT=5432 DATABASE_USER=postgres DATABASE_PASSWORD="$POSTGRES_PASSWORD" python manage.py seed_demo'
+          docker compose -p dokan-e2e-ci run --rm migrate
+          docker compose -p dokan-e2e-ci run --rm seed-demo
 
       - name: Install Playwright
         working-directory: e2e
