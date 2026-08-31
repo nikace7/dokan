@@ -165,3 +165,15 @@ def test_every_operation_documents_machine_readable_errors(contract: GeneratedCo
                 "schema"
             ]
             assert error_schema == {"$ref": "#/components/schemas/ErrorEnvelope"}
+
+
+def test_report_export_is_documented_as_a_binary_workbook(
+    contract: GeneratedContract,
+) -> None:
+    response = contract.schema["paths"]["/api/v1/reports/export"]["get"]["responses"]["200"]
+
+    assert response["content"] == {
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+            "schema": {"type": "string", "format": "binary"}
+        }
+    }
