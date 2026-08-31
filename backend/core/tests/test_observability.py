@@ -125,21 +125,38 @@ def test_json_formatter_emits_only_structured_safe_fields() -> None:
 def test_sentry_scrubber_drops_pii_secrets_and_costs() -> None:
     event = {
         "request": {
-            "headers": {"Authorization": "Bearer secret", "User-Agent": "browser"},
+            "headers": {
+                "Authorization": "Bearer secret",
+                "User-Agent": "browser",
+                "X-Forwarded-For": "192.0.2.10",
+                "X-Request-ID": "safe-id",
+            },
             "data": {"phone": "9812345678"},
             "cookies": {"session": "secret"},
         },
         "user": {"email": "owner@example.com"},
         "extra": {"cost_at_sale": "100.00", "request_id": "safe-id"},
+        "message": "owner@example.com failed with token secret",
+        "logentry": {"message": "phone 9812345678"},
     }
 
     scrubbed = scrub_event(event, hint={})
 
     assert scrubbed is not None
     assert "user" not in scrubbed
-    assert "data" not in scrubbed["request"]
-    assert "cookies" not in scrubbed["request"]
-    assert scrubbed["request"]["headers"]["Authorization"] == "[Filtered]"
-    assert scrubbed["request"]["headers"]["User-Agent"] == "browser"
-    assert "cost_at_sale" not in scrubbed["extra"]
-    assert scrubbed["extra"]["request_id"] == "safe-id"
+    request = scrubbed.get("request")
+    assert isinstance(request, dict)
+    assert "data" not in request
+    assert "cookies" not in request
+    headers = request.get("headers")
+    assert isinstance(headers, dict)
+    assert "Authorization" not in headers
+    assert headers["User-Agent"] == "browser"
+    assert headers["X-Request-ID"] == "safe-id"
+    assert "X-Forwarded-For" not in headers
+    extra = scrubbed.get("extra")
+    assert isinstance(extra, dict)
+    assert "cost_at_sale" not in extra
+    assert extra["request_id"] == "safe-id"
+    assert "message" not in scrubbed
+    assert "logentry" not in scrubbed

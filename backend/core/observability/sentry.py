@@ -19,6 +19,8 @@ _SENSITIVE_PARTS = (
     "price",
 )
 
+_SAFE_REQUEST_HEADERS = {"user-agent", "x-request-id"}
+
 
 def _is_sensitive(key: object) -> bool:
     normalized = str(key).lower().replace("-", "_")
@@ -47,6 +49,8 @@ def scrub_event(event: Event, hint: dict[str, Any]) -> Event | None:
     del hint
     event.pop("user", None)
     event.pop("breadcrumbs", None)
+    event.pop("message", None)
+    event.pop("logentry", None)
     request = event.get("request")
     if isinstance(request, dict):
         for field in ("cookies", "data", "env", "query_string", "url"):
@@ -54,8 +58,9 @@ def scrub_event(event: Event, hint: dict[str, Any]) -> Event | None:
         headers = request.get("headers")
         if isinstance(headers, dict):
             request["headers"] = {
-                str(key): "[Filtered]" if _is_sensitive(key) else value
+                str(key): value
                 for key, value in headers.items()
+                if str(key).lower() in _SAFE_REQUEST_HEADERS
             }
     event["extra"] = _scrub_mapping(event.get("extra", {}))
     for exception in event.get("exception", {}).get("values", []):

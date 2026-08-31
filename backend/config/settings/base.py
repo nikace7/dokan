@@ -67,6 +67,17 @@ def assert_required_secrets() -> None:
         raise RuntimeError(msg)
 
 
+def assert_production_email_backend(backend: str | None) -> None:
+    """Reject backends that expose OTP and order emails in production logs."""
+    unsafe = {
+        "django.core.mail.backends.console.EmailBackend",
+        "django.core.mail.backends.locmem.EmailBackend",
+        "django.core.mail.backends.dummy.EmailBackend",
+    }
+    if backend in unsafe:
+        raise RuntimeError("EMAIL_BACKEND must deliver mail in production")
+
+
 # ---------------------------------------------------------------------------
 # Core Django
 # ---------------------------------------------------------------------------
