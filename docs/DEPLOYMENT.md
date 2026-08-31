@@ -45,6 +45,27 @@ file mode owner-only. Production additionally requires:
 The object-storage identity needs only list/get/put/delete access beneath the
 configured bucket prefix. Enable bucket versioning and server-side encryption.
 
+## Production launch gates
+
+Do not infer production readiness from a successful local Compose run. Record
+evidence for every gate against the exact commit/tag being released:
+
+| Gate | Required evidence |
+|---|---|
+| Source integrity | Every required hosted CI job passed; generated OpenAPI/TypeScript artifacts are clean; gitleaks and high-severity dependency audits are green |
+| Review and release | Protected `main`; required approvals (two for pricing, sales services, permissions, or migrations); atomic commits merged without squash; SemVer tag created from `main` |
+| Identity and secrets | Unique strong production credentials, owner-only external `.env` or SOPS injection, TOTP enrolled, admin IP allowlist tested, and runtime secret-boundary policy passed |
+| Edge | Apex, tenant wildcard, and shop wildcard DNS resolve correctly; trusted HTTPS certificates renew; HTTP redirects to HTTPS; admin and tenant host isolation is smoke-tested |
+| Communications/compliance | Delivery-capable email; real SMS adapter if SMS features are enabled; live CBMS provider/certification decision recorded with the Nepal tax adviser/IRD |
+| Recovery | Remote versioned/encrypted object storage receives a verified dump, base backup, and WAL; an isolated restore drill succeeds from those objects |
+| Monitoring | Grafana and Uptime Kuma deliver test notifications; public health/TLS checks and all `severity=page` alerts have an owner and escalation path |
+| Acceptance | Staging runs the complete browser smoke suite plus pilot checks for sale, return, payment, day close, report, storefront order, tenant isolation, and support access |
+| Rollback | Previous image/tag is available; additive migration compatibility and the rollback decision tree have been rehearsed |
+
+Cash/COD workflows do not require an online payment gateway. If a plan promises
+online payment collection, real SMS, or live CBMS submission, its provider must
+be integrated and acceptance-tested before that feature is enabled for tenants.
+
 ## First deployment
 
 1. Point the apex and wildcard DNS records at the VPS. Keep the DNS TTL low for
@@ -96,7 +117,7 @@ receive immutable caching.
 1. Confirm the target commit passed every required CI job.
 2. Take an on-demand verified backup: `docker compose exec backup backup.sh`.
 3. Pull the commit and rebuild images.
-4. Run backward-compatible migrations with the migrator role.
+4. Run backward-compatible migrations with `docker compose run --rm migrate`.
 5. Start/recreate services and inspect health checks.
 6. Smoke-test login, item lookup, a held bill and a non-financial report on the
    staging host before promoting the same commit to production.

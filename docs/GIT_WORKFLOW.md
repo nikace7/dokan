@@ -56,11 +56,14 @@ must pass:
 
 **Backend job** (against real Postgres 16 in CI):
 
+- `python ../scripts/check_source_size.py` — hand-written source files stay at
+  or below the 400-line architecture boundary
 - `ruff check .` — lint
 - `ruff format --check .` — format check
 - `mypy .` — type check
 - `python manage.py makemigrations --check --dry-run` — no unmigrated model
   changes
+- regenerate and validate `openapi/schema.yaml`, then fail on any diff
 - `pytest --cov --cov-fail-under=80` — tests with **coverage floor 80%**
   (100% required on `apps/pricing/`, `apps/sales/services/`,
   `apps/inventory/services/`, `core/calendar/` — the four modules where a bug
@@ -68,18 +71,32 @@ must pass:
   tenant-isolation suite is part of this run against real Postgres — the test
   that protects the business.
 
-**Frontend job** (runs when `frontend/package.json` exists):
+**Tenant/admin frontend job** (runs when `frontend/package.json` exists):
 
-- `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`
-- `npm audit --omit=dev --audit-level=critical`
+- regenerate the typed OpenAPI declarations and fail on drift
+- `npm audit --audit-level=high`
+- `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`; the build
+  includes the 500 KiB initial-entry architecture budget
 - Builds the production frontend and Caddy images and smoke-tests the edge
   stack (`docker/test-edge-stack.sh`)
+
+**Storefront job:** high-severity dependency audit, unit tests, lint, type-aware
+production build.
+
+**E2E job:** creates and seeds a fresh isolated Compose project through the
+short-lived migration/seed services, type-checks the Playwright suite, and runs
+the login, billing, returns, simple-sale, and public-share browser scenarios.
+Failure traces and the HTML report are uploaded as artifacts.
 
 **Other jobs:**
 
 - `gitleaks` — secret scan over full history
-- `recovery` — exercises the backup/restore/WAL paths against real Postgres
-  and MinIO
+- `recovery` — validates the Compose secret allowlists, PgBouncer transaction
+  isolation, Prometheus/Loki/Alloy configuration, backup/restore paths against
+  real PostgreSQL, and S3-compatible WAL upload against MinIO
+
+Dependabot opens weekly update PRs for GitHub Actions, Python, all three npm
+workspaces, and Docker images. It does not replace the CI advisory gates.
 
 ## 4. Review rules
 

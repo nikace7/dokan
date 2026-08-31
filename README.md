@@ -25,6 +25,10 @@ and an offline-tolerant POS that runs as a PWA on any phone or laptop.
 - **Bilingual UI** — English/नेपाली toggle across the tenant app.
 - **Account security** — optional SMS code at login, enumeration-safe password
   reset, strong-password validation, and immediate per-device session revocation.
+- **Online storefront** — each enabled shop gets a separate public store host,
+  two selectable templates, safe promotional pricing, email-OTP customers,
+  idempotent ordering, and token-based order tracking; COD works without a
+  gateway while online collection remains an integration item.
 
 ## Stack
 
@@ -167,8 +171,8 @@ openapi/                # reviewable generated OpenAPI 3.1 contract
 e2e/                   # Playwright smoke suite (local + isolated Compose CI)
 loadtests/             # k6 load scripts for the POS hot paths
 docker/postgres/init/  # app/migration role bootstrap
-.github/workflows/     # CI gates: ruff, mypy, pytest+coverage, frontend tests,
-                       # build, migrations, gitleaks
+.github/workflows/     # CI gates: backend, generated contract, JS apps,
+                       # isolated E2E, recovery/infra, dependency + secret scans
 ```
 
 ## Documentation
