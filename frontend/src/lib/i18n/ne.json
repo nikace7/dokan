@@ -824,7 +824,15 @@
       "fromAfterTo": "सुरु मिति अन्त्य मितिभन्दा पछि हुन मिल्दैन।",
       "quickRanges": "छिटो दायरा",
       "today": "आज",
-      "lastMonth": "अघिल्लो महिना"
+      "lastMonth": "अघिल्लो महिना",
+      "previousMonth": "अघिल्लो वि.सं. महिना",
+      "nextMonth": "अर्को वि.सं. महिना"
+    },
+    "actions": {
+      "excel": "Excel डाउनलोड",
+      "printA4": "A4 प्रिन्ट",
+      "printThermal": "८०mm प्रिन्ट",
+      "downloadFailed": "प्रतिवेदन डाउनलोड हुन सकेन।"
     },
     "links": {
       "sales": {

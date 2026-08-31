@@ -33,7 +33,7 @@ describe('ReportActions', () => {
 
   it('downloads the active report with its BS filters', async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response(new Blob(['xlsx']), {
+      new Response('xlsx', {
         headers: { 'Content-Disposition': 'attachment; filename="daily-sales.xlsx"' },
       }),
     );
