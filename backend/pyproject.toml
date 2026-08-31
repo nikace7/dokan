@@ -44,6 +44,10 @@ target-version = "py312"
 line-length = 100
 src = ["."]
 
+[tool.ruff.format]
+# Deployed Django migrations are immutable; formatting must never rewrite them.
+exclude = ["**/migrations/*.py"]
+
 [tool.ruff.lint]
 select = [
     "E",    # pycodestyle errors

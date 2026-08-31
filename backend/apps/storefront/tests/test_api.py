@@ -438,9 +438,9 @@ class TestStoreSettingsApi:
         user = UserFactory(tenant=tenant)
         grant(tenant, user, "settings.manage")
 
-        data = auth_client(user, tenant.slug).get(SETTINGS_URL, **pos_host(tenant.slug)).json()[
-            "data"
-        ]
+        data = (
+            auth_client(user, tenant.slug).get(SETTINGS_URL, **pos_host(tenant.slug)).json()["data"]
+        )
 
         assert data["hero_title"] == ""
         assert data["offer_discount_pct"] is None

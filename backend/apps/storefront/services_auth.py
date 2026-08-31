@@ -112,9 +112,7 @@ def issue_customer_token(customer: StoreCustomer) -> str:
 def resolve_customer_token(tenant: "Tenant", token: str) -> StoreCustomer | None:
     """Validate a customer token; None for bad, expired, or cross-tenant tokens."""
     try:
-        payload = signing.loads(
-            token, salt=CUSTOMER_TOKEN_SALT, max_age=CUSTOMER_TOKEN_MAX_AGE
-        )
+        payload = signing.loads(token, salt=CUSTOMER_TOKEN_SALT, max_age=CUSTOMER_TOKEN_MAX_AGE)
     except signing.BadSignature:
         return None
     if not isinstance(payload, dict) or payload.get("tid") != str(tenant.pk):

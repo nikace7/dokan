@@ -118,12 +118,33 @@ class Command(BaseCommand):
 
         catalog = [
             # code, name, mrp, cost, website price, per-item offer %, featured
-            ("TEE-01", "Plain T-Shirt", Decimal("1500.00"), Decimal("600.00"),
-             Decimal("1200.00"), None, True),
-            ("SH-01", "Oxford Shirt", Decimal("2800.00"), Decimal("1200.00"),
-             Decimal("2200.00"), Decimal("15.00"), True),  # own offer beats the store one
-            ("JW-01", "Denim Jacket", Decimal("4500.00"), Decimal("2200.00"),
-             Decimal("3600.00"), None, False),
+            (
+                "TEE-01",
+                "Plain T-Shirt",
+                Decimal("1500.00"),
+                Decimal("600.00"),
+                Decimal("1200.00"),
+                None,
+                True,
+            ),
+            (
+                "SH-01",
+                "Oxford Shirt",
+                Decimal("2800.00"),
+                Decimal("1200.00"),
+                Decimal("2200.00"),
+                Decimal("15.00"),
+                True,
+            ),  # own offer beats the store one
+            (
+                "JW-01",
+                "Denim Jacket",
+                Decimal("4500.00"),
+                Decimal("2200.00"),
+                Decimal("3600.00"),
+                None,
+                False,
+            ),
         ]
         for code, name, mrp, cost, website_price, offer_pct, featured in catalog:
             item, _ = Item.objects.get_or_create(
