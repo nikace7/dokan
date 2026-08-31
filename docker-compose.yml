@@ -6,6 +6,36 @@ x-backup-image: &backup-image
   build:
     context: docker/backup
 
+x-django-environment: &django-environment
+  DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-.localhost,localhost,backend}
+  ROOT_DOMAIN: ${ROOT_DOMAIN:-localhost}
+  PLATFORM_ADMIN_ALLOWED_IPS: ${PLATFORM_ADMIN_ALLOWED_IPS:-}
+  DATABASE_NAME: ${DATABASE_NAME:-dokan}
+  DATABASE_USER: ${DATABASE_USER:-dokan_app}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+  DATABASE_HOST: ${DATABASE_HOST:-pgbouncer}
+  DATABASE_PORT: ${DATABASE_PORT:-6432}
+  DATABASE_POOL_MODE: ${DATABASE_POOL_MODE:-transaction}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+  CBMS_PROVIDER: ${CBMS_PROVIDER:-local}
+  SMS_PROVIDER: ${SMS_PROVIDER:-log}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  METRICS_ENABLED: ${METRICS_ENABLED:-false}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
+  SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+  SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
+  EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+  EMAIL_HOST: ${EMAIL_HOST:-localhost}
+  EMAIL_PORT: ${EMAIL_PORT:-25}
+  EMAIL_USE_TLS: ${EMAIL_USE_TLS:-false}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-mero-pasal.online <no-reply@mero-pasal.online>}
+
 services:
   wal-init:
     image: postgres:16
@@ -118,18 +148,13 @@ services:
   backend:
     build: .
     restart: unless-stopped
-    env_file: .env
     ports:
       # Local frontend/dev access only; public traffic must enter through Caddy.
       - "127.0.0.1:8000:8000"
     environment:
-      DATABASE_HOST: ${DATABASE_HOST:-pgbouncer}
-      DATABASE_PORT: ${DATABASE_PORT:-6432}
-      DATABASE_POOL_MODE: ${DATABASE_POOL_MODE:-transaction}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      METRICS_ENABLED: ${METRICS_ENABLED:-false}
+      <<: *django-environment
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
       # Uploaded media (item images) lives on the shared ``media`` volume;
       # Caddy serves it read-only at /media/* (mirrors the static pattern).
       MEDIA_ROOT: ${MEDIA_ROOT:-/app/media}
@@ -160,14 +185,9 @@ services:
     build: .
     restart: unless-stopped
     command: celery -A config worker --loglevel=info --concurrency=2
-    env_file: .env
     environment:
-      DATABASE_HOST: ${DATABASE_HOST:-pgbouncer}
-      DATABASE_PORT: ${DATABASE_PORT:-6432}
-      DATABASE_POOL_MODE: ${DATABASE_POOL_MODE:-transaction}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      <<: *django-environment
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
     depends_on:
       pgbouncer:
         condition: service_healthy
@@ -178,18 +198,47 @@ services:
     build: .
     restart: unless-stopped
     command: celery -A config beat --loglevel=info
-    env_file: .env
     environment:
-      DATABASE_HOST: ${DATABASE_HOST:-pgbouncer}
-      DATABASE_PORT: ${DATABASE_PORT:-6432}
-      DATABASE_POOL_MODE: ${DATABASE_POOL_MODE:-transaction}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      <<: *django-environment
     depends_on:
       pgbouncer:
         condition: service_healthy
       redis:
+        condition: service_healthy
+
+  # Privileged database credentials are mapped into one-off containers under
+  # DATABASE_PASSWORD; the long-running application containers never receive
+  # the source owner/migrator secret names.
+  migrate:
+    build: .
+    profiles: [ops]
+    restart: "no"
+    command: python manage.py migrate --noinput
+    environment:
+      <<: *django-environment
+      DATABASE_USER: dokan_migrator
+      DATABASE_PASSWORD: ${DOKAN_MIGRATOR_PASSWORD:?Set DOKAN_MIGRATOR_PASSWORD in .env}
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  seed-demo:
+    build: .
+    profiles: [dev]
+    restart: "no"
+    command: python manage.py seed_demo
+    environment:
+      <<: *django-environment
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    depends_on:
+      db:
         condition: service_healthy
 
   backup:
@@ -323,7 +372,14 @@ services:
     build:
       context: docker/caddy
     restart: unless-stopped
-    env_file: .env
+    environment:
+      ROOT_DOMAIN: ${ROOT_DOMAIN:-localhost}
+      CADDY_GLOBAL_OPTIONS: ${CADDY_GLOBAL_OPTIONS:-}
+      CADDY_ADDRESS_SCHEME: ${CADDY_ADDRESS_SCHEME:-}
+      CADDY_TLS_CONFIG: ${CADDY_TLS_CONFIG:-/etc/caddy/tls-local}
+      CADDY_PROXY_HEADER_PROTO: ${CADDY_PROXY_HEADER_PROTO:-}
+      CADDY_PROXY_HEADER_XFF: ${CADDY_PROXY_HEADER_XFF:-}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
     ports:
       - "80:80"
       - "443:443"

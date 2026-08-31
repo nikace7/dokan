@@ -56,6 +56,8 @@ configured bucket prefix. Enable bucket versioning and server-side encryption.
 
    ```bash
    docker compose --profile production config --quiet
+   docker compose --profile production --profile ops --profile dev config --format json \
+     | python scripts/check_compose_secret_boundaries.py
    ```
 
 5. Build and start the database and dependencies, then apply migrations with
@@ -63,12 +65,7 @@ configured bucket prefix. Enable bucket versioning and server-side encryption.
 
    ```bash
    docker compose up -d db redis pgbouncer
-   docker compose run --rm \
-     -e DATABASE_HOST=db \
-     -e DATABASE_PORT=5432 \
-     -e DATABASE_USER=dokan_migrator \
-     -e DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" \
-     backend python manage.py migrate --noinput
+   docker compose run --rm migrate
    docker compose --profile production --profile monitoring up -d --build
    ```
 
@@ -79,6 +76,13 @@ PgBouncer admits only the RLS-constrained application role. Migrations, demo
 seeding, logical/physical backups, WAL shipping, and restore drills deliberately
 bypass the pool and connect to the private `db:5432` service with their own
 roles. Never expose either database port on the host firewall.
+
+Compose does not pass `.env` wholesale into any container. Each service has an
+explicit allowlist. The one-off `migrate` and `seed-demo` services translate the
+relevant host-side credential into `DATABASE_PASSWORD`; source variables such as
+`DOKAN_MIGRATOR_PASSWORD` and `POSTGRES_PASSWORD` are absent from the container.
+CI renders the Compose model into the secret-boundary checker so a future broad
+environment injection fails before deployment.
 
 The repository's Caddy image compiles the pinned Cloudflare DNS module. The
 production TLS snippet requests the wildcard certificate through DNS-01; verify

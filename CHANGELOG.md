@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Observability and operations
 
+- `infra` — Compose now uses explicit environment allowlists instead of passing
+  `.env` wholesale. Database-owner, migrator, backup, monitoring, and edge TLS
+  credentials stay within their trust boundaries; migrations and demo seeding
+  run in short-lived direct-database containers, and CI rejects regressions
 - `infra` — Django and Celery now reach PostgreSQL through a digest-pinned
   PgBouncer 1.25.2 service fixed to transaction pooling. Production refuses
   any other declared pool mode, server-side cursors are disabled, only the

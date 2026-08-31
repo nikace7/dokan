@@ -44,10 +44,10 @@ docker compose up --build -d  # db, redis, backend, frontend, celery, beat, cadd
 
 # Apply migrations as the dedicated migrator role (NOT the superuser —
 # superuser-created tables miss the GRANTs the app role needs):
-docker compose exec backend sh -c 'DATABASE_HOST=db DATABASE_PORT=5432 DATABASE_USER=dokan_migrator DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" python manage.py migrate'
+docker compose run --rm migrate
 
 # Seed the demo shop (idempotent):
-docker compose exec backend sh -c 'DATABASE_HOST=db DATABASE_PORT=5432 DATABASE_USER=postgres DATABASE_PASSWORD="$POSTGRES_PASSWORD" python manage.py seed_demo'
+docker compose run --rm seed-demo
 ```
 
 Then open:
@@ -77,6 +77,9 @@ shows bare `8080/tcp`): all public traffic enters through Caddy, which forwards
 Django and Celery connect through the private PgBouncer service on port 6432.
 Its generated runtime configuration is fixed to transaction pooling; privileged
 migration, seed, backup, and restore commands connect directly to `db:5432`.
+Compose uses explicit per-service environment allowlists: privileged database
+credentials are mapped only into short-lived migration/seed containers and are
+never present in the long-running web, worker, pooler, or edge containers.
 
 The demo seed creates a branch, an owner with all permissions, a default
 Retail rate type, three items with M/L variants, and 20 units of opening stock
