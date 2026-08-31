@@ -12,6 +12,8 @@ the whole report is cost data (invariant 10).
 from typing import Any, ClassVar
 from uuid import UUID
 
+from django.http import HttpResponse
+from drf_spectacular.types import OpenApiTypes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
@@ -19,6 +21,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.reports import selectors
+from apps.reports.exports import (
+    XLSX_MEDIA_TYPE,
+    ExportFilters,
+    build_report_export,
+)
+from apps.reports.permissions import ReportExportPermission
 from core.middleware.tenant import require_request_tenant
 from core.openapi import object_list, operation
 from core.pagination import EnvelopePageNumberPagination
@@ -297,3 +305,43 @@ class PurchaseVatRegisterView(_ReportsAPIView):
                 date_to_bs=_bs_param(request, "date_to_bs"),
             )
         )
+
+
+class ReportExportView(APIView):
+    """Download one permission-filtered report as an XLSX workbook."""
+
+    permission_classes = (ReportExportPermission,)
+    throttle_classes = (ReportThrottle,)
+    plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "export_excel"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=OpenApiTypes.BINARY,
+            raw_response=True,
+            response_media_type=XLSX_MEDIA_TYPE,
+        )
+    }
+
+    def handle_exception(self, exc: Exception) -> Response:
+        if isinstance(exc, ServiceError):
+            return error(exc.http_status, exc.code, exc.message)
+        return super().handle_exception(exc)
+
+    def get(self, request: Request) -> HttpResponse:
+        tenant = require_request_tenant(request)
+        content, filename = build_report_export(
+            tenant,
+            _user(request),
+            report_name=request.query_params.get("report", ""),
+            filters=ExportFilters(
+                branch_id=_uuid_param(request, "branch"),
+                date_from_bs=_bs_param(request, "date_from_bs"),
+                date_to_bs=_bs_param(request, "date_to_bs"),
+                fiscal_year_bs=_bs_param(request, "fiscal_year_bs"),
+                days=_int_param(request, "days", 90),
+                limit=_int_param(request, "limit", 20),
+            ),
+        )
+        response = HttpResponse(content, content_type=XLSX_MEDIA_TYPE)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
