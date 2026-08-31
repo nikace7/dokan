@@ -26,12 +26,17 @@ file mode owner-only. Production additionally requires:
 - `CADDY_TLS_CONFIG=/etc/caddy/tls-cloudflare` and a scoped
   `CLOUDFLARE_API_TOKEN`
 - independent app, migrator and PostgreSQL passwords
+- a delivery-capable `EMAIL_BACKEND` (SMTP or another real provider); production
+  refuses console, in-memory and dummy backends because they can expose OTPs
 - `POSTGRES_ARCHIVE_MODE=on`
 - `BACKUP_S3_URI=s3://<private-bucket>/<environment>`
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and the S3-compatible
   `AWS_ENDPOINT_URL` when the provider is not AWS
 - a bucket lifecycle policy that retains logical dumps for at least 35 days,
   physical base backups for at least 35 days, and WAL for at least 35 days
+- `METRICS_ENABLED=true`, unique `DOKAN_MONITOR_PASSWORD` and
+  `GRAFANA_ADMIN_PASSWORD` values, plus `SENTRY_DSN`, `SENTRY_ENVIRONMENT` and
+  the deployed commit/tag in `SENTRY_RELEASE`
 
 The object-storage identity needs only list/get/put/delete access beneath the
 configured bucket prefix. Enable bucket versioning and server-side encryption.
@@ -58,7 +63,7 @@ configured bucket prefix. Enable bucket versioning and server-side encryption.
      -e DATABASE_USER=dokan_migrator \
      -e DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" \
      backend python manage.py migrate --noinput
-   docker compose --profile production up -d --build
+   docker compose --profile production --profile monitoring up -d --build
    ```
 
 6. Provision the first platform administrator interactively with
@@ -137,9 +142,47 @@ and remove the temporary copy after delivery. Password hashes are not exported.
 
 ## Monitoring and alerts
 
-Production dashboards must include HTTP 5xx rate, `POST /sales` latency,
-PostgreSQL connections/locks/disk, Redis memory, Celery queue age, container
-health, logical-backup age, WAL-upload age and TLS expiry. Page when:
+The `monitoring` profile supplies Prometheus, Grafana, Loki, Grafana Alloy,
+PostgreSQL/Redis/Celery/node/container exporters and Uptime Kuma. Grafana,
+Prometheus and Uptime Kuma bind only to `127.0.0.1`; reach them through an SSH
+tunnel, never a public firewall rule:
+
+| Service | Local port | Purpose |
+|---|---:|---|
+| Grafana | 3000 (`GRAFANA_PORT`) | provisioned production dashboard, Prometheus metrics and Loki logs |
+| Uptime Kuma | 3001 (`UPTIME_KUMA_PORT`) | external HTTP/TLS checks |
+| Prometheus | 9090 (`PROMETHEUS_PORT`) | targets, rules and active alerts |
+
+Set `METRICS_ENABLED=true` before starting the profile. The Django metrics
+endpoint is reachable only from the private Compose network; Caddy returns 404
+for public `/api/metrics` requests. `/api/live` is a process-only liveness
+probe, while `/api/health` is readiness and checks PostgreSQL and Redis.
+
+Fresh databases create `dokan_monitor` automatically. For an existing database,
+run the same idempotent bootstrap after setting `DOKAN_MONITOR_PASSWORD`; it
+passes the password as a PostgreSQL variable and never prints it:
+
+```bash
+docker compose exec -T db bash /docker-entrypoint-initdb.d/02_monitoring_role.sh
+```
+
+The role has server-statistics access only: never grant it business-table
+permissions or `BYPASSRLS`.
+
+Start production and monitoring together after provisioning:
+
+```bash
+docker compose --profile production --profile monitoring config --quiet
+docker compose --profile production --profile monitoring up -d --build
+docker compose ps
+```
+
+The provisioned rules and dashboard cover HTTP 5xx rate, `POST /sales` latency,
+PostgreSQL connection saturation, Redis memory, Celery workers/queue depth,
+host disk, scrape targets, logical/base-backup age, WAL-upload age and monthly
+restore-drill age. The backup, WAL and restore scripts publish timestamps through
+node exporter's textfile collector only after successful verification. Page
+when:
 
 - 5xx exceeds 1%
 - sales p95 exceeds one second
@@ -147,9 +190,26 @@ health, logical-backup age, WAL-upload age and TLS expiry. Page when:
 - backup/WAL health fails
 - a monthly restore drill is overdue
 
-Application logs must not contain tokens, PII or cost figures. Send errors to
-Sentry and metrics to the configured Grafana/Postgres-exporter stack; monitor
-every tenant health endpoint externally.
+Prometheus evaluates rules but does not know the operator's notification
+destination. Before launch, configure a Grafana contact point and notification
+policy for every `severity=page` alert. In Uptime Kuma, configure the same
+destination and add HTTPS checks for the apex, `admin`, at least one tenant,
+each live `*.shop` host, and `/api/health`; enable certificate-expiry alerts.
+Until both notification paths deliver a test alert, monitoring is not launch
+ready.
+
+Application logs are allowlist-only JSON. Alloy ships only containers carrying
+the explicit `dokan.logs.safe=true` label (currently Django) to Loki for 30 days;
+it does not indiscriminately collect every Docker container. Search by the
+response's `X-Request-ID` in Grafana when troubleshooting. Raw paths, query
+strings, request bodies, tenant/user identifiers, PII, tokens, cost and price
+fields are excluded. Sentry is inert without a DSN and applies the same privacy
+boundary: no request body, cookies, user object, arbitrary log message, exception
+text or non-allowlisted request headers leave the process.
+
+Node exporter, cAdvisor and Docker-socket log discovery require a Linux Docker
+host. On Windows development machines, validate the profile and run the portable
+services selectively; the supported production topology is Linux.
 
 ## Incident recovery
 

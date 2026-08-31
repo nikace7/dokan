@@ -307,8 +307,8 @@ Static/media on S3-compatible storage (Cloudflare R2) behind a CDN.
 |---|---|
 | Backups | `pg_dump` nightly + continuous WAL to object storage; **restore drill on the 1st of every month** |
 | Zero-downtime | Rolling restart behind Caddy; migrations backward-compatible for one release |
-| Monitoring | Sentry, Uptime Kuma (per-subdomain), Grafana + Postgres exporter |
-| Alerting | 5xx > 1%, `POST /sales` p95 > 1 s, DB connections > 80%, disk > 80%, backup failure |
+| Monitoring | privacy-filtered Sentry; Prometheus + exporters; Grafana; Loki + Alloy; Uptime Kuma |
+| Alerting | 5xx/latency, worker and queue health, DB/Redis/disk saturation, recovery freshness, external HTTP/TLS |
 | Secrets | Docker secrets / SOPS; startup asserts all required secrets present, fails loudly |
 | Environments | `dev` (local compose) → `staging` (real subdomain, anonymised data) → `prod` |
 
@@ -329,7 +329,19 @@ SYSTEM_DESIGN §12 for the full "deliberately not built" list.
 - **Audit vs logs**: application logs (stdout → Loki, 30 days, never PII/cost/
   tokens) are for debugging; `audit_log` (Postgres, append-only, `REVOKE UPDATE,
   DELETE` from app role, retained per plan, min 7 years for financial rows) is
-  for accountability.
+  for accountability. Only explicitly privacy-approved containers are collected;
+  request correlation uses a validated UUID4 `X-Request-ID`, never a tenant or
+  user label.
+- **Health and metrics**: `/api/live` proves only that the process can answer;
+  `/api/health` checks PostgreSQL and Redis readiness. Prometheus reads the
+  private `/api/metrics` endpoint using bounded method/route/status labels;
+  Caddy denies that endpoint publicly. Recovery scripts publish success
+  timestamps through node exporter's textfile collector, and `dokan_monitor`
+  has `pg_monitor` but no business-table grants or RLS bypass.
+- **Error telemetry**: Sentry is optional and fails inert without a DSN. Its
+  event filter removes bodies, URLs/query strings, cookies, user identity,
+  arbitrary messages, exception text, non-allowlisted headers, secrets and
+  financial fields before transmission.
 - **Rate limits**: 300 req/min/user, 60/min on auth, 20/min on report generation.
 - **Reports**: Phase 1 queries the OLTP directly via selectors; Phase 2 adds
   nightly rollups (`daily_sales_summary`, `daily_item_summary`) when a tenant

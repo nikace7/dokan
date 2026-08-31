@@ -138,6 +138,12 @@ WAL upload to S3-compatible storage. Run the guarded monthly check with
 `docker compose --profile ops run --rm restore-drill`; see
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) before operating production.
 
+The optional `monitoring` profile adds private Prometheus/Grafana dashboards,
+30-day privacy-filtered Loki logs, infrastructure/Celery exporters and Uptime
+Kuma. Production runs it alongside the `production` profile; notification
+contact points and external HTTP/TLS checks are required operator setup. The
+exact bootstrap and monitor-role procedure is in the deployment runbook.
+
 ## Repository layout
 
 ```
