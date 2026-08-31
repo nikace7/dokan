@@ -26,6 +26,10 @@ file mode owner-only. Production additionally requires:
 - `CADDY_TLS_CONFIG=/etc/caddy/tls-cloudflare` and a scoped
   `CLOUDFLARE_API_TOKEN`
 - independent app, migrator and PostgreSQL passwords
+- `DATABASE_HOST=pgbouncer`, `DATABASE_PORT=6432`, and
+  `DATABASE_POOL_MODE=transaction`; production settings reject any other pool
+  mode. Size `PGBOUNCER_*` limits for the VPS rather than raising Postgres'
+  connection limit
 - a delivery-capable `EMAIL_BACKEND` (SMTP or another real provider); production
   refuses console, in-memory and dummy backends because they can expose OTPs
 - `POSTGRES_ARCHIVE_MODE=on`
@@ -58,8 +62,10 @@ configured bucket prefix. Enable bucket versioning and server-side encryption.
    the dedicated migrator role:
 
    ```bash
-   docker compose up -d db redis
+   docker compose up -d db redis pgbouncer
    docker compose run --rm \
+     -e DATABASE_HOST=db \
+     -e DATABASE_PORT=5432 \
      -e DATABASE_USER=dokan_migrator \
      -e DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" \
      backend python manage.py migrate --noinput
@@ -68,6 +74,11 @@ configured bucket prefix. Enable bucket versioning and server-side encryption.
 
 6. Provision the first platform administrator interactively with
    `create_platform_user`, enroll TOTP, and verify tenant and admin hosts.
+
+PgBouncer admits only the RLS-constrained application role. Migrations, demo
+seeding, logical/physical backups, WAL shipping, and restore drills deliberately
+bypass the pool and connect to the private `db:5432` service with their own
+roles. Never expose either database port on the host firewall.
 
 The repository's Caddy image compiles the pinned Cloudflare DNS module. The
 production TLS snippet requests the wildcard certificate through DNS-01; verify
