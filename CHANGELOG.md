@@ -41,6 +41,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under tenant RLS, keeps sent stock explicitly in transit, and emits a
   structured error-level alert whenever a repair is required
 
+### Reports and localization
+
+- `reports` — implemented report pages now export real `.xlsx` workbooks and
+  print in A4 or 80mm layouts. The export service re-checks plan features and
+  route permissions, uses selectors only, neutralizes spreadsheet formulas,
+  and never includes cost columns without `pricing.view_cost`
+- `frontend` — report date ranges now use the canonical BS conversion library
+  through a keyboard-accessible Nepali calendar picker, while API filters stay
+  anchored to AD ISO dates
+
 ### Design system
 
 - `frontend` — UI/UX refinement pass across the tenant panel and the

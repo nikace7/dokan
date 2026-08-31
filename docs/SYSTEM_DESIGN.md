@@ -599,6 +599,14 @@ and `stock_movement` by `fiscal_year_bs` when the largest tenant passes ~5M rows
 - Numbers formatted Nepali style: `१,२३,४५६` / `1,23,456` (lakh grouping), not `123,456`.
 - Long reports are generated async via Celery with a download link — never a 60-second hanging request.
 
+Implemented synchronous exports use `POST /reports/export` with a report slug
+and the same AD filters as the screen. `apps/reports/exports.py` is a read-only
+orchestrator over report selectors: it repeats plan and permission checks,
+removes cost-bearing columns at the source, neutralizes spreadsheet formulas,
+and returns an OpenAPI-described XLSX binary. Browser printing is opt-in and
+scoped to `.report-print-area`, so the protected POS receipt print rules remain
+independent.
+
 ---
 
 ## 6. Nepali BS Date Support
