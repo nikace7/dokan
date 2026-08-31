@@ -68,12 +68,14 @@ describe('LoginPage', () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toContain('/v1/auth/token');
-    expect(JSON.parse(String(init?.body))).toEqual(expect.objectContaining({
-      phone: '9800000000',
-      password: 'demo1234',
-      device_id: expect.any(String),
-      device_name: expect.any(String),
-    }));
+    expect(JSON.parse(String(init?.body))).toEqual(
+      expect.objectContaining({
+        phone: '9800000000',
+        password: 'demo1234',
+        device_id: expect.any(String),
+        device_name: expect.any(String),
+      }),
+    );
   });
 
   it('shows the server error message on bad credentials', async () => {

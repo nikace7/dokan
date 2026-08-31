@@ -1,15 +1,14 @@
 /**
  * Token storage for SimpleJWT access/refresh tokens.
  *
- * Tokens live in localStorage for now, which is readable by any JS running
- * on the origin (XSS exposure). TODO(security hardening): move the refresh
- * token to an httpOnly, SameSite=strict cookie set by the backend and keep
- * only the short-lived access token in memory; the client already sends
- * `credentials: 'include'` so the switch is server-side only.
+ * Tokens follow ADR 0001's bearer-token decision. A separate non-secret,
+ * stable device UUID lets the backend replace a previous session when the
+ * same browser signs in again.
  */
 
 const ACCESS_KEY = 'dokan.access';
 const REFRESH_KEY = 'dokan.refresh';
+const DEVICE_ID_KEY = 'dokan.device-id';
 
 export interface AuthTokens {
   access: string;
@@ -48,6 +47,22 @@ export function setAccessToken(access: string): void {
 export function clearTokens(): void {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
+}
+
+export interface DeviceIdentity {
+  device_id: string;
+  device_name: string;
+}
+
+export function getDeviceIdentity(): DeviceIdentity {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  const agent = navigator.userAgent;
+  const kind = /android|iphone|ipad|mobile/i.test(agent) ? 'Mobile device' : 'Web browser';
+  return { device_id: deviceId, device_name: kind };
 }
 
 export function parseImpersonationClaims(token: string): ImpersonationClaims | null {
