@@ -13,7 +13,7 @@ and ``fiscal_year_bs`` come only from core/calendar/bs.py.
 
 from datetime import date
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from django.db import IntegrityError, transaction
@@ -346,38 +346,6 @@ def post_sale_return_movement(
     )
 
 
-def _apply_stock_in(
-    tenant: "Tenant",
-    branch: "Branch",
-    variant: "ItemVariant",
-    qty: Decimal,
-    unit_cost: Decimal,
-    *,
-    update_variant_cost: bool = True,
-) -> tuple[StockLevel, Decimal]:
-    """Lock the level, add qty, fold cost into the moving weighted average.
-
-    Shared by OPENING and PURCHASE postings. MUST run inside the caller's
-    transaction. Returns (level, new_avg_cost).
-
-    ``update_variant_cost=False`` (transfers only): stock moving between
-    branches keeps the SAME cost basis, so the tenant-wide variant.avg_cost
-    must not be overwritten with the destination branch's average.
-    """
-    level = _lock_level(tenant, branch, variant)
-    old_qty, old_avg = level.qty_on_hand, level.avg_cost
-    new_qty = old_qty + qty
-    new_avg = quantize_money((old_qty * old_avg + qty * unit_cost) / new_qty)
-    level.qty_on_hand = new_qty
-    level.avg_cost = new_avg
-    level.save(update_fields=["qty_on_hand", "avg_cost", "updated_at"])
-
-    if update_variant_cost:
-        variant.avg_cost = new_avg  # inventory owns this column
-        variant.save(update_fields=["avg_cost", "updated_at"])
-    return level, new_avg
-
-
 def post_purchase_movement(
     tenant: "Tenant",
     *,
@@ -391,31 +359,18 @@ def post_purchase_movement(
     note: str = "",
     business_date: date | None = None,
 ) -> StockMovement:
-    """Receive stock from a purchase line (PURCHASE movement).
+    """Compatibility entry point for the purchase-receiving use case."""
+    from apps.inventory.receiving import post_purchase_movement as receive_purchase
 
-    MUST be called inside the caller's transaction — the purchase-confirm
-    pipeline owns it. ``unit_cost`` is the LANDED unit cost (line cost plus
-    allocated other charges) so the moving weighted average reflects true
-    cost. Updates variant.avg_cost in the same transaction.
-    """
-    qty = Decimal(qty)
-    unit_cost = Decimal(unit_cost)
-    if qty <= _ZERO:
-        raise ServiceError("QTY_INVALID", "Purchase quantity must be greater than zero.")
-    if unit_cost < _ZERO:
-        raise ServiceError("COST_INVALID", "Unit cost cannot be negative.")
-    level, _new_avg = _apply_stock_in(tenant, branch, variant, qty, unit_cost)
-    return _write_movement(
-        tenant,
-        branch=branch,
-        variant=variant,
-        movement_type=StockMovement.MovementType.PURCHASE,
-        qty_delta=qty,
-        unit_cost=quantize_money(unit_cost),
-        balance_after=level.qty_on_hand,
-        created_by=created_by,
-        note=note,
-        business_date=business_date,
-        ref_type=ref_type,
-        ref_id=ref_id,
-    )
+    values: dict[str, Any] = {
+        "branch": branch,
+        "variant": variant,
+        "qty": qty,
+        "unit_cost": unit_cost,
+        "created_by": created_by,
+        "ref_type": ref_type,
+        "ref_id": ref_id,
+        "note": note,
+        "business_date": business_date,
+    }
+    return receive_purchase(tenant, **values)

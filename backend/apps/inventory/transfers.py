@@ -26,7 +26,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.inventory.models import StockLevel, StockMovement, StockTransfer, StockTransferItem
-from apps.inventory.services import _apply_stock_in, _lock_level, _write_movement
+from apps.inventory.receiving import apply_stock_in
+from apps.inventory.services import _lock_level, _write_movement
 from apps.tenants.services import require_plan_feature
 from core.responses import ServiceError
 
@@ -160,7 +161,7 @@ def receive_transfer(
                     "OVER_RECEIVE",
                     f"Only {item.qty_sent - already} of {item.variant.sku} is still in transit.",
                 )
-            _apply_stock_in(
+            apply_stock_in(
                 tenant,
                 transfer.to_branch,
                 item.variant,

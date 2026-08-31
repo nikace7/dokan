@@ -15,7 +15,7 @@ from django.db.models.functions import Substr
 
 from apps.reports.selectors._shared import resolve_date_range
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
-from apps.sales.services.create_sale import PAYMENT_METHODS
+from apps.sales.services.calculations import PAYMENT_METHODS
 from core.money import quantize_money
 
 if TYPE_CHECKING:
