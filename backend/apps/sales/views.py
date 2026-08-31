@@ -34,6 +34,7 @@ from apps.sales.serializers import (
 from apps.sales.throttles import SharedBillThrottle
 from apps.tenants.models import Branch
 from core.middleware.tenant import get_request_tenant, require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -130,6 +131,19 @@ class _SalesAPIView(APIView):
 
 class SaleListView(_SalesAPIView):
     plan_usage_by_method: ClassVar[dict[str, str]] = {"POST": "max_invoices_per_month"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=SalesInvoiceSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+        "POST": operation(
+            request=SaleCreateSerializer,
+            response=SalesInvoiceDetailSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -188,6 +202,10 @@ class SaleListView(_SalesAPIView):
 
 
 class SaleDetailView(_SalesAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=SalesInvoiceDetailSerializer),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         invoice = selectors.get_invoice(tenant, _user(request), pk)
@@ -200,6 +218,7 @@ class ReceiptPrintView(_SalesAPIView):
     """POST /sales/<id>/print — append an immutable print audit event."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.create"}
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -210,6 +229,15 @@ class ReceiptPrintView(_SalesAPIView):
 
 class HoldBillView(_SalesAPIView):
     """POST /sales/hold — park a bill (no stock, no invoice number)."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=HoldBillSerializer,
+            response=SalesInvoiceDetailSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -246,6 +274,14 @@ class HoldBillView(_SalesAPIView):
 class HeldBillListView(_SalesAPIView):
     """GET /sales/held — parked bills (the resume list)."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=SalesInvoiceSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_invoices(tenant, _user(request), status=SalesInvoice.Status.HELD)
@@ -259,6 +295,12 @@ class CompleteBillView(_SalesAPIView):
     """POST /sales/<id>/complete — finish a held bill with tender."""
 
     plan_usage_by_method: ClassVar[dict[str, str]] = {"POST": "max_invoices_per_month"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=CompleteBillSerializer,
+            response=SalesInvoiceDetailSerializer,
+        ),
+    }
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -280,6 +322,7 @@ class CancelBillView(_SalesAPIView):
     """POST /sales/<id>/cancel — void a held bill (sale.void)."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.void"}
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -292,6 +335,14 @@ class ReturnCreateView(_SalesAPIView):
     """POST /sales/returns — credit note against a completed bill."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.return"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=ReturnCreateSerializer,
+            response=SalesInvoiceDetailSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -328,6 +379,13 @@ class ExchangeCreateView(_SalesAPIView):
     """POST /sales/exchanges — return + sale in one atomic operation."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.return"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=ExchangeCreateSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -372,6 +430,7 @@ class ReturnableLinesView(_SalesAPIView):
     """GET /sales/<id>/returnable — remaining qty per line (exchange screen)."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "sale.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -385,6 +444,7 @@ class SaleShareView(_SalesAPIView):
     """POST /sales/<id>/share — idempotent public-link token (sale.view)."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -409,6 +469,9 @@ class SharedBillView(APIView):
 
     permission_classes = (AllowAny,)
     throttle_classes = (SharedBillThrottle,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=SharedBillSerializer),
+    }
 
     def handle_exception(self, exc: Exception) -> Response:
         if isinstance(exc, ServiceError):

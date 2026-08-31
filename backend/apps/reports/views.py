@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 
 from apps.reports import selectors
 from core.middleware.tenant import require_request_tenant
+from core.openapi import object_list, operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -117,6 +118,7 @@ class DashboardPermission(BasePermission):
 
 class DashboardView(APIView):
     permission_classes = (DashboardPermission,)
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -126,6 +128,8 @@ class DashboardView(APIView):
 class CollectionsByTenderView(_ReportsAPIView):
     """GET /reports/collections-by-tender — collections grouped by payment
     method (tender) for a branch/period. Same gate as daily sales."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -141,6 +145,10 @@ class CollectionsByTenderView(_ReportsAPIView):
 
 
 class DailySalesView(_ReportsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list()),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         rows = selectors.daily_sales(
@@ -154,6 +162,10 @@ class DailySalesView(_ReportsAPIView):
 
 
 class MonthlySalesView(_ReportsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list()),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         rows = selectors.monthly_sales(
@@ -163,6 +175,10 @@ class MonthlySalesView(_ReportsAPIView):
 
 
 class ItemSalesView(_ReportsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list(), paginated=True),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         rows = selectors.item_sales(
@@ -177,6 +193,9 @@ class ItemSalesView(_ReportsAPIView):
 
 class StockSummaryView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.stock"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list(), paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -188,6 +207,9 @@ class StockSummaryView(_ReportsAPIView):
 
 class LowStockView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.stock"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list(), paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -197,6 +219,9 @@ class LowStockView(_ReportsAPIView):
 
 class DeadStockView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.stock"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list(), paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -212,6 +237,7 @@ class DeadStockView(_ReportsAPIView):
 class ProfitReportView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.profit"}
     plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "profit_reports"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -232,6 +258,7 @@ class ProfitReportView(_ReportsAPIView):
 
 class DuesReportView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.ledger"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -241,6 +268,7 @@ class DuesReportView(_ReportsAPIView):
 class SalesVatRegisterView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.vat"}
     plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "vat_module"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -257,6 +285,7 @@ class SalesVatRegisterView(_ReportsAPIView):
 class PurchaseVatRegisterView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.vat"}
     plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "vat_module"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)

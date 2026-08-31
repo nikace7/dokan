@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from apps.tenants import selectors, services
 from apps.tenants.serializers import BranchSerializer, TenantSettingsSerializer
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -25,6 +26,13 @@ class TenantSettingsView(APIView):
     method_permissions: ClassVar[dict[str, str]] = {
         "GET": "settings.manage",
         "PATCH": "settings.manage",
+    }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=TenantSettingsSerializer),
+        "PATCH": operation(
+            request=TenantSettingsSerializer,
+            response=TenantSettingsSerializer,
+        ),
     }
 
     def handle_exception(self, exc: Exception) -> Response:
@@ -55,6 +63,9 @@ class BranchListView(APIView):
 
     permission_classes = (HasPermission,)
     method_permissions: ClassVar[dict[str, str]] = {"GET": "catalog.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=BranchSerializer, response_many=True, paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
