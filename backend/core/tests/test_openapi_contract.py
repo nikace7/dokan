@@ -1,12 +1,16 @@
 """Executable API-contract requirements from ADR 0002."""
 
+import ast
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pytest
 from django.conf import settings
 from drf_spectacular.drainage import GENERATOR_STATS
 from drf_spectacular.generators import SchemaGenerator
+
+from core.error_codes import API_ERROR_CODES
 
 
 @dataclass(frozen=True)
@@ -64,6 +68,7 @@ def test_both_jwt_realms_are_documented(contract: GeneratedContract) -> None:
         ("/api/v1/payments/receipts", "post"),
         ("/api/v1/payments/supplier-payments", "post"),
         ("/api/v1/payments/{id}/reverse", "post"),
+        ("/api/v1/storefront/orders", "post"),
     ],
 )
 def test_idempotent_writes_require_header(
@@ -96,3 +101,67 @@ def test_standard_envelopes_are_components(contract: GeneratedContract) -> None:
         "$ref": "#/components/schemas/ApiError"
     }
     assert schemas["PageMeta"]["required"] == ["count", "page", "page_size", "total_pages"]
+
+
+def test_error_codes_are_published_as_a_stable_enum(contract: GeneratedContract) -> None:
+    schemas = contract.schema["components"]["schemas"]
+    code_schema = schemas["ApiError"]["properties"]["code"]
+    enum_ref = code_schema["allOf"][0]["$ref"]
+    enum_component = enum_ref.rsplit("/", 1)[-1]
+
+    assert enum_ref.startswith("#/components/schemas/")
+    assert schemas[enum_component]["enum"] == list(API_ERROR_CODES)
+    assert len(API_ERROR_CODES) == len(set(API_ERROR_CODES))
+    assert list(API_ERROR_CODES) == sorted(API_ERROR_CODES)
+
+
+def test_schema_generation_is_repeatable() -> None:
+    second_schema = SchemaGenerator().get_schema(request=None, public=True)
+
+    assert second_schema is not None
+    assert second_schema["components"]["schemas"]["ApiErrorCode"]["enum"] == list(API_ERROR_CODES)
+
+
+def test_literal_error_codes_are_registered() -> None:
+    backend_root = Path(__file__).resolve().parents[2]
+    code_argument_by_call = {
+        "AuthenticationFailed": 1,
+        "AuthError": 0,
+        "PlatformAuthError": 0,
+        "PermissionDenied": 1,
+        "ServiceError": 0,
+        "_error": 1,
+        "error": 1,
+    }
+    discovered: set[str] = set()
+
+    for source_root in (backend_root / "apps", backend_root / "core"):
+        for source_path in source_root.rglob("*.py"):
+            if "tests" in source_path.parts or "migrations" in source_path.parts:
+                continue
+            tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                call_name = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+                if call_name not in code_argument_by_call:
+                    continue
+                keyword = next((item.value for item in node.keywords if item.arg == "code"), None)
+                argument_index = code_argument_by_call[call_name]
+                positional = node.args[argument_index] if len(node.args) > argument_index else None
+                candidate = keyword or positional
+                if isinstance(candidate, ast.Constant) and isinstance(candidate.value, str):
+                    discovered.add(candidate.value)
+
+    assert discovered <= set(API_ERROR_CODES), sorted(discovered - set(API_ERROR_CODES))
+
+
+def test_every_operation_documents_machine_readable_errors(contract: GeneratedContract) -> None:
+    for path_item in contract.schema["paths"].values():
+        for method, operation_schema in path_item.items():
+            if method not in {"get", "post", "put", "patch", "delete"}:
+                continue
+            error_schema = operation_schema["responses"]["default"]["content"]["application/json"][
+                "schema"
+            ]
+            assert error_schema == {"$ref": "#/components/schemas/ErrorEnvelope"}

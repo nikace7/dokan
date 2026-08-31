@@ -2,14 +2,20 @@
 
 from typing import Any
 
+from core.error_codes import API_ERROR_CODES
+
 OPENAPI_COMPONENTS: dict[str, Any] = {
     "schemas": {
+        "ApiErrorCode": {
+            "type": "string",
+            "enum": list(API_ERROR_CODES),
+        },
         "ApiError": {
             "type": "object",
             "required": ["code", "message"],
             "properties": {
                 "code": {
-                    "type": "string",
+                    "allOf": [{"$ref": "#/components/schemas/ApiErrorCode"}],
                     "description": "Stable machine-readable error code.",
                 },
                 "message": {"type": "string"},
