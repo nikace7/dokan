@@ -297,7 +297,8 @@ Caddy (wildcard TLS, *.dokan.com.np via DNS-01)
   ├─ web       : Gunicorn/Uvicorn × 4          (Django)
   ├─ worker    : Celery × 2                    (reports, SMS, IRD sync, rollups)
   ├─ beat      : Celery beat                   (nightly usage snapshots, rollups, reconciliation)
-  ├─ postgres  : 16, WAL archiving on          (PgBouncer in TRANSACTION pooling mode)
+  ├─ pgbouncer : 1.25.2, transaction mode      (app role only; digest-pinned)
+  ├─ postgres  : 16, WAL archiving on          (private direct path for privileged ops)
   └─ redis     : cache, sessions, celery broker, rate limit, jti denylist
 ```
 

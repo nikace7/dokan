@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Observability and operations
 
+- `infra` — Django and Celery now reach PostgreSQL through a digest-pinned
+  PgBouncer 1.25.2 service fixed to transaction pooling. Production refuses
+  any other declared pool mode, server-side cursors are disabled, only the
+  constrained app role is admitted, and CI proves tenant session context is
+  cleared after commit against real PostgreSQL
 - `core` — every response now carries a validated UUID4 request id; production
   emits allowlist-only JSON request/health logs and bounded Prometheus metrics.
   Separate liveness and dependency-readiness endpoints support safe orchestration,
