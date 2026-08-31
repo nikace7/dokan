@@ -9,12 +9,12 @@ export type PlanFeature =
   | 'advanced_pos';
 
 interface PlanUser {
-  plan: { features: Record<string, unknown> };
+  plan?: { features?: Record<string, unknown> };
 }
 
 /** UI visibility only; the backend remains authoritative. */
 export function hasPlanFeature(user: PlanUser | null | undefined, feature: PlanFeature): boolean {
-  return user?.plan.features[feature] === true;
+  return user?.plan?.features?.[feature] === true;
 }
 
 /**

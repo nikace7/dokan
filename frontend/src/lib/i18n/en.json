@@ -821,6 +821,7 @@
       "to": "To (BS)",
       "apply": "Apply",
       "invalidFormat": "Use BS dates as YYYY-MM-DD (e.g. 2083-04-01).",
+      "invalidDate": "Choose a real date from the supported BS calendar.",
       "fromAfterTo": "From date cannot be after the to date.",
       "quickRanges": "Quick ranges",
       "today": "Today",

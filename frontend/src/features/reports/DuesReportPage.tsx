@@ -4,12 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/Card';
 import { TableCell, TableRow } from '@/components/ui/table';
+import { useAuth } from '@/features/auth/useAuth';
 import { AGING_BUCKETS, fetchDues } from '@/features/reports/api';
 import type { AgingBucketLabel, PayableRow, ReceivableRow } from '@/features/reports/api';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
+import { ReportActions } from '@/features/reports/ReportActions';
 import type { ReportColumn } from '@/features/reports/ui';
 import { addPaisa, formatNpr, formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { cn } from '@/lib/utils';
+import { hasPlanFeature } from '@/lib/plans';
 
 type ChipVariant = 'secondary' | 'warning' | 'destructive' | 'outline';
 
@@ -54,11 +57,15 @@ function AgingChip({ bucket, amount }: { bucket: AgingBucketLabel; amount: strin
  */
 export function DuesReportPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const query = useQuery({ queryKey: ['reports', 'dues'], queryFn: fetchDues });
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
-      <Card title={t('reports.dues.customerTitle')}>
+    <main className="report-print-area mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
+      <Card
+        title={t('reports.dues.customerTitle')}
+        actions={<ReportActions canExport={hasPlanFeature(user, 'export_excel')} report="dues" />}
+      >
         {query.isFetching ? <TableSkeleton /> : null}
         {query.isError ? <ReportError error={query.error} /> : null}
         {query.data ? <ReceivablesTable rows={query.data.receivables} /> : null}

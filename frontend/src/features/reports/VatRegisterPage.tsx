@@ -6,13 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/Card';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/features/auth/useAuth';
 import { currentBsMonthRange } from '@/features/reports/api';
 import { fetchPurchaseVatRegister, fetchSalesVatRegister } from '@/features/reports/api';
 import type { BsRange, PurchaseVatRow, SalesVatRow, VatRegister } from '@/features/reports/api';
 import { BsRangeControls } from '@/features/reports/BsRangeControls';
+import { ReportActions } from '@/features/reports/ReportActions';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { hasPlanFeature } from '@/lib/plans';
 
 type RegisterKind = 'sales' | 'purchase';
 
@@ -23,6 +26,7 @@ function money(amount: string): string {
 /** IRD VAT registers — sales and purchase, by BS date range. */
 export function VatRegisterPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [kind, setKind] = useState<RegisterKind>('sales');
   const [range, setRange] = useState<BsRange>(currentBsMonthRange);
 
@@ -40,8 +44,17 @@ export function VatRegisterPage() {
   const activeQuery = kind === 'sales' ? salesQuery : purchaseQuery;
 
   return (
-    <main className="mx-auto w-full max-w-6xl p-4">
-      <Card title={t('reports.vat.title')}>
+    <main className="report-print-area mx-auto w-full max-w-6xl p-4">
+      <Card
+        title={t('reports.vat.title')}
+        actions={
+          <ReportActions
+            canExport={hasPlanFeature(user, 'export_excel')}
+            report={kind === 'sales' ? 'vat-sales' : 'vat-purchase'}
+            params={{ date_from_bs: range.dateFromBs, date_to_bs: range.dateToBs }}
+          />
+        }
+      >
         <Tabs value={kind} onValueChange={(value) => setKind(value as RegisterKind)}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <TabsList aria-label={t('reports.vat.registerAria')}>
