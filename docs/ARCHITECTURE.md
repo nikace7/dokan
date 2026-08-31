@@ -77,6 +77,7 @@ GET https://shreeganesh.dokan.com.np/api/v1/sales
         ▼
 [Auth]  SimpleJWT access token → user
         Assert user.tenant_id == request.tenant_id (hard 403 + audit event on mismatch)
+        Resolve token.sid → active auth_session (missing/revoked/expired → 401)
         │
         ▼
 [PlanGate]  Tenant's plan includes the feature this route requires?
@@ -109,6 +110,9 @@ Non-negotiables (see `docs/MULTI_TENANCY.md` for the full contract):
   run in **transaction** pooling mode.
 - A JWT is bound to one tenant. Reuse on another subdomain is a hard 403 and an
   audit event.
+- Normal tenant JWTs are also bound to an RLS-protected registered device.
+  Logout and device/password revocation invalidate access and refresh tokens
+  immediately; support impersonation retains its separate Redis+jti path.
 
 ---
 

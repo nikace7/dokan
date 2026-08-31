@@ -245,8 +245,14 @@ branch(id, tenant_id, code, name, name_np, address, phone, invoice_prefix,
        is_default, is_active)
 
 user(id, tenant_id, phone UNIQUE(tenant_id,phone), email, password_hash,
-     full_name, is_active, must_change_password, last_login_at,
+     full_name, is_active, must_change_password, login_otp_required, last_login_at,
      failed_login_count, locked_until)
+
+auth_session(id, tenant_id, user_id, device_id, device_name, user_agent, ip,
+             last_seen_at, expires_at, revoked_at)
+
+account_otp(id, tenant_id, user_id, purpose[PASSWORD_RESET|LOGIN|LOGIN_ENABLE],
+            code_hash, expires_at, attempts, consumed_at)
 
 role(id, tenant_id, code, name, name_np, is_system, description)
 permission(code PK, module, name, description, is_sensitive)     -- global catalog
@@ -863,7 +869,10 @@ Tenant: from Host header only.
 
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/auth/login` `/auth/refresh` `/auth/logout` | Phone + password |
+| `POST` | `/auth/token` `/auth/token/refresh` `/auth/logout` | Phone + password, optional OTP; JWTs bound to registered-device `sid` |
+| `POST` | `/auth/password-reset/request` `/auth/password-reset/confirm` | Enumeration-safe SMS recovery; reset revokes every session |
+| `GET/POST/DELETE` | `/auth/login-otp` and `/auth/login-otp/request|confirm` | Optional SMS login verification |
+| `GET/POST` | `/auth/sessions` `/auth/sessions/{id}/revoke` `/auth/sessions/revoke-others` | List and immediately revoke registered devices |
 | `GET/POST` | `/items` `/items/{id}` | `?search=&category=&is_active=` |
 | `GET` | `/items/lookup?barcode=` | Single-purpose, cached, the POS hot path |
 | `GET/POST` | `/items/{id}/variants` | |

@@ -17,7 +17,7 @@ One shop can run its entire counter on Dokan. Shipped:
 |---|---|
 | Platform spine | Django 5 + DRF, Postgres RLS with `FORCE ROW LEVEL SECURITY`, subdomain tenant resolution, BS calendar + money core, gapless numbering, permission catalog, response envelope |
 | Tenancy & plans | Plans, tenants, subscriptions, feature overrides, usage snapshots; plan enforcement above route permissions (feature-gated routes return 402; staff/item/rate-type/SMS write limits hard-block) |
-| Auth & RBAC | Phone + password JWT login per ADR 0001, failed-login lockout, tenant-claim binding, custom roles, branch-aware staff assignments |
+| Auth & RBAC | Phone + password JWT login per ADR 0001, optional SMS OTP, enumeration-safe SMS reset, revocable registered-device sessions, failed-login lockout, tenant-claim binding, custom roles, branch-aware staff assignments |
 | Platform admin | Separate `admin.` host auth realm with IP allowlist + TOTP, plan CRUD, atomic tenant provisioning/lifecycle, append-only platform audit, time-boxed support impersonation with durable + Redis revocation and tenant-side red banner/end-now |
 | Catalog | Category tree, brands, size charts, items, variants, size×colour matrix entry, barcode/SKU POS lookup (ADR 0003) |
 | Inventory | Immutable `stock_movement` ledger + `stock_level` projection, opening stock, signed adjustments, damage write-offs, moving weighted average |

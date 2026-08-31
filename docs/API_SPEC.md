@@ -33,6 +33,26 @@ and the default `ErrorEnvelope` response.
 Tokens never cross realms. Tenant identity is never accepted from a request
 header, body, or query parameter.
 
+### Tenant account security
+
+- `POST /auth/token` accepts phone, password, a stable browser `device_id`, and
+  a human-readable `device_name`. When optional login OTP is enabled it first
+  returns HTTP 428 `OTP_REQUIRED` with `details.challenge_id`; repeat the same
+  request with that challenge id and the six-digit `otp`.
+- Access and refresh tokens carry `sid` and are valid only while that
+  RLS-protected registered-device session is active. `POST /auth/logout`,
+  `POST /auth/sessions/<id>/revoke`, and
+  `POST /auth/sessions/revoke-others` take effect immediately.
+- `POST /auth/password-reset/request` always returns the same HTTP 202 response
+  to prevent account enumeration. The SMS code is stored only as an HMAC hash,
+  expires after ten minutes, and locks after five incorrect attempts.
+  `POST /auth/password-reset/confirm` revokes every device.
+- `POST /auth/password/change` preserves the current device and revokes the
+  rest. `POST /auth/login-otp/request|confirm` enables optional SMS login
+  verification; `DELETE /auth/login-otp` disables it after password proof.
+  Security OTP delivery bypasses subscription SMS quotas so account recovery
+  cannot be locked behind a plan limit.
+
 ## Envelopes
 
 Success responses use one shape:
@@ -67,7 +87,7 @@ literal codes missing from the catalog. The full current catalog is:
 
 | Area | Codes |
 |---|---|
-| Authentication and realm | `ACCOUNT_LOCKED`, `AUTHENTICATION_FAILED`, `IMPERSONATION_ACTION_BLOCKED`, `IMPERSONATION_DURATION_INVALID`, `IMPERSONATION_ENDED`, `IMPERSONATION_END_FORBIDDEN`, `IMPERSONATION_READ_ONLY`, `IMPERSONATION_REASON_INVALID`, `IMPERSONATION_SCOPE_INVALID`, `IMPERSONATION_TARGET_NOT_FOUND`, `IMPERSONATION_WRITE_FORBIDDEN`, `INVALID_CREDENTIALS`, `LOGIN_REQUIRED`, `NOT_AUTHENTICATED`, `NO_ACTIVE_ACCOUNT`, `OWNER_NOTIFICATION_UNAVAILABLE`, `PLATFORM_HOST_REQUIRED`, `PLATFORM_IP_FORBIDDEN`, `REALM_MISMATCH`, `SUPPORT_SESSION_REQUIRED`, `TENANT_REQUIRED`, `TOKEN_NOT_VALID`, `TOKEN_TENANT_MISMATCH`, `TWO_FACTOR_NOT_CONFIGURED` |
+| Authentication and realm | `ACCOUNT_LOCKED`, `AUTHENTICATION_FAILED`, `CURRENT_PASSWORD_INVALID`, `IMPERSONATION_ACTION_BLOCKED`, `IMPERSONATION_DURATION_INVALID`, `IMPERSONATION_ENDED`, `IMPERSONATION_END_FORBIDDEN`, `IMPERSONATION_READ_ONLY`, `IMPERSONATION_REASON_INVALID`, `IMPERSONATION_SCOPE_INVALID`, `IMPERSONATION_TARGET_NOT_FOUND`, `IMPERSONATION_WRITE_FORBIDDEN`, `INVALID_CREDENTIALS`, `LOGIN_REQUIRED`, `NOT_AUTHENTICATED`, `NO_ACTIVE_ACCOUNT`, `OTP_INVALID`, `OTP_LOCKED`, `OTP_REQUIRED`, `OWNER_NOTIFICATION_UNAVAILABLE`, `PASSWORD_INVALID`, `PLATFORM_HOST_REQUIRED`, `PLATFORM_IP_FORBIDDEN`, `REALM_MISMATCH`, `SESSION_NOT_FOUND`, `SESSION_REVOKED`, `SUPPORT_SESSION_REQUIRED`, `TENANT_REQUIRED`, `TOKEN_NOT_VALID`, `TOKEN_TENANT_MISMATCH`, `TWO_FACTOR_NOT_CONFIGURED` |
 | Validation and generic HTTP | `ALREADY_EXISTS`, `AMOUNT_INVALID`, `DATE_INVALID`, `DATE_RANGE_INCOMPLETE`, `DATE_RANGE_INVALID`, `FILTER_INVALID`, `FLOAT_INVALID`, `LINK_INVALID`, `NOT_FOUND`, `PARAM_INVALID`, `PERMISSION_DENIED`, `QTY_INVALID`, `REASON_REQUIRED`, `SCOPE_INVALID`, `SCOPE_TARGET_REQUIRED`, `TARGET_INVALID`, `THROTTLED`, `VALIDATION_ERROR` |
 | Plans, tenancy, and RBAC | `FEATURE_OVERRIDE_INVALID`, `INVALID_PERMISSIONS`, `INVALID_ROLE_CODE`, `LAST_OWNER_ROLE`, `PERMISSION_CATALOG_INCOMPLETE`, `PERMISSION_NOT_FOUND`, `PLAN_CONFIGURATION_ERROR`, `PLAN_CONFIGURATION_INVALID`, `PLAN_FEATURE_REQUIRED`, `PLAN_INACTIVE`, `PLAN_LIMIT_REACHED`, `PLATFORM_ROLE_FORBIDDEN`, `ROLE_IN_USE`, `SUBSCRIPTION_AMOUNT_INVALID`, `SUBSCRIPTION_PAID_TERMINAL`, `SUBSCRIPTION_PERIOD_INVALID`, `SYSTEM_ROLE`, `TENANT_INVALID`, `TRIAL_END_REQUIRED` |
 | Catalog and pricing | `BARCODE_INVALID`, `BRAND_NOT_FOUND`, `CATEGORY_CYCLE`, `CATEGORY_NOT_FOUND`, `COST_INVALID`, `COST_VISIBILITY_REQUIRED`, `DISCOUNT_INVALID`, `DISCOUNT_OUT_OF_RANGE`, `IMAGE_REQUIRED`, `IMAGE_TOO_LARGE`, `IMAGE_TYPE_UNSUPPORTED`, `ITEM_NOT_FOUND`, `ITEM_REQUIRED`, `LOOKUP_PARAM_REQUIRED`, `MATRIX_EMPTY`, `OVERRIDE_REASON_REQUIRED`, `PRICE_ABOVE_MAX`, `PRICE_BELOW_MIN`, `PRICE_BOUNDS_INVALID`, `PRICE_INVALID`, `PRICE_NOT_SET`, `PRICING_RATE_FORBIDDEN`, `PRODUCT_NOT_FOUND`, `QUANTITY_KEY_INVALID`, `RATE_TYPE_IN_USE`, `RATE_TYPE_NOT_FOUND`, `SIZE_CHART_EMPTY`, `SIZE_CHART_NOT_FOUND`, `VARIANT_NOT_FOUND`, `VARIANT_REQUIRED` |

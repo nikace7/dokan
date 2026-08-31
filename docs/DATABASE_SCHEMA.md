@@ -231,9 +231,51 @@ Tenant staff. Phone-based login.
 | full_name | text | no | |
 | is_active | boolean | no | default true |
 | must_change_password | boolean | no | default false |
+| login_otp_required | boolean | no | default false; optional SMS code after password |
 | last_login_at | timestamptz | yes | |
 | failed_login_count | integer | no | default 0 |
 | locked_until | timestamptz | yes | |
+
+### 3.2.1 `auth_session`
+
+Registered tenant-user devices. Access and refresh JWTs carry this row's id as
+`sid`; revocation is checked on every authenticated request.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| id | uuid PK | no | JWT `sid` |
+| tenant_id | uuid FK → tenant | no | RLS; every index leads with tenant |
+| user_id | uuid FK → user | no | |
+| device_id | uuid | no | stable non-secret browser/device identifier |
+| device_name | varchar(100) | no | user-visible label |
+| user_agent | text | no | default empty |
+| ip | inet | yes | request source at login |
+| last_seen_at | timestamptz | no | touch writes bounded to five minutes |
+| expires_at | timestamptz | no | matches refresh lifetime |
+| revoked_at | timestamptz | yes | non-NULL rejects access and refresh immediately |
+
+Indexes: `(tenant_id, user_id, created_at DESC)`,
+`(tenant_id, expires_at)`; partial UNIQUE
+`(tenant_id, user_id, device_id) WHERE revoked_at IS NULL`.
+
+### 3.2.2 `account_otp`
+
+Short-lived tenant-user security challenges. Raw codes are sent through the
+notification provider and never stored in this table.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| id | uuid PK | no | challenge id; included in the HMAC input |
+| tenant_id | uuid FK → tenant | no | RLS |
+| user_id | uuid FK → user | no | |
+| purpose | varchar(20) | no | `PASSWORD_RESET`, `LOGIN`, `LOGIN_ENABLE` |
+| code_hash | char(64) | no | HMAC-SHA256; never the raw six-digit code |
+| expires_at | timestamptz | no | ten-minute TTL |
+| attempts | smallint | no | locks at five failures |
+| consumed_at | timestamptz | yes | single-use marker |
+
+Indexes: `(tenant_id, user_id, purpose, created_at DESC)`,
+`(tenant_id, expires_at)`.
 
 ### 3.3 `role`
 
