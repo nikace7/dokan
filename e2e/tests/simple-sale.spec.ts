@@ -65,7 +65,9 @@ test.describe('simple sale', () => {
     const guest = await newGuestPage(browser);
     try {
       await guest.page.goto(sharePath);
-      await expect(guest.page.getByRole('heading', { name: 'Demo Store' })).toBeVisible();
+      await expect(
+        guest.page.getByRole('heading', { name: 'Everest Outfitters' }),
+      ).toBeVisible();
       await expect(guest.page.getByRole('heading', { name: invoice })).toBeVisible();
       await expect(guest.page.getByText(/Denim Jacket/)).toBeVisible();
       await expect(guest.page.getByText('Total', { exact: true }).first()).toBeVisible();
