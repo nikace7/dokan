@@ -213,6 +213,12 @@ SILENCED_SYSTEM_CHECKS = ["auth.E003"]
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("apps.accounts.authentication.TenantJWTAuthentication",),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_THROTTLE_CLASSES": ("core.throttles.TenantUserThrottle",),
+    "DEFAULT_THROTTLE_RATES": {
+        "tenant_user": "300/min",
+        "tenant_auth": "60/min",
+        "report": "20/min",
+    },
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
