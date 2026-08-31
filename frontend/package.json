@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "echo \"@playwright/test is optional and not installed yet (Phase 1+); add it when E2E lands\" && exit 1",
+    "test:e2e": "npm --prefix ../e2e run test",
     "api:gen": "openapi-typescript ../openapi/schema.yaml -o src/lib/api/schema.d.ts",
     "api:check": "npm run api:gen && git diff --exit-code -- src/lib/api/schema.d.ts"
   },
