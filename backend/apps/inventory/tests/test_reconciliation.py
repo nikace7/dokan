@@ -113,9 +113,9 @@ def test_monthly_task_repairs_active_tenants_and_emits_drift_alert(
     second = _stock(TenantFactory(slug="reconcile-two"), qty="3")
     inactive = _stock(TenantFactory(slug="reconcile-inactive", status=TenantStatus.SUSPENDED))
     for shop in (first, second, inactive):
-        StockLevel.objects.filter(
-            branch=shop["branch"], variant=shop["variant"]
-        ).update(qty_on_hand=Decimal("999"))
+        StockLevel.objects.filter(branch=shop["branch"], variant=shop["variant"]).update(
+            qty_on_hand=Decimal("999")
+        )
 
     with caplog.at_level(logging.ERROR, logger="apps.inventory.tasks"):
         result = reconcile_stock_levels()
