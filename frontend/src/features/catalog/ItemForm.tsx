@@ -1,10 +1,9 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
-import { ImageLightbox } from '@/components/ui/ImageLightbox';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
 import {
@@ -12,7 +11,6 @@ import {
   createCategory,
   createItem,
   createSizeChart,
-  ITEM_IMAGE_ACCEPT,
   listBrands,
   listCategories,
   listSizeCharts,
@@ -21,8 +19,9 @@ import {
   uploadItemImage,
 } from '@/features/catalog/api';
 import type { Gender, Item, ItemPayload } from '@/features/catalog/api';
+import { ItemImageField } from '@/features/catalog/ItemImageField';
 import { QuickAddSelect } from '@/features/catalog/QuickAddSelect';
-import { itemImageError, ItemImage, selectClasses } from '@/features/catalog/ui';
+import { itemImageError, selectClasses } from '@/features/catalog/ui';
 import { ApiError } from '@/lib/api/client';
 
 const GENDERS: Array<{ id: Gender; labelKey: string }> = [
@@ -73,10 +72,8 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
   // Item photo: edit uploads immediately on select; create stashes the file
   // and uploads right after the item exists.
   const [imageUrl, setImageUrl] = useState(initial?.image_url ?? null);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const taxonomies = useQuery({
     queryKey: ['catalog', 'taxonomies'],
@@ -185,94 +182,18 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-      <div className="flex items-start gap-3 sm:col-span-2">
-        {imageUrl ? (
-          <button
-            type="button"
-            aria-label={t('catalog.photo.preview')}
-            onClick={() => setPreviewOpen(true)}
-            className="cursor-zoom-in rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ItemImage
-              imageUrl={imageUrl}
-              alt={name.trim() || t('catalog.form.image')}
-              className="h-20 w-20"
-            />
-          </button>
-        ) : (
-          <ItemImage
-            imageUrl={null}
-            alt={name.trim() || t('catalog.form.image')}
-            className="h-20 w-20"
-          />
-        )}
-        <ImageLightbox
-          imageUrl={previewOpen ? imageUrl : null}
-          alt={name.trim() || t('catalog.form.image')}
-          onClose={() => setPreviewOpen(false)}
-        />
-        <div className="flex flex-col gap-1.5">
-          <Label>{t('catalog.form.image')}</Label>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept={ITEM_IMAGE_ACCEPT}
-            aria-label={t('catalog.form.image')}
-            className="sr-only"
-            onChange={(e) => {
-              onImageSelected(e.target.files?.[0]);
-              // Allow picking the same file again after a failed attempt.
-              e.target.value = '';
-            }}
-          />
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={imageBusy}
-              onClick={() => imageInputRef.current?.click()}
-            >
-              {uploadImageMutation.isPending
-                ? t('catalog.form.imageUploading')
-                : imageUrl || pendingImage
-                  ? t('catalog.form.imageChange')
-                  : t('catalog.form.imageUpload')}
-            </Button>
-            {initial && imageUrl ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-destructive"
-                disabled={imageBusy}
-                onClick={() => removeImageMutation.mutate()}
-              >
-                {t('catalog.form.imageRemove')}
-              </Button>
-            ) : null}
-            {!initial && pendingImage ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-destructive"
-                onClick={() => setPendingImage(null)}
-              >
-                {t('catalog.form.imageRemove')}
-              </Button>
-            ) : null}
-          </div>
-          {!initial && pendingImage ? (
-            <p className="text-xs text-muted-foreground">{pendingImage.name}</p>
-          ) : null}
-          {imageError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {imageError}
-            </p>
-          ) : null}
-        </div>
-      </div>
+      <ItemImageField
+        hasInitial={Boolean(initial)}
+        itemName={name}
+        imageUrl={imageUrl}
+        pendingImage={pendingImage}
+        imageError={imageError}
+        busy={imageBusy}
+        uploading={uploadImageMutation.isPending}
+        onSelect={onImageSelected}
+        onRemove={() => removeImageMutation.mutate()}
+        onClearPending={() => setPendingImage(null)}
+      />
 
       <Input
         label={t('catalog.form.code')}
