@@ -39,6 +39,7 @@ from core.middleware.tenant import get_request_tenant, require_request_tenant
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
+from core.throttles import TenantAuthThrottle
 
 
 def _ok(data: Any, http_status: int = status.HTTP_200_OK) -> Response:
@@ -60,6 +61,7 @@ class TokenObtainView(APIView):
 
     permission_classes = (AllowAny,)
     authentication_classes: tuple = ()
+    throttle_classes = (TenantAuthThrottle,)
 
     def post(self, request: Request) -> Response:
         tenant = get_request_tenant(request)
@@ -91,6 +93,7 @@ class TenantTokenRefreshView(TokenRefreshView):
     """Rotating refresh; the response is wrapped in the API envelope."""
 
     serializer_class = TenantTokenRefreshSerializer
+    throttle_classes = (TenantAuthThrottle,)
 
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         response = super().post(request, *args, **kwargs)

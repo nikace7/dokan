@@ -23,6 +23,7 @@ from core.middleware.tenant import require_request_tenant
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
+from core.throttles import ReportThrottle
 
 
 def _user(request: Request) -> Any:
@@ -56,6 +57,7 @@ def _bs_param(request: Request, name: str) -> str | None:
 
 class _ReportsAPIView(APIView):
     permission_classes = (HasPermission,)
+    throttle_classes = (ReportThrottle,)
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.sales"}
 
     def handle_exception(self, exc: Exception) -> Response:
