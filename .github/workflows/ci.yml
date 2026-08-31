@@ -89,11 +89,18 @@ jobs:
           docker run --rm --entrypoint promtool \
             -v "$PWD/docker/monitoring:/etc/prometheus:ro" \
             prom/prometheus:v3.13.0 check config /etc/prometheus/prometheus.yml
+          docker run --rm \
+            -v "$PWD/docker/monitoring/loki.yml:/etc/loki/loki.yml:ro" \
+            grafana/loki:3.7.2 \
+            -verify-config=true -config.file=/etc/loki/loki.yml
+          docker run --rm \
+            -v "$PWD/docker/monitoring/alloy.config:/etc/alloy/config.alloy:ro" \
+            grafana/alloy:v1.18.0 validate /etc/alloy/config.alloy
           python -m json.tool \
             docker/monitoring/grafana/dashboards/dokan-overview.json >/dev/null
           docker build --tag dokan-backup:test docker/backup
-          mkdir .ops-backups
-          chmod 777 .ops-backups
+          mkdir .ops-backups .ops-monitoring
+          chmod 777 .ops-backups .ops-monitoring
           project=dokan-recovery-ci
           cleanup() { docker compose -p "$project" down --volumes --remove-orphans; }
           trap cleanup EXIT
@@ -117,6 +124,8 @@ jobs:
             -e PGHOST=db -e PGPORT=5432 -e PGDATABASE=dokan -e PGUSER=postgres \
             -e REQUIRE_OBJECT_STORAGE=false \
             -e BASE_BACKUP_ENABLED=true -v "$PWD/.ops-backups:/backups" \
+            -e MONITORING_TEXTFILE_DIR=/monitoring \
+            -v "$PWD/.ops-monitoring:/monitoring" \
             --entrypoint sh dokan-backup:test \
             -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; exec backup.sh'
           docker run --rm -e BASE_BACKUP_ENABLED=true \
@@ -126,8 +135,14 @@ jobs:
             -e PGHOST=db -e PGPORT=5432 -e PGDATABASE=dokan -e PGUSER=postgres \
             -e RESTORE_DATABASE=dokan_restore_drill \
             -v "$PWD/.ops-backups:/backups" \
+            -e MONITORING_TEXTFILE_DIR=/monitoring \
+            -v "$PWD/.ops-monitoring:/monitoring" \
             --entrypoint sh dokan-backup:test \
             -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; exec restore-drill.sh'
+          grep -q '^dokan_backup_last_success_timestamp_seconds ' \
+            .ops-monitoring/dokan_backup.prom
+          grep -q '^dokan_restore_drill_last_success_timestamp_seconds ' \
+            .ops-monitoring/dokan_restore_drill.prom
           cleanup
           trap - EXIT
 
@@ -155,7 +170,13 @@ jobs:
             -e AWS_ENDPOINT_URL=http://127.0.0.1:9000 \
             -e AWS_ACCESS_KEY_ID=dokan_test -e AWS_SECRET_ACCESS_KEY=testpassword123 \
             -e AWS_DEFAULT_REGION=us-east-1 -v "$PWD/.ops-wal:/wal-archive" \
+            -e MONITORING_TEXTFILE_DIR=/monitoring \
+            -v "$PWD/.ops-monitoring:/monitoring" \
             --entrypoint sh dokan-backup:test -c 'wal-upload.sh && wal-healthcheck.sh'
+          grep -q '^dokan_wal_upload_last_success_timestamp_seconds ' \
+            .ops-monitoring/dokan_wal.prom
+          cat .ops-monitoring/*.prom | docker run --rm -i --entrypoint promtool \
+            prom/prometheus:v3.13.0 check metrics
           docker run --rm --network host \
             -e AWS_ACCESS_KEY_ID=dokan_test -e AWS_SECRET_ACCESS_KEY=testpassword123 \
             -e AWS_DEFAULT_REGION=us-east-1 --entrypoint aws dokan-backup:test \

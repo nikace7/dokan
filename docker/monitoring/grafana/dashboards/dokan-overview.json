@@ -113,6 +113,35 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "id": 9,
+      "title": "Recovery signal age",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "targets": [
+        {
+          "expr": "time() - dokan_backup_last_success_timestamp_seconds",
+          "legendFormat": "logical backup",
+          "refId": "A"
+        },
+        {
+          "expr": "time() - dokan_base_backup_last_success_timestamp_seconds",
+          "legendFormat": "base backup",
+          "refId": "B"
+        },
+        {
+          "expr": "time() - dokan_wal_upload_last_success_timestamp_seconds",
+          "legendFormat": "WAL upload",
+          "refId": "C"
+        },
+        {
+          "expr": "time() - dokan_restore_drill_last_success_timestamp_seconds",
+          "legendFormat": "restore drill",
+          "refId": "D"
+        }
+      ]
     }
   ],
   "refresh": "30s",
