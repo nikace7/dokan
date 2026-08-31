@@ -85,6 +85,12 @@ jobs:
         run: |
           cp .env.example .env
           docker compose --profile production --profile ops config --quiet
+          docker compose --profile monitoring config --quiet
+          docker run --rm --entrypoint promtool \
+            -v "$PWD/docker/monitoring:/etc/prometheus:ro" \
+            prom/prometheus:v3.13.0 check config /etc/prometheus/prometheus.yml
+          python -m json.tool \
+            docker/monitoring/grafana/dashboards/dokan-overview.json >/dev/null
           docker build --tag dokan-backup:test docker/backup
           mkdir .ops-backups
           chmod 777 .ops-backups
