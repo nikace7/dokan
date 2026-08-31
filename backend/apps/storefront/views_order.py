@@ -52,9 +52,7 @@ class StorefrontProductDetailView(_StorefrontView):
         def build() -> Response:
             tenant = self._shop_tenant
             item = (
-                Item.objects.filter(
-                    tenant=tenant, pk=pk, is_active=True, website_visible=True
-                )
+                Item.objects.filter(tenant=tenant, pk=pk, is_active=True, website_visible=True)
                 .select_related("category", "brand")
                 .first()
             )
@@ -79,8 +77,9 @@ class StorefrontProductDetailView(_StorefrontView):
                     "price": str(price) if price is not None else None,
                     "compare_at": str(compare_at) if compare_at is not None else None,
                 }
-                for v in ItemVariant.objects.filter(tenant=tenant, item=item, is_active=True)
-                .order_by("size", "color")
+                for v in ItemVariant.objects.filter(
+                    tenant=tenant, item=item, is_active=True
+                ).order_by("size", "color")
             ]
             return ok(
                 {
@@ -110,9 +109,7 @@ class StoreOtpRequestView(_StorefrontView):
         def build() -> Response:
             serializer = OtpRequestSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            services_auth.request_otp(
-                self._shop_tenant, email=serializer.validated_data["email"]
-            )
+            services_auth.request_otp(self._shop_tenant, email=serializer.validated_data["email"])
             return ok({"sent": True})
 
         return self.in_tenant_context(build)
@@ -191,16 +188,12 @@ class StoreOrderTrackingView(_StorefrontView):
         from apps.storefront.models import StoreOrder
 
         order = (
-            StoreOrder.objects.filter(
-                tenant=self._shop_tenant, tracking_token=tracking_token
-            )
+            StoreOrder.objects.filter(tenant=self._shop_tenant, tracking_token=tracking_token)
             .prefetch_related("items")
             .first()
         )
         if order is None:
-            raise ServiceError(
-                "ORDER_NOT_FOUND", "We could not find this order.", http_status=404
-            )
+            raise ServiceError("ORDER_NOT_FOUND", "We could not find this order.", http_status=404)
         return order
 
 
