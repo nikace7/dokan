@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { currentBsMonthRange } from '@/features/reports/api';
 import type { BsRange } from '@/features/reports/api';
-import { adToBs, bsToAd, toBsString } from '@/lib/bs';
+import { BsDatePicker } from '@/features/reports/BsDatePicker';
+import { adToBs, bsToAd, parseBsString, toBsString } from '@/lib/bs';
 
 const BS_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -64,6 +64,13 @@ export function BsRangeControls({ value, onApply }: BsRangeControlsProps) {
       setError(t('reports.range.invalidFormat'));
       return;
     }
+    try {
+      parseBsString(from.trim());
+      parseBsString(to.trim());
+    } catch {
+      setError(t('reports.range.invalidDate'));
+      return;
+    }
     if (from.trim() > to.trim()) {
       setError(t('reports.range.fromAfterTo'));
       return;
@@ -82,22 +89,13 @@ export function BsRangeControls({ value, onApply }: BsRangeControlsProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-end gap-2">
-        <Input
+        <BsDatePicker
           id="bs-from"
           label={t('reports.range.from')}
           value={from}
-          onChange={(e) => setFrom(e.target.value)}
-          placeholder="2083-04-01"
-          className="w-36"
+          onChange={setFrom}
         />
-        <Input
-          id="bs-to"
-          label={t('reports.range.to')}
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-          placeholder="2083-04-32"
-          className="w-36"
-        />
+        <BsDatePicker id="bs-to" label={t('reports.range.to')} value={to} onChange={setTo} />
         <Button size="md" onClick={apply}>
           {t('reports.range.apply')}
         </Button>

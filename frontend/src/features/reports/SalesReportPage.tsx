@@ -8,15 +8,19 @@ import { Input } from '@/components/ui/Input';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SalesTrendChart } from '@/features/dashboard/SalesTrendChart';
+import { useAuth } from '@/features/auth/useAuth';
 import { currentBsMonthRange, currentFiscalYearBs } from '@/features/reports/api';
 import { fetchDailySales, fetchItemSales, fetchMonthlySales } from '@/features/reports/api';
 import type { BsRange, DailySalesRow, ItemSalesRow, MonthlySalesRow } from '@/features/reports/api';
+import type { ReportExportName } from '@/features/reports/api';
 import { BsRangeControls } from '@/features/reports/BsRangeControls';
 import { ItemSalesChart } from '@/features/reports/ItemSalesChart';
+import { ReportActions } from '@/features/reports/ReportActions';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 import { addPaisa, formatNpr, formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
+import { hasPlanFeature } from '@/lib/plans';
 
 type Tab = 'daily' | 'monthly' | 'items';
 type DailyView = 'table' | 'chart';
@@ -37,6 +41,7 @@ function qtyTotal(rows: readonly { qty: string }[]): string {
 /** Sales report — daily by BS date, monthly by fiscal year, top items. */
 export function SalesReportPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('daily');
   const [dailyView, setDailyView] = useState<DailyView>('table');
   const [range, setRange] = useState<BsRange>(currentBsMonthRange);
@@ -59,10 +64,29 @@ export function SalesReportPage() {
   });
 
   const activeQuery = tab === 'daily' ? dailyQuery : tab === 'monthly' ? monthlyQuery : itemsQuery;
+  const exportReport: ReportExportName =
+    tab === 'daily' ? 'daily-sales' : tab === 'monthly' ? 'monthly-sales' : 'item-sales';
+  const exportParams =
+    tab === 'monthly'
+      ? { fiscal_year_bs: fiscalYear }
+      : {
+          date_from_bs: range.dateFromBs,
+          date_to_bs: range.dateToBs,
+          limit: tab === 'items' ? 20 : undefined,
+        };
 
   return (
-    <main className="mx-auto w-full max-w-6xl p-4">
-      <Card title={t('reports.sales.title')}>
+    <main className="report-print-area mx-auto w-full max-w-6xl p-4">
+      <Card
+        title={t('reports.sales.title')}
+        actions={
+          <ReportActions
+            canExport={hasPlanFeature(user, 'export_excel')}
+            report={exportReport}
+            params={exportParams}
+          />
+        }
+      >
         <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <TabsList aria-label={t('reports.sales.viewAria')}>

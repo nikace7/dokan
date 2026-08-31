@@ -8,11 +8,15 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { TableCell } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/features/auth/useAuth';
 import { fetchDeadStock, fetchLowStock, fetchStockSummary } from '@/features/reports/api';
+import type { ReportExportName } from '@/features/reports/api';
 import type { DeadStockRow, LowStockRow, StockSummaryRow } from '@/features/reports/api';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
+import { ReportActions } from '@/features/reports/ReportActions';
 import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { hasPlanFeature } from '@/lib/plans';
 
 type Tab = 'summary' | 'low' | 'dead';
 
@@ -26,6 +30,7 @@ function money(amount: string | null | undefined): string {
  */
 export function StockReportsPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('summary');
   const [days, setDays] = useState(90);
   const [page, setPage] = useState(1);
@@ -48,10 +53,21 @@ export function StockReportsPage() {
 
   const activeQuery = tab === 'summary' ? summaryQuery : tab === 'low' ? lowQuery : deadQuery;
   const meta = activeQuery.data?.meta ?? null;
+  const exportReport: ReportExportName =
+    tab === 'summary' ? 'stock-summary' : tab === 'low' ? 'low-stock' : 'dead-stock';
 
   return (
-    <main className="mx-auto w-full max-w-6xl p-4">
-      <Card title={t('reports.stock.title')}>
+    <main className="report-print-area mx-auto w-full max-w-6xl p-4">
+      <Card
+        title={t('reports.stock.title')}
+        actions={
+          <ReportActions
+            canExport={hasPlanFeature(user, 'export_excel')}
+            report={exportReport}
+            params={{ days: tab === 'dead' ? days : undefined }}
+          />
+        }
+      >
         <Tabs
           value={tab}
           onValueChange={(value) => {
