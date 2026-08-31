@@ -5432,6 +5432,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/reports/export:
+    get:
+      operationId: reports_report_export_view_get
+      description: Download one permission-filtered report as an XLSX workbook.
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/reports/item-sales:
     get:
       operationId: reports_item_sales_view_get
@@ -7341,6 +7363,7 @@ components:
       - REFUND_AMOUNT_INVALID
       - REFUND_EXCEEDS_CREDIT
       - REFUND_METHOD_INVALID
+      - REPORT_INVALID
       - RETURN_LINE_NOT_INVOICED
       - RETURN_NOT_ALLOWED
       - REVERSAL_REASON_REQUIRED
