@@ -1,41 +1,175 @@
+import { lazy } from 'react';
 import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 
 import { AppShell } from '@/components/layout/AppShell';
-import { AuditPage } from '@/features/audit/AuditPage';
-import { LoginPage } from '@/features/auth/LoginPage';
-import { PasswordResetPage } from '@/features/auth/PasswordResetPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
-import { BillingPage } from '@/features/billing/BillingPage';
-import { SharedBillPage } from '@/features/billing/SharedBillPage';
-import { SimpleSalePage } from '@/features/billing/SimpleSalePage';
-import { ItemDetailPage } from '@/features/catalog/ItemDetailPage';
-import { ItemFormPage } from '@/features/catalog/ItemFormPage';
-import { ItemsPage } from '@/features/catalog/ItemsPage';
-import { QuickAddProductPage } from '@/features/catalog/QuickAddProductPage';
-import { DashboardPage } from '@/features/dashboard/DashboardPage';
-import { CustomersPage } from '@/features/customers/CustomersPage';
-import { ExpensesPage } from '@/features/expenses/ExpensesPage';
-import { ExchangePage } from '@/features/exchange/ExchangePage';
-import { StockPage } from '@/features/inventory/StockPage';
-import { TransfersPage } from '@/features/inventory/TransfersPage';
-import { CountsPage } from '@/features/inventory/CountsPage';
-import { PaymentsPage } from '@/features/payments/PaymentsPage';
-import { PartyLedgerPage } from '@/features/payments/PartyLedgerPage';
-import { PurchasingPage } from '@/features/purchasing/PurchasingPage';
-import { PricingPage } from '@/features/pricing/PricingPage';
-import { ReturnsPage } from '@/features/returns/ReturnsPage';
-import { DuesReportPage } from '@/features/reports/DuesReportPage';
-import { ProfitReportPage } from '@/features/reports/ProfitReportPage';
-import { ReportsHomePage } from '@/features/reports/ReportsHomePage';
-import { SalesReportPage } from '@/features/reports/SalesReportPage';
-import { StockReportsPage } from '@/features/reports/StockReportsPage';
-import { VatRegisterPage } from '@/features/reports/VatRegisterPage';
-import { SettingsPage } from '@/features/settings/SettingsPage';
-import { SecurityPage } from '@/features/settings/SecurityPage';
-import { OnlineStorePage } from '@/features/settings/OnlineStorePage';
-import { StaffPage } from '@/features/settings/StaffPage';
-import { SupportAccessPage } from '@/features/support/SupportAccessPage';
-import { SupportLoginPage } from '@/features/support/SupportLoginPage';
+
+const AuditPage = lazy(() =>
+  import('@/features/audit/AuditPage').then(({ AuditPage: Component }) => ({ default: Component })),
+);
+const LoginPage = lazy(() =>
+  import('@/features/auth/LoginPage').then(({ LoginPage: Component }) => ({ default: Component })),
+);
+const PasswordResetPage = lazy(() =>
+  import('@/features/auth/PasswordResetPage').then(({ PasswordResetPage: Component }) => ({
+    default: Component,
+  })),
+);
+const BillingPage = lazy(() =>
+  import('@/features/billing/BillingPage').then(({ BillingPage: Component }) => ({
+    default: Component,
+  })),
+);
+const SharedBillPage = lazy(() =>
+  import('@/features/billing/SharedBillPage').then(({ SharedBillPage: Component }) => ({
+    default: Component,
+  })),
+);
+const SimpleSalePage = lazy(() =>
+  import('@/features/billing/SimpleSalePage').then(({ SimpleSalePage: Component }) => ({
+    default: Component,
+  })),
+);
+const ItemDetailPage = lazy(() =>
+  import('@/features/catalog/ItemDetailPage').then(({ ItemDetailPage: Component }) => ({
+    default: Component,
+  })),
+);
+const ItemFormPage = lazy(() =>
+  import('@/features/catalog/ItemFormPage').then(({ ItemFormPage: Component }) => ({
+    default: Component,
+  })),
+);
+const ItemsPage = lazy(() =>
+  import('@/features/catalog/ItemsPage').then(({ ItemsPage: Component }) => ({
+    default: Component,
+  })),
+);
+const QuickAddProductPage = lazy(() =>
+  import('@/features/catalog/QuickAddProductPage').then(({ QuickAddProductPage: Component }) => ({
+    default: Component,
+  })),
+);
+const DashboardPage = lazy(() =>
+  import('@/features/dashboard/DashboardPage').then(({ DashboardPage: Component }) => ({
+    default: Component,
+  })),
+);
+const CustomersPage = lazy(() =>
+  import('@/features/customers/CustomersPage').then(({ CustomersPage: Component }) => ({
+    default: Component,
+  })),
+);
+const ExpensesPage = lazy(() =>
+  import('@/features/expenses/ExpensesPage').then(({ ExpensesPage: Component }) => ({
+    default: Component,
+  })),
+);
+const ExchangePage = lazy(() =>
+  import('@/features/exchange/ExchangePage').then(({ ExchangePage: Component }) => ({
+    default: Component,
+  })),
+);
+const StockPage = lazy(() =>
+  import('@/features/inventory/StockPage').then(({ StockPage: Component }) => ({
+    default: Component,
+  })),
+);
+const TransfersPage = lazy(() =>
+  import('@/features/inventory/TransfersPage').then(({ TransfersPage: Component }) => ({
+    default: Component,
+  })),
+);
+const CountsPage = lazy(() =>
+  import('@/features/inventory/CountsPage').then(({ CountsPage: Component }) => ({
+    default: Component,
+  })),
+);
+const PaymentsPage = lazy(() =>
+  import('@/features/payments/PaymentsPage').then(({ PaymentsPage: Component }) => ({
+    default: Component,
+  })),
+);
+const PartyLedgerPage = lazy(() =>
+  import('@/features/payments/PartyLedgerPage').then(({ PartyLedgerPage: Component }) => ({
+    default: Component,
+  })),
+);
+const PurchasingPage = lazy(() =>
+  import('@/features/purchasing/PurchasingPage').then(({ PurchasingPage: Component }) => ({
+    default: Component,
+  })),
+);
+const PricingPage = lazy(() =>
+  import('@/features/pricing/PricingPage').then(({ PricingPage: Component }) => ({
+    default: Component,
+  })),
+);
+const ReturnsPage = lazy(() =>
+  import('@/features/returns/ReturnsPage').then(({ ReturnsPage: Component }) => ({
+    default: Component,
+  })),
+);
+const DuesReportPage = lazy(() =>
+  import('@/features/reports/DuesReportPage').then(({ DuesReportPage: Component }) => ({
+    default: Component,
+  })),
+);
+const ProfitReportPage = lazy(() =>
+  import('@/features/reports/ProfitReportPage').then(({ ProfitReportPage: Component }) => ({
+    default: Component,
+  })),
+);
+const ReportsHomePage = lazy(() =>
+  import('@/features/reports/ReportsHomePage').then(({ ReportsHomePage: Component }) => ({
+    default: Component,
+  })),
+);
+const SalesReportPage = lazy(() =>
+  import('@/features/reports/SalesReportPage').then(({ SalesReportPage: Component }) => ({
+    default: Component,
+  })),
+);
+const StockReportsPage = lazy(() =>
+  import('@/features/reports/StockReportsPage').then(({ StockReportsPage: Component }) => ({
+    default: Component,
+  })),
+);
+const VatRegisterPage = lazy(() =>
+  import('@/features/reports/VatRegisterPage').then(({ VatRegisterPage: Component }) => ({
+    default: Component,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import('@/features/settings/SettingsPage').then(({ SettingsPage: Component }) => ({
+    default: Component,
+  })),
+);
+const SecurityPage = lazy(() =>
+  import('@/features/settings/SecurityPage').then(({ SecurityPage: Component }) => ({
+    default: Component,
+  })),
+);
+const OnlineStorePage = lazy(() =>
+  import('@/features/settings/OnlineStorePage').then(({ OnlineStorePage: Component }) => ({
+    default: Component,
+  })),
+);
+const StaffPage = lazy(() =>
+  import('@/features/settings/StaffPage').then(({ StaffPage: Component }) => ({
+    default: Component,
+  })),
+);
+const SupportAccessPage = lazy(() =>
+  import('@/features/support/SupportAccessPage').then(({ SupportAccessPage: Component }) => ({
+    default: Component,
+  })),
+);
+const SupportLoginPage = lazy(() =>
+  import('@/features/support/SupportLoginPage').then(({ SupportLoginPage: Component }) => ({
+    default: Component,
+  })),
+);
 
 /**
  * Route skeleton. Feature routes mount here as modules land; super-admin
@@ -48,8 +182,8 @@ function NotFound() {
   return (
     <main className="mx-auto max-w-sm p-6">
       <h1 className="text-2xl font-semibold">404</h1>
-      <p className="mt-2 text-slate-600">This page does not exist.</p>
-      <Link className="mt-4 inline-block text-blue-600 underline" to="/">
+      <p className="mt-2 text-muted-foreground">This page does not exist.</p>
+      <Link className="mt-4 inline-block text-primary underline" to="/">
         Back to dashboard
       </Link>
     </main>
