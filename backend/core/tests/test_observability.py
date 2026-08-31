@@ -14,11 +14,7 @@ from django.test import Client, override_settings
 from core.observability.logging import JsonFormatter
 from core.observability.sentry import scrub_event
 
-pytestmark = pytest.mark.django_db
-
-_UUID_PATTERN = re.compile(
-    r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-)
+_UUID_PATTERN = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
 
 
 def test_liveness_does_not_touch_dependencies() -> None:
