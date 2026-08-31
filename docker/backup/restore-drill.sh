@@ -65,4 +65,10 @@ case "$migrations:$tables" in
     0:*|*:0|*[!0-9:]*|:) fail "restored database failed schema smoke checks" ;;
 esac
 
+completed_at=$(date +%s)
+write_metric_file dokan_restore_drill.prom \
+    '# HELP dokan_restore_drill_last_success_timestamp_seconds Unix time of the last successful restore drill.' \
+    '# TYPE dokan_restore_drill_last_success_timestamp_seconds gauge' \
+    "dokan_restore_drill_last_success_timestamp_seconds $completed_at"
+
 echo "Restore drill passed: $(basename "$dump") -> $RESTORE_DATABASE"

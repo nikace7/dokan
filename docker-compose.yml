@@ -14,6 +14,14 @@ services:
     volumes:
       - walarchive:/wal-archive
 
+  monitoring-init:
+    image: postgres:16
+    profiles: [production, ops, monitoring]
+    user: root
+    command: ["sh", "-c", "chown postgres:postgres /monitoring && chmod 0755 /monitoring"]
+    volumes:
+      - monitoringdata:/monitoring
+
   db:
     image: postgres:16
     restart: unless-stopped
@@ -78,6 +86,8 @@ services:
       # Uploaded media (item images) lives on the shared ``media`` volume;
       # Caddy serves it read-only at /media/* (mirrors the static pattern).
       MEDIA_ROOT: ${MEDIA_ROOT:-/app/media}
+    labels:
+      dokan.logs.safe: "true"
     depends_on:
       db:
         condition: service_healthy
@@ -151,11 +161,15 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-auto}
+      MONITORING_TEXTFILE_DIR: /monitoring
     volumes:
       - backups:/backups
+      - monitoringdata:/monitoring
     depends_on:
       db:
         condition: service_healthy
+      monitoring-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "backup-healthcheck.sh"]
       interval: 5m
@@ -176,8 +190,13 @@ services:
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-auto}
       WAL_UPLOAD_INTERVAL_SECONDS: ${WAL_UPLOAD_INTERVAL_SECONDS:-60}
       WAL_LOCAL_RETENTION_DAYS: ${WAL_LOCAL_RETENTION_DAYS:-2}
+      MONITORING_TEXTFILE_DIR: /monitoring
     volumes:
       - walarchive:/wal-archive
+      - monitoringdata:/monitoring
+    depends_on:
+      monitoring-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wal-healthcheck.sh"]
       interval: 1m
@@ -196,11 +215,15 @@ services:
       PGUSER: ${POSTGRES_USER:-postgres}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       RESTORE_DATABASE: ${RESTORE_DATABASE:-dokan_restore_drill}
+      MONITORING_TEXTFILE_DIR: /monitoring
     volumes:
       - backups:/backups
+      - monitoringdata:/monitoring
     depends_on:
       db:
         condition: service_healthy
+      monitoring-init:
+        condition: service_completed_successfully
 
   frontend:
     image: dokan-frontend
@@ -256,7 +279,7 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=30d
     ports:
-      - "127.0.0.1:9090:9090"
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./docker/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./docker/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
@@ -280,21 +303,48 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     volumes:
       - ./docker/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./docker/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafanadata:/var/lib/grafana
     depends_on:
       - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:3.7.2
+    profiles: [monitoring]
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./docker/monitoring/loki.yml:/etc/loki/loki.yml:ro
+      - lokidata:/loki
+
+  alloy:
+    image: grafana/alloy:v1.18.0
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./docker/monitoring/alloy.config:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloydata:/var/lib/alloy/data
+    depends_on:
+      - loki
 
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:v0.20.1
     profiles: [monitoring]
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: >-
-        postgresql://dokan_monitor:${DOKAN_MONITOR_PASSWORD:-change-me-monitor-password}@db:5432/${DATABASE_NAME:-dokan}?sslmode=disable
+      DATA_SOURCE_URI: db:5432/${DATABASE_NAME:-dokan}?sslmode=disable
+      DATA_SOURCE_USER: dokan_monitor
+      DATA_SOURCE_PASS: ${DOKAN_MONITOR_PASSWORD:-change-me-monitor-password}
     depends_on:
       db:
         condition: service_healthy
@@ -325,8 +375,13 @@ services:
     restart: unless-stopped
     command:
       - --path.rootfs=/host
+      - --collector.textfile.directory=/monitoring
     volumes:
       - /:/host:ro,rslave
+      - monitoringdata:/monitoring:ro
+    depends_on:
+      monitoring-init:
+        condition: service_completed_successfully
 
   cadvisor:
     image: ghcr.io/google/cadvisor:v0.57.0
@@ -347,7 +402,7 @@ services:
     profiles: [monitoring]
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:3001"
+      - "127.0.0.1:${UPTIME_KUMA_PORT:-3001}:3001"
     volumes:
       - uptimedata:/app/data
 
@@ -363,3 +418,6 @@ volumes:
   prometheusdata:
   grafanadata:
   uptimedata:
+  monitoringdata:
+  lokidata:
+  alloydata:

@@ -45,3 +45,23 @@ aws_run() {
         aws "$@"
     fi
 }
+
+write_metric_file() {
+    filename=$1
+    shift
+    directory=${MONITORING_TEXTFILE_DIR:-}
+    [ -n "$directory" ] || return 0
+    require_safe_directory "$directory"
+    case "$filename" in
+        ''|*[!A-Za-z0-9_.-]*|.*) fail "unsafe metric filename: $filename" ;;
+    esac
+    mkdir -p "$directory"
+    temporary="$directory/.$filename.$$"
+    umask 022
+    {
+        for line in "$@"; do
+            printf '%s\n' "$line"
+        done
+    } > "$temporary"
+    mv "$temporary" "$directory/$filename"
+}

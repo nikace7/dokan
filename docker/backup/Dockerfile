@@ -15,8 +15,8 @@ RUN find /usr/local/bin -maxdepth 1 -type f \
         /usr/local/bin/restore-drill.sh /usr/local/bin/wal-*.sh; do \
         sh -n "$script" || exit 1; \
     done \
-    && mkdir -p /backups /wal-archive \
-    && chown -R postgres:postgres /backups /wal-archive
+    && mkdir -p /backups /wal-archive /monitoring \
+    && chown -R postgres:postgres /backups /wal-archive /monitoring
 
 USER postgres
 CMD ["backup-loop.sh"]
