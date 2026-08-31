@@ -13,6 +13,8 @@ from pathlib import Path
 
 from celery.schedules import crontab
 
+from core.openapi_components import OPENAPI_COMPONENTS
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
@@ -223,7 +225,7 @@ REST_FRAMEWORK = {
         "tenant_auth": "60/min",
         "report": "20/min",
     },
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "core.openapi.ContractAutoSchema",
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
 }
@@ -243,7 +245,23 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "mero-pasal.online API",
     "DESCRIPTION": "Multi-tenant clothing shop management API (see docs/SYSTEM_DESIGN.md).",
     "VERSION": "0.1.0",
+    "OAS_VERSION": "3.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "APPEND_COMPONENTS": OPENAPI_COMPONENTS,
+    "ENUM_NAME_OVERRIDES": {
+        "SubscriptionStatus": "apps.tenants.models.TenantSubscription.Status",
+        "SalesInvoiceStatus": "apps.sales.models.SalesInvoice.Status",
+        "CbmsSyncState": "apps.compliance.models.CbmsSyncLog.Status",
+        "TenantStatus": "apps.tenants.constants.TenantStatus.CHOICES",
+        "PriceTargetScope": "apps.pricing.models.ItemPrice.Scope",
+        "ImpersonationScope": "apps.platformadmin.models.ImpersonationSession.Scope",
+        "TenantCurrency": "apps.tenants.models.Tenant.Currency",
+        "StoreCurrency": "apps.storefront.models.CURRENCY_CHOICES",
+        "PaymentMethod": "apps.payments.models.Payment.Method",
+        "PaymentInputMethod": "apps.payments.serializers._METHODS",
+        "SaleTenderMethod": "apps.sales.services.PAYMENT_METHODS",
+        "RefundMethod": "apps.sales.services.returns.REFUND_METHODS",
+    },
 }
 
 # Email — storefront OTP login codes and order confirmations. Dev/tests use

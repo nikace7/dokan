@@ -37,6 +37,7 @@ from apps.platformadmin.services import PlatformAuthError, authenticate_platform
 from apps.platformadmin.throttles import PlatformAdminThrottle, PlatformAuthThrottle
 from apps.platformadmin.tokens import issue_platform_tokens
 from apps.tenants.constants import TenantStatus
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.responses import ServiceError, error, ok
 
@@ -45,6 +46,9 @@ class PlatformTokenObtainView(APIView):
     authentication_classes: tuple = ()
     permission_classes = (AllowAny,)
     throttle_classes = (PlatformAuthThrottle,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=PlatformLoginSerializer),
+    }
 
     def post(self, request: Request) -> Response:
         serializer = PlatformLoginSerializer(data=request.data)
@@ -69,6 +73,9 @@ class PlatformTokenRefreshView(TokenRefreshView):
 class PlatformMeView(APIView):
     authentication_classes = (PlatformJWTAuthentication,)
     permission_classes = (IsAuthenticated,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=PlatformMeSerializer),
+    }
 
     def get(self, request: Request) -> Response:
         return ok(PlatformMeSerializer(cast("PlatformUser", request.user)).data)
@@ -116,6 +123,14 @@ class PlanListView(_PlatformAPIView):
         "GET": ALL_PLATFORM_ROLES,
         "POST": (PlatformUser.Role.SUPER_ADMIN,),
     }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=PlanSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=PlanCreateSerializer,
+            response=PlanSerializer,
+            status_code=201,
+        ),
+    }
 
     def get(self, request: Request) -> Response:
         include_inactive = request.query_params.get("include_inactive", "").lower() in {
@@ -146,6 +161,10 @@ class PlanDetailView(_PlatformAPIView):
         "GET": ALL_PLATFORM_ROLES,
         "PATCH": (PlatformUser.Role.SUPER_ADMIN,),
     }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=PlanSerializer),
+        "PATCH": operation(request=PlanUpdateSerializer, response=PlanSerializer),
+    }
 
     def get(self, request: Request, pk: UUID) -> Response:
         return ok(PlanSerializer(selectors.get_plan(_actor(request), pk)).data)
@@ -166,6 +185,14 @@ class TenantListView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "GET": ALL_PLATFORM_ROLES,
         "POST": (PlatformUser.Role.SUPER_ADMIN,),
+    }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=TenantSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=TenantCreateSerializer,
+            response=TenantSerializer,
+            status_code=201,
+        ),
     }
 
     def get(self, request: Request) -> Response:
@@ -196,6 +223,10 @@ class TenantDetailView(_PlatformAPIView):
         "GET": ALL_PLATFORM_ROLES,
         "PATCH": (PlatformUser.Role.SUPER_ADMIN,),
     }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=TenantSerializer),
+        "PATCH": operation(request=TenantUpdateSerializer, response=TenantSerializer),
+    }
 
     def get(self, request: Request, pk: UUID) -> Response:
         return ok(TenantSerializer(selectors.get_tenant(_actor(request), pk)).data)
@@ -216,6 +247,18 @@ class SubscriptionListView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "GET": ALL_PLATFORM_ROLES,
         "POST": (PlatformUser.Role.SUPER_ADMIN, PlatformUser.Role.BILLING),
+    }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=SubscriptionSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+        "POST": operation(
+            request=SubscriptionCreateSerializer,
+            response=SubscriptionSerializer,
+            status_code=201,
+        ),
     }
 
     def get(self, request: Request, tenant_pk: UUID) -> Response:
@@ -244,6 +287,12 @@ class SubscriptionDetailView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "PATCH": (PlatformUser.Role.SUPER_ADMIN, PlatformUser.Role.BILLING),
     }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "PATCH": operation(
+            request=SubscriptionUpdateSerializer,
+            response=SubscriptionSerializer,
+        ),
+    }
 
     def patch(self, request: Request, tenant_pk: UUID, pk: UUID) -> Response:
         tenant = selectors.get_tenant(_actor(request), tenant_pk)
@@ -260,6 +309,13 @@ class SubscriptionDetailView(_PlatformAPIView):
 
 class TenantUsageView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {"GET": ALL_PLATFORM_ROLES}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=UsageSnapshotSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+    }
 
     def get(self, request: Request, tenant_pk: UUID) -> Response:
         tenant = selectors.get_tenant(_actor(request), tenant_pk)
@@ -275,6 +331,18 @@ class FeatureOverrideListView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "GET": ALL_PLATFORM_ROLES,
         "POST": (PlatformUser.Role.SUPER_ADMIN,),
+    }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=FeatureOverrideSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+        "POST": operation(
+            request=FeatureOverrideSetSerializer,
+            response=FeatureOverrideSerializer,
+            status_code=(200, 201),
+        ),
     }
 
     def get(self, request: Request, tenant_pk: UUID) -> Response:
@@ -306,6 +374,7 @@ class FeatureOverrideDetailView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "DELETE": (PlatformUser.Role.SUPER_ADMIN,)
     }
+    schema_contract: ClassVar[dict[str, Any]] = {"DELETE": operation()}
 
     def delete(self, request: Request, tenant_pk: UUID, pk: UUID) -> Response:
         tenant = selectors.get_tenant(_actor(request), tenant_pk)
@@ -321,6 +390,13 @@ class FeatureOverrideDetailView(_PlatformAPIView):
 class PlatformAuditListView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "GET": (PlatformUser.Role.SUPER_ADMIN,)
+    }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=PlatformAuditSerializer,
+            response_many=True,
+            paginated=True,
+        ),
     }
 
     def get(self, request: Request) -> Response:

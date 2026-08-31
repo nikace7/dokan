@@ -20,6 +20,7 @@ from apps.compliance.serializers import (
 )
 from apps.sales.models import SalesInvoice
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -45,6 +46,9 @@ class InvoiceSyncStatusView(_ComplianceAPIView):
     """GET /compliance/status/<invoice_id> — synced/pending/failed per bill."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "sale.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=CbmsSyncStatusSerializer),
+    }
 
     def get(self, request: Request, invoice_id: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -61,6 +65,13 @@ class SyncFailureListView(_ComplianceAPIView):
     """GET /compliance/failures — the ops retry dashboard list."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "compliance.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=CbmsSyncFailureSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)

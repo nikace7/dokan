@@ -26,6 +26,7 @@ from apps.purchasing.serializers import (
 )
 from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -69,6 +70,15 @@ class _PurchasingAPIView(APIView):
 
 
 class SupplierListView(_PurchasingAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=SupplierSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=SupplierSerializer,
+            response=SupplierSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         raw = request.query_params.get("is_active")
@@ -93,6 +103,12 @@ class SupplierListView(_PurchasingAPIView):
 
 
 class SupplierDetailView(_PurchasingAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=SupplierSerializer),
+        "PATCH": operation(request=SupplierSerializer, response=SupplierSerializer),
+        "DELETE": operation(),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         supplier = _get_or_404(tenant, Supplier, pk, "Supplier")
@@ -140,6 +156,19 @@ def _uuid_param(request: Request, name: str) -> UUID | None:
 
 
 class InvoiceListView(_PurchasingAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=PurchaseInvoiceSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+        "POST": operation(
+            request=PurchaseInvoiceCreateSerializer,
+            response=PurchaseInvoiceSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
 
         tenant = require_request_tenant(request)
@@ -190,6 +219,14 @@ class InvoiceListView(_PurchasingAPIView):
 
 
 class InvoiceDetailView(_PurchasingAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=PurchaseInvoiceSerializer),
+        "PATCH": operation(
+            request=PurchaseInvoiceUpdateSerializer,
+            response=PurchaseInvoiceSerializer,
+        ),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
 
         tenant = require_request_tenant(request)
@@ -231,6 +268,10 @@ class InvoiceDetailView(_PurchasingAPIView):
 class InvoiceConfirmView(_PurchasingAPIView):
     """POST /purchasing/invoices/<id>/confirm — post stock + batches."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(response=PurchaseInvoiceSerializer),
+    }
+
     def post(self, request: Request, pk: UUID) -> Response:
 
         tenant = require_request_tenant(request)
@@ -243,6 +284,8 @@ class InvoiceConfirmView(_PurchasingAPIView):
 
 class InvoiceCancelView(_PurchasingAPIView):
     """POST /purchasing/invoices/<id>/cancel — void a DRAFT."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)

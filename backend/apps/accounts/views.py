@@ -36,6 +36,7 @@ from apps.accounts.tokens import issue_tokens_for_user
 from apps.tenants.models import Branch
 from apps.tenants.selectors import get_effective_plan_features
 from core.middleware.tenant import get_request_tenant, require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -62,6 +63,9 @@ class TokenObtainView(APIView):
     permission_classes = (AllowAny,)
     authentication_classes: tuple = ()
     throttle_classes = (TenantAuthThrottle,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=TokenObtainSerializer),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = get_request_tenant(request)
@@ -106,6 +110,9 @@ class MeView(APIView):
     """Current user plus their resolved permission codenames."""
 
     permission_classes = (IsAuthenticated,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=MeSerializer),
+    }
 
     def get(self, request: Request) -> Response:
         user = cast("User", request.user)  # IsAuthenticated guarantees a User
@@ -144,6 +151,10 @@ class _AccountsManagementAPIView(APIView):
 class PermissionListView(_AccountsManagementAPIView):
     """GET /permissions — global permission catalog for role editing."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=PermissionSerializer, response_many=True),
+    }
+
     def get(self, request: Request) -> Response:
         data: list[Any] = list(
             PermissionSerializer(selectors.list_permissions(_user(request)), many=True).data
@@ -153,6 +164,15 @@ class PermissionListView(_AccountsManagementAPIView):
 
 class RoleListView(_AccountsManagementAPIView):
     """GET/POST /roles — list and create tenant roles."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=RoleSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=RoleCreateSerializer,
+            response=RoleSerializer,
+            status_code=201,
+        ),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -188,6 +208,10 @@ class RoleDetailView(_AccountsManagementAPIView):
         "PATCH": "user.manage",
         "DELETE": "user.manage",
     }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "PATCH": operation(request=RoleUpdateSerializer, response=RoleSerializer),
+        "DELETE": operation(),
+    }
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -212,6 +236,15 @@ class RoleDetailView(_AccountsManagementAPIView):
 
 class StaffListView(_AccountsManagementAPIView):
     """GET/POST /users — tenant staff administration."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StaffUserSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=StaffCreateSerializer,
+            response=StaffUserSerializer,
+            status_code=201,
+        ),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -247,6 +280,13 @@ class StaffListView(_AccountsManagementAPIView):
 
 class StaffRoleAssignmentView(_AccountsManagementAPIView):
     """POST /users/<id>/roles — assign one existing role to staff."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=StaffRoleAssignmentSerializer,
+            status_code=(200, 201),
+        ),
+    }
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -284,6 +324,7 @@ class StaffRoleRevokeView(_AccountsManagementAPIView):
     method_permissions: ClassVar[dict[str, str]] = {
         "DELETE": "user.manage",
     }
+    schema_contract: ClassVar[dict[str, Any]] = {"DELETE": operation()}
 
     def delete(self, request: Request, pk: UUID, assignment_id: UUID) -> Response:
         tenant = require_request_tenant(request)

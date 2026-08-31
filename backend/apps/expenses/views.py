@@ -24,6 +24,7 @@ from apps.expenses.serializers import (
 )
 from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -91,6 +92,19 @@ class _ExpensesAPIView(APIView):
 
 
 class CategoryListView(_ExpensesAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=ExpenseCategorySerializer,
+            response_many=True,
+            paginated=True,
+        ),
+        "POST": operation(
+            request=ExpenseCategorySerializer,
+            response=ExpenseCategorySerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         raw = request.query_params.get("is_active")
@@ -110,6 +124,14 @@ class CategoryListView(_ExpensesAPIView):
 
 
 class CategoryDetailView(_ExpensesAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "PATCH": operation(
+            request=ExpenseCategorySerializer,
+            response=ExpenseCategorySerializer,
+        ),
+        "DELETE": operation(),
+    }
+
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         category = _get_or_404(tenant, ExpenseCategory, pk, "Category")
@@ -128,6 +150,15 @@ class CategoryDetailView(_ExpensesAPIView):
 
 
 class ExpenseListView(_ExpensesAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ExpenseSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=ExpenseCreateSerializer,
+            response=ExpenseSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_expenses(
@@ -168,6 +199,12 @@ class ExpenseListView(_ExpensesAPIView):
 
 
 class ExpenseDetailView(_ExpensesAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ExpenseSerializer),
+        "PATCH": operation(request=ExpenseUpdateSerializer, response=ExpenseSerializer),
+        "DELETE": operation(),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         expense = _get_or_404(tenant, Expense, pk, "Expense")
@@ -197,6 +234,8 @@ class ExpenseDetailView(_ExpensesAPIView):
 
 class ExpenseSummaryView(_ExpensesAPIView):
     """GET /expenses/summary — totals by category or BS month."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
