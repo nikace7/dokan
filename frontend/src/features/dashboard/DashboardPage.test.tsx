@@ -180,11 +180,9 @@ describe('DashboardPage', () => {
 
     renderPage();
 
-    // Header: greeting + shop/branch/BS date context.
     expect(await screen.findByText('Hello, Ram Sharma')).toBeInTheDocument();
     expect(screen.getByText(/Shree Ganesh Vastralaya · Main · BS 2083-04-20/)).toBeInTheDocument();
 
-    // Stat tiles (StatTile keeps the .00 decimals).
     expect(screen.getByText("Today's collection")).toBeInTheDocument();
     expect(screen.getByText('रू 45,200.00')).toBeInTheDocument();
     expect(screen.getByText('18 bills')).toBeInTheDocument();
@@ -193,11 +191,9 @@ describe('DashboardPage', () => {
     expect(screen.getByText('रू 82,500.00')).toBeInTheDocument();
     expect(screen.getByText('Low stock')).toBeInTheDocument();
 
-    // Trend vs yesterday derived from the existing 30-day series.
     expect(screen.getByText(/50\.7%/)).toBeInTheDocument();
     expect(screen.getByText('vs yesterday')).toBeInTheDocument();
 
-    // Month-to-date and today's profit tiles (server-filtered aggregates).
     expect(screen.getByText('Sales this month (BS)')).toBeInTheDocument();
     expect(screen.getByText('रू 91,200.00')).toBeInTheDocument();
     expect(screen.getByText('Since BS 2083-04-01')).toBeInTheDocument();
@@ -212,7 +208,6 @@ describe('DashboardPage', () => {
       '/reports/profit',
     );
 
-    // Tiles drill down into their reports.
     expect(screen.getByRole('link', { name: /Today's collection/ })).toHaveAttribute(
       'href',
       '/reports/sales',
@@ -230,7 +225,6 @@ describe('DashboardPage', () => {
       '/reports/stock',
     );
 
-    // Low-stock preview strip: header count, severity chips linking to the report.
     expect(screen.getByText(/14 items/)).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /TEE-BLK-M/ })).toHaveAttribute(
       'href',
@@ -245,14 +239,12 @@ describe('DashboardPage', () => {
     expect(screen.getByText('reorder at 5')).toBeInTheDocument();
     expect(screen.getByText('reorder at 3')).toBeInTheDocument();
 
-    // Charts: trend + tender donut with legend and center total.
     expect(screen.getByLabelText('Last 30 days sales')).toBeInTheDocument();
     expect(await screen.findByText('Collection by method')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /CASH 66\.4%/ })).toBeInTheDocument();
     expect(screen.getByText('ESEWA')).toBeInTheDocument();
     expect(screen.getByText('रू 45,200')).toBeInTheDocument();
 
-    // Quick actions: all four for the owner (New sale also in the header).
     expect(screen.getAllByRole('link', { name: 'New sale' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: 'New sale' })[0]).toHaveAttribute(
       'href',
@@ -262,7 +254,6 @@ describe('DashboardPage', () => {
     expect(screen.getAllByRole('link', { name: 'Reports' })).not.toHaveLength(0);
     expect(screen.getByRole('link', { name: 'Customers' })).toHaveAttribute('href', '/customers');
 
-    // Recent bills with tender badge (CASH appears in the donut legend too).
     expect(screen.getByText('INV-1042')).toBeInTheDocument();
     expect(screen.getByText('Sita Rai')).toBeInTheDocument();
     expect(screen.getAllByText('CASH').length).toBeGreaterThan(1);
