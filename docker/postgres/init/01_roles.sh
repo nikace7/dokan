@@ -1,5 +1,5 @@
 #!/bin/bash
-# Creates the two database roles the platform runs on (ARCHITECTURE §6 invariant 5):
+# Creates the application database roles (ARCHITECTURE §6 invariant 5):
 #
 #   dokan_migrator — owns the schema, runs migrations, bypasses RLS as owner
 #                    of the tables (FORCE RLS still applies; migrations use
