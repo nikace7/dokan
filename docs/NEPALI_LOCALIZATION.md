@@ -177,8 +177,9 @@ counter-facing screens ([ARCHITECTURE.md](ARCHITECTURE.md), SYSTEM_DESIGN §6.4,
   माघ, फागुन, चैत. BS months run 29–32 days — a generic 30/31-day picker is
   wrong.
 
-The i18n framework itself is deliberately **not built yet**
-(`frontend/src/lib/i18n/README.md`): the string count is small and counter
-screens are fixed, so a tiny typed message map will likely be enough. Do not
-scaffold one before a real screen needs translated strings. What exists today
-is the display layer: Devanagari numerals for money and BS dates.
+The i18n layer is implemented with i18next and React bindings
+([`frontend/src/lib/i18n/README.md`](../frontend/src/lib/i18n/README.md)). English
+and Nepali catalogs must keep identical keys; the saved user choice wins, and a
+first visit defaults to Nepali. Screens render one selected language at a time,
+while 80mm receipts intentionally remain bilingual. Devanagari numerals for
+money and BS dates stay independent display preferences.

@@ -178,13 +178,14 @@ returns,exchange}.py`), never by layer.
 | `inventory` | stock_level, stock_movement ledger, transfers, counts | Only writer of stock quantities, via `stock_movement` |
 | `purchasing` | supplier, purchase invoice, landed cost | Writes PURCHASE movements through inventory's service |
 | `sales` | invoice, return, exchange, held bill, numbering | Never edits completed invoices; corrections are RETURN docs |
-| `customers` | customer, loyalty, party ledger | Party ledger is shared with suppliers (purchasing) |
-| `payments` | payment, gateways, cash session | All money in/out; idempotent writes |
+| `customers` | customer and credit policy | Loyalty remains roadmap scope; dues use the payment selector |
+| `payments` | payment, allocation, reversal, cash session | Ledger-derived balances; gateway adapters remain roadmap scope |
 | `expenses` | expense tracking | Feeds net-profit reports |
-| `reports` | selectors + rollup jobs only | No business models except summary tables; reads via selectors |
+| `reports` | selectors and permission-safe exports | Intentionally model-free until the documented rollup trigger |
 | `audit` | audit_log, query API | Append-only store; written only via `audit(...)` |
 | `notifications` | SMS/email, templates, provider abstraction | Vendor-agnostic interface (ADR 0004) |
-| `compliance` | IRD/CBMS sync (Phase 2) | Reads invoices; sync status back onto invoice rows |
+| `compliance` | durable IRD/CBMS sync queue | Frozen payloads and retry state; live provider is deployment integration |
+| `storefront` | public catalog, settings, OTP customers, orders | Resolves `*.shop.<root>` itself, opens RLS context, and never exposes cost or exact stock |
 
 Cross-app rule: apps call each other **only through services and selectors**,
 never through another app's models in a write path. `core/` holds the platform
@@ -237,6 +238,11 @@ Decisions that follow from this:
 - The super-admin portal ships in the **same build** under `/admin`, mounted only
   on the `admin.` host: one deploy, one auth library, one design system.
 - API types come from the generated client only (ADR 0002).
+- Tenant and admin portals plus feature pages are route-lazy. CI rejects a
+  production initial JavaScript entry above 500 KiB so feature-only code cannot
+  silently return to the startup path.
+- The anonymous customer store is a separate Vite SPA under `storefront/`, with
+  its own host namespace and `aurora`/`bazaar` template registry.
 
 ---
 
@@ -350,7 +356,8 @@ SYSTEM_DESIGN §12 for the full "deliberately not built" list.
   link.
 - **API contract**: envelope `{data, meta, error}` with machine-readable error
   codes; cursor pagination on transaction lists; OpenAPI 3.1 generated from DRF
-  (ADR 0002).
+  plus committed TypeScript declarations, both regenerated and diff-checked in
+  CI (ADR 0002).
 
 ---
 
