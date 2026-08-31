@@ -310,7 +310,7 @@ Static/media on S3-compatible storage (Cloudflare R2) behind a CDN.
 | Zero-downtime | Rolling restart behind Caddy; migrations backward-compatible for one release |
 | Monitoring | privacy-filtered Sentry; Prometheus + exporters; Grafana; Loki + Alloy; Uptime Kuma |
 | Alerting | 5xx/latency, worker and queue health, DB/Redis/disk saturation, recovery freshness, external HTTP/TLS |
-| Secrets | Docker secrets / SOPS; startup asserts all required secrets present, fails loudly |
+| Secrets | External `.env`/SOPS input is mapped through explicit per-service allowlists; startup asserts required secrets, and CI rejects cross-boundary exposure |
 | Environments | `dev` (local compose) → `staging` (real subdomain, anonymised data) → `prod` |
 
 **Trigger points for growing past this** (do not build early): managed Postgres +
