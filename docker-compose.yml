@@ -1,5 +1,5 @@
 # Phase-1 single-VPS topology (docs/SYSTEM_DESIGN.md §8.8):
-# Caddy → Gunicorn (web) + Celery (worker/beat) + Postgres 16 + Redis 7.
+# Caddy → Gunicorn/Celery → PgBouncer (transaction) → Postgres 16 + Redis 7.
 
 x-backup-image: &backup-image
   image: dokan-backup
@@ -10,7 +10,12 @@ services:
   wal-init:
     image: postgres:16
     user: root
-    command: ["sh", "-c", "chown postgres:postgres /wal-archive && chmod 0700 /wal-archive"]
+    command:
+      [
+        "sh",
+        "-c",
+        "chown postgres:postgres /wal-archive && chmod 0700 /wal-archive",
+      ]
     volumes:
       - walarchive:/wal-archive
 
@@ -18,7 +23,12 @@ services:
     image: postgres:16
     profiles: [production, ops, monitoring]
     user: root
-    command: ["sh", "-c", "chown postgres:postgres /monitoring && chmod 0755 /monitoring"]
+    command:
+      [
+        "sh",
+        "-c",
+        "chown postgres:postgres /monitoring && chmod 0755 /monitoring",
+      ]
     volumes:
       - monitoringdata:/monitoring
 
@@ -59,6 +69,41 @@ services:
       wal-init:
         condition: service_completed_successfully
 
+  pgbouncer:
+    image: ghcr.io/cloudnative-pg/pgbouncer@sha256:fc4e07c8e716245102d429f30e4edc7a61a64423efcfabb1e55dd500b662cfcf
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/etc/pgbouncer/start-pgbouncer.sh"]
+    environment:
+      DATABASE_NAME: ${DATABASE_NAME:-dokan}
+      DATABASE_USER: ${DATABASE_USER:-dokan_app}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+      PGBOUNCER_UPSTREAM_HOST: db
+      PGBOUNCER_MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-500}
+      PGBOUNCER_DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-40}
+      PGBOUNCER_RESERVE_POOL_SIZE: ${PGBOUNCER_RESERVE_POOL_SIZE:-10}
+    volumes:
+      - ./docker/pgbouncer/start-pgbouncer.sh:/etc/pgbouncer/start-pgbouncer.sh:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          PGPASSWORD="$${DATABASE_PASSWORD}" psql -h 127.0.0.1 -p 6432
+          -U "$${DATABASE_USER}" -d "$${DATABASE_NAME}" -tAc 'SELECT 1'
+          | grep -qx 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:7
     restart: unless-stopped
@@ -78,7 +123,9 @@ services:
       # Local frontend/dev access only; public traffic must enter through Caddy.
       - "127.0.0.1:8000:8000"
     environment:
-      DATABASE_HOST: db
+      DATABASE_HOST: ${DATABASE_HOST:-pgbouncer}
+      DATABASE_PORT: ${DATABASE_PORT:-6432}
+      DATABASE_POOL_MODE: ${DATABASE_POOL_MODE:-transaction}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
@@ -89,7 +136,7 @@ services:
     labels:
       dokan.logs.safe: "true"
     depends_on:
-      db:
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -115,12 +162,14 @@ services:
     command: celery -A config worker --loglevel=info --concurrency=2
     env_file: .env
     environment:
-      DATABASE_HOST: db
+      DATABASE_HOST: ${DATABASE_HOST:-pgbouncer}
+      DATABASE_PORT: ${DATABASE_PORT:-6432}
+      DATABASE_POOL_MODE: ${DATABASE_POOL_MODE:-transaction}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
     depends_on:
-      db:
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -131,11 +180,15 @@ services:
     command: celery -A config beat --loglevel=info
     env_file: .env
     environment:
-      DATABASE_HOST: db
+      DATABASE_HOST: ${DATABASE_HOST:-pgbouncer}
+      DATABASE_PORT: ${DATABASE_PORT:-6432}
+      DATABASE_POOL_MODE: ${DATABASE_POOL_MODE:-transaction}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
     depends_on:
+      pgbouncer:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -231,7 +284,15 @@ services:
       context: frontend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:8080/healthz",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -243,7 +304,15 @@ services:
       context: storefront
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:8080/healthz",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3

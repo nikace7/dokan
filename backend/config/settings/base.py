@@ -78,6 +78,12 @@ def assert_production_email_backend(backend: str | None) -> None:
         raise RuntimeError("EMAIL_BACKEND must deliver mail in production")
 
 
+def assert_transaction_pooling(pool_mode: str | None) -> None:
+    """Reject production database paths that can leak tenant session state."""
+    if pool_mode != "transaction":
+        raise RuntimeError("DATABASE_POOL_MODE must be 'transaction' in production")
+
+
 # ---------------------------------------------------------------------------
 # Core Django
 # ---------------------------------------------------------------------------
@@ -201,6 +207,9 @@ DATABASES = {
         "PORT": env("DATABASE_PORT", "5432"),
         "ATOMIC_REQUESTS": True,
         "CONN_MAX_AGE": 60,
+        # Server-side cursors keep state beyond one transaction and are not
+        # compatible with PgBouncer transaction pooling.
+        "DISABLE_SERVER_SIDE_CURSORS": env("DATABASE_POOL_MODE", "direct") == "transaction",
     }
 }
 
