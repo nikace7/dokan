@@ -8,8 +8,8 @@ import pytest
 from django.core.cache import cache
 from rest_framework.test import APIClient
 
+from apps.accounts.auth_views import TenantTokenRefreshView, TokenObtainView
 from apps.accounts.models import Permission
-from apps.accounts.views import TenantTokenRefreshView, TokenObtainView
 from apps.reports.views import _ReportsAPIView
 from core.throttles import ReportThrottle, TenantAuthThrottle, TenantUserThrottle
 from tests.factories import (
