@@ -6085,7 +6085,6 @@ paths:
   /api/v1/sales/{id}/returnable:
     get:
       operationId: sales_returnable_lines_view_get
-      description: GET /sales/<id>/returnable — remaining qty per line (exchange screen).
       parameters:
       - in: path
         name: id
@@ -6159,7 +6158,6 @@ paths:
   /api/v1/sales/exchanges:
     post:
       operationId: sales_exchange_create_view_post
-      description: POST /sales/exchanges — return + sale in one atomic operation.
       parameters:
       - in: header
         name: Idempotency-Key
@@ -6323,7 +6321,6 @@ paths:
   /api/v1/sales/returns:
     post:
       operationId: sales_return_create_view_post
-      description: POST /sales/returns — credit note against a completed bill.
       parameters:
       - in: header
         name: Idempotency-Key

@@ -2034,7 +2034,6 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description GET /sales/<id>/returnable — remaining qty per line (exchange screen). */
         get: operations["sales_returnable_lines_view_get"];
         put?: never;
         post?: never;
@@ -2070,7 +2069,6 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description POST /sales/exchanges — return + sale in one atomic operation. */
         post: operations["sales_exchange_create_view_post"];
         delete?: never;
         options?: never;
@@ -2121,7 +2119,6 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description POST /sales/returns — credit note against a completed bill. */
         post: operations["sales_return_create_view_post"];
         delete?: never;
         options?: never;
