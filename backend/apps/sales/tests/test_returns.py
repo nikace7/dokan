@@ -5,10 +5,12 @@ Reference sale (the ``shop`` fixture): VAT bill, 2×A (MRP 1000, VAT-able,
 subtotal 2500, discounts 200, taxable 2300, VAT 247, total 2547, due 547.
 """
 
+import importlib
 from decimal import Decimal
 from typing import Any
 
 import pytest
+from django.db import IntegrityError
 
 from apps.customers.selectors import get_customer_outstanding
 from apps.inventory.models import StockLevel, StockMovement
@@ -28,6 +30,8 @@ from tests.factories import (
 )
 
 pytestmark = pytest.mark.django_db
+
+returns_module = importlib.import_module("apps.sales.services.returns")
 
 
 @pytest.fixture
@@ -132,6 +136,14 @@ class TestReturnMath:
 
 
 class TestReturnGuards:
+    def test_quantity_must_be_positive(self, shop: dict) -> None:
+        with pytest.raises(ServiceError) as exc:
+            _return(
+                shop,
+                [ReturnLineInput(variant=shop["variant_a"], qty=Decimal("0"))],
+            )
+        assert exc.value.code == "QTY_INVALID"
+
     def test_over_return_across_sequential_returns(self, shop: dict) -> None:
         _return(shop, [ReturnLineInput(variant=shop["variant_a"], qty=Decimal("2"))])
         with pytest.raises(ServiceError) as exc:
@@ -195,6 +207,26 @@ class TestReturnGuards:
             )
         assert exc.value.code == "IDEMPOTENCY_KEY_REQUIRED"
 
+    def test_return_requires_at_least_one_line(self, shop: dict) -> None:
+        with pytest.raises(ServiceError) as exc:
+            _return(shop, [])
+        assert exc.value.code == "LINES_REQUIRED"
+
+    def test_unrelated_integrity_error_is_not_treated_as_replay(
+        self, shop: dict, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_create(*args: Any, **kwargs: Any) -> None:
+            raise IntegrityError("unrelated return constraint")
+
+        monkeypatch.setattr(returns_module, "_create_return_invoice", fail_create)
+
+        with pytest.raises(IntegrityError, match="unrelated return constraint"):
+            _return(
+                shop,
+                [ReturnLineInput(variant=shop["variant_a"], qty=Decimal("1"))],
+                key="return-unrelated-integrity",
+            )
+
 
 class TestStockRestore:
     def test_stock_back_at_original_cost(self, shop: dict) -> None:
@@ -224,6 +256,15 @@ class TestIdempotency:
 
 
 class TestRefunds:
+    def test_refund_amount_must_be_positive(self, shop: dict) -> None:
+        with pytest.raises(ServiceError) as exc:
+            _return(
+                shop,
+                [ReturnLineInput(variant=shop["variant_a"], qty=Decimal("1"))],
+                refunds=[{"method": "CASH", "amount": Decimal("0")}],
+            )
+        assert exc.value.code == "REFUND_AMOUNT_INVALID"
+
     def test_refund_exceeding_credit_rejected(self, shop: dict) -> None:
         with pytest.raises(ServiceError) as exc:
             _return(
@@ -267,3 +308,13 @@ class TestRefunds:
                 refunds=[{"method": "CREDIT_NOTE", "amount": Decimal("999.00")}],
             )
         assert exc.value.code == "CREDIT_NOTE_EXCEEDS_DUES"
+
+    def test_credit_note_requires_original_customer(self, shop: dict) -> None:
+        shop["original"].customer = None
+        with pytest.raises(ServiceError) as exc:
+            _return(
+                shop,
+                [ReturnLineInput(variant=shop["variant_a"], qty=Decimal("1"))],
+                refunds=[{"method": "CREDIT_NOTE", "amount": Decimal("1")}],
+            )
+        assert exc.value.code == "CREDIT_NOTE_WITHOUT_CUSTOMER"

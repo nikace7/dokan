@@ -6,10 +6,12 @@ idempotent replay, cost_at_sale snapshot, credit rules, held-bill flow,
 and completed-invoice immutability.
 """
 
+import importlib
 from decimal import Decimal
 from typing import Any
 
 import pytest
+from django.db import IntegrityError
 
 from apps.inventory.models import StockLevel, StockMovement
 from apps.inventory.services import post_opening_stock
@@ -27,6 +29,8 @@ from tests.factories import (
 )
 
 pytestmark = pytest.mark.django_db
+
+create_sale_module = importlib.import_module("apps.sales.services.create_sale")
 
 
 @pytest.fixture
@@ -173,6 +177,17 @@ class TestIdempotency:
         with pytest.raises(ServiceError) as exc:
             _sale(shop, lines=[])
         assert exc.value.code == "LINES_REQUIRED"
+
+    def test_unrelated_integrity_error_is_not_treated_as_replay(
+        self, shop: dict, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_finalize(*args: Any, **kwargs: Any) -> None:
+            raise IntegrityError("unrelated stock constraint")
+
+        monkeypatch.setattr(create_sale_module, "finalize_invoice", fail_finalize)
+
+        with pytest.raises(IntegrityError, match="unrelated stock constraint"):
+            _sale(shop, idempotency_key="key-unrelated-integrity")
 
 
 class TestStockRules:
