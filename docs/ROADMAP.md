@@ -18,8 +18,8 @@ real shops:
 | Gate | Status |
 |---|---|
 | Local quality baseline | ✅ 967 backend tests pass with 92.05% branch-aware coverage and enforced 100% line/branch coverage on money-critical modules; tenant/admin frontend, storefront, and 12-scenario Compose Playwright suites pass; lint, type, generated-contract, source-size, bundle, dependency, secret, pooling, and recovery checks are wired |
-| Hosted CI on the candidate stack | ⚠ GitHub Actions is currently rejected before step 1 by the repository/account billing restriction; no branch can merge on local evidence alone |
-| Protected `main`, required approvals, merge, and SemVer tag | ⬜ after hosted CI is available and green |
+| Hosted CI on the candidate stack | ✅ Integration PR #125 passed backend, frontend/edge, storefront, recovery, gitleaks, and the 12-scenario fresh-Compose E2E suite |
+| Protected `main`, required approvals, merge, and SemVer tag | 🔨 `main` now requires all seven CI checks, two approvals, resolved conversations, and no admin bypass; merge and tag wait for two reviewers |
 | Production DNS/wildcard TLS, strong secrets, SMTP, SMS, live CBMS decision, and S3-compatible backup target | ⚠ operator/provider setup |
 | Staging restore rehearsal, alert delivery test, external uptime/TLS checks, and pilot acceptance | ⚠ operator validation |
 
