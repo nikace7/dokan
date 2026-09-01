@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
+from django.db import IntegrityError
 
 from apps.inventory.models import StockLevel, StockMovement
 from apps.inventory.services import post_opening_stock
@@ -235,6 +236,43 @@ class TestHeldBills:
                 created_by=shop["user"],
             )
         assert exc.value.code == "IDEMPOTENCY_KEY_REQUIRED"
+
+    def test_hold_requires_at_least_one_line(self, shop: dict) -> None:
+        with pytest.raises(ServiceError) as exc:
+            services.hold_bill(
+                shop["tenant"],
+                branch=shop["branch"],
+                rate_type=shop["rate_type"],
+                lines=[],
+                idempotency_key="hold-empty",
+                created_by=shop["user"],
+            )
+        assert exc.value.code == "LINES_REQUIRED"
+
+    def test_unrelated_integrity_error_is_not_treated_as_replay(
+        self, shop: dict, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_save(*args: Any, **kwargs: Any) -> None:
+            raise IntegrityError("unrelated invoice constraint")
+
+        monkeypatch.setattr(SalesInvoice, "save", fail_save)
+
+        with pytest.raises(IntegrityError, match="unrelated invoice constraint"):
+            services.hold_bill(
+                shop["tenant"],
+                branch=shop["branch"],
+                rate_type=shop["rate_type"],
+                lines=[
+                    services.SaleLineInput(
+                        variant=shop["variant_a"],
+                        qty=Decimal("1"),
+                        unit_price=None,
+                        discount=Decimal("0"),
+                    )
+                ],
+                idempotency_key="hold-unrelated-integrity",
+                created_by=shop["user"],
+            )
 
 
 class TestCompletedImmutability:
