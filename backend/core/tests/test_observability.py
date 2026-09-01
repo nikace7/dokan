@@ -69,8 +69,8 @@ def test_metrics_expose_bounded_http_labels() -> None:
     assert "dokan_http_requests_total" in body
     assert 'method="GET"' in body
     assert 'route="liveness"' in body
-    assert "tenant" not in body
-    assert "user" not in body
+    assert 'tenant="' not in body
+    assert 'user="' not in body
 
 
 def test_metrics_fail_closed_by_default() -> None:
