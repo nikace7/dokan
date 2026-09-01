@@ -58,8 +58,10 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: config.settings.test
 
-      - name: Tests with coverage (floor 80%)
-        run: pytest --cov --cov-report=term-missing --cov-fail-under=80
+      - name: Tests with coverage gates
+        run: |
+          pytest --cov --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=80
+          python ../scripts/check_critical_coverage.py coverage.json
         env:
           DATABASE_HOST: localhost
           DATABASE_NAME: dokan_test
