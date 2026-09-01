@@ -24,9 +24,10 @@ from apps.pricing.serializers import (
     SetPriceSerializer,
 )
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, not_found_code, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "pricing.view",
@@ -43,7 +44,7 @@ def _user(request: Request) -> Any:
 def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
     instance = model.objects.filter(tenant=tenant, pk=pk).first()
     if instance is None:
-        raise ServiceError(f"{what.upper()}_NOT_FOUND", f"{what} not found.", http_status=404)
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
     return instance
 
 
@@ -88,6 +89,14 @@ class _PricingAPIView(APIView):
 
 class RateTypeListView(_PricingAPIView):
     plan_features_by_method: ClassVar[dict[str, str]] = {"POST": "custom_rate_types"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=RateTypeSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=RateTypeSerializer,
+            response=RateTypeSerializer,
+            status_code=201,
+        ),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -108,6 +117,11 @@ class RateTypeListView(_PricingAPIView):
 
 
 class RateTypeDetailView(_PricingAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "PATCH": operation(request=RateTypeSerializer, response=RateTypeSerializer),
+        "DELETE": operation(),
+    }
+
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         rate_type = _get_or_404(tenant, RateType, pk, "Rate type")
@@ -133,6 +147,7 @@ class ResolvePriceView(_PricingAPIView):
     """
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "pricing.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -166,6 +181,15 @@ class ResolvePriceView(_PricingAPIView):
 
 
 class PriceListView(_PricingAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ItemPriceSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=SetPriceSerializer,
+            response=ItemPriceSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_prices(
@@ -216,6 +240,10 @@ class PriceChangeListView(_PricingAPIView):
     cost), and shops need it to answer "who changed this rate and when".
     """
 
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=PriceChangeLogSerializer, response_many=True, paginated=True),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_price_changes(
@@ -238,6 +266,9 @@ class BoundsView(_PricingAPIView):
     """PATCH /pricing/bounds/<item|variant>/<id> — min/max bound changes."""
 
     method_permissions: ClassVar[dict[str, str]] = {"PATCH": "pricing.set_bounds"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "PATCH": operation(request=BoundsSerializer),
+    }
 
     def patch(self, request: Request, target_kind: str, pk: UUID) -> Response:
         tenant = require_request_tenant(request)

@@ -58,6 +58,7 @@ class TestTokenIssue:
         assert access["tenant"] == str(tenant.pk)
         assert access["aud"] == "tenant"
         assert access["token_use"] == "access"
+        assert access["sid"]
 
     def test_success_resets_failed_counter(self, tenant: Any, user: Any) -> None:
         login(APIClient(), "shreeganesh", user.phone, "wrong")

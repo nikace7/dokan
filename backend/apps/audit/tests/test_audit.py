@@ -285,9 +285,14 @@ class TestAuditApi:
 
         listed = client.get("/api/v1/audit/", **host())
         assert listed.status_code == 200
-        assert listed.json()["meta"]["count"] == 2
+        assert listed.json()["meta"]["count"] == 3
         rows = listed.json()["data"]
         assert rows[0]["actor_name"] == shop["user"].full_name
+        assert {row["action"] for row in rows} == {
+            "auth.login",
+            "price.set",
+            "stock.adjust",
+        }
 
         by_action = client.get("/api/v1/audit/", {"action": "price.set"}, **host())
         assert by_action.json()["meta"]["count"] == 1

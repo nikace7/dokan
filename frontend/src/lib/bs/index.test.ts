@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { adToBs, bsToAd, fiscalYearBs, formatBs, toBsString } from './index';
+import {
+  adToBs,
+  bsToAd,
+  daysInBsMonth,
+  fiscalYearBs,
+  formatBs,
+  parseBsString,
+  toBsString,
+} from './index';
 
 // Known pair verified against the installed library (nepali-date-converter
 // 3.4.0): AD 2000-01-01 === BS 2056-09-17 (17 Poush 2056).
@@ -54,6 +62,18 @@ describe('formatting', () => {
   it('renders Devanagari numerals on request', () => {
     expect(formatBs({ year: 2082, month: 4, day: 12 }, { devanagari: true })).toBe('२०८२-०४-१२');
     expect(formatBs({ year: 2082, month: 4, day: 12 })).toBe('2082-04-12');
+  });
+
+  it('parses only real dates from the supported BS calendar', () => {
+    expect(parseBsString('2083-04-20')).toEqual({ year: 2083, month: 4, day: 20 });
+    expect(() => parseBsString('2083-13-01')).toThrow('Invalid BS date');
+    expect(() => parseBsString('2083-04-99')).toThrow('Invalid BS date');
+  });
+
+  it('derives month length from the canonical conversion table', () => {
+    expect(daysInBsMonth(2083, 4)).toBeGreaterThanOrEqual(29);
+    expect(daysInBsMonth(2083, 4)).toBeLessThanOrEqual(32);
+    expect(() => parseBsString(`2083-04-${daysInBsMonth(2083, 4) + 1}`)).toThrow('Invalid BS date');
   });
 });
 

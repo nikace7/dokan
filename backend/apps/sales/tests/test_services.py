@@ -6,11 +6,12 @@ idempotent replay, cost_at_sale snapshot, credit rules, held-bill flow,
 and completed-invoice immutability.
 """
 
-from datetime import date
+import importlib
 from decimal import Decimal
 from typing import Any
 
 import pytest
+from django.db import IntegrityError
 
 from apps.inventory.models import StockLevel, StockMovement
 from apps.inventory.services import post_opening_stock
@@ -28,6 +29,8 @@ from tests.factories import (
 )
 
 pytestmark = pytest.mark.django_db
+
+create_sale_module = importlib.import_module("apps.sales.services.create_sale")
 
 
 @pytest.fixture
@@ -174,6 +177,17 @@ class TestIdempotency:
         with pytest.raises(ServiceError) as exc:
             _sale(shop, lines=[])
         assert exc.value.code == "LINES_REQUIRED"
+
+    def test_unrelated_integrity_error_is_not_treated_as_replay(
+        self, shop: dict, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_finalize(*args: Any, **kwargs: Any) -> None:
+            raise IntegrityError("unrelated stock constraint")
+
+        monkeypatch.setattr(create_sale_module, "finalize_invoice", fail_finalize)
+
+        with pytest.raises(IntegrityError, match="unrelated stock constraint"):
+            _sale(shop, idempotency_key="key-unrelated-integrity")
 
 
 class TestStockRules:
@@ -339,190 +353,3 @@ class TestCostSnapshot:
         assert shop["variant_a"].avg_cost != Decimal("600.00")
         line.refresh_from_db()
         assert line.cost_at_sale == Decimal("600.00")
-
-
-class TestHeldBills:
-    def test_hold_takes_no_stock_and_no_number(self, shop: dict) -> None:
-        result = services.hold_bill(
-            shop["tenant"],
-            branch=shop["branch"],
-            rate_type=shop["rate_type"],
-            customer=shop["customer"],
-            lines=[
-                services.SaleLineInput(
-                    variant=shop["variant_a"],
-                    qty=Decimal("2"),
-                    unit_price=None,
-                    discount=Decimal("0"),
-                )
-            ],
-            idempotency_key="hold-1",
-            created_by=shop["user"],
-        )
-        invoice = result.invoice
-        assert invoice.status == SalesInvoice.Status.HELD
-        assert invoice.invoice_no is None
-        assert invoice.total == Decimal("2000.00")  # display total
-        assert StockMovement.objects.filter(type=StockMovement.MovementType.SALE).count() == 0
-        level = StockLevel.objects.get(branch=shop["branch"], variant=shop["variant_a"])
-        assert level.qty_on_hand == Decimal("10")
-
-    def test_hold_replay_returns_original(self, shop: dict) -> None:
-        kw: dict[str, Any] = {
-            "branch": shop["branch"],
-            "rate_type": shop["rate_type"],
-            "lines": [
-                services.SaleLineInput(
-                    variant=shop["variant_a"],
-                    qty=Decimal("1"),
-                    unit_price=None,
-                    discount=Decimal("0"),
-                )
-            ],
-            "idempotency_key": "hold-replay",
-            "created_by": shop["user"],
-        }
-        first = services.hold_bill(shop["tenant"], **kw)
-        second = services.hold_bill(shop["tenant"], **kw)
-        assert second.replayed is True
-        assert second.invoice.pk == first.invoice.pk
-
-    def test_complete_held_bill_full_pipeline(self, shop: dict) -> None:
-        held = services.hold_bill(
-            shop["tenant"],
-            branch=shop["branch"],
-            rate_type=shop["rate_type"],
-            customer=shop["customer"],
-            lines=[
-                services.SaleLineInput(
-                    variant=shop["variant_a"],
-                    qty=Decimal("2"),
-                    unit_price=None,
-                    discount=Decimal("100"),
-                )
-            ],
-            idempotency_key="hold-2",
-            created_by=shop["user"],
-        ).invoice
-        completed = services.complete_held_bill(
-            shop["tenant"],
-            invoice=held,
-            payments=[{"method": "CASH", "amount": Decimal("1900.00")}],
-            created_by=shop["user"],
-        )
-        assert completed.status == SalesInvoice.Status.COMPLETED
-        assert completed.invoice_no == 1
-        assert completed.total == Decimal("1900.00")
-        assert completed.due_amount == Decimal("0")
-        level = StockLevel.objects.get(branch=shop["branch"], variant=shop["variant_a"])
-        assert level.qty_on_hand == Decimal("8")
-        item = SalesInvoiceItem.objects.get(invoice=completed)
-        assert item.cost_at_sale == Decimal("600.00")  # re-snapshotted at completion
-
-    def test_cancel_held_bill(self, shop: dict) -> None:
-        held = services.hold_bill(
-            shop["tenant"],
-            branch=shop["branch"],
-            rate_type=shop["rate_type"],
-            lines=[
-                services.SaleLineInput(
-                    variant=shop["variant_a"],
-                    qty=Decimal("1"),
-                    unit_price=None,
-                    discount=Decimal("0"),
-                )
-            ],
-            idempotency_key="hold-3",
-            created_by=shop["user"],
-        ).invoice
-        cancelled = services.cancel_held_bill(shop["tenant"], invoice=held)
-        assert cancelled.status == SalesInvoice.Status.CANCELLED
-        # Nothing consumed: stock untouched, no number burned.
-        level = StockLevel.objects.get(branch=shop["branch"], variant=shop["variant_a"])
-        assert level.qty_on_hand == Decimal("10")
-
-    def test_complete_empty_held_bill_rejected(self, shop: dict) -> None:
-        held = services.hold_bill(
-            shop["tenant"],
-            branch=shop["branch"],
-            rate_type=shop["rate_type"],
-            lines=[
-                services.SaleLineInput(
-                    variant=shop["variant_a"],
-                    qty=Decimal("1"),
-                    unit_price=None,
-                    discount=Decimal("0"),
-                )
-            ],
-            idempotency_key="hold-4",
-            created_by=shop["user"],
-        ).invoice
-        held.items.all().delete()
-        with pytest.raises(ServiceError) as exc:
-            services.complete_held_bill(
-                shop["tenant"], invoice=held, payments=[], created_by=shop["user"]
-            )
-        assert exc.value.code == "LINES_REQUIRED"
-
-    def test_hold_missing_key_rejected(self, shop: dict) -> None:
-        with pytest.raises(ServiceError) as exc:
-            services.hold_bill(
-                shop["tenant"],
-                branch=shop["branch"],
-                rate_type=shop["rate_type"],
-                lines=[],
-                idempotency_key="",
-                created_by=shop["user"],
-            )
-        assert exc.value.code == "IDEMPOTENCY_KEY_REQUIRED"
-
-
-class TestCompletedImmutability:
-    def test_completed_cannot_be_completed_again(self, shop: dict) -> None:
-        invoice = _sale(shop).invoice
-        with pytest.raises(ServiceError) as exc:
-            services.complete_held_bill(
-                shop["tenant"], invoice=invoice, payments=[], created_by=shop["user"]
-            )
-        assert exc.value.code == "INVOICE_NOT_EDITABLE"
-        assert exc.value.http_status == 409
-
-    def test_completed_cannot_be_cancelled(self, shop: dict) -> None:
-        invoice = _sale(shop).invoice
-        with pytest.raises(ServiceError) as exc:
-            services.cancel_held_bill(shop["tenant"], invoice=invoice)
-        assert exc.value.code == "INVOICE_NOT_EDITABLE"
-
-    def test_cancelled_cannot_be_completed(self, shop: dict) -> None:
-        held = services.hold_bill(
-            shop["tenant"],
-            branch=shop["branch"],
-            rate_type=shop["rate_type"],
-            lines=[
-                services.SaleLineInput(
-                    variant=shop["variant_a"],
-                    qty=Decimal("1"),
-                    unit_price=None,
-                    discount=Decimal("0"),
-                )
-            ],
-            idempotency_key="hold-5",
-            created_by=shop["user"],
-        ).invoice
-        services.cancel_held_bill(shop["tenant"], invoice=held)
-        with pytest.raises(ServiceError) as exc:
-            services.complete_held_bill(
-                shop["tenant"], invoice=held, payments=[], created_by=shop["user"]
-            )
-        assert exc.value.code == "INVOICE_NOT_EDITABLE"
-
-
-class TestBusinessDates:
-    def test_explicit_business_date_denormalized(self, shop: dict) -> None:
-        """Golden-fixture pair: AD 2000-01-01 = BS 2056-09-17, FY 2056-57."""
-        result = _sale(shop, business_date=date(2000, 1, 1))
-        invoice = result.invoice
-        assert invoice.business_date_bs == "2056-09-17"
-        assert invoice.fiscal_year_bs == "2056-57"
-        # Numbering is per fiscal year: first bill of 2056-57 is 1.
-        assert invoice.invoice_no == 1

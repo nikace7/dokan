@@ -3,11 +3,8 @@
 from typing import Any
 
 from rest_framework import serializers
-from rest_framework.exceptions import PermissionDenied
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from apps.accounts.models import Permission, Role, User
-from apps.accounts.tokens import AUDIENCE_TENANT, TenantRefreshToken
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -84,6 +81,7 @@ class StaffUserSerializer(serializers.ModelSerializer):
             "full_name",
             "is_active",
             "must_change_password",
+            "login_otp_required",
             "roles",
         )
         read_only_fields = fields
@@ -120,25 +118,6 @@ class StaffRoleAssignmentSerializer(serializers.Serializer):
     branch = serializers.UUIDField(required=False, allow_null=True)
 
 
-class TokenObtainSerializer(serializers.Serializer):
-    """Login payload: phone + password, scoped to the request's tenant."""
-
-    phone = serializers.CharField(max_length=32, trim_whitespace=True)
-    password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
-
-
-class TenantTokenRefreshSerializer(TokenRefreshSerializer):
-    """Rotate only tenant-realm refresh tokens."""
-
-    token_class = TenantRefreshToken
-
-    def validate(self, attrs: dict[str, Any]) -> dict[str, str]:
-        refresh = self.token_class(attrs["refresh"])
-        if refresh.get("aud") != AUDIENCE_TENANT or refresh.get("token_use") != "refresh":
-            raise PermissionDenied(detail="This token is not valid here.", code="REALM_MISMATCH")
-        return super().validate(attrs)
-
-
 class MeSerializer(serializers.Serializer):
     """Current user + resolved permissions for GET /auth/me."""
 
@@ -147,6 +126,7 @@ class MeSerializer(serializers.Serializer):
     full_name = serializers.CharField()
     email = serializers.CharField(allow_null=True)
     must_change_password = serializers.BooleanField()
+    login_otp_required = serializers.BooleanField()
     is_owner = serializers.BooleanField()
     permissions = serializers.ListField(child=serializers.CharField())
     plan = serializers.JSONField()
@@ -174,6 +154,7 @@ class MeSerializer(serializers.Serializer):
                 "full_name": user.full_name,
                 "email": user.email,
                 "must_change_password": user.must_change_password,
+                "login_otp_required": user.login_otp_required,
                 "is_owner": is_owner,
                 "permissions": sorted(permissions),
                 "plan": plan,

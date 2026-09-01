@@ -47,6 +47,7 @@
     "reports": "Reports",
     "audit": "Audit",
     "settings": "Settings",
+    "security": "Security",
     "more": "More",
     "moreNavigation": "More navigation",
     "newSale": "New sale",
@@ -63,13 +64,29 @@
     "subtitle": "Sign in to your shop",
     "phone": "Phone",
     "password": "Password",
+    "verificationCode": "Verification code",
+    "forgotPassword": "Forgot password?",
+    "otpSent": "A six-digit login code was sent to your phone.",
+    "verifyAndSignIn": "Verify and sign in",
     "signIn": "Sign in",
     "signingIn": "Signing in…",
     "pitch": "The complete management system for Nepali clothing shops.",
     "pointBilling": "Fast counter billing — barcode POS or simple sale",
     "pointStock": "Stock, purchasing, and transfers in one ledger",
     "pointReports": "Udharo khata and reports in Bikram Sambat",
-    "brandFooter": "mero-pasal.online — built for Nepal. BS calendar, udharo, and VAT billing included."
+    "brandFooter": "mero-pasal.online — built for Nepal. BS calendar, udharo, and VAT billing included.",
+    "reset": {
+      "title": "Reset password",
+      "help": "Enter your staff phone number. We will send a code if an active account exists.",
+      "sendCode": "Send reset code",
+      "sent": "If an active account exists, a six-digit code has been sent. It expires in 10 minutes.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "passwordMismatch": "The new passwords do not match.",
+      "submit": "Reset password",
+      "complete": "Your password has been reset.",
+      "backToSignIn": "Back to sign in"
+    }
   },
   "billing": {
     "scanLabel": "Scan barcode or type SKU",
@@ -580,6 +597,11 @@
       "help": "Control what customers see on your online store: headline, announcement, offers, and the website price currency.",
       "manage": "Manage online store"
     },
+    "securityCard": {
+      "title": "Account security",
+      "help": "Change your password, protect login with an SMS code, and review registered devices.",
+      "manage": "Manage security"
+    },
     "store": {
       "title": "Online store",
       "discountInvalid": "Discount must be between 0 and 90 percent.",
@@ -717,6 +739,38 @@
       "switch": "Switch branch or rate"
     }
   },
+  "security": {
+    "title": "Account security",
+    "description": "Manage your password, login verification, and registered devices.",
+    "failed": "Could not update account security.",
+    "password": {
+      "title": "Change password",
+      "current": "Current password",
+      "submit": "Change password",
+      "changed": "Password changed. Other devices were revoked."
+    },
+    "otp": {
+      "title": "SMS login code",
+      "disabledHelp": "Require a six-digit SMS code after your password on every new login.",
+      "enabledHelp": "Login code is enabled. Enter your current password to turn it off.",
+      "enable": "Enable login code",
+      "disable": "Disable login code",
+      "confirm": "Confirm code",
+      "sent": "A verification code was sent to your phone.",
+      "enabled": "Login code is enabled.",
+      "disabled": "Login code is disabled."
+    },
+    "sessions": {
+      "title": "Registered devices",
+      "current": "this device",
+      "lastSeen": "Last seen {{date}}",
+      "revoke": "Revoke",
+      "revokeNamed": "Revoke {{name}}",
+      "revokeOthers": "Revoke other devices",
+      "revoked": "Device access revoked.",
+      "othersRevoked": "All other devices were revoked."
+    }
+  },
   "dashboard": {
     "loadError": "Could not load the dashboard.",
     "greeting": "Hello, {{name}}",
@@ -767,10 +821,19 @@
       "to": "To (BS)",
       "apply": "Apply",
       "invalidFormat": "Use BS dates as YYYY-MM-DD (e.g. 2083-04-01).",
+      "invalidDate": "Choose a real date from the supported BS calendar.",
       "fromAfterTo": "From date cannot be after the to date.",
       "quickRanges": "Quick ranges",
       "today": "Today",
-      "lastMonth": "Last month"
+      "lastMonth": "Last month",
+      "previousMonth": "Previous BS month",
+      "nextMonth": "Next BS month"
+    },
+    "actions": {
+      "excel": "Download Excel",
+      "printA4": "Print A4",
+      "printThermal": "Print 80mm",
+      "downloadFailed": "Could not download the report."
     },
     "links": {
       "sales": {

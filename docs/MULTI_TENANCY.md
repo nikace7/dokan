@@ -126,13 +126,19 @@ Session pooling mode + `SET` (or a leaked `SET LOCAL` outside a transaction)
 would carry tenant context from one request to the next on the same server
 connection — a cross-tenant leak with no code change. Therefore:
 
-- PgBouncer runs with `pool_mode = transaction`. This is asserted in deployment
-  config and in the deployment checklist.
+- PgBouncer 1.25.2 is digest-pinned and runs with `pool_mode = transaction`.
+  Production settings reject any other `DATABASE_POOL_MODE`, Django disables
+  server-side cursors on pooled connections, and `docker/test-pgbouncer.sh`
+  proves against real Postgres that `app.tenant_id` is gone after commit.
+- Only the constrained application role is admitted through PgBouncer. Migration,
+  seed, backup, and restore processes use the private direct Postgres path.
 - Nothing in the codebase uses bare `SET app.tenant_id` — grep-able rule.
-- Features incompatible with transaction mode (prepared statements, session
-  advisory locks, `LISTEN/NOTIFY` on pooled connections) must not be introduced
+- Features incompatible with transaction mode (session advisory locks,
+  `LISTEN/NOTIFY` on pooled connections) must not be introduced
   into request paths. Use `SELECT pg_advisory_xact_lock(...)` (transaction-scoped)
   where locking is needed, e.g. invoice numbering uses row locks instead.
+  PgBouncer owns protocol-level prepared-statement tracking; request code must
+  not depend on session persistence.
 
 ---
 
@@ -163,6 +169,10 @@ than the middleware's cached tenant lookup.
   asserts `token.tenant == request.tenant` (from the subdomain). **A token
   replayed against another subdomain is a hard 403 plus an audit event** — token
   theft across tenants must be loud, not silent.
+- Normal tenant JWTs carry an `sid` claim. The referenced `auth_session` is
+  selected under the request's tenant RLS context and must belong to the token
+  user, be unexpired, and not be revoked. This gives immediate per-device
+  revocation without weakening subdomain-derived tenancy.
 - Impersonation tokens add an `act` claim (the platform user acting), are
   read-only by default, expire in ≤ 60 minutes, and are jti-denylisted in Redis
   so "End now" is instant. Full flow: SYSTEM_DESIGN §2.6; claims: ADR 0001.

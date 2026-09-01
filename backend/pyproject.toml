@@ -18,6 +18,9 @@ dependencies = [
     "nepali-datetime>=1.0.7",
     "drf-spectacular>=0.27",
     "Pillow>=10.4",
+    "openpyxl>=3.1,<4",
+    "prometheus-client>=0.22,<1",
+    "sentry-sdk[django]>=2.35,<3",
 ]
 
 [project.optional-dependencies]
@@ -30,6 +33,7 @@ dev = [
     "mypy>=2.1,<2.2",
     "django-stubs[compatible-mypy]>=6.0,<6.1",
     "djangorestframework-stubs[compatible-mypy]>=3.17,<3.18",
+    "types-openpyxl>=3.1,<4",
 ]
 
 [tool.setuptools.packages.find]
@@ -43,6 +47,10 @@ include = ["config*", "core*", "apps*"]
 target-version = "py312"
 line-length = 100
 src = ["."]
+
+[tool.ruff.format]
+# Deployed Django migrations are immutable; formatting must never rewrite them.
+exclude = ["**/migrations/*.py"]
 
 [tool.ruff.lint]
 select = [
@@ -112,8 +120,9 @@ addopts = "--strict-markers --strict-config"
 # ---------------------------------------------------------------------------
 # Coverage.
 # Floor: 80% overall (enforced in CI via --fail-under=80).
-# REQUIRED: 100% on apps/pricing, apps/sales/services, apps/inventory/services
-# and core/calendar — a bug in those four costs the shop money.
+# REQUIRED: 100% line and branch coverage on apps/pricing, apps/sales/services,
+# the inventory write modules, and core/calendar. CI enforces the exact boundary
+# with scripts/check_critical_coverage.py because a bug there costs the shop money.
 # ---------------------------------------------------------------------------
 [tool.coverage.run]
 branch = true

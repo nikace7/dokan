@@ -23,9 +23,7 @@ from apps.sales import selectors, services
 from apps.sales.models import SalesInvoice
 from apps.sales.serializers import (
     CompleteBillSerializer,
-    ExchangeCreateSerializer,
     HoldBillSerializer,
-    ReturnCreateSerializer,
     SaleCreateSerializer,
     SalesInvoiceDetailSerializer,
     SalesInvoiceSerializer,
@@ -34,9 +32,10 @@ from apps.sales.serializers import (
 from apps.sales.throttles import SharedBillThrottle
 from apps.tenants.models import Branch
 from core.middleware.tenant import get_request_tenant, require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, not_found_code, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "sale.view",
@@ -52,7 +51,7 @@ def _user(request: Request) -> Any:
 def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
     instance = model.objects.filter(tenant=tenant, pk=pk).first()
     if instance is None:
-        raise ServiceError(f"{what.upper()}_NOT_FOUND", f"{what} not found.", http_status=404)
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
     return instance
 
 
@@ -130,6 +129,19 @@ class _SalesAPIView(APIView):
 
 class SaleListView(_SalesAPIView):
     plan_usage_by_method: ClassVar[dict[str, str]] = {"POST": "max_invoices_per_month"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=SalesInvoiceSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+        "POST": operation(
+            request=SaleCreateSerializer,
+            response=SalesInvoiceDetailSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -188,6 +200,10 @@ class SaleListView(_SalesAPIView):
 
 
 class SaleDetailView(_SalesAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=SalesInvoiceDetailSerializer),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         invoice = selectors.get_invoice(tenant, _user(request), pk)
@@ -200,6 +216,7 @@ class ReceiptPrintView(_SalesAPIView):
     """POST /sales/<id>/print — append an immutable print audit event."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.create"}
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -210,6 +227,15 @@ class ReceiptPrintView(_SalesAPIView):
 
 class HoldBillView(_SalesAPIView):
     """POST /sales/hold — park a bill (no stock, no invoice number)."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=HoldBillSerializer,
+            response=SalesInvoiceDetailSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -246,6 +272,14 @@ class HoldBillView(_SalesAPIView):
 class HeldBillListView(_SalesAPIView):
     """GET /sales/held — parked bills (the resume list)."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=SalesInvoiceSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_invoices(tenant, _user(request), status=SalesInvoice.Status.HELD)
@@ -259,6 +293,12 @@ class CompleteBillView(_SalesAPIView):
     """POST /sales/<id>/complete — finish a held bill with tender."""
 
     plan_usage_by_method: ClassVar[dict[str, str]] = {"POST": "max_invoices_per_month"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=CompleteBillSerializer,
+            response=SalesInvoiceDetailSerializer,
+        ),
+    }
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -280,6 +320,7 @@ class CancelBillView(_SalesAPIView):
     """POST /sales/<id>/cancel — void a held bill (sale.void)."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.void"}
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -288,103 +329,11 @@ class CancelBillView(_SalesAPIView):
         return ok({"id": str(pk), "status": cancelled.status})
 
 
-class ReturnCreateView(_SalesAPIView):
-    """POST /sales/returns — credit note against a completed bill."""
-
-    method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.return"}
-
-    def post(self, request: Request) -> Response:
-        tenant = require_request_tenant(request)
-        key = _idempotency_key(request)
-        serializer = ReturnCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        original = _get_or_404(tenant, SalesInvoice, data["original_invoice"], "Invoice")
-        lines = [
-            services.ReturnLineInput(
-                variant=_get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
-                qty=raw["qty"],
-            )
-            for raw in data["lines"]
-        ]
-        result = services.create_return(
-            tenant,
-            original_invoice=original,
-            lines=lines,
-            reason=data["reason"],
-            refunds=data.get("refunds", []),
-            idempotency_key=key,
-            created_by=_user(request),
-        )
-        http_status = status.HTTP_200_OK if result.replayed else status.HTTP_201_CREATED
-        response = ok(self._detail(request, result.invoice), http_status)
-        if result.replayed:
-            response["X-Idempotent-Replay"] = "true"
-        return response
-
-
-class ExchangeCreateView(_SalesAPIView):
-    """POST /sales/exchanges — return + sale in one atomic operation."""
-
-    method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.return"}
-
-    def post(self, request: Request) -> Response:
-        tenant = require_request_tenant(request)
-        key = _idempotency_key(request)
-        serializer = ExchangeCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        original = _get_or_404(tenant, SalesInvoice, data["original_invoice"], "Invoice")
-        returned_lines = [
-            services.ReturnLineInput(
-                variant=_get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
-                qty=raw["qty"],
-            )
-            for raw in data["returned_lines"]
-        ]
-        result = services.create_exchange(
-            tenant,
-            original_invoice=original,
-            returned_lines=returned_lines,
-            new_lines=self._build_lines(tenant, data["new_lines"]),
-            payments=data.get("payments", []),
-            reason=data["reason"],
-            idempotency_key=key,
-            created_by=_user(request),
-            override_reason=data.get("override_reason", ""),
-            require_open_cash_session=True,
-        )
-        http_status = status.HTTP_200_OK if result.replayed else status.HTTP_201_CREATED
-        return ok(
-            {
-                "return_invoice": self._detail(request, result.return_invoice),
-                "sale_invoice": self._detail(request, result.sale_invoice),
-                "exchange_group_id": str(result.sale_invoice.exchange_group_id),
-                "refund_amount": str(result.refund_amount),
-            },
-            http_status,
-        )
-
-
-class ReturnableLinesView(_SalesAPIView):
-    """GET /sales/<id>/returnable — remaining qty per line (exchange screen)."""
-
-    method_permissions: ClassVar[dict[str, str]] = {"GET": "sale.view"}
-
-    def get(self, request: Request, pk: UUID) -> Response:
-        tenant = require_request_tenant(request)
-        lines = selectors.get_returnable_lines(tenant, _user(request), pk)
-        if lines is None:
-            return error(404, "INVOICE_NOT_FOUND", "Invoice not found.")
-        return ok(lines)
-
-
 class SaleShareView(_SalesAPIView):
     """POST /sales/<id>/share — idempotent public-link token (sale.view)."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -409,6 +358,9 @@ class SharedBillView(APIView):
 
     permission_classes = (AllowAny,)
     throttle_classes = (SharedBillThrottle,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=SharedBillSerializer),
+    }
 
     def handle_exception(self, exc: Exception) -> Response:
         if isinstance(exc, ServiceError):

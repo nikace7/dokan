@@ -1,25 +1,4 @@
-import {
-  ArrowLeftRight,
-  Banknote,
-  BarChart3,
-  BookOpen,
-  Boxes,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Package,
-  Plus,
-  Repeat,
-  ScanLine,
-  ScrollText,
-  Settings as SettingsIcon,
-  Tag,
-  Truck,
-  Undo2,
-  Users,
-  Wallet,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { LogOut, Menu, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router-dom';
@@ -27,135 +6,22 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import brandMark from '@/assets/brand-mark.webp';
 import { CurrencyToggle } from '@/components/layout/CurrencyToggle';
 import { LanguageToggle } from '@/components/layout/LanguageToggle';
+import {
+  MOBILE_TABS_AFTER_FAB,
+  MOBILE_TABS_BEFORE_FAB,
+  NAV_SECTION_BY_PATH,
+  NAV_SECTION_ORDER,
+  useVisibleNavItems,
+} from '@/components/layout/appNavigation';
+import type { NavItem } from '@/components/layout/appNavigation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/features/auth/useAuth';
 import { WorkspaceSelector } from '@/features/settings/WorkspaceSelector';
 import { SupportAccessBanner } from '@/features/support/SupportAccessBanner';
 import { hasPermission } from '@/lib/permissions';
-import type { PermissionCodename } from '@/lib/permissions';
-import { hasPlanFeature } from '@/lib/plans';
 import { billingPath } from '@/lib/plans';
-import type { PlanFeature } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 import { useCurrencyStore } from '@/stores/currency';
-
-interface NavItem {
-  to: string;
-  /** Translation key under `nav.*` (see src/lib/i18n). */
-  labelKey: string;
-  icon: LucideIcon;
-  end?: boolean;
-  /** Any one of these permissions suffices (UI visibility only). */
-  anyOf?: PermissionCodename[];
-  /** Plan feature gate (UI visibility only; the API enforces for real). */
-  feature?: PlanFeature;
-}
-
-const REPORT_VIEW_CODES: PermissionCodename[] = [
-  'report.sales',
-  'report.staff',
-  'report.stock',
-  'report.profit',
-  'report.ledger',
-  'report.cash',
-  'report.vat',
-  'report.expense',
-];
-
-const NAV_ITEMS: NavItem[] = [
-  { to: '/', labelKey: 'dashboard', icon: LayoutDashboard, end: true },
-  { to: '/billing', labelKey: 'billing', icon: ScanLine, anyOf: ['sale.create'] },
-  { to: '/catalog', labelKey: 'catalog', icon: Package, anyOf: ['catalog.view'] },
-  { to: '/pricing', labelKey: 'pricing', icon: Tag, anyOf: ['pricing.view'] },
-  { to: '/customers', labelKey: 'customers', icon: Users, anyOf: ['customer.view'] },
-  { to: '/stock', labelKey: 'stock', icon: Boxes, anyOf: ['stock.view'], end: true },
-  {
-    to: '/stock/transfers',
-    labelKey: 'transfers',
-    icon: ArrowLeftRight,
-    anyOf: ['stock.view'],
-    feature: 'multi_branch',
-  },
-  { to: '/purchasing', labelKey: 'purchasing', icon: Truck, anyOf: ['stock.purchase'] },
-  { to: '/expenses', labelKey: 'expenses', icon: Wallet, anyOf: ['expense.view'] },
-  {
-    to: '/payments',
-    labelKey: 'payments',
-    icon: Banknote,
-    anyOf: ['payment.view', 'payment.receive', 'cash.manage'],
-  },
-  { to: '/ledgers', labelKey: 'ledgers', icon: BookOpen, anyOf: ['customer.view'] },
-  { to: '/returns', labelKey: 'returns', icon: Undo2, anyOf: ['sale.return'] },
-  { to: '/exchanges', labelKey: 'exchanges', icon: Repeat, anyOf: ['sale.return'] },
-  { to: '/reports', labelKey: 'reports', icon: BarChart3, anyOf: REPORT_VIEW_CODES },
-  { to: '/audit', labelKey: 'audit', icon: ScrollText, anyOf: ['settings.manage'] },
-  {
-    to: '/settings',
-    labelKey: 'settings',
-    icon: SettingsIcon,
-    anyOf: ['settings.manage', 'user.manage'],
-  },
-];
-
-/**
- * Sidebar grouping (display only — applied AFTER permission/plan filtering,
- * so it never changes which items render). `/` stays unsectioned on top.
- * Keys translate under `nav.sections.*`.
- */
-const NAV_SECTION_ORDER = ['sales', 'catalog', 'manage'] as const;
-type NavSectionKey = (typeof NAV_SECTION_ORDER)[number];
-
-const NAV_SECTION_BY_PATH: Record<string, NavSectionKey> = {
-  '/billing': 'sales',
-  '/billing/simple': 'sales',
-  '/payments': 'sales',
-  '/ledgers': 'sales',
-  '/returns': 'sales',
-  '/exchanges': 'sales',
-  '/catalog': 'catalog',
-  '/pricing': 'catalog',
-  '/stock': 'catalog',
-  '/stock/transfers': 'catalog',
-  '/purchasing': 'catalog',
-  '/customers': 'manage',
-  '/expenses': 'manage',
-  '/reports': 'manage',
-  '/audit': 'manage',
-  '/settings': 'manage',
-  '/settings/staff': 'manage',
-};
-
-/**
- * Mobile bottom tab bar: counter-critical screens + a raised center FAB for
- * "new sale" + a More sheet. Billing itself is the FAB, not a tab.
- */
-const MOBILE_TABS_BEFORE_FAB = ['/', '/stock'] as const;
-const MOBILE_TABS_AFTER_FAB = ['/reports'] as const;
-
-function useVisibleNavItems(): NavItem[] {
-  const { user } = useAuth();
-  return NAV_ITEMS.filter((item) => {
-    if (item.anyOf && !item.anyOf.some((codename) => hasPermission(user, codename))) {
-      return false;
-    }
-    if (item.feature && !hasPlanFeature(user, item.feature)) {
-      return false;
-    }
-    return true;
-  }).map((item) => {
-    // Staff managers without settings.manage land on the staff screen
-    // directly (matches the old header nav behavior).
-    if (item.to === '/settings' && !hasPermission(user, 'settings.manage')) {
-      return { ...item, to: '/settings/staff' };
-    }
-    // The classic barcode POS exists only with advanced_pos; otherwise the
-    // Billing entry opens the simple sale screen.
-    if (item.to === '/billing') {
-      return { ...item, to: billingPath(user) };
-    }
-    return item;
-  });
-}
 
 function PoweredBy({ className }: { className?: string }) {
   const { t } = useTranslation();

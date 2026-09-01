@@ -1,12 +1,10 @@
 # Dokan E2E tests (Playwright)
 
 End-to-end smoke suite for the tenant frontend: **login → billing loads**,
-**scan → cart → cash bill → receipt**, and a **return against the created
-bill**. It runs against the real local
-stack — it is deliberately **not wired into CI**: the suite needs the full
-compose stack (Postgres, Redis, backend, frontend, Caddy) plus seeded demo
-data, which is too heavy for the PR gate. Run it locally before releases or
-after touching `frontend/src/features/billing|auth|returns`.
+**scan → cart → cash bill → receipt**, a **return against the created bill**,
+the Simple Sale flow, and public shared bills. CI runs the suite against a
+fresh, seeded Compose stack on every PR; it remains useful locally after
+touching tenant routing, authentication, billing, returns, or the public bill.
 
 ## Prerequisites
 
@@ -50,13 +48,13 @@ CA — `ignoreHTTPSErrors` is set). Two environment notes:
 
 ### Environment variables
 
-| Var              | Default                     | Meaning                                             |
-| ---------------- | --------------------------- | --------------------------------------------------- |
-| `E2E_BASE_URL`   | `https://demo.localhost`    | What the browser loads.                             |
-| `E2E_API_URL`    | `http://127.0.0.1:8000`     | Backend origin used by setup/teardown helpers.      |
-| `E2E_TENANT_HOST`| `demo.localhost`            | Host header/SNI the tenant is resolved from.        |
-| `E2E_PHONE`      | `9800000000`                | Demo login (from `seed_demo`).                      |
-| `E2E_PASSWORD`   | `demo1234`                  | Demo password.                                      |
+| Var               | Default                  | Meaning                                        |
+| ----------------- | ------------------------ | ---------------------------------------------- |
+| `E2E_BASE_URL`    | `https://demo.localhost` | What the browser loads.                        |
+| `E2E_API_URL`     | `http://127.0.0.1:8000`  | Backend origin used by setup/teardown helpers. |
+| `E2E_TENANT_HOST` | `demo.localhost`         | Host header/SNI the tenant is resolved from.   |
+| `E2E_PHONE`       | `9800000000`             | Demo login (from `seed_demo`).                 |
+| `E2E_PASSWORD`    | `demo1234`               | Demo password.                                 |
 
 ### Vite dev server alternative
 

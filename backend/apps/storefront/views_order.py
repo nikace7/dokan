@@ -7,7 +7,7 @@ travels as ``Authorization: Bearer <token>`` and is validated per request —
 it is a shopper credential, never a shop-staff one.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.db.models import Sum
 from rest_framework.request import Request
@@ -24,6 +24,7 @@ from apps.storefront.serializers_order import (
 )
 from apps.storefront.throttles import StorefrontAuthThrottle
 from apps.storefront.views import _StorefrontView
+from core.openapi import object_list, operation
 from core.responses import ServiceError, ok
 
 if TYPE_CHECKING:
@@ -48,13 +49,13 @@ def _require_customer(request: Request, view: "_StorefrontView") -> "StoreCustom
 class StorefrontProductDetailView(_StorefrontView):
     """GET /storefront/products/<id> — one product with its variant matrix."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
+
     def get(self, request: Request, pk: str) -> Response:
         def build() -> Response:
             tenant = self._shop_tenant
             item = (
-                Item.objects.filter(
-                    tenant=tenant, pk=pk, is_active=True, website_visible=True
-                )
+                Item.objects.filter(tenant=tenant, pk=pk, is_active=True, website_visible=True)
                 .select_related("category", "brand")
                 .first()
             )
@@ -79,8 +80,9 @@ class StorefrontProductDetailView(_StorefrontView):
                     "price": str(price) if price is not None else None,
                     "compare_at": str(compare_at) if compare_at is not None else None,
                 }
-                for v in ItemVariant.objects.filter(tenant=tenant, item=item, is_active=True)
-                .order_by("size", "color")
+                for v in ItemVariant.objects.filter(
+                    tenant=tenant, item=item, is_active=True
+                ).order_by("size", "color")
             ]
             return ok(
                 {
@@ -105,14 +107,15 @@ class StoreOtpRequestView(_StorefrontView):
     """POST /storefront/auth/otp — email a 6-digit login code."""
 
     throttle_classes = (StorefrontAuthThrottle,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=OtpRequestSerializer),
+    }
 
     def post(self, request: Request) -> Response:
         def build() -> Response:
             serializer = OtpRequestSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            services_auth.request_otp(
-                self._shop_tenant, email=serializer.validated_data["email"]
-            )
+            services_auth.request_otp(self._shop_tenant, email=serializer.validated_data["email"])
             return ok({"sent": True})
 
         return self.in_tenant_context(build)
@@ -122,6 +125,9 @@ class StoreOtpVerifyView(_StorefrontView):
     """POST /storefront/auth/verify — trade a code for a 30-day customer token."""
 
     throttle_classes = (StorefrontAuthThrottle,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=OtpVerifySerializer),
+    }
 
     def post(self, request: Request) -> Response:
         def build() -> Response:
@@ -148,6 +154,14 @@ class StoreOtpVerifyView(_StorefrontView):
 
 class StoreOrderCreateView(_StorefrontView):
     """POST /storefront/orders — checkout. Idempotency-Key is mandatory."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=CheckoutSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         idempotency_key = request.headers.get("Idempotency-Key", "").strip()
@@ -180,6 +194,8 @@ class StoreOrderCreateView(_StorefrontView):
 class StoreOrderTrackingView(_StorefrontView):
     """GET /storefront/orders/<tracking_token> — public order status."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
+
     def get(self, request: Request, tracking_token: str) -> Response:
         def build() -> Response:
             order = self._order_by_token(tracking_token)
@@ -191,21 +207,21 @@ class StoreOrderTrackingView(_StorefrontView):
         from apps.storefront.models import StoreOrder
 
         order = (
-            StoreOrder.objects.filter(
-                tenant=self._shop_tenant, tracking_token=tracking_token
-            )
+            StoreOrder.objects.filter(tenant=self._shop_tenant, tracking_token=tracking_token)
             .prefetch_related("items")
             .first()
         )
         if order is None:
-            raise ServiceError(
-                "ORDER_NOT_FOUND", "We could not find this order.", http_status=404
-            )
+            raise ServiceError("ORDER_NOT_FOUND", "We could not find this order.", http_status=404)
         return order
 
 
 class StoreMyOrdersView(_StorefrontView):
     """GET /storefront/my/orders — the logged-in shopper's order history."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list()),
+    }
 
     def get(self, request: Request) -> Response:
         def build() -> Response:

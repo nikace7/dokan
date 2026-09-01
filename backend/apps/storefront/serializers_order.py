@@ -22,9 +22,7 @@ class CheckoutAddressSerializer(serializers.Serializer):
     line1 = serializers.CharField(max_length=200)
     city = serializers.CharField(max_length=120)
     area = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
-    landmark = serializers.CharField(
-        max_length=200, required=False, allow_blank=True, default=""
-    )
+    landmark = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     lat = serializers.FloatField(required=False, allow_null=True, default=None)
     lng = serializers.FloatField(required=False, allow_null=True, default=None)
     note = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
@@ -45,9 +43,7 @@ class CheckoutSerializer(serializers.Serializer):
 
     def validate(self, attrs: dict) -> dict:
         if attrs["fulfillment"] == StoreOrder.Fulfillment.DELIVERY and not attrs.get("address"):
-            raise serializers.ValidationError(
-                {"address": "Delivery orders need an address."}
-            )
+            raise serializers.ValidationError({"address": "Delivery orders need an address."})
         return attrs
 
 
@@ -65,9 +61,7 @@ class PublicOrderItemSerializer(serializers.Serializer):
     size = serializers.CharField()
     color = serializers.CharField()
     unit_price = serializers.DecimalField(max_digits=14, decimal_places=2)
-    compare_at = serializers.DecimalField(
-        max_digits=14, decimal_places=2, allow_null=True
-    )
+    compare_at = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
     qty = serializers.DecimalField(max_digits=12, decimal_places=3)
     line_total = serializers.DecimalField(max_digits=14, decimal_places=2)
 

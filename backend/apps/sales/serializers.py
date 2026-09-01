@@ -21,7 +21,7 @@ class SaleLineSerializer(serializers.Serializer):
     discount = serializers.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
 
 
-class PaymentSerializer(serializers.Serializer):
+class SalePaymentSerializer(serializers.Serializer):
     """One tender. CREDIT = udharo (not part of paid_amount)."""
 
     method = serializers.ChoiceField(choices=sorted(PAYMENT_METHODS))
@@ -35,7 +35,7 @@ class SaleCreateSerializer(serializers.Serializer):
     rate_type = serializers.UUIDField()
     customer = serializers.UUIDField(required=False, allow_null=True)
     lines = SaleLineSerializer(many=True)
-    payments = PaymentSerializer(many=True, required=False, default=list)
+    payments = SalePaymentSerializer(many=True, required=False, default=list)
     is_vat_bill = serializers.BooleanField(required=False, default=False)
     bill_discount = serializers.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
     round_off = serializers.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
@@ -52,7 +52,7 @@ class HoldBillSerializer(SaleCreateSerializer):
 class CompleteBillSerializer(serializers.Serializer):
     """POST /sales/<id>/complete payload."""
 
-    payments = PaymentSerializer(many=True, required=False, default=list)
+    payments = SalePaymentSerializer(many=True, required=False, default=list)
     override_reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
@@ -203,7 +203,7 @@ class ExchangeCreateSerializer(serializers.Serializer):
     original_invoice = serializers.UUIDField()
     returned_lines = ReturnLineSerializer(many=True)
     new_lines = SaleLineSerializer(many=True)
-    payments = PaymentSerializer(many=True, required=False, default=list)
+    payments = SalePaymentSerializer(many=True, required=False, default=list)
     reason = serializers.CharField(max_length=500, trim_whitespace=False)
     override_reason = serializers.CharField(required=False, allow_blank=True, default="")
 

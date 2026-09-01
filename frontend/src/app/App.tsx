@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 
-import { AdminRouter } from '@/features/admin/router';
 import { onPlatformSignedOut } from '@/features/admin/authed';
 import { isPlatformHost } from '@/features/admin/supportHandoff';
 import { onSignedOut } from '@/lib/api/authed';
@@ -8,7 +7,21 @@ import { initOfflineSync } from '@/lib/offline/sync';
 import { initVersionCheck } from '@/lib/versionCheck';
 
 import { AppProviders } from './providers';
-import { AppRouter } from './router';
+
+const AdminRouter = lazy(() =>
+  import('@/features/admin/router').then(({ AdminRouter: Component }) => ({ default: Component })),
+);
+const TenantRouter = lazy(() =>
+  import('./router').then(({ AppRouter: Component }) => ({ default: Component })),
+);
+
+function AppLoading() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+      Loading application…
+    </main>
+  );
+}
 
 export default function App() {
   const platformHost = isPlatformHost(window.location.hostname);
@@ -37,5 +50,11 @@ export default function App() {
   // toast a reload action once a newer deploy exists (both portals).
   useEffect(() => initVersionCheck(), []);
 
-  return <AppProviders>{platformHost ? <AdminRouter /> : <AppRouter />}</AppProviders>;
+  return (
+    <AppProviders>
+      <Suspense fallback={<AppLoading />}>
+        {platformHost ? <AdminRouter /> : <TenantRouter />}
+      </Suspense>
+    </AppProviders>
+  );
 }

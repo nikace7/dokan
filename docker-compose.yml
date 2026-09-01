@@ -1,18 +1,66 @@
 # Phase-1 single-VPS topology (docs/SYSTEM_DESIGN.md §8.8):
-# Caddy → Gunicorn (web) + Celery (worker/beat) + Postgres 16 + Redis 7.
+# Caddy → Gunicorn/Celery → PgBouncer (transaction) → Postgres 16 + Redis 7.
 
 x-backup-image: &backup-image
   image: dokan-backup
   build:
     context: docker/backup
 
+x-django-environment: &django-environment
+  DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-.localhost,localhost,backend}
+  ROOT_DOMAIN: ${ROOT_DOMAIN:-localhost}
+  PLATFORM_ADMIN_ALLOWED_IPS: ${PLATFORM_ADMIN_ALLOWED_IPS:-}
+  DATABASE_NAME: ${DATABASE_NAME:-dokan}
+  DATABASE_USER: ${DATABASE_USER:-dokan_app}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+  DATABASE_HOST: ${DATABASE_HOST:-pgbouncer}
+  DATABASE_PORT: ${DATABASE_PORT:-6432}
+  DATABASE_POOL_MODE: ${DATABASE_POOL_MODE:-transaction}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+  CBMS_PROVIDER: ${CBMS_PROVIDER:-local}
+  SMS_PROVIDER: ${SMS_PROVIDER:-log}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  METRICS_ENABLED: ${METRICS_ENABLED:-false}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
+  SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+  SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
+  EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+  EMAIL_HOST: ${EMAIL_HOST:-localhost}
+  EMAIL_PORT: ${EMAIL_PORT:-25}
+  EMAIL_USE_TLS: ${EMAIL_USE_TLS:-false}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-mero-pasal.online <no-reply@mero-pasal.online>}
+
 services:
   wal-init:
     image: postgres:16
     user: root
-    command: ["sh", "-c", "chown postgres:postgres /wal-archive && chmod 0700 /wal-archive"]
+    command:
+      [
+        "sh",
+        "-c",
+        "chown postgres:postgres /wal-archive && chmod 0700 /wal-archive",
+      ]
     volumes:
       - walarchive:/wal-archive
+
+  monitoring-init:
+    image: postgres:16
+    profiles: [production, ops, monitoring]
+    user: root
+    command:
+      [
+        "sh",
+        "-c",
+        "chown postgres:postgres /monitoring && chmod 0755 /monitoring",
+      ]
+    volumes:
+      - monitoringdata:/monitoring
 
   db:
     image: postgres:16
@@ -35,6 +83,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       DOKAN_APP_PASSWORD: ${DOKAN_APP_PASSWORD:?Set DOKAN_APP_PASSWORD in .env}
       DOKAN_MIGRATOR_PASSWORD: ${DOKAN_MIGRATOR_PASSWORD:?Set DOKAN_MIGRATOR_PASSWORD in .env}
+      DOKAN_MONITOR_PASSWORD: ${DOKAN_MONITOR_PASSWORD:-change-me-monitor-password}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - walarchive:/wal-archive
@@ -50,6 +99,41 @@ services:
       wal-init:
         condition: service_completed_successfully
 
+  pgbouncer:
+    image: ghcr.io/cloudnative-pg/pgbouncer@sha256:fc4e07c8e716245102d429f30e4edc7a61a64423efcfabb1e55dd500b662cfcf
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/etc/pgbouncer/start-pgbouncer.sh"]
+    environment:
+      DATABASE_NAME: ${DATABASE_NAME:-dokan}
+      DATABASE_USER: ${DATABASE_USER:-dokan_app}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+      PGBOUNCER_UPSTREAM_HOST: db
+      PGBOUNCER_MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-500}
+      PGBOUNCER_DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-40}
+      PGBOUNCER_RESERVE_POOL_SIZE: ${PGBOUNCER_RESERVE_POOL_SIZE:-10}
+    volumes:
+      - ./docker/pgbouncer/start-pgbouncer.sh:/etc/pgbouncer/start-pgbouncer.sh:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          PGPASSWORD="$${DATABASE_PASSWORD}" psql -h 127.0.0.1 -p 6432
+          -U "$${DATABASE_USER}" -d "$${DATABASE_NAME}" -tAc 'SELECT 1'
+          | grep -qx 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:7
     restart: unless-stopped
@@ -64,20 +148,20 @@ services:
   backend:
     build: .
     restart: unless-stopped
-    env_file: .env
     ports:
       # Local frontend/dev access only; public traffic must enter through Caddy.
       - "127.0.0.1:8000:8000"
     environment:
-      DATABASE_HOST: db
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      <<: *django-environment
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
       # Uploaded media (item images) lives on the shared ``media`` volume;
       # Caddy serves it read-only at /media/* (mirrors the static pattern).
       MEDIA_ROOT: ${MEDIA_ROOT:-/app/media}
+    labels:
+      dokan.logs.safe: "true"
     depends_on:
-      db:
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -101,14 +185,11 @@ services:
     build: .
     restart: unless-stopped
     command: celery -A config worker --loglevel=info --concurrency=2
-    env_file: .env
     environment:
-      DATABASE_HOST: db
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      <<: *django-environment
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
     depends_on:
-      db:
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -117,14 +198,47 @@ services:
     build: .
     restart: unless-stopped
     command: celery -A config beat --loglevel=info
-    env_file: .env
     environment:
-      DATABASE_HOST: db
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      <<: *django-environment
     depends_on:
+      pgbouncer:
+        condition: service_healthy
       redis:
+        condition: service_healthy
+
+  # Privileged database credentials are mapped into one-off containers under
+  # DATABASE_PASSWORD; the long-running application containers never receive
+  # the source owner/migrator secret names.
+  migrate:
+    build: .
+    profiles: [ops]
+    restart: "no"
+    command: python manage.py migrate --noinput
+    environment:
+      <<: *django-environment
+      DATABASE_USER: dokan_migrator
+      DATABASE_PASSWORD: ${DOKAN_MIGRATOR_PASSWORD:?Set DOKAN_MIGRATOR_PASSWORD in .env}
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  seed-demo:
+    build: .
+    profiles: [dev]
+    restart: "no"
+    command: python manage.py seed_demo
+    environment:
+      <<: *django-environment
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    depends_on:
+      db:
         condition: service_healthy
 
   backup:
@@ -149,11 +263,15 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-auto}
+      MONITORING_TEXTFILE_DIR: /monitoring
     volumes:
       - backups:/backups
+      - monitoringdata:/monitoring
     depends_on:
       db:
         condition: service_healthy
+      monitoring-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "backup-healthcheck.sh"]
       interval: 5m
@@ -174,8 +292,13 @@ services:
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-auto}
       WAL_UPLOAD_INTERVAL_SECONDS: ${WAL_UPLOAD_INTERVAL_SECONDS:-60}
       WAL_LOCAL_RETENTION_DAYS: ${WAL_LOCAL_RETENTION_DAYS:-2}
+      MONITORING_TEXTFILE_DIR: /monitoring
     volumes:
       - walarchive:/wal-archive
+      - monitoringdata:/monitoring
+    depends_on:
+      monitoring-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wal-healthcheck.sh"]
       interval: 1m
@@ -194,11 +317,15 @@ services:
       PGUSER: ${POSTGRES_USER:-postgres}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       RESTORE_DATABASE: ${RESTORE_DATABASE:-dokan_restore_drill}
+      MONITORING_TEXTFILE_DIR: /monitoring
     volumes:
       - backups:/backups
+      - monitoringdata:/monitoring
     depends_on:
       db:
         condition: service_healthy
+      monitoring-init:
+        condition: service_completed_successfully
 
   frontend:
     image: dokan-frontend
@@ -206,7 +333,15 @@ services:
       context: frontend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:8080/healthz",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -218,7 +353,15 @@ services:
       context: storefront
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:8080/healthz",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -229,7 +372,14 @@ services:
     build:
       context: docker/caddy
     restart: unless-stopped
-    env_file: .env
+    environment:
+      ROOT_DOMAIN: ${ROOT_DOMAIN:-localhost}
+      CADDY_GLOBAL_OPTIONS: ${CADDY_GLOBAL_OPTIONS:-}
+      CADDY_ADDRESS_SCHEME: ${CADDY_ADDRESS_SCHEME:-}
+      CADDY_TLS_CONFIG: ${CADDY_TLS_CONFIG:-/etc/caddy/tls-local}
+      CADDY_PROXY_HEADER_PROTO: ${CADDY_PROXY_HEADER_PROTO:-}
+      CADDY_PROXY_HEADER_XFF: ${CADDY_PROXY_HEADER_XFF:-}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
     ports:
       - "80:80"
       - "443:443"
@@ -245,6 +395,142 @@ services:
       frontend:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:v3.13.0
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./docker/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheusdata:/prometheus
+    depends_on:
+      backend:
+        condition: service_healthy
+      postgres-exporter:
+        condition: service_started
+      redis-exporter:
+        condition: service_started
+      celery-exporter:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:13.1.0
+    profiles: [monitoring]
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me-grafana-password}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./docker/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:3.7.2
+    profiles: [monitoring]
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./docker/monitoring/loki.yml:/etc/loki/loki.yml:ro
+      - lokidata:/loki
+
+  alloy:
+    image: grafana/alloy:v1.18.0
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./docker/monitoring/alloy.config:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloydata:/var/lib/alloy/data
+    depends_on:
+      - loki
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.20.1
+    profiles: [monitoring]
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_URI: db:5432/${DATABASE_NAME:-dokan}?sslmode=disable
+      DATA_SOURCE_USER: dokan_monitor
+      DATA_SOURCE_PASS: ${DOKAN_MONITOR_PASSWORD:-change-me-monitor-password}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.77.0-alpine
+    profiles: [monitoring]
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  celery-exporter:
+    image: danihodovic/celery-exporter:0.10.4
+    profiles: [monitoring]
+    restart: unless-stopped
+    environment:
+      CE_BROKER_URL: redis://redis:6379/1
+      CE_RETRY_INTERVAL: "5"
+    depends_on:
+      - celery
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.12.1
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/monitoring
+    volumes:
+      - /:/host:ro,rslave
+      - monitoringdata:/monitoring:ro
+    depends_on:
+      monitoring-init:
+        condition: service_completed_successfully
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.57.0
+    profiles: [monitoring]
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.5.3
+    profiles: [monitoring]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${UPTIME_KUMA_PORT:-3001}:3001"
+    volumes:
+      - uptimedata:/app/data
+
 volumes:
   pgdata:
   walarchive:
@@ -254,3 +540,9 @@ volumes:
   media:
   caddydata:
   caddyconfig:
+  prometheusdata:
+  grafanadata:
+  uptimedata:
+  monitoringdata:
+  lokidata:
+  alloydata:

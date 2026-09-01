@@ -96,3 +96,81 @@
     display: none !important;
   }
 }
+
+/* Report printing is opt-in via html[data-report-print]; receipt rules above stay isolated. */
+@media print {
+  @page report-a4 {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  @page report-thermal {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+
+  html[data-report-print],
+  html[data-report-print] body {
+    width: auto;
+    background: white;
+  }
+
+  html[data-report-print] body * {
+    visibility: hidden !important;
+  }
+
+  html[data-report-print] .report-print-area,
+  html[data-report-print] .report-print-area * {
+    visibility: visible !important;
+  }
+
+  html[data-report-print] .report-print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    color: black;
+    print-color-adjust: exact;
+  }
+
+  html[data-report-print='a4'] .report-print-area {
+    page: report-a4;
+  }
+
+  html[data-report-print='thermal'] .report-print-area {
+    page: report-thermal;
+    width: 74mm;
+    font-size: 9px;
+  }
+
+  html[data-report-print] .report-print-actions,
+  html[data-report-print] [role='tablist'],
+  html[data-report-print] button,
+  html[data-report-print] input,
+  html[data-report-print] label {
+    display: none !important;
+  }
+
+  html[data-report-print] .report-print-area .md\:hidden {
+    display: none !important;
+  }
+
+  html[data-report-print] .report-print-area .hidden.md\:block {
+    display: block !important;
+  }
+
+  html[data-report-print] .report-print-area > div {
+    border: 0;
+    box-shadow: none;
+  }
+
+  html[data-report-print] table {
+    width: 100%;
+    font-size: inherit;
+  }
+
+  html[data-report-print] tr {
+    break-inside: avoid;
+  }
+}

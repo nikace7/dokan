@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FeatureTogglesPanel } from '@/features/admin/FeatureTogglesPanel';
 import { clearPlatformTokens, setPlatformTokens } from '@/features/admin/tokens';
+import { PLAN_FEATURE_CATALOG } from '@/lib/plans';
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -78,12 +79,10 @@ describe('FeatureTogglesPanel', () => {
     renderPanel();
 
     expect(await screen.findByText('Advanced POS')).toBeInTheDocument();
-    expect(screen.getAllByText('Plan default')).toHaveLength(7);
+    expect(screen.getAllByText('Plan default')).toHaveLength(PLAN_FEATURE_CATALOG.length);
     // advanced_pos is off in the plan; sms is on.
     expect(screen.getByRole('switch', { name: 'Advanced POS' })).not.toBeChecked();
-    await waitFor(() =>
-      expect(screen.getByRole('switch', { name: 'SMS receipts' })).toBeChecked(),
-    );
+    await waitFor(() => expect(screen.getByRole('switch', { name: 'SMS receipts' })).toBeChecked());
   });
 
   it('writes a features.<name> override when toggled', async () => {
@@ -109,9 +108,7 @@ describe('FeatureTogglesPanel', () => {
     renderPanel();
 
     // Effective state comes from the override, not the plan default (false).
-    await waitFor(() =>
-      expect(screen.getByRole('switch', { name: 'Advanced POS' })).toBeChecked(),
-    );
+    await waitFor(() => expect(screen.getByRole('switch', { name: 'Advanced POS' })).toBeChecked());
     expect(screen.getByText('Override')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset to plan default' }));

@@ -26,6 +26,7 @@ from apps.tenants.selectors import is_feature_enabled
 from apps.tenants.services import require_plan_feature
 from core.db.rls import set_local_tenant
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -100,6 +101,8 @@ class _StorefrontPagination(EnvelopePageNumberPagination):
 class StorefrontSiteView(_StorefrontView):
     """GET /storefront/site — shop identity, template, contact, store content, nav."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
+
     def get(self, request: Request) -> Response:
         def build() -> Response:
             tenant = self._shop_tenant
@@ -168,6 +171,14 @@ class StorefrontSiteView(_StorefrontView):
 class StorefrontProductListView(_StorefrontView):
     """GET /storefront/products — paged public catalog grid (cost-free payload)."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=PublicProductSerializer,
+            response_many=True,
+            paginated=True,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         def build() -> Response:
             tenant = self._shop_tenant
@@ -203,6 +214,13 @@ class StoreSettingsView(APIView):
     method_permissions: ClassVar[dict[str, str]] = {
         "GET": "settings.manage",
         "PATCH": "settings.manage",
+    }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StoreSettingsSerializer),
+        "PATCH": operation(
+            request=StoreSettingsSerializer,
+            response=StoreSettingsSerializer,
+        ),
     }
 
     def handle_exception(self, exc: Exception) -> Response:

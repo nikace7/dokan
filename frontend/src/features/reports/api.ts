@@ -14,8 +14,8 @@
  * permissions (invariant 10).
  */
 
-import { authedRequest, authedRequestPage } from '@/lib/api/authed';
-import type { Page } from '@/lib/api/client';
+import { authedDownload, authedRequest, authedRequestPage } from '@/lib/api/authed';
+import type { BinaryDownload, Page } from '@/lib/api/client';
 import { adToBs, fiscalYearBs, toBsString } from '@/lib/bs';
 
 export interface BsRange {
@@ -178,6 +178,26 @@ function qs(params: Record<string, string | number | undefined>): string {
 
 function rangeParams(range: BsRange): Record<string, string> {
   return { date_from_bs: range.dateFromBs, date_to_bs: range.dateToBs };
+}
+
+export type ReportExportName =
+  | 'collections-by-tender'
+  | 'daily-sales'
+  | 'dead-stock'
+  | 'dues'
+  | 'item-sales'
+  | 'low-stock'
+  | 'monthly-sales'
+  | 'profit'
+  | 'stock-summary'
+  | 'vat-purchase'
+  | 'vat-sales';
+
+export function downloadReport(
+  report: ReportExportName,
+  params: Record<string, string | number | undefined> = {},
+): Promise<BinaryDownload> {
+  return authedDownload(`/v1/reports/export${qs({ report, ...params })}`);
 }
 
 export function fetchDailySales(range: BsRange): Promise<DailySalesRow[]> {

@@ -4,10 +4,12 @@ The atomicity test is the point: a failure on the sale side must leave
 NO return document, NO stock movement, NO consumed returned_qty.
 """
 
+import importlib
 from decimal import Decimal
 from typing import Any
 
 import pytest
+from django.db import IntegrityError
 
 from apps.inventory.models import StockLevel, StockMovement
 from apps.inventory.services import post_opening_stock
@@ -26,6 +28,8 @@ from tests.factories import (
 )
 
 pytestmark = pytest.mark.django_db
+
+exchange_module = importlib.import_module("apps.sales.services.exchange")
 
 
 @pytest.fixture
@@ -182,6 +186,22 @@ class TestExchangeAtomicity:
         item = shop["original"].items.get(variant=shop["variant_a"])
         assert item.returned_qty == Decimal("0")
 
+    def test_unrelated_integrity_error_is_not_treated_as_replay(
+        self, shop: dict, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_return(*args: Any, **kwargs: Any) -> None:
+            raise IntegrityError("unrelated exchange constraint")
+
+        monkeypatch.setattr(exchange_module, "_create_return_invoice", fail_return)
+
+        with pytest.raises(IntegrityError, match="unrelated exchange constraint"):
+            _exchange(
+                shop,
+                new_price="1200.00",
+                tender="200.00",
+                key="exchange-unrelated-integrity",
+            )
+
 
 class TestExchangeIdempotency:
     def test_replay_returns_both_originals(self, shop: dict) -> None:
@@ -191,6 +211,20 @@ class TestExchangeIdempotency:
         assert second.sale_invoice.pk == first.sale_invoice.pk
         assert second.return_invoice.pk == first.return_invoice.pk
         assert SalesInvoice.objects.filter(tenant=shop["tenant"]).count() == 3
+
+    def test_cash_session_guard_still_allows_replay(self, shop: dict) -> None:
+        first = _exchange(shop, new_price="1200.00", tender="200.00", key="ex-cash-replay")
+        replay = _exchange(
+            shop,
+            new_price="1200.00",
+            tender="200.00",
+            key="ex-cash-replay",
+            require_open_cash_session=True,
+        )
+
+        assert replay.replayed is True
+        assert replay.sale_invoice.pk == first.sale_invoice.pk
+        assert replay.return_invoice.pk == first.return_invoice.pk
 
     def test_missing_key_rejected(self, shop: dict) -> None:
         with pytest.raises(ServiceError) as exc:

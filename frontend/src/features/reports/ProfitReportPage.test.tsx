@@ -7,6 +7,12 @@ import { clearTokens, setTokens } from '@/lib/auth/tokens';
 
 const fetchMock = vi.fn<typeof fetch>();
 
+function me() {
+  return {
+    plan: { code: 'pro', name: 'Pro', features: { export_excel: true } },
+  };
+}
+
 function envelope(data: unknown, status = 200): Response {
   return new Response(JSON.stringify({ data, error: null }), {
     status,
@@ -36,18 +42,21 @@ describe('ProfitReportPage', () => {
   });
 
   it('shows a friendly owner-only panel on 403 instead of an error dump', async () => {
-    fetchMock.mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: null,
-          error: {
-            code: 'COST_VISIBILITY_REQUIRED',
-            message: 'Profit reports require cost visibility.',
-          },
-        }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } },
-      ),
-    );
+    fetchMock.mockImplementation((input) => {
+      if (String(input).includes('/v1/auth/me')) return Promise.resolve(envelope(me()));
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: null,
+            error: {
+              code: 'COST_VISIBILITY_REQUIRED',
+              message: 'Profit reports require cost visibility.',
+            },
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+    });
 
     renderProfit();
 
@@ -58,23 +67,26 @@ describe('ProfitReportPage', () => {
   });
 
   it('renders revenue/COGS/gross cards and monthly rows', async () => {
-    fetchMock.mockResolvedValue(
-      envelope({
-        date_from_bs: '2083-04-01',
-        date_to_bs: '2083-04-15',
-        rows: [
-          {
-            bs_month: '2083-04',
-            sales_total: '5000.00',
-            returns_total: '0.00',
-            revenue: '5000.00',
-            cogs: '3000.00',
-            gross_profit: '2000.00',
-          },
-        ],
-        totals: { revenue: '5000.00', cogs: '3000.00', gross_profit: '2000.00' },
-      }),
-    );
+    fetchMock.mockImplementation((input) => {
+      if (String(input).includes('/v1/auth/me')) return Promise.resolve(envelope(me()));
+      return Promise.resolve(
+        envelope({
+          date_from_bs: '2083-04-01',
+          date_to_bs: '2083-04-15',
+          rows: [
+            {
+              bs_month: '2083-04',
+              sales_total: '5000.00',
+              returns_total: '0.00',
+              revenue: '5000.00',
+              cogs: '3000.00',
+              gross_profit: '2000.00',
+            },
+          ],
+          totals: { revenue: '5000.00', cogs: '3000.00', gross_profit: '2000.00' },
+        }),
+      );
+    });
 
     renderProfit();
 

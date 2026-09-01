@@ -56,39 +56,81 @@ must pass:
 
 **Backend job** (against real Postgres 16 in CI):
 
+- `python ../scripts/check_source_size.py` — hand-written source files stay at
+  or below the 400-line architecture boundary
 - `ruff check .` — lint
 - `ruff format --check .` — format check
 - `mypy .` — type check
 - `python manage.py makemigrations --check --dry-run` — no unmigrated model
   changes
-- `pytest --cov --cov-fail-under=80` — tests with **coverage floor 80%**
-  (100% required on `apps/pricing/`, `apps/sales/services/`,
-  `apps/inventory/services/`, `core/calendar/` — the four modules where a bug
-  costs a shop money; enforced by the suites themselves, see [ARCHITECTURE.md](ARCHITECTURE.md)). The
-  tenant-isolation suite is part of this run against real Postgres — the test
-  that protects the business.
+- regenerate and validate `openapi/schema.yaml`, then fail on any diff
+- `pytest --cov --cov-report=json:coverage.json --cov-fail-under=80` — tests
+  with an **80% overall floor**; `scripts/check_critical_coverage.py` then
+  requires zero missing lines and branches across `apps/pricing/`,
+  `apps/sales/services/`, `core/calendar/`, and the inventory write modules
+  (`services.py`, `receiving.py`, `transfers.py`, `counts.py`, and
+  `reconciliation.py`). The tenant-isolation suite is part of this run against
+  real Postgres — the test that protects the business.
 
-**Frontend job** (runs when `frontend/package.json` exists):
+**Tenant/admin frontend job** (runs when `frontend/package.json` exists):
 
-- `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`
-- `npm audit --omit=dev --audit-level=critical`
+- regenerate the typed OpenAPI declarations and fail on drift
+- `npm audit --audit-level=high`
+- `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`; the build
+  includes the 500 KiB initial-entry architecture budget
 - Builds the production frontend and Caddy images and smoke-tests the edge
   stack (`docker/test-edge-stack.sh`)
+
+**Storefront job:** high-severity dependency audit, unit tests, lint, type-aware
+production build.
+
+**E2E job:** creates and seeds a fresh isolated Compose project through the
+short-lived migration/seed services, type-checks the Playwright suite, and runs
+the login, billing, returns, simple-sale, and public-share browser scenarios.
+Failure traces and the HTML report are uploaded as artifacts.
 
 **Other jobs:**
 
 - `gitleaks` — secret scan over full history
-- `recovery` — exercises the backup/restore/WAL paths against real Postgres
-  and MinIO
+- `recovery` — validates the Compose secret allowlists, PgBouncer transaction
+  isolation, Prometheus/Loki/Alloy configuration, backup/restore paths against
+  real PostgreSQL, and S3-compatible WAL upload against MinIO
+
+Dependabot opens weekly update PRs for GitHub Actions, Python, all three npm
+workspaces, and Docker images. It does not replace the CI advisory gates.
 
 ## 4. Review rules
 
-- **Two approvers** for anything touching `apps/pricing/`,
-  `apps/sales/services/`, `core/permissions/`, or migrations.
-- Everything else: one approval.
-- Reviewers check the invariants, not just the diff: stock only via the
-  ledger, no cost leaks, completed invoices untouched, tenant only from the
-  subdomain, audit calls explicit.
+### Solo-maintainer mode
+
+This repository currently has one human with write access. GitHub does not let
+an author approve their own PR, so branch protection requires **zero approving
+reviews** while the repository is in solo-maintainer mode. This is the declared
+governance model, not permission to bypass the remaining protections:
+
+- Every change lands through a PR; direct pushes to `main` remain blocked.
+- All required CI checks must pass against the latest head commit, with strict
+  branch checking enabled.
+- Every review conversation must be resolved before merge.
+- Force pushes and branch deletion remain disabled on `main`, including for the
+  administrator.
+- Automated reviews (including Copilot) are advisory and never substitute for
+  the maintainer's self-review.
+
+Before merging, the maintainer reviews the complete diff and records test,
+migration, and rollback evidence in the PR template. Changes touching
+`apps/pricing/`, `apps/sales/services/`, `core/permissions/`, or migrations also
+require the **Sensitive-change self-review** section: affected invariants,
+tenant-isolation and money/stock/security evidence, migration forward/reverse
+details, and the rollback plan. The review checks the invariants, not just the
+diff: stock only via the ledger, no cost leaks, completed invoices untouched,
+tenant only from the subdomain, and explicit audit calls.
+
+Before moving to a multi-maintainer model, update this document and branch
+protection in a dedicated governance PR. Team mode restores one independent
+approval for ordinary changes and two independent approvals for the sensitive
+paths above once enough human reviewers are available. Fake accounts and bot
+approvals are never acceptable substitutes.
 
 ## 5. Migration discipline
 

@@ -36,6 +36,7 @@ class PlanFactory(DjangoModelFactory):
         "advanced_pos": True,
         "sms": True,
         "profit_reports": True,
+        "export_excel": True,
         "custom_rate_types": True,
         "max_rate_types": 3,
         "multi_branch": True,

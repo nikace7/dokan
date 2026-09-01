@@ -39,7 +39,10 @@ def test_concurrent_adjustments_stay_consistent() -> None:
         tenant,
         branch=branch,
         variant=variant,
-        qty=Decimal("10"),
+        # The withdrawal worker may legally acquire all ten row locks before
+        # the deposit worker. Start with enough stock for that serialization
+        # so this test measures lost updates, not the insufficient-stock rule.
+        qty=Decimal("30"),
         unit_cost=Decimal("100"),
         created_by=user,
     )
@@ -79,8 +82,8 @@ def test_concurrent_adjustments_stay_consistent() -> None:
     assert not errors, f"worker thread failed: {errors[0]!r}"
 
     level = StockLevel.objects.get(tenant=tenant, branch=branch, variant=variant)
-    # 10 + (10 × +5) + (10 × −3) = 30
-    assert level.qty_on_hand == Decimal("30")
+    # 30 + (10 × +5) + (10 × −3) = 50
+    assert level.qty_on_hand == Decimal("50")
 
     # Every ledger row's balance_after must be consistent with a serial
     # execution: starting from the OPENING balance, there must EXIST an
@@ -92,10 +95,10 @@ def test_concurrent_adjustments_stay_consistent() -> None:
         .values_list("qty_delta", "balance_after")
     )
     assert len(movements) == 21  # 1 opening + 20 adjustments
-    assert movements[0] == (Decimal("10"), Decimal("10"))
+    assert movements[0] == (Decimal("30"), Decimal("30"))
 
     remaining = [(int(d), int(b)) for d, b in movements[1:]]
-    state = 10
+    state = 30
     while remaining:
         for pair in remaining:
             if state + pair[0] == pair[1]:
@@ -104,4 +107,4 @@ def test_concurrent_adjustments_stay_consistent() -> None:
                 break
         else:
             raise AssertionError(f"ledger is not serializable from state {state}: {remaining}")
-    assert state == 30  # chain ends exactly at the projection's qty_on_hand
+    assert state == 50  # chain ends exactly at the projection's qty_on_hand

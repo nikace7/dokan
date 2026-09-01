@@ -22,16 +22,23 @@ answers 200, not 201).
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any
 
 from django.db import IntegrityError, connection, transaction
-from django.db.models import Sum
 from django.utils import timezone
 
 from apps.inventory.services import post_sale_movement
-from apps.pricing.services import assert_price_within_bounds, resolve_price
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
-from apps.tenants.services import require_plan_feature
+from apps.sales.services.calculations import PAYMENT_METHODS as PAYMENT_METHODS
+from apps.sales.services.calculations import VAT_RATE as VAT_RATE
+from apps.sales.services.calculations import (
+    ResolvedLine,
+    check_credit,
+    compute_totals,
+    resolve_lines,
+    split_payments,
+)
+from apps.sales.services.calculations import SaleLineInput as SaleLineInput
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from core.money import quantize_money
 from core.numbering import allocate_number
@@ -39,188 +46,16 @@ from core.responses import ServiceError
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
-    from apps.catalog.models import ItemVariant
     from apps.pricing.models import RateType
     from apps.tenants.models import Tenant
 
-#: Nepal VAT rate. See the VAT rule in the module docstring.
-VAT_RATE: Final = Decimal("0.13")
-
-#: Tender methods (docs/DATABASE_SCHEMA.md §8.4). CREDIT means udharo — it
-#: is not part of paid_amount; it is exactly the due. QR is a wallet/QR
-#: scan tender: cash-equivalent (counts toward paid) but NOT physical cash,
-#: so — like ESEWA/KHALTI/FONEPAY — it never enters cash-session expected
-#: cash.
-PAYMENT_METHODS = frozenset(
-    {"CASH", "ESEWA", "KHALTI", "FONEPAY", "QR", "CARD", "BANK", "CREDIT", "POINTS"}
-)
-
 _ZERO = Decimal("0")
-
-
-@dataclass(frozen=True)
-class SaleLineInput:
-    """One incoming bill line (variant object already tenant-scoped)."""
-
-    variant: "ItemVariant"
-    qty: Decimal
-    unit_price: Decimal | None  # None → resolve via the rate type
-    discount: Decimal
 
 
 @dataclass(frozen=True)
 class SaleResult:
     invoice: SalesInvoice
     replayed: bool
-
-
-@dataclass(frozen=True)
-class _ResolvedLine:
-    variant: "ItemVariant"
-    qty: Decimal
-    unit_price: Decimal
-    discount: Decimal
-    gross: Decimal
-    line_total: Decimal
-    cost_at_sale: Decimal
-    vat_applicable: bool
-
-
-def _resolve_lines(
-    tenant: "Tenant",
-    *,
-    rate_type: "RateType",
-    lines: list[SaleLineInput],
-    user: "User",
-    override_reason: str,
-) -> list[_ResolvedLine]:
-    """Resolve every line's price and validate the guardrails."""
-    resolved: list[_ResolvedLine] = []
-    for line in lines:
-        qty = Decimal(line.qty)
-        if qty <= _ZERO:
-            raise ServiceError("QTY_INVALID", "Line quantity must be greater than zero.")
-        if line.unit_price is None:
-            unit_price = resolve_price(
-                tenant, variant=line.variant, rate_type=rate_type, user=user
-            ).price
-        else:
-            unit_price = quantize_money(line.unit_price)
-            assert_price_within_bounds(
-                tenant,
-                variant=line.variant,
-                price=unit_price,
-                user=user,
-                reason=override_reason,
-            )
-        discount = quantize_money(line.discount)
-        gross = quantize_money(qty * unit_price)
-        if discount < _ZERO or discount > gross:
-            raise ServiceError(
-                "DISCOUNT_INVALID", "Line discount must be between zero and the line amount."
-            )
-        resolved.append(
-            _ResolvedLine(
-                variant=line.variant,
-                qty=qty,
-                unit_price=unit_price,
-                discount=discount,
-                gross=gross,
-                line_total=quantize_money(gross - discount),
-                cost_at_sale=quantize_money(line.variant.avg_cost),  # SNAPSHOT (#2)
-                vat_applicable=bool(line.variant.item.is_vat_applicable),
-            )
-        )
-    return resolved
-
-
-def _compute_totals(
-    tenant: "Tenant",
-    *,
-    resolved: list[_ResolvedLine],
-    is_vat_bill: bool,
-    bill_discount: Decimal,
-    round_off: Decimal,
-) -> dict[str, Decimal]:
-    """Invoice totals per the documented VAT rule."""
-    if is_vat_bill:
-        require_plan_feature(tenant, "vat_module")
-    subtotal = quantize_money(sum(line.gross for line in resolved))
-    discount_amount = quantize_money(sum(line.discount for line in resolved) + bill_discount)
-    if bill_discount < _ZERO or discount_amount > subtotal:
-        raise ServiceError(
-            "DISCOUNT_INVALID", "Bill discount must be between zero and the subtotal."
-        )
-    taxable_amount = quantize_money(subtotal - discount_amount)
-    vat_amount = _ZERO
-    if is_vat_bill and tenant.vat_registered:
-        vat_base = sum(line.line_total for line in resolved if line.vat_applicable)
-        vat_amount = quantize_money(vat_base * VAT_RATE)
-    total = quantize_money(taxable_amount + vat_amount + quantize_money(round_off))
-    return {
-        "subtotal": subtotal,
-        "discount_amount": discount_amount,
-        "taxable_amount": taxable_amount,
-        "vat_amount": vat_amount,
-        "total": total,
-    }
-
-
-def _split_payments(*, total: Decimal, payments: list[dict[str, Any]]) -> tuple[Decimal, Decimal]:
-    """Return (paid_amount, due_amount). CREDIT is not paid — it is the due.
-
-    Consistency rule: when a CREDIT tender is declared, its amount must
-    equal the computed due exactly (total − other tenders). The tenders
-    JSON feeds cash-session reconciliation; a CREDIT tender that disagrees
-    with due_amount would split the same udharo into two different truths.
-    Implicit udharo (due without a CREDIT tender) stays allowed.
-    """
-    paid = _ZERO
-    credit = _ZERO
-    for payment in payments:
-        if payment["method"] not in PAYMENT_METHODS:
-            raise ServiceError(
-                "PAYMENT_METHOD_INVALID", f"Unknown payment method: {payment['method']}."
-            )
-        amount = quantize_money(payment["amount"])
-        if amount <= _ZERO:
-            raise ServiceError("PAYMENT_AMOUNT_INVALID", "Payment amounts must be positive.")
-        if payment["method"] == "CREDIT":
-            credit += amount
-        else:
-            paid += amount
-    paid = quantize_money(paid)
-    if paid > total:
-        raise ServiceError("OVERPAYMENT", "Payments exceed the bill total.")
-    due = quantize_money(total - paid)
-    if credit > _ZERO and credit != due:
-        raise ServiceError(
-            "CREDIT_TENDER_MISMATCH",
-            "The credit tender amount must equal the remaining due.",
-        )
-    return paid, due
-
-
-def _check_credit(tenant: "Tenant", *, customer: Any, due: Decimal) -> None:
-    """Udharo rules: due requires a customer; credit_limit caps total dues."""
-    if due <= _ZERO:
-        return
-    if customer is None:
-        raise ServiceError(
-            "UDHARO_REQUIRES_CUSTOMER", "A credit (udharo) sale requires a customer."
-        )
-    if customer.credit_limit is None:
-        return
-    existing_dues = (
-        SalesInvoice.objects.filter(
-            tenant=tenant, customer=customer, status=SalesInvoice.Status.COMPLETED
-        ).aggregate(total=Sum("due_amount"))["total"]
-        or _ZERO
-    )
-    if existing_dues + due > customer.credit_limit:
-        raise ServiceError(
-            "CREDIT_LIMIT_EXCEEDED", "This sale would exceed the customer's credit limit."
-        )
 
 
 def finalize_invoice(
@@ -236,7 +71,7 @@ def finalize_invoice(
     business_date: date | None = None,
     applied_credit: Decimal = _ZERO,
     require_open_cash_session: bool = False,
-) -> list[_ResolvedLine]:
+) -> list[ResolvedLine]:
     """Run the completion pipeline for an invoice object (new or held).
 
     MUST be called inside transaction.atomic(). Fills totals, status,
@@ -252,14 +87,14 @@ def finalize_invoice(
         from apps.payments.services import require_open_session
 
         require_open_session(tenant, invoice.branch)
-    resolved = _resolve_lines(
+    resolved = resolve_lines(
         tenant,
         rate_type=invoice.rate_type,
         lines=lines,
         user=created_by,
         override_reason=override_reason,
     )
-    totals = _compute_totals(
+    totals = compute_totals(
         tenant,
         resolved=resolved,
         is_vat_bill=invoice.is_vat_bill,
@@ -267,8 +102,8 @@ def finalize_invoice(
         round_off=quantize_money(round_off),
     )
     credit_applied = min(quantize_money(applied_credit), totals["total"])
-    paid, due = _split_payments(total=totals["total"] - credit_applied, payments=payments)
-    _check_credit(tenant, customer=invoice.customer, due=due)
+    paid, due = split_payments(total=totals["total"] - credit_applied, payments=payments)
+    check_credit(tenant, customer=invoice.customer, due=due)
 
     # Stock (#1) — inside this transaction; failure rolls everything back.
     for line in resolved:

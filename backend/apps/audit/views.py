@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from apps.audit import selectors
 from apps.audit.serializers import AuditLogSerializer
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error
@@ -52,6 +53,9 @@ class AuditLogListView(APIView):
 
     permission_classes = (HasPermission,)
     method_permissions: ClassVar[dict[str, str]] = {"GET": "settings.manage"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=AuditLogSerializer, response_many=True, paginated=True),
+    }
 
     def handle_exception(self, exc: Exception) -> Response:
         if isinstance(exc, ServiceError):

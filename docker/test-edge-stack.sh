@@ -54,6 +54,8 @@ admin=$(request https://admin.dokan.test/admin/login)
 api=$(request https://demo.dokan.test/api/probe)
 shop=$(request https://yak.shop.dokan.test/)
 shop_api=$(request https://yak.shop.dokan.test/api/probe)
+metrics_status=$(docker run --rm --network "$network" "$curl_image" --insecure --silent \
+    --output /dev/null --write-out '%{http_code}' https://demo.dokan.test/api/metrics)
 headers=$(request --head https://demo.dokan.test/billing)
 asset=$(printf '%s' "$tenant" | sed -n 's/.*src="\([^"]*\.js\)".*/\1/p' | head -n 1)
 [ -n "$asset" ]
@@ -69,6 +71,7 @@ printf '%s' "$admin" | grep -q '<title>mero-pasal\.online'
 printf '%s' "$shop" | grep -qF "$storefront_title"
 printf '%s' "$shop" | grep -qv '<title>mero-pasal\.online'
 [ "$shop_api" = "backend-ok" ]
+[ "$metrics_status" = "404" ]
 printf '%s' "$headers" | grep -qi '^content-security-policy:'
 printf '%s' "$headers" | grep -qi '^x-frame-options: DENY'
 printf '%s' "$asset_headers" | grep -qi '^cache-control:.*immutable'

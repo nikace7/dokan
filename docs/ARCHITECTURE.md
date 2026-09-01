@@ -77,6 +77,7 @@ GET https://shreeganesh.dokan.com.np/api/v1/sales
         ▼
 [Auth]  SimpleJWT access token → user
         Assert user.tenant_id == request.tenant_id (hard 403 + audit event on mismatch)
+        Resolve token.sid → active auth_session (missing/revoked/expired → 401)
         │
         ▼
 [PlanGate]  Tenant's plan includes the feature this route requires?
@@ -109,6 +110,9 @@ Non-negotiables (see `docs/MULTI_TENANCY.md` for the full contract):
   run in **transaction** pooling mode.
 - A JWT is bound to one tenant. Reuse on another subdomain is a hard 403 and an
   audit event.
+- Normal tenant JWTs are also bound to an RLS-protected registered device.
+  Logout and device/password revocation invalidate access and refresh tokens
+  immediately; support impersonation retains its separate Redis+jti path.
 
 ---
 
@@ -174,13 +178,14 @@ returns,exchange}.py`), never by layer.
 | `inventory` | stock_level, stock_movement ledger, transfers, counts | Only writer of stock quantities, via `stock_movement` |
 | `purchasing` | supplier, purchase invoice, landed cost | Writes PURCHASE movements through inventory's service |
 | `sales` | invoice, return, exchange, held bill, numbering | Never edits completed invoices; corrections are RETURN docs |
-| `customers` | customer, loyalty, party ledger | Party ledger is shared with suppliers (purchasing) |
-| `payments` | payment, gateways, cash session | All money in/out; idempotent writes |
+| `customers` | customer and credit policy | Loyalty remains roadmap scope; dues use the payment selector |
+| `payments` | payment, allocation, reversal, cash session | Ledger-derived balances; gateway adapters remain roadmap scope |
 | `expenses` | expense tracking | Feeds net-profit reports |
-| `reports` | selectors + rollup jobs only | No business models except summary tables; reads via selectors |
+| `reports` | selectors and permission-safe exports | Intentionally model-free until the documented rollup trigger |
 | `audit` | audit_log, query API | Append-only store; written only via `audit(...)` |
 | `notifications` | SMS/email, templates, provider abstraction | Vendor-agnostic interface (ADR 0004) |
-| `compliance` | IRD/CBMS sync (Phase 2) | Reads invoices; sync status back onto invoice rows |
+| `compliance` | durable IRD/CBMS sync queue | Frozen payloads and retry state; live provider is deployment integration |
+| `storefront` | public catalog, settings, OTP customers, orders | Resolves `*.shop.<root>` itself, opens RLS context, and never exposes cost or exact stock |
 
 Cross-app rule: apps call each other **only through services and selectors**,
 never through another app's models in a write path. `core/` holds the platform
@@ -233,6 +238,11 @@ Decisions that follow from this:
 - The super-admin portal ships in the **same build** under `/admin`, mounted only
   on the `admin.` host: one deploy, one auth library, one design system.
 - API types come from the generated client only (ADR 0002).
+- Tenant and admin portals plus feature pages are route-lazy. CI rejects a
+  production initial JavaScript entry above 500 KiB so feature-only code cannot
+  silently return to the startup path.
+- The anonymous customer store is a separate Vite SPA under `storefront/`, with
+  its own host namespace and `aurora`/`bazaar` template registry.
 
 ---
 
@@ -293,7 +303,8 @@ Caddy (wildcard TLS, *.dokan.com.np via DNS-01)
   ├─ web       : Gunicorn/Uvicorn × 4          (Django)
   ├─ worker    : Celery × 2                    (reports, SMS, IRD sync, rollups)
   ├─ beat      : Celery beat                   (nightly usage snapshots, rollups, reconciliation)
-  ├─ postgres  : 16, WAL archiving on          (PgBouncer in TRANSACTION pooling mode)
+  ├─ pgbouncer : 1.25.2, transaction mode      (app role only; digest-pinned)
+  ├─ postgres  : 16, WAL archiving on          (private direct path for privileged ops)
   └─ redis     : cache, sessions, celery broker, rate limit, jti denylist
 ```
 
@@ -303,9 +314,9 @@ Static/media on S3-compatible storage (Cloudflare R2) behind a CDN.
 |---|---|
 | Backups | `pg_dump` nightly + continuous WAL to object storage; **restore drill on the 1st of every month** |
 | Zero-downtime | Rolling restart behind Caddy; migrations backward-compatible for one release |
-| Monitoring | Sentry, Uptime Kuma (per-subdomain), Grafana + Postgres exporter |
-| Alerting | 5xx > 1%, `POST /sales` p95 > 1 s, DB connections > 80%, disk > 80%, backup failure |
-| Secrets | Docker secrets / SOPS; startup asserts all required secrets present, fails loudly |
+| Monitoring | privacy-filtered Sentry; Prometheus + exporters; Grafana; Loki + Alloy; Uptime Kuma |
+| Alerting | 5xx/latency, worker and queue health, DB/Redis/disk saturation, recovery freshness, external HTTP/TLS |
+| Secrets | External `.env`/SOPS input is mapped through explicit per-service allowlists; startup asserts required secrets, and CI rejects cross-boundary exposure |
 | Environments | `dev` (local compose) → `staging` (real subdomain, anonymised data) → `prod` |
 
 **Trigger points for growing past this** (do not build early): managed Postgres +
@@ -325,7 +336,19 @@ SYSTEM_DESIGN §12 for the full "deliberately not built" list.
 - **Audit vs logs**: application logs (stdout → Loki, 30 days, never PII/cost/
   tokens) are for debugging; `audit_log` (Postgres, append-only, `REVOKE UPDATE,
   DELETE` from app role, retained per plan, min 7 years for financial rows) is
-  for accountability.
+  for accountability. Only explicitly privacy-approved containers are collected;
+  request correlation uses a validated UUID4 `X-Request-ID`, never a tenant or
+  user label.
+- **Health and metrics**: `/api/live` proves only that the process can answer;
+  `/api/health` checks PostgreSQL and Redis readiness. Prometheus reads the
+  private `/api/metrics` endpoint using bounded method/route/status labels;
+  Caddy denies that endpoint publicly. Recovery scripts publish success
+  timestamps through node exporter's textfile collector, and `dokan_monitor`
+  has `pg_monitor` but no business-table grants or RLS bypass.
+- **Error telemetry**: Sentry is optional and fails inert without a DSN. Its
+  event filter removes bodies, URLs/query strings, cookies, user identity,
+  arbitrary messages, exception text, non-allowlisted headers, secrets and
+  financial fields before transmission.
 - **Rate limits**: 300 req/min/user, 60/min on auth, 20/min on report generation.
 - **Reports**: Phase 1 queries the OLTP directly via selectors; Phase 2 adds
   nightly rollups (`daily_sales_summary`, `daily_item_summary`) when a tenant
@@ -333,7 +356,13 @@ SYSTEM_DESIGN §12 for the full "deliberately not built" list.
   link.
 - **API contract**: envelope `{data, meta, error}` with machine-readable error
   codes; cursor pagination on transaction lists; OpenAPI 3.1 generated from DRF
-  (ADR 0002).
+  plus committed TypeScript declarations, both regenerated and diff-checked in
+  CI (ADR 0002).
+- **Coverage boundary**: CI keeps an 80% branch-aware repository floor and
+  requires zero missing lines or branches in pricing, sales services, the BS
+  calendar, and every inventory write module. The explicit
+  `scripts/check_critical_coverage.py` gate also fails if a critical module is
+  absent from the coverage report.
 
 ---
 

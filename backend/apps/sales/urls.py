@@ -2,15 +2,13 @@
 
 from django.urls import path
 
+from apps.sales.return_views import ExchangeCreateView, ReturnableLinesView, ReturnCreateView
 from apps.sales.views import (
     CancelBillView,
     CompleteBillView,
-    ExchangeCreateView,
     HeldBillListView,
     HoldBillView,
     ReceiptPrintView,
-    ReturnableLinesView,
-    ReturnCreateView,
     SaleDetailView,
     SaleListView,
     SaleShareView,

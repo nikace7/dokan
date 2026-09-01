@@ -122,6 +122,15 @@ class TestLifecycle:
         transfers.complete_transfer(shop["tenant"], transfer=transfer, created_by=shop["user"])
         assert StockMovement.objects.filter(type=StockMovement.MovementType.DAMAGE).count() == 0
 
+    def test_complete_without_receipt_stamps_received_time(self, shop: dict) -> None:
+        transfer = _transfer(shop, "1")
+        transfers.send_transfer(shop["tenant"], transfer=transfer, created_by=shop["user"])
+        assert transfer.received_at is None
+
+        transfers.complete_transfer(shop["tenant"], transfer=transfer, created_by=shop["user"])
+
+        assert transfer.received_at is not None
+
 
 class TestGuards:
     def test_same_branch_rejected(self, shop: dict) -> None:

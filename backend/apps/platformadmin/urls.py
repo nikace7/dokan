@@ -2,6 +2,7 @@
 
 from django.urls import path
 
+from apps.platformadmin.audit_views import PlatformAuditListView
 from apps.platformadmin.impersonation_views import (
     AdminImpersonationEndView,
     CurrentSupportAccessView,
@@ -15,7 +16,6 @@ from apps.platformadmin.views import (
     FeatureOverrideListView,
     PlanDetailView,
     PlanListView,
-    PlatformAuditListView,
     PlatformMeView,
     PlatformTokenObtainView,
     PlatformTokenRefreshView,
