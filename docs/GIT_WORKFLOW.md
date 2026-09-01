@@ -64,12 +64,13 @@ must pass:
 - `python manage.py makemigrations --check --dry-run` — no unmigrated model
   changes
 - regenerate and validate `openapi/schema.yaml`, then fail on any diff
-- `pytest --cov --cov-fail-under=80` — tests with **coverage floor 80%**
-  (100% required on `apps/pricing/`, `apps/sales/services/`,
-  `apps/inventory/services/`, `core/calendar/` — the four modules where a bug
-  costs a shop money; enforced by the suites themselves, see [ARCHITECTURE.md](ARCHITECTURE.md)). The
-  tenant-isolation suite is part of this run against real Postgres — the test
-  that protects the business.
+- `pytest --cov --cov-report=json:coverage.json --cov-fail-under=80` — tests
+  with an **80% overall floor**; `scripts/check_critical_coverage.py` then
+  requires zero missing lines and branches across `apps/pricing/`,
+  `apps/sales/services/`, `core/calendar/`, and the inventory write modules
+  (`services.py`, `receiving.py`, `transfers.py`, `counts.py`, and
+  `reconciliation.py`). The tenant-isolation suite is part of this run against
+  real Postgres — the test that protects the business.
 
 **Tenant/admin frontend job** (runs when `frontend/package.json` exists):
 

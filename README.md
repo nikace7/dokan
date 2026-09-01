@@ -133,7 +133,8 @@ Useful commands (from `backend/`):
 ```bash
 ruff check . && ruff format --check .   # lint + format gate
 mypy .                                  # type gate
-pytest --cov                            # tests (coverage floor 80%)
+pytest --cov --cov-report=json:coverage.json --cov-fail-under=80
+python ../scripts/check_critical_coverage.py coverage.json
 python scripts/generate_bs_golden.py    # regenerate the AD↔BS golden fixture
 python manage.py export_tenant demo --output demo-export.zip
 python manage.py spectacular --file ../openapi/schema.yaml --validate
