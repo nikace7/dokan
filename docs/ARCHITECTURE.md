@@ -358,6 +358,11 @@ SYSTEM_DESIGN §12 for the full "deliberately not built" list.
   codes; cursor pagination on transaction lists; OpenAPI 3.1 generated from DRF
   plus committed TypeScript declarations, both regenerated and diff-checked in
   CI (ADR 0002).
+- **Coverage boundary**: CI keeps an 80% branch-aware repository floor and
+  requires zero missing lines or branches in pricing, sales services, the BS
+  calendar, and every inventory write module. The explicit
+  `scripts/check_critical_coverage.py` gate also fails if a critical module is
+  absent from the coverage report.
 
 ---
 
