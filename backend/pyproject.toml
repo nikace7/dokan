@@ -31,7 +31,7 @@ dev = [
     "factory-boy>=3.3",
     "ruff>=0.16,<0.17",
     "mypy>=2.1,<2.2",
-    "django-stubs[compatible-mypy]>=6.0,<6.1",
+    "django-stubs[compatible-mypy]>=6.0,<6.2",
     "djangorestframework-stubs[compatible-mypy]>=3.17,<3.18",
     "types-openpyxl>=3.1,<4",
 ]
