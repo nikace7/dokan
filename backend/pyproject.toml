@@ -120,8 +120,9 @@ addopts = "--strict-markers --strict-config"
 # ---------------------------------------------------------------------------
 # Coverage.
 # Floor: 80% overall (enforced in CI via --fail-under=80).
-# REQUIRED: 100% on apps/pricing, apps/sales/services, apps/inventory/services
-# and core/calendar — a bug in those four costs the shop money.
+# REQUIRED: 100% line and branch coverage on apps/pricing, apps/sales/services,
+# the inventory write modules, and core/calendar. CI enforces the exact boundary
+# with scripts/check_critical_coverage.py because a bug there costs the shop money.
 # ---------------------------------------------------------------------------
 [tool.coverage.run]
 branch = true
