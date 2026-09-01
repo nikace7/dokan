@@ -83,12 +83,36 @@ must pass:
 
 ## 4. Review rules
 
-- **Two approvers** for anything touching `apps/pricing/`,
-  `apps/sales/services/`, `core/permissions/`, or migrations.
-- Everything else: one approval.
-- Reviewers check the invariants, not just the diff: stock only via the
-  ledger, no cost leaks, completed invoices untouched, tenant only from the
-  subdomain, audit calls explicit.
+### Solo-maintainer mode
+
+This repository currently has one human with write access. GitHub does not let
+an author approve their own PR, so branch protection requires **zero approving
+reviews** while the repository is in solo-maintainer mode. This is the declared
+governance model, not permission to bypass the remaining protections:
+
+- Every change lands through a PR; direct pushes to `main` remain blocked.
+- All required CI checks must pass against the latest head commit, with strict
+  branch checking enabled.
+- Every review conversation must be resolved before merge.
+- Force pushes and branch deletion remain disabled on `main`, including for the
+  administrator.
+- Automated reviews (including Copilot) are advisory and never substitute for
+  the maintainer's self-review.
+
+Before merging, the maintainer reviews the complete diff and records test,
+migration, and rollback evidence in the PR template. Changes touching
+`apps/pricing/`, `apps/sales/services/`, `core/permissions/`, or migrations also
+require the **Sensitive-change self-review** section: affected invariants,
+tenant-isolation and money/stock/security evidence, migration forward/reverse
+details, and the rollback plan. The review checks the invariants, not just the
+diff: stock only via the ledger, no cost leaks, completed invoices untouched,
+tenant only from the subdomain, and explicit audit calls.
+
+Before moving to a multi-maintainer model, update this document and branch
+protection in a dedicated governance PR. Team mode restores one independent
+approval for ordinary changes and two independent approvals for the sensitive
+paths above once enough human reviewers are available. Fake accounts and bot
+approvals are never acceptable substitutes.
 
 ## 5. Migration discipline
 

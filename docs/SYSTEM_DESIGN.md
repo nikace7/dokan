@@ -1026,8 +1026,8 @@ Scope = the app name. Body answers **why**, never **what** (the diff is the what
 2. Push early, open a **draft PR** — CI runs from minute one.
 3. CI gate (all required): lint (ruff/eslint) · format check · type check (mypy/tsc) · tests · coverage ≥ 80% · **tenant isolation suite** · migration check (`makemigrations --check --dry-run`) · secret scan (gitleaks).
 4. PR template forces: what, why, screenshots for UI, migration notes, rollback plan.
-5. One approval required, two for anything touching `pricing/`, `sales/services/`, `core/permissions/`, or migrations.
-6. **Squash merge** — `main` history is one commit per feature and stays readable.
+5. In solo-maintainer mode, no approving review is required because an author cannot approve their own PR. The maintainer completes the repository PR template and records an explicit sensitive-change self-review for `pricing/`, `sales/services/`, `core/permissions/`, or migrations. All CI, conversation-resolution, and protected-branch gates remain mandatory. See `GIT_WORKFLOW.md` for the team-mode transition rule.
+6. Merge while **preserving the branch's atomic commits** — no squash. The commit sequence is the review and bisect trail.
 7. Delete branch on merge.
 
 ### 9.4 Releases
@@ -1070,7 +1070,7 @@ worse than none.
 | `UI_UX_GUIDE.md` | Keeps the UI simple as the team grows | Design principles, tokens (colour/type/spacing), component inventory, screen patterns (list/form/report), keyboard shortcut map, empty/loading/error state rules, mobile rules, accessibility floor, Nepali/English label pairs. |
 | `COMPLIANCE_IRD.md` | Legal requirements, isolated so they can be audited | IRD computerized-billing requirements, gapless numbering implementation, no-deletion policy and credit note flow, materialized view log, CBMS sync design and retry policy, required invoice fields, VAT register formats. |
 | `TESTING.md` | How to test this specific system | Test pyramid, how to write a tenant-isolation test, factory conventions, the four 100%-coverage modules and why, concurrency test patterns, E2E setup, load test targets, flaky test policy. |
-| `GIT_WORKFLOW.md` | Team conventions | Branch naming, conventional commit spec with real examples, PR template and review rules, two-approver paths, release/tagging, hotfix procedure, migration discipline. |
+| `GIT_WORKFLOW.md` | Repository conventions | Branch naming, conventional commit spec with real examples, PR template, solo-maintainer self-review and team-transition rules, release/tagging, hotfix procedure, migration discipline. |
 | `DEPLOYMENT.md` | Runbook | Environment matrix, env var reference, first-time provisioning, deploy procedure, migration procedure, **rollback procedure**, backup and verified restore steps, DNS/TLS/wildcard setup, monitoring dashboards and alert meanings. |
 | `ONBOARDING_TENANT.md` | Repeatable customer setup | Checklist to onboard a new shop: subdomain, plan, owner account, categories, size charts, rate types, opening stock import, staff training script, go-live checklist. Directly reusable by a non-technical support person. |
 | `DATA_IMPORT.md` | Getting shops off Excel | CSV/Excel templates for items, variants, opening stock, customers, suppliers; validation rules; error report format; rollback of a bad import. This is the #1 migration blocker for a new customer. |
