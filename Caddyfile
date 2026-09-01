@@ -8,6 +8,13 @@
 }
 
 (backend_routes) {
+	# Metrics are scraped directly on the private Compose network. Never proxy
+	# them from a tenant, storefront, admin, or apex public host.
+	@metrics path /api/metrics
+	handle @metrics {
+		respond @metrics 404
+	}
+
 	@backend path /api/* /django-admin*
 	handle @backend {
 		reverse_proxy backend:8000 {

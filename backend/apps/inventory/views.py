@@ -25,9 +25,10 @@ from apps.inventory.serializers import (
 )
 from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, not_found_code, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "stock.view",
@@ -42,7 +43,7 @@ def _user(request: Request) -> Any:
 def _get_or_404(tenant: Any, model: Any, pk: UUID, what: str) -> Any:
     instance = model.objects.filter(tenant=tenant, pk=pk).first()
     if instance is None:
-        raise ServiceError(f"{what.upper()}_NOT_FOUND", f"{what} not found.", http_status=404)
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
     return instance
 
 
@@ -99,6 +100,10 @@ class _InventoryAPIView(APIView):
 class LevelListView(_InventoryAPIView):
     """GET /inventory/levels — current stock projection."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StockLevelSerializer, response_many=True, paginated=True),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_levels(
@@ -114,6 +119,10 @@ class LevelListView(_InventoryAPIView):
 
 class MovementListView(_InventoryAPIView):
     """GET /inventory/movements — the immutable ledger."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StockMovementSerializer, response_many=True, paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -131,6 +140,14 @@ class MovementListView(_InventoryAPIView):
 
 class OpeningStockView(_InventoryAPIView):
     """POST /inventory/opening — initial stock with weighted-average cost."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=OpeningStockSerializer,
+            response=StockMovementSerializer,
+            status_code=201,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -155,6 +172,14 @@ class OpeningStockView(_InventoryAPIView):
 class AdjustmentView(_InventoryAPIView):
     """POST /inventory/adjustments — signed correction with a required reason."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=AdjustmentSerializer,
+            response=StockMovementSerializer,
+            status_code=201,
+        ),
+    }
+
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         serializer = AdjustmentSerializer(data=request.data)
@@ -176,6 +201,14 @@ class AdjustmentView(_InventoryAPIView):
 
 class WriteOffView(_InventoryAPIView):
     """POST /inventory/write-offs — damage write-off with a required reason."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=WriteOffSerializer,
+            response=StockMovementSerializer,
+            status_code=201,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)

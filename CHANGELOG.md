@@ -8,6 +8,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Observability and operations
+
+- `infra` — Compose now uses explicit environment allowlists instead of passing
+  `.env` wholesale. Database-owner, migrator, backup, monitoring, and edge TLS
+  credentials stay within their trust boundaries; migrations and demo seeding
+  run in short-lived direct-database containers, and CI rejects regressions
+- `infra` — Django and Celery now reach PostgreSQL through a digest-pinned
+  PgBouncer 1.25.2 service fixed to transaction pooling. Production refuses
+  any other declared pool mode, server-side cursors are disabled, only the
+  constrained app role is admitted, and CI proves tenant session context is
+  cleared after commit against real PostgreSQL
+- `core` — every response now carries a validated UUID4 request id; production
+  emits allowlist-only JSON request/health logs and bounded Prometheus metrics.
+  Separate liveness and dependency-readiness endpoints support safe orchestration,
+  while the metrics endpoint is disabled by default and denied at the public edge
+- `core` — optional Sentry reporting strips user identity, request bodies,
+  cookies, URLs and query strings, arbitrary messages, exception text,
+  non-allowlisted headers, secrets, cost and price data before transmission.
+  Production also rejects email backends that would print OTPs into logs
+- `ops` — the monitoring profile now provisions Prometheus alert rules,
+  Grafana dashboards, PostgreSQL/Redis/Celery/node/container exporters, Uptime
+  Kuma, and 30-day Loki log retention through allowlisted Docker discovery in
+  Grafana Alloy. Recovery scripts publish verified backup, WAL-upload and
+  restore-drill timestamps; a non-RLS-bypassing `pg_monitor` role supplies only
+  server statistics
+
+### Account security
+
+- `accounts` — tenant access and rotating refresh tokens now carry a registered
+  device session id. Logout, password reset, password change, and self-service
+  device revocation invalidate affected tokens immediately under tenant RLS;
+  successful/failed login, logout, password, OTP, and revocation actions are
+  explicit audit events
+- `accounts` / `notifications` — enumeration-safe password reset and optional
+  login verification use six-digit SMS codes stored only as HMAC hashes, with a
+  ten-minute expiry, five-attempt lock, and resend cooldown. Security delivery
+  bypasses subscription SMS quotas
+- `frontend` — every tenant user gets a bilingual Account security screen for
+  password changes, SMS login-code setup, and registered-device review, plus
+  OTP-aware login and a complete forgot-password flow
+
+### API contract
+
+- `api` — all tenant, platform-admin, and storefront operations now publish a
+  warning-free OpenAPI 3.1 contract with stable operation IDs, both JWT realms,
+  standard success/error envelopes, required idempotency headers, and a
+  canonical machine-readable error-code enum. The reviewable schema and
+  generated TypeScript declarations are committed; backend and frontend CI
+  regenerate them and fail on drift. Framework and resource-not-found errors
+  are normalized to stable `UPPER_SNAKE_CASE` codes
+
+### Operations and integrity
+
+- `inventory` — a monthly Celery reconciliation now rebuilds each active
+  tenant's `stock_level` quantity and branch moving-average cost from the
+  immutable movement ledger, recreates missing projection rows, repairs drift
+  under tenant RLS, keeps sent stock explicitly in transit, and emits a
+  structured error-level alert whenever a repair is required
+
+### Reports and localization
+
+- `reports` — implemented report pages now export real `.xlsx` workbooks and
+  print in A4 or 80mm layouts. The export service re-checks plan features and
+  route permissions, uses selectors only, neutralizes spreadsheet formulas,
+  and never includes cost columns without `pricing.view_cost`
+- `frontend` — report date ranges now use the canonical BS conversion library
+  through a keyboard-accessible Nepali calendar picker, while API filters stay
+  anchored to AD ISO dates
+
 ### Design system
 
 - `frontend` — UI/UX refinement pass across the tenant panel and the

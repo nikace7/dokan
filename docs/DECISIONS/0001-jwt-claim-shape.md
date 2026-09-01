@@ -3,6 +3,9 @@
 **Status:** Accepted
 **Date:** 2026-07-27
 
+**Amended:** 2026-08-31 — normal tenant tokens are bound to a revocable
+registered-device session.
+
 ## Context
 
 Authentication is Django auth + SimpleJWT (SYSTEM_DESIGN §0, §8.4): phone +
@@ -30,10 +33,13 @@ depend on the claims being right:
 | `aud` | token audience: `tenant` for tenant users, `platform` for platform users — the two realms are separate and mutually rejected |
 | `token_use` | `access` |
 | `jti` | unique id; used for the impersonation denylist and refresh rotation |
+| `sid` | tenant `auth_session.id` for normal tenant tokens; absent on platform and impersonation tokens |
 
 **Refresh token** (30 days, rotating): `sub`, `aud`, `tenant` (where
-applicable), `token_use: refresh`, `jti`. Rotation on every refresh; reuse of a
-rotated-out refresh token invalidates the chain.
+applicable), `token_use: refresh`, `jti`, and `sid` for a normal tenant user.
+Rotation on every refresh; reuse of a rotated-out refresh token invalidates the
+chain. Access and refresh both require the referenced session to remain active
+and unexpired.
 
 **Impersonation token** adds:
 
@@ -51,7 +57,9 @@ Impersonation tokens carry `aud: tenant` (they act inside a tenant) and their
 Enforcement: after authentication, the request pipeline asserts
 `token.tenant == request.tenant` (subdomain-derived), `token.aud` matches the
 host realm (`admin.` host vs `<slug>.` host), and `token_use == access` on API
-calls. Any mismatch is a 403 and an audit event.
+calls. Normal tenant tokens also resolve `sid` under tenant RLS and reject a
+missing, expired, or revoked session immediately. Any realm or tenant mismatch
+is a 403 and an audit event.
 
 ## Alternatives
 
@@ -65,13 +73,16 @@ calls. Any mismatch is a 403 and an audit event.
 
 ## Consequences
 
-- Token verification needs no database call on the hot path; tenant binding and
-  realm checks are pure claim comparisons.
+- Normal tenant requests perform one indexed `auth_session` lookup so logout,
+  password reset, password change, and owner-triggered device revocation take
+  effect immediately. The lookup is tenant-prefixed and RLS-protected; its
+  `last_seen_at` write is bounded to once per five minutes.
 - Every write during impersonation is attributable to a real platform user via
   `act` — the audit trail never shows a support action as the tenant owner's.
 - Refresh-token rotation plus the Redis jti denylist gives instant revocation
-  for impersonation, at the cost of a Redis lookup on refresh and on
-  impersonated requests only (normal access tokens verify statelessly).
+  for impersonation. Normal tenant sessions use durable database revocation;
+  password reset revokes every device and password change keeps only the
+  current device.
 - The `tenant` claim makes JWTs non-portable across tenants by construction;
   any future multi-tenant user (e.g. an accountant serving several shops) needs
   one token per tenant, which is the intended behaviour.

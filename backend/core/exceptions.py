@@ -10,14 +10,17 @@ from typing import Any
 
 from rest_framework.views import exception_handler
 
+from core.error_codes import canonical_error_code
+
 
 def _code_for(exc: Any) -> str:
     """Derive a machine-readable code from the exception."""
     if hasattr(exc, "get_codes"):
         codes = exc.get_codes()
         if isinstance(codes, str):
-            return codes
-    return type(exc).__name__
+            return canonical_error_code(codes)
+        return "VALIDATION_ERROR"
+    return canonical_error_code(type(exc).__name__)
 
 
 def _message_for(exc: Any, data: Any) -> str:

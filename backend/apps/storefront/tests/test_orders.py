@@ -67,9 +67,7 @@ class TestProductDetail:
         StoreSettingsFactory(tenant=shop, offer_discount_pct=Decimal("50.00"))
         variant = make_sellable(shop, name="Puffer", website_price=Decimal("2000.00"))
 
-        response = APIClient().get(
-            DETAIL_URL.format(pk=variant.item_id), **shopfront_host("yak")
-        )
+        response = APIClient().get(DETAIL_URL.format(pk=variant.item_id), **shopfront_host("yak"))
 
         assert response.status_code == 200
         data = response.json()["data"]
@@ -128,7 +126,9 @@ class TestOtpLogin:
         make_shop()
         self._request_and_read_code("a@b.com")
         response = APIClient().post(
-            VERIFY_URL, {"email": "a@b.com", "code": "000000"}, format="json",
+            VERIFY_URL,
+            {"email": "a@b.com", "code": "000000"},
+            format="json",
             **shopfront_host("yak"),
         )
         assert response.status_code == 400
@@ -139,7 +139,9 @@ class TestOtpLogin:
         code = self._request_and_read_code("new@shopper.com")
 
         response = APIClient().post(
-            VERIFY_URL, {"email": "new@shopper.com", "code": code}, format="json",
+            VERIFY_URL,
+            {"email": "new@shopper.com", "code": code},
+            format="json",
             **shopfront_host("yak"),
         )
 
@@ -154,7 +156,9 @@ class TestOtpLogin:
         code = self._request_and_read_code("a@b.com")
         StoreOtp.objects.update(expires_at=timezone.now())
         response = APIClient().post(
-            VERIFY_URL, {"email": "a@b.com", "code": code}, format="json",
+            VERIFY_URL,
+            {"email": "a@b.com", "code": code},
+            format="json",
             **shopfront_host("yak"),
         )
         assert response.status_code == 400

@@ -98,4 +98,19 @@ find "$BACKUP_DIR" -maxdepth 1 -type f \
        -o -name "$PGDATABASE-*-pg_wal.tar.gz" -o -name "$PGDATABASE-*-pg_wal.tar.gz.sha256" \) \
     -mtime "+$BASE_BACKUP_RETENTION_DAYS" -delete
 
+completed_at=$(date +%s)
+latest_base=$(find "$BACKUP_DIR" -maxdepth 1 -type f \
+    -name "$PGDATABASE-*-base.tar.gz" | sort | tail -n 1)
+base_completed_at=0
+if [ -n "$latest_base" ]; then
+    base_completed_at=$(stat -c %Y "$latest_base")
+fi
+write_metric_file dokan_backup.prom \
+    '# HELP dokan_backup_last_success_timestamp_seconds Unix time of the last verified logical backup.' \
+    '# TYPE dokan_backup_last_success_timestamp_seconds gauge' \
+    "dokan_backup_last_success_timestamp_seconds $completed_at" \
+    '# HELP dokan_base_backup_last_success_timestamp_seconds Unix time of the last verified physical base backup.' \
+    '# TYPE dokan_base_backup_last_success_timestamp_seconds gauge' \
+    "dokan_base_backup_last_success_timestamp_seconds $base_completed_at"
+
 echo "Verified backup completed: $(basename "$dump_final")"

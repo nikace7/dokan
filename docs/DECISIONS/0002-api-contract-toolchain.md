@@ -49,5 +49,5 @@ machine-readable error codes, cursor pagination on transaction lists,
 - Serializers must be annotated carefully (explicit serializers on views,
   `extend_schema` for non-obvious endpoints) or the schema — and therefore the
   client — degrades. This discipline is required, not optional.
-- The error-code table must be kept in the schema/enum so the UI can switch on
-  `PRICE_BELOW_MINIMUM` vs `CREDIT_LIMIT_EXCEEDED` as required by §8.4.
+- The error-code table is kept in the schema/enum so the UI can switch on
+  `PRICE_BELOW_MIN` vs `CREDIT_LIMIT_EXCEEDED` as required by §8.4.

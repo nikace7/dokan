@@ -104,6 +104,52 @@ export function toBsString(bs: BsDate): string {
   return `${bs.year}-${pad2(bs.month)}-${pad2(bs.day)}`;
 }
 
+/** Parse and calendar-validate a zero-padded BS date string. */
+export function parseBsString(value: string): BsDate {
+  const match = ISO_DATE_RE.exec(value.trim());
+  const invalid = () => new BsDateError(`Invalid BS date ${JSON.stringify(value)}`);
+  if (!match) {
+    throw invalid();
+  }
+  const date = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+  const canonical = toBsString(date);
+  if (
+    date.month < 1 ||
+    date.month > 12 ||
+    date.day < 1 ||
+    date.day > 32 ||
+    canonical < SUPPORTED_RANGE.from ||
+    canonical > SUPPORTED_RANGE.to
+  ) {
+    throw invalid();
+  }
+  try {
+    const roundTrip = adToBs(bsToAd(date));
+    if (toBsString(roundTrip) !== canonical) {
+      throw invalid();
+    }
+  } catch {
+    throw invalid();
+  }
+  return date;
+}
+
+/** Month length from the same pinned conversion table used by all BS dates. */
+export function daysInBsMonth(year: number, month: number): number {
+  if (month < 1 || month > 12) {
+    throw new BsDateError(`Invalid BS month ${month}`);
+  }
+  for (let day = 32; day >= 28; day -= 1) {
+    try {
+      parseBsString(`${year}-${pad2(month)}-${pad2(day)}`);
+      return day;
+    } catch {
+      // Continue to the next possible month length.
+    }
+  }
+  throw new BsDateError(`Unsupported BS month ${year}-${pad2(month)}`);
+}
+
 const DEVANAGARI_DIGITS = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'] as const;
 
 export function toDevanagariDigits(text: string): string {

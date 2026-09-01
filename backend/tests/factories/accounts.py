@@ -5,10 +5,22 @@ Join-table factories propagate ``tenant`` into their related factories via
 consistent graph (docs/SYSTEM_DESIGN.md §8.7 convention).
 """
 
+import uuid
+from datetime import timedelta
+
+from django.utils import timezone
 from factory import LazyFunction, PostGenerationMethodCall, SelfAttribute, Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
-from apps.accounts.models import Permission, Role, RolePermission, User, UserRole
+from apps.accounts.models import (
+    AccountOtp,
+    AuthSession,
+    Permission,
+    Role,
+    RolePermission,
+    User,
+    UserRole,
+)
 from tests.factories.tenant import TenantFactory
 
 #: Default password for factory users; tests log in with this.
@@ -32,6 +44,28 @@ class UserFactory(DjangoModelFactory):
     phone = Sequence(lambda n: f"98{n:08d}")
     full_name = Sequence(lambda n: f"Staff {n}")
     password = PostGenerationMethodCall("set_password", DEFAULT_PASSWORD)
+
+
+class AuthSessionFactory(DjangoModelFactory):
+    class Meta:
+        model = AuthSession
+
+    tenant = SubFactory(TenantFactory)
+    user = SubFactory(UserFactory, tenant=SelfAttribute("..tenant"))
+    device_id = LazyFunction(uuid.uuid4)
+    device_name = Sequence(lambda n: f"Test device {n}")
+    expires_at = LazyFunction(lambda: timezone.now() + timedelta(days=30))
+
+
+class AccountOtpFactory(DjangoModelFactory):
+    class Meta:
+        model = AccountOtp
+
+    tenant = SubFactory(TenantFactory)
+    user = SubFactory(UserFactory, tenant=SelfAttribute("..tenant"))
+    purpose = AccountOtp.Purpose.PASSWORD_RESET
+    code_hash = "0" * 64
+    expires_at = LazyFunction(lambda: timezone.now() + timedelta(minutes=10))
 
 
 class RolePermissionFactory(DjangoModelFactory):

@@ -12,6 +12,8 @@ the whole report is cost data (invariant 10).
 from typing import Any, ClassVar
 from uuid import UUID
 
+from django.http import HttpResponse
+from drf_spectacular.types import OpenApiTypes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
@@ -19,10 +21,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.reports import selectors
+from apps.reports.exports import (
+    XLSX_MEDIA_TYPE,
+    ExportFilters,
+    build_report_export,
+)
+from apps.reports.permissions import ReportExportPermission
 from core.middleware.tenant import require_request_tenant
+from core.openapi import object_list, operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
+from core.throttles import ReportThrottle
 
 
 def _user(request: Request) -> Any:
@@ -56,6 +66,7 @@ def _bs_param(request: Request, name: str) -> str | None:
 
 class _ReportsAPIView(APIView):
     permission_classes = (HasPermission,)
+    throttle_classes = (ReportThrottle,)
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.sales"}
 
     def handle_exception(self, exc: Exception) -> Response:
@@ -115,6 +126,7 @@ class DashboardPermission(BasePermission):
 
 class DashboardView(APIView):
     permission_classes = (DashboardPermission,)
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -124,6 +136,8 @@ class DashboardView(APIView):
 class CollectionsByTenderView(_ReportsAPIView):
     """GET /reports/collections-by-tender — collections grouped by payment
     method (tender) for a branch/period. Same gate as daily sales."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -139,6 +153,10 @@ class CollectionsByTenderView(_ReportsAPIView):
 
 
 class DailySalesView(_ReportsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list()),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         rows = selectors.daily_sales(
@@ -152,6 +170,10 @@ class DailySalesView(_ReportsAPIView):
 
 
 class MonthlySalesView(_ReportsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list()),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         rows = selectors.monthly_sales(
@@ -161,6 +183,10 @@ class MonthlySalesView(_ReportsAPIView):
 
 
 class ItemSalesView(_ReportsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list(), paginated=True),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         rows = selectors.item_sales(
@@ -175,6 +201,9 @@ class ItemSalesView(_ReportsAPIView):
 
 class StockSummaryView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.stock"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list(), paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -186,6 +215,9 @@ class StockSummaryView(_ReportsAPIView):
 
 class LowStockView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.stock"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list(), paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -195,6 +227,9 @@ class LowStockView(_ReportsAPIView):
 
 class DeadStockView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.stock"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=object_list(), paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -210,6 +245,7 @@ class DeadStockView(_ReportsAPIView):
 class ProfitReportView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.profit"}
     plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "profit_reports"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -230,6 +266,7 @@ class ProfitReportView(_ReportsAPIView):
 
 class DuesReportView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.ledger"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -239,6 +276,7 @@ class DuesReportView(_ReportsAPIView):
 class SalesVatRegisterView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.vat"}
     plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "vat_module"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -255,6 +293,7 @@ class SalesVatRegisterView(_ReportsAPIView):
 class PurchaseVatRegisterView(_ReportsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "report.vat"}
     plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "vat_module"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -266,3 +305,43 @@ class PurchaseVatRegisterView(_ReportsAPIView):
                 date_to_bs=_bs_param(request, "date_to_bs"),
             )
         )
+
+
+class ReportExportView(APIView):
+    """Download one permission-filtered report as an XLSX workbook."""
+
+    permission_classes = (ReportExportPermission,)
+    throttle_classes = (ReportThrottle,)
+    plan_features_by_method: ClassVar[dict[str, str]] = {"GET": "export_excel"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(
+            response=OpenApiTypes.BINARY,
+            raw_response=True,
+            response_media_type=XLSX_MEDIA_TYPE,
+        )
+    }
+
+    def handle_exception(self, exc: Exception) -> Response:
+        if isinstance(exc, ServiceError):
+            return error(exc.http_status, exc.code, exc.message)
+        return super().handle_exception(exc)
+
+    def get(self, request: Request) -> HttpResponse:
+        tenant = require_request_tenant(request)
+        content, filename = build_report_export(
+            tenant,
+            _user(request),
+            report_name=request.query_params.get("report", ""),
+            filters=ExportFilters(
+                branch_id=_uuid_param(request, "branch"),
+                date_from_bs=_bs_param(request, "date_from_bs"),
+                date_to_bs=_bs_param(request, "date_to_bs"),
+                fiscal_year_bs=_bs_param(request, "fiscal_year_bs"),
+                days=_int_param(request, "days", 90),
+                limit=_int_param(request, "limit", 20),
+            ),
+        )
+        response = HttpResponse(content, content_type=XLSX_MEDIA_TYPE)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response["X-Content-Type-Options"] = "nosniff"
+        return response

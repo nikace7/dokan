@@ -23,9 +23,9 @@ jobs:
           --health-cmd "pg_isready -U dokan_migrator -d dokan_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -33,6 +33,9 @@ jobs:
 
       - name: Install dependencies
         run: pip install -e ".[dev]"
+
+      - name: Architecture source-size boundary
+        run: python ../scripts/check_source_size.py
 
       - name: Ruff lint
         run: ruff check .
@@ -48,8 +51,17 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: config.settings.test
 
-      - name: Tests with coverage (floor 80%)
-        run: pytest --cov --cov-report=term-missing --cov-fail-under=80
+      - name: OpenAPI contract is current
+        run: |
+          python manage.py spectacular --file ../openapi/schema.yaml --validate
+          git diff --exit-code -- ../openapi/schema.yaml
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
+
+      - name: Tests with coverage gates
+        run: |
+          pytest --cov --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=80
+          python ../scripts/check_critical_coverage.py coverage.json
         env:
           DATABASE_HOST: localhost
           DATABASE_NAME: dokan_test
@@ -59,7 +71,7 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install gitleaks
@@ -72,15 +84,31 @@ jobs:
   recovery:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Verify Compose archiving, backups, and restore
         run: |
           cp .env.example .env
           docker compose --profile production --profile ops config --quiet
+          docker compose --profile monitoring config --quiet
+          docker compose --profile production --profile ops --profile dev config --format json |
+            python scripts/check_compose_secret_boundaries.py
+          sh docker/test-pgbouncer.sh
+          docker run --rm --entrypoint promtool \
+            -v "$PWD/docker/monitoring:/etc/prometheus:ro" \
+            prom/prometheus:v3.13.0 check config /etc/prometheus/prometheus.yml
+          docker run --rm \
+            -v "$PWD/docker/monitoring/loki.yml:/etc/loki/loki.yml:ro" \
+            grafana/loki:3.7.2 \
+            -verify-config=true -config.file=/etc/loki/loki.yml
+          docker run --rm \
+            -v "$PWD/docker/monitoring/alloy.config:/etc/alloy/config.alloy:ro" \
+            grafana/alloy:v1.18.0 validate /etc/alloy/config.alloy
+          python -m json.tool \
+            docker/monitoring/grafana/dashboards/dokan-overview.json >/dev/null
           docker build --tag dokan-backup:test docker/backup
-          mkdir .ops-backups
-          chmod 777 .ops-backups
+          mkdir .ops-backups .ops-monitoring
+          chmod 777 .ops-backups .ops-monitoring
           project=dokan-recovery-ci
           cleanup() { docker compose -p "$project" down --volumes --remove-orphans; }
           trap cleanup EXIT
@@ -104,6 +132,8 @@ jobs:
             -e PGHOST=db -e PGPORT=5432 -e PGDATABASE=dokan -e PGUSER=postgres \
             -e REQUIRE_OBJECT_STORAGE=false \
             -e BASE_BACKUP_ENABLED=true -v "$PWD/.ops-backups:/backups" \
+            -e MONITORING_TEXTFILE_DIR=/monitoring \
+            -v "$PWD/.ops-monitoring:/monitoring" \
             --entrypoint sh dokan-backup:test \
             -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; exec backup.sh'
           docker run --rm -e BASE_BACKUP_ENABLED=true \
@@ -113,8 +143,14 @@ jobs:
             -e PGHOST=db -e PGPORT=5432 -e PGDATABASE=dokan -e PGUSER=postgres \
             -e RESTORE_DATABASE=dokan_restore_drill \
             -v "$PWD/.ops-backups:/backups" \
+            -e MONITORING_TEXTFILE_DIR=/monitoring \
+            -v "$PWD/.ops-monitoring:/monitoring" \
             --entrypoint sh dokan-backup:test \
             -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; exec restore-drill.sh'
+          grep -q '^dokan_backup_last_success_timestamp_seconds ' \
+            .ops-monitoring/dokan_backup.prom
+          grep -q '^dokan_restore_drill_last_success_timestamp_seconds ' \
+            .ops-monitoring/dokan_restore_drill.prom
           cleanup
           trap - EXIT
 
@@ -142,7 +178,13 @@ jobs:
             -e AWS_ENDPOINT_URL=http://127.0.0.1:9000 \
             -e AWS_ACCESS_KEY_ID=dokan_test -e AWS_SECRET_ACCESS_KEY=testpassword123 \
             -e AWS_DEFAULT_REGION=us-east-1 -v "$PWD/.ops-wal:/wal-archive" \
+            -e MONITORING_TEXTFILE_DIR=/monitoring \
+            -v "$PWD/.ops-monitoring:/monitoring" \
             --entrypoint sh dokan-backup:test -c 'wal-upload.sh && wal-healthcheck.sh'
+          grep -q '^dokan_wal_upload_last_success_timestamp_seconds ' \
+            .ops-monitoring/dokan_wal.prom
+          cat .ops-monitoring/*.prom | docker run --rm -i --entrypoint promtool \
+            prom/prometheus:v3.13.0 check metrics
           docker run --rm --network host \
             -e AWS_ACCESS_KEY_ID=dokan_test -e AWS_SECRET_ACCESS_KEY=testpassword123 \
             -e AWS_DEFAULT_REGION=us-east-1 --entrypoint aws dokan-backup:test \
@@ -155,7 +197,7 @@ jobs:
       frontend: ${{ steps.probe.outputs.frontend }}
       storefront: ${{ steps.probe.outputs.storefront }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: probe
         run: |
           if [ -f frontend/package.json ]; then
@@ -177,15 +219,15 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      # The remaining high React Router advisory is RSC-only; Dokan is a client-rendered SPA.
-      - run: npm audit --omit=dev --audit-level=critical
+      - run: npm run api:check
+      - run: npm audit --audit-level=high
       - run: npm test
       - run: npm run lint
       - run: npx tsc --noEmit
@@ -206,14 +248,68 @@ jobs:
       run:
         working-directory: storefront
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: storefront/package-lock.json
       - run: npm ci
-      - run: npm audit --omit=dev --audit-level=critical
+      - run: npm audit --audit-level=high
       - run: npm test
       - run: npm run lint
       - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Build and seed isolated Compose stack
+        run: |
+          cp .env.example .env
+          sed -i 's/^ROOT_DOMAIN=.*/ROOT_DOMAIN=localhost/' .env
+          sed -i 's/^ALLOWED_HOSTS=.*/ALLOWED_HOSTS=.localhost,localhost,backend/' .env
+          docker compose -p dokan-e2e-ci up -d --build db redis backend frontend storefront caddy
+          docker compose -p dokan-e2e-ci run --rm migrate
+          docker compose -p dokan-e2e-ci run --rm seed-demo
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npm audit --audit-level=high
+          npx playwright install --with-deps chromium
+
+      - name: Type-check E2E suite
+        working-directory: e2e
+        run: npm run typecheck
+
+      - name: Run browser smoke suite
+        working-directory: e2e
+        run: npm test
+        env:
+          E2E_BASE_URL: https://demo.localhost
+          E2E_API_URL: http://127.0.0.1:8000
+          E2E_TENANT_HOST: demo.localhost
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-artifacts
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: ignore
+
+      - name: Stop isolated stack
+        if: always()
+        run: docker compose -p dokan-e2e-ci down --volumes --remove-orphans

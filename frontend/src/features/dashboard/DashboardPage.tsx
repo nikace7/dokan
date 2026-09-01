@@ -15,9 +15,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { ChartCard } from '@/components/ui/ChartCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ProgressDonut } from '@/components/ui/ProgressDonut';
@@ -27,7 +25,7 @@ import { StatTile } from '@/components/ui/StatTile';
 import type { StatTileTint } from '@/components/ui/StatTile';
 import { useAuth } from '@/features/auth/useAuth';
 import { fetchCollectionsByTender, fetchDashboard } from '@/features/dashboard/api';
-import type { DashboardBill } from '@/features/dashboard/api';
+import { DashboardSkeleton, RecentBills } from '@/features/dashboard/DashboardSupport';
 import { LowStockStrip } from '@/features/dashboard/LowStockStrip';
 import { SalesTrendChart } from '@/features/dashboard/SalesTrendChart';
 import { currentBsMonthRange } from '@/features/reports/api';
@@ -340,90 +338,4 @@ function quickActions(
     actions.push({ to: '/customers', icon: Users, tint: 'amber', label: t('nav.customers') });
   }
   return actions;
-}
-
-function DashboardSkeleton() {
-  return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4" aria-busy="true">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-40" />
-        </div>
-        <Skeleton className="h-9 w-28" />
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <StatTile key={i} label="" icon={Banknote} isLoading />
-        ))}
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Skeleton className="h-56 w-full" />
-        <Skeleton className="h-56 w-full" />
-      </div>
-      <Skeleton className="h-40 w-full" />
-    </main>
-  );
-}
-
-function RecentBills({
-  bills,
-  canViewSalesReport,
-}: {
-  bills: DashboardBill[];
-  canViewSalesReport: boolean;
-}) {
-  const { t } = useTranslation();
-  useMoneyDisplay();
-  return (
-    <Card
-      title={t('dashboard.recentBills')}
-      actions={
-        canViewSalesReport ? (
-          <Link to="/reports/sales" className="text-sm font-medium text-primary hover:underline">
-            {t('dashboard.viewSales')}
-          </Link>
-        ) : null
-      }
-    >
-      {bills.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">{t('dashboard.noBills')}</p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {bills.map((bill) => (
-            <li
-              key={bill.id}
-              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5 text-sm"
-            >
-              <div className="min-w-0">
-                <p className="font-mono font-medium">{bill.invoice_no}</p>
-                <p className="truncate text-muted-foreground">
-                  {bill.customer_name ?? t('billing.walkIn')}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {bill.tender_methods.length > 0 ? (
-                  bill.tender_methods.map((method) => (
-                    <Badge key={method} variant="secondary">
-                      {method}
-                    </Badge>
-                  ))
-                ) : (
-                  <Badge variant="outline">{t('dashboard.credit')}</Badge>
-                )}
-                <div className="text-right">
-                  <p className="font-medium">{money(bill.total)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    <time dateTime={bill.created_at}>
-                      {new Date(bill.created_at).toLocaleString()}
-                    </time>
-                  </p>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  );
 }

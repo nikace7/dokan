@@ -13,6 +13,9 @@ from pathlib import Path
 
 from celery.schedules import crontab
 
+from core.observability.sentry import configure_sentry
+from core.openapi_components import OPENAPI_COMPONENTS
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
@@ -25,6 +28,26 @@ def env_list(name: str, default: str = "") -> list[str]:
     """Read a comma-separated environment variable into a list."""
     raw = env(name, default) or ""
     return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    """Read a strict boolean environment variable."""
+    raw = (env(name, str(default)) or "").lower()
+    if raw not in {"true", "false"}:
+        raise RuntimeError(f"{name} must be 'true' or 'false'")
+    return raw == "true"
+
+
+def env_float(name: str, default: float = 0.0) -> float:
+    """Read a bounded zero-to-one environment ratio."""
+    raw = env(name, str(default)) or str(default)
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a number") from exc
+    if not 0 <= value <= 1:
+        raise RuntimeError(f"{name} must be between 0 and 1")
+    return value
 
 
 # The secrets every deployment must provide. prod.py asserts they exist.
@@ -42,6 +65,23 @@ def assert_required_secrets() -> None:
     if missing:
         msg = f"Missing required environment secrets: {', '.join(missing)}"
         raise RuntimeError(msg)
+
+
+def assert_production_email_backend(backend: str | None) -> None:
+    """Reject backends that expose OTP and order emails in production logs."""
+    unsafe = {
+        "django.core.mail.backends.console.EmailBackend",
+        "django.core.mail.backends.locmem.EmailBackend",
+        "django.core.mail.backends.dummy.EmailBackend",
+    }
+    if backend in unsafe:
+        raise RuntimeError("EMAIL_BACKEND must deliver mail in production")
+
+
+def assert_transaction_pooling(pool_mode: str | None) -> None:
+    """Reject production database paths that can leak tenant session state."""
+    if pool_mode != "transaction":
+        raise RuntimeError("DATABASE_POOL_MODE must be 'transaction' in production")
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +128,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # Outermost so redirects and middleware-denied requests still receive a
+    # correlation id and a bounded route/status metric.
+    "core.observability.middleware.ObservabilityMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -107,6 +150,29 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# Prometheus is off unless the internal monitoring profile explicitly enables
+# it. Caddy also denies /api/metrics so this endpoint is never public.
+METRICS_ENABLED = env_bool("METRICS_ENABLED")
+
+# JSON logs serialize only the allowlisted fields in JsonFormatter. Django's
+# raw-path request loggers are disabled because URLs can contain share tokens.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"json": {"()": "core.observability.logging.JsonFormatter"}},
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "json"},
+        "null": {"class": "logging.NullHandler"},
+    },
+    "root": {"handlers": ["console"], "level": env("LOG_LEVEL", "INFO")},
+    "loggers": {
+        "dokan.request": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "dokan.health": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.server": {"handlers": ["null"], "propagate": False},
+        "django.request": {"handlers": ["null"], "propagate": False},
+    },
+}
 
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
@@ -141,6 +207,9 @@ DATABASES = {
         "PORT": env("DATABASE_PORT", "5432"),
         "ATOMIC_REQUESTS": True,
         "CONN_MAX_AGE": 60,
+        # Server-side cursors keep state beyond one transaction and are not
+        # compatible with PgBouncer transaction pooling.
+        "DISABLE_SERVER_SIDE_CURSORS": env("DATABASE_POOL_MODE", "direct") == "transaction",
     }
 }
 
@@ -165,6 +234,7 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_SEND_SENT_EVENT = True
 
 # CBMS sync provider: "local" (no network, default) or "cbms" (live IRD —
 # verify requirements with a Nepali CA/IRD before enabling, design §1185).
@@ -174,7 +244,11 @@ CELERY_BEAT_SCHEDULE = {
     "tenants-reconcile-usage-nightly": {
         "task": "apps.tenants.tasks.reconcile_usage_snapshots",
         "schedule": crontab(hour=0, minute=15),
-    }
+    },
+    "inventory-reconcile-stock-monthly": {
+        "task": "apps.inventory.tasks.reconcile_stock_levels",
+        "schedule": crontab(day_of_month="1", hour=1, minute=30),
+    },
 }
 
 # ADR 0004. "log" is the no-network local/staging adapter; production must
@@ -202,6 +276,18 @@ MEDIA_ROOT = Path(env("MEDIA_ROOT", str(BASE_DIR / "media")) or str(BASE_DIR / "
 # apps.platformadmin.PlatformUser — a separate table and token audience.
 AUTH_USER_MODEL = "accounts.User"
 
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 10},
+    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
 # Phone is unique PER TENANT (UNIQUE(tenant_id, phone)), not globally —
 # two shops may both have a "Ram" with the same number idea, and global
 # uniqueness would leak which shops a phone belongs to.
@@ -213,7 +299,13 @@ SILENCED_SYSTEM_CHECKS = ["auth.E003"]
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("apps.accounts.authentication.TenantJWTAuthentication",),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_CLASSES": ("core.throttles.TenantUserThrottle",),
+    "DEFAULT_THROTTLE_RATES": {
+        "tenant_user": "300/min",
+        "tenant_auth": "60/min",
+        "report": "20/min",
+    },
+    "DEFAULT_SCHEMA_CLASS": "core.openapi.ContractAutoSchema",
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
 }
@@ -233,7 +325,23 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "mero-pasal.online API",
     "DESCRIPTION": "Multi-tenant clothing shop management API (see docs/SYSTEM_DESIGN.md).",
     "VERSION": "0.1.0",
+    "OAS_VERSION": "3.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "APPEND_COMPONENTS": OPENAPI_COMPONENTS,
+    "ENUM_NAME_OVERRIDES": {
+        "SubscriptionStatus": "apps.tenants.models.TenantSubscription.Status",
+        "SalesInvoiceStatus": "apps.sales.models.SalesInvoice.Status",
+        "CbmsSyncState": "apps.compliance.models.CbmsSyncLog.Status",
+        "TenantStatus": "apps.tenants.constants.TenantStatus.CHOICES",
+        "PriceTargetScope": "apps.pricing.models.ItemPrice.Scope",
+        "ImpersonationScope": "apps.platformadmin.models.ImpersonationSession.Scope",
+        "TenantCurrency": "apps.tenants.models.Tenant.Currency",
+        "StoreCurrency": "apps.storefront.models.CURRENCY_CHOICES",
+        "PaymentMethod": "apps.payments.models.Payment.Method",
+        "PaymentInputMethod": "apps.payments.serializers._METHODS",
+        "SaleTenderMethod": "apps.sales.services.PAYMENT_METHODS",
+        "RefundMethod": "apps.sales.services.returns.REFUND_METHODS",
+    },
 }
 
 # Email — storefront OTP login codes and order confirmations. Dev/tests use
@@ -246,3 +354,16 @@ EMAIL_PORT = int(env("EMAIL_PORT", "25") or "25")
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = (env("EMAIL_USE_TLS", "false") or "false").lower() == "true"
+
+# Error reporting is optional and inert without a DSN. Request bodies, user
+# identity, secrets, and cost/price fields are removed by scrub_event.
+SENTRY_DSN = env("SENTRY_DSN", "") or ""
+SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", "development") or "development"
+SENTRY_RELEASE = env("SENTRY_RELEASE", "") or ""
+SENTRY_TRACES_SAMPLE_RATE = env_float("SENTRY_TRACES_SAMPLE_RATE")
+configure_sentry(
+    dsn=SENTRY_DSN,
+    environment=SENTRY_ENVIRONMENT,
+    release=SENTRY_RELEASE,
+    traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+)

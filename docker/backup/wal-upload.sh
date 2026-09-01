@@ -16,7 +16,12 @@ require_s3_uri "$BACKUP_S3_URI"
 
 aws_run s3 sync "$WAL_ARCHIVE_DIR/" "${BACKUP_S3_URI%/}/wal/" \
     --exclude '*.tmp' --only-show-errors
-date +%s > "$WAL_UPLOAD_MARKER"
+completed_at=$(date +%s)
+printf '%s\n' "$completed_at" > "$WAL_UPLOAD_MARKER"
+write_metric_file dokan_wal.prom \
+    '# HELP dokan_wal_upload_last_success_timestamp_seconds Unix time of the last successful WAL upload.' \
+    '# TYPE dokan_wal_upload_last_success_timestamp_seconds gauge' \
+    "dokan_wal_upload_last_success_timestamp_seconds $completed_at"
 
 find "$WAL_ARCHIVE_DIR" -maxdepth 1 -type f -name '[0-9A-F]*' \
     -mtime "+$WAL_LOCAL_RETENTION_DAYS" -delete

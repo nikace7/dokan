@@ -1,0 +1,109 @@
+groups:
+  - name: dokan-application
+    rules:
+      - alert: DokanHighHttpErrorRate
+        expr: |
+          sum(rate(dokan_http_requests_total{status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(dokan_http_requests_total[5m])), 0.001) > 0.01
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Dokan HTTP 5xx rate is above 1%"
+
+      - alert: DokanSalesLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(dokan_http_request_duration_seconds_bucket{
+              route=~"sales:sale-list|sales:sale-complete"
+            }[5m]))) > 1
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "Sales completion p95 latency is above one second"
+
+      - alert: DokanCeleryWorkerMissing
+        expr: sum(celery_worker_up) < 1 or absent(celery_worker_up)
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "No Celery worker is reporting healthy"
+
+      - alert: DokanCeleryQueueBacklog
+        expr: sum(celery_queue_length) > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Celery queue has more than 100 waiting tasks"
+
+  - name: dokan-infrastructure
+    rules:
+      - alert: DokanTargetDown
+        expr: up{job=~"dokan-backend|postgres|redis|celery|node|containers|loki|alloy"} == 0
+        for: 3m
+        labels:
+          severity: page
+        annotations:
+          summary: "A Dokan monitoring target is down"
+
+      - alert: DokanPostgresConnectionsHigh
+        expr: sum(pg_stat_activity_count) / scalar(pg_settings_max_connections) > 0.80
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "PostgreSQL connections are above 80% of capacity"
+
+      - alert: DokanHostDiskLow
+        expr: |
+          node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"}
+          / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} < 0.20
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "Host filesystem has less than 20% free space"
+
+      - alert: DokanRedisMemoryHigh
+        expr: redis_memory_max_bytes > 0 and redis_memory_used_bytes / redis_memory_max_bytes > 0.80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage is above 80%"
+
+      - alert: DokanLogicalBackupStale
+        expr: (time() - dokan_backup_last_success_timestamp_seconds > 93600) or absent(dokan_backup_last_success_timestamp_seconds)
+        for: 15m
+        labels:
+          severity: page
+        annotations:
+          summary: "No verified logical backup has completed in 26 hours"
+
+      - alert: DokanBaseBackupStale
+        expr: (time() - dokan_base_backup_last_success_timestamp_seconds > 691200) or absent(dokan_base_backup_last_success_timestamp_seconds)
+        for: 15m
+        labels:
+          severity: page
+        annotations:
+          summary: "No verified physical base backup has completed in eight days"
+
+      - alert: DokanWalUploadStale
+        expr: (time() - dokan_wal_upload_last_success_timestamp_seconds > 180) or absent(dokan_wal_upload_last_success_timestamp_seconds)
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "No WAL upload has completed in three minutes"
+
+      - alert: DokanRestoreDrillOverdue
+        expr: (time() - dokan_restore_drill_last_success_timestamp_seconds > 3024000) or absent(dokan_restore_drill_last_success_timestamp_seconds)
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "No successful restore drill has been recorded in 35 days"

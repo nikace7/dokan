@@ -19,6 +19,7 @@ from apps.platformadmin.serializers import (
 )
 from apps.platformadmin.views import _PlatformAPIView
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.responses import ServiceError, error, ok
 
 
@@ -53,6 +54,9 @@ class ImpersonationStartView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "POST": (PlatformUser.Role.SUPER_ADMIN, PlatformUser.Role.SUPPORT),
     }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=ImpersonationStartSerializer, status_code=201),
+    }
 
     def post(self, request: Request, tenant_pk: UUID) -> Response:
         serializer = ImpersonationStartSerializer(data=request.data)
@@ -80,6 +84,9 @@ class ImpersonationTargetListView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "GET": (PlatformUser.Role.SUPER_ADMIN, PlatformUser.Role.SUPPORT),
     }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ImpersonationTargetSerializer, response_many=True),
+    }
 
     def get(self, request: Request, tenant_pk: UUID) -> Response:
         tenant = selectors.get_tenant(_platform_actor(request), tenant_pk)
@@ -90,6 +97,9 @@ class ImpersonationTargetListView(_PlatformAPIView):
 class AdminImpersonationEndView(_PlatformAPIView):
     roles_by_method: ClassVar[dict[str, tuple[str, ...]]] = {
         "POST": (PlatformUser.Role.SUPER_ADMIN, PlatformUser.Role.SUPPORT),
+    }
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(response=ImpersonationSessionSerializer),
     }
 
     def post(self, request: Request, pk: UUID) -> Response:
@@ -114,6 +124,9 @@ class _TenantSupportAPIView(APIView):
 
 class TenantSupportAccessListView(_TenantSupportAPIView):
     permission_classes = (IsAuthenticated, TenantOwnerPermission)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ImpersonationSessionSerializer, response_many=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -123,6 +136,9 @@ class TenantSupportAccessListView(_TenantSupportAPIView):
 
 class CurrentSupportAccessView(_TenantSupportAPIView):
     permission_classes = (IsAuthenticated,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ImpersonationSessionSerializer),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -149,6 +165,9 @@ class CurrentSupportAccessView(_TenantSupportAPIView):
 
 class TenantSupportAccessEndView(_TenantSupportAPIView):
     permission_classes = (IsAuthenticated,)
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(response=ImpersonationSessionSerializer),
+    }
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)

@@ -17,7 +17,7 @@ from apps.catalog.barcodes import BarcodeValidationError, validate_barcode
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.tenants.services import enforce_creation_limit
 from core.money import MAX_OFFER_PCT
-from core.responses import ServiceError
+from core.responses import ServiceError, not_found_code
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -55,7 +55,7 @@ def _get_for_tenant(model: Any, tenant: "Tenant", ref: Any, what: str) -> Any:
     else:
         instance = model.objects.filter(tenant=tenant, pk=ref).first()
     if instance is None:
-        raise ServiceError(f"{what.upper()}_NOT_FOUND", f"{what} not found.", http_status=404)
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
     return instance
 
 

@@ -17,7 +17,7 @@ from apps.notifications.models import SmsLog
 from apps.platformadmin.models import ImpersonationSession, PlatformAuditLog, PlatformUser
 from apps.platformadmin.tokens import issue_platform_tokens
 from core.db.rls import set_local_tenant
-from tests.factories import PlanFactory, TenantFactory, UserFactory
+from tests.factories import AuthSessionFactory, PlanFactory, TenantFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -305,7 +305,10 @@ class TestOwnerVisibility:
         from apps.accounts.tokens import issue_tokens_for_user
 
         client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Bearer {issue_tokens_for_user(staff)['access']}")
+        staff_session = AuthSessionFactory(tenant=tenant, user=staff)
+        client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {issue_tokens_for_user(staff, staff_session)['access']}"
+        )
         response = client.get("/api/v1/support-access", **tenant_host(tenant.slug))
         assert response.status_code == 403
 
@@ -316,8 +319,9 @@ class TestOwnerVisibility:
         owner_client = APIClient()
         from apps.accounts.tokens import issue_tokens_for_user
 
+        owner_session = AuthSessionFactory(tenant=tenant, user=owner)
         owner_client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {issue_tokens_for_user(owner)['access']}"
+            HTTP_AUTHORIZATION=f"Bearer {issue_tokens_for_user(owner, owner_session)['access']}"
         )
         response = owner_client.get("/api/v1/support-access", **tenant_host(tenant.slug))
         assert response.status_code == 200

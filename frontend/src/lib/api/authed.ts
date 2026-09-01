@@ -10,8 +10,8 @@
  * module only owns the token lifecycle.
  */
 
-import { ApiError, apiRequest, apiRequestPage } from '@/lib/api/client';
-import type { Page, RequestOptions } from '@/lib/api/client';
+import { ApiError, apiRequest, apiRequestBlob, apiRequestPage } from '@/lib/api/client';
+import type { BinaryDownload, Page, RequestOptions } from '@/lib/api/client';
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/lib/auth/tokens';
 
 interface RefreshResponse {
@@ -78,6 +78,14 @@ export async function authedRequestPage<T>(
   options: RequestOptions = {},
 ): Promise<Page<T>> {
   return withAuthRetry((opts) => apiRequestPage<T>(path, opts), options);
+}
+
+/** Authenticated binary download with the standard refresh-once behavior. */
+export async function authedDownload(
+  path: string,
+  options: RequestOptions = {},
+): Promise<BinaryDownload> {
+  return withAuthRetry((opts) => apiRequestBlob(path, opts), options);
 }
 
 async function withAuthRetry<T>(

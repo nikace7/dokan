@@ -23,9 +23,10 @@ from apps.catalog.serializers import (
     SizeChartSerializer,
 )
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, not_found_code, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "catalog.view",
@@ -42,7 +43,7 @@ def _user(request: Request) -> Any:
 def _get_or_404(tenant: Any, model: Any, pk: UUID, what: str) -> Any:
     instance = model.objects.filter(tenant=tenant, pk=pk).first()
     if instance is None:
-        raise ServiceError(f"{what.upper()}_NOT_FOUND", f"{what} not found.", http_status=404)
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
     return instance
 
 
@@ -85,6 +86,15 @@ class _CatalogAPIView(APIView):
 
 
 class CategoryListView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=CategorySerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=CategorySerializer,
+            response=CategorySerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_categories(
@@ -107,6 +117,12 @@ class CategoryListView(_CatalogAPIView):
 
 
 class CategoryDetailView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=CategorySerializer),
+        "PATCH": operation(request=CategorySerializer, response=CategorySerializer),
+        "DELETE": operation(),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         category = _get_or_404(tenant, Category, pk, "Category")
@@ -130,6 +146,11 @@ class CategoryDetailView(_CatalogAPIView):
 
 
 class BrandListView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=BrandSerializer, response_many=True, paginated=True),
+        "POST": operation(request=BrandSerializer, response=BrandSerializer, status_code=201),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_brands(
@@ -151,6 +172,11 @@ class BrandListView(_CatalogAPIView):
 
 
 class BrandDetailView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "PATCH": operation(request=BrandSerializer, response=BrandSerializer),
+        "DELETE": operation(),
+    }
+
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         brand = _get_or_404(tenant, Brand, pk, "Brand")
@@ -169,6 +195,15 @@ class BrandDetailView(_CatalogAPIView):
 
 
 class SizeChartListView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=SizeChartSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=SizeChartSerializer,
+            response=SizeChartSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_size_charts(tenant, _user(request))
@@ -185,6 +220,11 @@ class SizeChartListView(_CatalogAPIView):
 
 
 class SizeChartDetailView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "PATCH": operation(request=SizeChartSerializer, response=SizeChartSerializer),
+        "DELETE": operation(),
+    }
+
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         chart = _get_or_404(tenant, SizeChart, pk, "Size chart")
@@ -203,6 +243,11 @@ class SizeChartDetailView(_CatalogAPIView):
 
 
 class ItemListView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ItemSerializer, response_many=True, paginated=True),
+        "POST": operation(request=ItemSerializer, response=ItemSerializer, status_code=201),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_items(
@@ -226,6 +271,12 @@ class ItemListView(_CatalogAPIView):
 
 
 class ItemDetailView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ItemSerializer),
+        "PATCH": operation(request=ItemSerializer, response=ItemSerializer),
+        "DELETE": operation(),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         item = _get_or_404(tenant, Item, pk, "Item")
@@ -255,6 +306,20 @@ class ItemImageView(_CatalogAPIView):
     serializer (envelope) so the client sees the fresh ``image_url``. The
     default method map already gates POST/DELETE on ``catalog.manage``.
     """
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request={
+                "multipart/form-data": {
+                    "type": "object",
+                    "required": ["image"],
+                    "properties": {"image": {"type": "string", "format": "binary"}},
+                }
+            },
+            response=ItemSerializer,
+        ),
+        "DELETE": operation(),
+    }
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)

@@ -23,7 +23,7 @@ import pytest
 from django.apps import apps
 from django.db import ProgrammingError, connection, transaction
 
-from apps.accounts.models import Role, RolePermission, User, UserRole
+from apps.accounts.models import AccountOtp, AuthSession, Role, RolePermission, User, UserRole
 from apps.audit.models import AuditLog
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from apps.compliance.models import CbmsSyncLog
@@ -54,7 +54,9 @@ from apps.tenants.models import Branch
 from core.db.rls import set_local_tenant
 from core.models import TenantScopedModel
 from tests.factories import (
+    AccountOtpFactory,
     AuditLogFactory,
+    AuthSessionFactory,
     BranchFactory,
     BrandFactory,
     CashSessionFactory,
@@ -103,6 +105,8 @@ FACTORIES: dict[type[Any], Any] = {
     AuditLog: AuditLogFactory,
     CbmsSyncLog: CbmsSyncLogFactory,
     User: UserFactory,
+    AuthSession: AuthSessionFactory,
+    AccountOtp: AccountOtpFactory,
     Role: RoleFactory,
     RolePermission: RolePermissionFactory,
     UserRole: UserRoleFactory,

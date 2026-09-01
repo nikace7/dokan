@@ -15,6 +15,7 @@ from apps.customers import selectors, services
 from apps.customers.models import Customer
 from apps.customers.serializers import CustomerSerializer
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -52,6 +53,15 @@ class _CustomerAPIView(APIView):
 
 
 class CustomerListView(_CustomerAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=CustomerSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=CustomerSerializer,
+            response=CustomerSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         raw = request.query_params.get("is_active")
@@ -81,6 +91,12 @@ class CustomerListView(_CustomerAPIView):
 
 
 class CustomerDetailView(_CustomerAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=CustomerSerializer),
+        "PATCH": operation(request=CustomerSerializer, response=CustomerSerializer),
+        "DELETE": operation(),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         customer = _get_or_404(tenant, pk)
@@ -109,6 +125,7 @@ class CustomerOutstandingView(_CustomerAPIView):
     """GET /customers/<id>/outstanding — dues minus credit notes."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "customer.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)

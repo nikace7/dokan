@@ -191,9 +191,7 @@ class StoreOrderItem(TenantScopedModel):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order = models.ForeignKey(StoreOrder, on_delete=models.CASCADE, related_name="items")
-    variant = models.ForeignKey(
-        "catalog.ItemVariant", on_delete=models.PROTECT, related_name="+"
-    )
+    variant = models.ForeignKey("catalog.ItemVariant", on_delete=models.PROTECT, related_name="+")
     name = models.TextField()
     size = models.TextField()
     color = models.TextField()

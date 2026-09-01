@@ -69,6 +69,11 @@ describe('SalesReportPage', () => {
     setTokens({ access: 'a', refresh: 'r' });
     fetchMock.mockImplementation((input) => {
       const url = String(input);
+      if (url.includes('/v1/auth/me')) {
+        return Promise.resolve(
+          envelope({ plan: { code: 'pro', name: 'Pro', features: { export_excel: true } } }),
+        );
+      }
       if (url.includes('/v1/reports/daily-sales')) {
         return Promise.resolve(envelope(DAILY_ROWS));
       }
@@ -107,6 +112,19 @@ describe('SalesReportPage', () => {
     const returnsDay = desktop.getByText('2083-04-15').closest('tr');
     expect(returnsDay).toHaveTextContent('300.00');
     expect(totalsRow).toHaveTextContent('300.00');
+    expect(screen.getByRole('button', { name: 'Download Excel' })).toBeInTheDocument();
+  });
+
+  it('rejects a well-formed string that is not a real BS calendar date', async () => {
+    renderPage();
+    await screen.findAllByText('2083-04-14');
+
+    fireEvent.change(screen.getByLabelText('From (BS)'), { target: { value: '2083-13-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Choose a real date from the supported BS calendar.',
+    );
   });
 
   it('quick-range chips fill the inputs and apply the range immediately', async () => {

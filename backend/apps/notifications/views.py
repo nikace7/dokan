@@ -11,6 +11,7 @@ from apps.notifications import selectors, services
 from apps.notifications.serializers import ReceiptSmsSerializer, SmsLogSerializer
 from apps.sales import selectors as sale_selectors
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
 from core.responses import ServiceError, error, ok
@@ -35,6 +36,9 @@ class _NotificationsAPIView(APIView):
 
 class SmsLogListView(_NotificationsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"GET": "settings.manage"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=SmsLogSerializer, response_many=True, paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -52,6 +56,13 @@ class SmsLogListView(_NotificationsAPIView):
 
 class ReceiptSmsView(_NotificationsAPIView):
     method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.create"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=ReceiptSmsSerializer,
+            response=SmsLogSerializer,
+            status_code=201,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)

@@ -13,6 +13,7 @@ import pytest
 
 from apps.inventory import services
 from apps.inventory.models import StockLevel, StockMovement
+from apps.inventory.receiving import post_purchase_movement
 from core.responses import ServiceError
 from tests.factories import (
     BranchFactory,
@@ -263,3 +264,60 @@ class TestLockLevelRace:
         with transaction.atomic():
             got = services._lock_level(ctx["tenant"], ctx["branch"], ctx["variant"])
         assert got.pk == level.pk
+
+
+class TestLedgerInputGuards:
+    def test_purchase_requires_positive_quantity(self, ctx: dict) -> None:
+        with pytest.raises(ServiceError, match="Purchase quantity") as exc:
+            post_purchase_movement(
+                ctx["tenant"],
+                branch=ctx["branch"],
+                variant=ctx["variant"],
+                qty=Decimal("0"),
+                unit_cost=Decimal("1"),
+                created_by=ctx["user"],
+                ref_type="purchase_invoice",
+                ref_id=ctx["variant"].pk,
+            )
+        assert exc.value.code == "QTY_INVALID"
+
+    def test_purchase_rejects_negative_cost(self, ctx: dict) -> None:
+        with pytest.raises(ServiceError, match="Unit cost") as exc:
+            post_purchase_movement(
+                ctx["tenant"],
+                branch=ctx["branch"],
+                variant=ctx["variant"],
+                qty=Decimal("1"),
+                unit_cost=Decimal("-1"),
+                created_by=ctx["user"],
+                ref_type="purchase_invoice",
+                ref_id=ctx["variant"].pk,
+            )
+        assert exc.value.code == "COST_INVALID"
+
+    def test_sale_requires_positive_quantity(self, ctx: dict) -> None:
+        with pytest.raises(ServiceError, match="Sale quantity") as exc:
+            services.post_sale_movement(
+                ctx["tenant"],
+                branch=ctx["branch"],
+                variant=ctx["variant"],
+                qty=Decimal("0"),
+                created_by=ctx["user"],
+                ref_type="sales_invoice",
+                ref_id=ctx["variant"].pk,
+            )
+        assert exc.value.code == "QTY_INVALID"
+
+    def test_sale_return_requires_positive_quantity(self, ctx: dict) -> None:
+        with pytest.raises(ServiceError, match="Return quantity") as exc:
+            services.post_sale_return_movement(
+                ctx["tenant"],
+                branch=ctx["branch"],
+                variant=ctx["variant"],
+                qty=Decimal("0"),
+                unit_cost=Decimal("1"),
+                created_by=ctx["user"],
+                ref_type="sales_invoice",
+                ref_id=ctx["variant"].pk,
+            )
+        assert exc.value.code == "QTY_INVALID"

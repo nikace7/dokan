@@ -2,7 +2,7 @@ import { BarChart3, Boxes, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import brandMark from '@/assets/brand-mark.webp';
 import { LanguageToggle } from '@/components/layout/LanguageToggle';
@@ -75,12 +75,13 @@ function BrandPanel() {
  * Desktop: brand panel left, sign-in card right. Mobile: single centered card.
  */
 export function LoginPage() {
-  const { isAuthenticated, isRestoring, isLoggingIn, loginError, signIn } = useAuth();
+  const { isAuthenticated, isRestoring, isLoggingIn, loginError, requiresOtp, signIn } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
 
   if (isAuthenticated) {
     const from = (location.state as LocationState | null)?.from?.pathname ?? '/';
@@ -89,7 +90,7 @@ export function LoginPage() {
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    void signIn(phone.trim(), password)
+    void signIn(phone.trim(), password, requiresOtp ? otp : undefined)
       .then(() => navigate('/', { replace: true }))
       .catch(() => {
         // Failure is already surfaced via loginError from the mutation.
@@ -127,6 +128,7 @@ export function LoginPage() {
                   autoComplete="username"
                   autoFocus
                   required
+                  disabled={requiresOtp}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="98XXXXXXXX"
@@ -137,9 +139,35 @@ export function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   required
+                  disabled={requiresOtp}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+
+                {requiresOtp ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">{t('auth.otpSent')}</p>
+                    <Input
+                      label={t('auth.verificationCode')}
+                      name="otp"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      pattern="[0-9]{6}"
+                      required
+                      autoFocus
+                      value={otp}
+                      onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
+                    />
+                  </>
+                ) : (
+                  <Link
+                    className="text-right text-sm text-primary hover:underline"
+                    to="/forgot-password"
+                  >
+                    {t('auth.forgotPassword')}
+                  </Link>
+                )}
 
                 {loginError ? (
                   <p
@@ -156,7 +184,7 @@ export function LoginPage() {
                   className="w-full"
                   loading={isLoggingIn || isRestoring}
                 >
-                  {t('auth.signIn')}
+                  {requiresOtp ? t('auth.verifyAndSignIn') : t('auth.signIn')}
                 </Button>
               </form>
             </CardContent>

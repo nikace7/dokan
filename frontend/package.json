@@ -6,14 +6,17 @@
   "description": "Frontend for the multi-tenant clothing shop management system (Nepal).",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/stamp-version.mjs",
+    "build": "npm run build:app",
+    "build:app": "tsc --noEmit && vite build && node scripts/check-bundle-size.mjs && node scripts/stamp-version.mjs",
     "preview": "vite preview",
+    "prebuild": "npm run api:gen",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "echo \"@playwright/test is optional and not installed yet (Phase 1+); add it when E2E lands\" && exit 1",
-    "api:gen": "openapi-typescript http://localhost:8000/api/schema/ -o src/lib/api/schema.d.ts"
+    "test:e2e": "npm --prefix ../e2e run test",
+    "api:gen": "openapi-typescript ../openapi/schema.yaml -o src/lib/api/schema.d.ts",
+    "api:check": "npm run api:gen && git diff --exit-code -- src/lib/api/schema.d.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -32,6 +35,7 @@
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.28.0",
     "nepali-date-converter": "^3.3.5",
+    "openapi-fetch": "^0.15.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",

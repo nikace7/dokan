@@ -1,15 +1,35 @@
+import { lazy } from 'react';
 import { createBrowserRouter, Link, Navigate, RouterProvider } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { AdminLayout } from '@/features/admin/AdminLayout';
-import { PlansPage } from '@/features/admin/PlansPage';
-import { PlatformAuditPage } from '@/features/admin/PlatformAuditPage';
-import { PlatformLoginPage } from '@/features/admin/PlatformLoginPage';
 import { RequirePlatformAuth } from '@/features/admin/RequirePlatformAuth';
-import { TenantDetailPage } from '@/features/admin/TenantDetailPage';
-import { TenantsPage } from '@/features/admin/TenantsPage';
 import { usePlatformAuth } from '@/features/admin/usePlatformAuth';
+
+const PlansPage = lazy(() =>
+  import('@/features/admin/PlansPage').then(({ PlansPage: Component }) => ({ default: Component })),
+);
+const PlatformAuditPage = lazy(() =>
+  import('@/features/admin/PlatformAuditPage').then(({ PlatformAuditPage: Component }) => ({
+    default: Component,
+  })),
+);
+const PlatformLoginPage = lazy(() =>
+  import('@/features/admin/PlatformLoginPage').then(({ PlatformLoginPage: Component }) => ({
+    default: Component,
+  })),
+);
+const TenantDetailPage = lazy(() =>
+  import('@/features/admin/TenantDetailPage').then(({ TenantDetailPage: Component }) => ({
+    default: Component,
+  })),
+);
+const TenantsPage = lazy(() =>
+  import('@/features/admin/TenantsPage').then(({ TenantsPage: Component }) => ({
+    default: Component,
+  })),
+);
 
 function PlatformAuditRoute() {
   const { user } = usePlatformAuth();

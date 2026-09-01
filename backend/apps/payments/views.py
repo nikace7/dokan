@@ -32,9 +32,10 @@ from apps.purchasing.models import PurchaseInvoice, Supplier
 from apps.sales.models import SalesInvoice
 from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, not_found_code, ok
 
 
 def _user(request: Request) -> Any:
@@ -44,7 +45,7 @@ def _user(request: Request) -> Any:
 def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
     instance = model.objects.filter(tenant=tenant, pk=pk).first()
     if instance is None:
-        raise ServiceError(f"{what.upper()}_NOT_FOUND", f"{what} not found.", http_status=404)
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
     return instance
 
 
@@ -104,6 +105,14 @@ class ReceiptCreateView(_PaymentsAPIView):
     """POST /payments/receipts — money IN from a customer."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "payment.receive"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=ReceiptCreateSerializer,
+            response=PaymentSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -140,6 +149,14 @@ class SupplierPaymentCreateView(_PaymentsAPIView):
     """POST /payments/supplier-payments — money OUT to a supplier."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "payment.pay"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=SupplierPaymentCreateSerializer,
+            response=PaymentSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -178,6 +195,14 @@ class PaymentReverseView(_PaymentsAPIView):
     """POST /payments/<id>/reverse — append a linked counter-entry."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "payment.reverse"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=PaymentReversalSerializer,
+            response=PaymentSerializer,
+            status_code=(200, 201),
+            idempotent=True,
+        ),
+    }
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -199,6 +224,9 @@ class PaymentListView(_PaymentsAPIView):
     """GET /payments — filters: direction/method/party/date range."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "payment.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=PaymentSerializer, response_many=True, paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -227,6 +255,7 @@ class ReceivablesAgingView(_PaymentsAPIView):
     """
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "payment.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -237,6 +266,13 @@ class CashSessionOpenView(_PaymentsAPIView):
     """POST /cash-sessions/open."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "cash.manage"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=CashSessionOpenSerializer,
+            response=CashSessionSerializer,
+            status_code=201,
+        ),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -260,6 +296,12 @@ class CashSessionCloseView(_PaymentsAPIView):
     """POST /cash-sessions/<id>/close."""
 
     method_permissions: ClassVar[dict[str, str]] = {"POST": "cash.manage"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=CashSessionCloseSerializer,
+            response=CashSessionSerializer,
+        ),
+    }
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -279,6 +321,7 @@ class CashSessionCurrentView(_PaymentsAPIView):
     """GET /cash-sessions/current?branch= — the POS drawer guard."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "cash.manage"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -296,6 +339,9 @@ class CustomerLedgerView(_PaymentsAPIView):
     """GET /customers/<id>/ledger — running-balance khata."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "customer.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=LedgerRowSerializer, response_many=True),
+    }
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -308,6 +354,9 @@ class SupplierLedgerView(_PaymentsAPIView):
     """GET /suppliers/<id>/ledger — running-balance khata."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "stock.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=LedgerRowSerializer, response_many=True),
+    }
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)

@@ -23,11 +23,21 @@ from apps.catalog.serializers import (
 from apps.catalog.views import _CatalogAPIView, _get_or_404, _user, _uuid_param
 from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.responses import ServiceError, error, ok
 
 
 class VariantListView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=ItemVariantSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=ItemVariantSerializer,
+            response=ItemVariantSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_variants(
@@ -60,6 +70,11 @@ class VariantListView(_CatalogAPIView):
 
 
 class VariantDetailView(_CatalogAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "PATCH": operation(request=ItemVariantSerializer, response=ItemVariantSerializer),
+        "DELETE": operation(),
+    }
+
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         variant = _get_or_404(tenant, ItemVariant, pk, "Variant")
@@ -79,6 +94,10 @@ class VariantDetailView(_CatalogAPIView):
 
 class VariantBulkView(_CatalogAPIView):
     """POST /catalog/items/{id}/variants/bulk — the size × colour matrix."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=VariantBulkSerializer, status_code=201),
+    }
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
@@ -106,6 +125,10 @@ class QuickCreateProductView(_CatalogAPIView):
     ``catalog.manage``; a payload with a ``stock`` block additionally
     requires ``stock.adjust`` because it posts OPENING inventory movements.
     """
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=QuickCreateProductSerializer, status_code=201),
+    }
 
     def post(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -163,6 +186,7 @@ class VariantLookupView(_CatalogAPIView):
     """GET /catalog/variants/lookup?barcode=|sku= — the POS hot path."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "catalog.view"}
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
@@ -185,6 +209,9 @@ class VariantForSaleView(_CatalogAPIView):
     """
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "sale.create"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response_many=True, paginated=True),
+    }
 
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)

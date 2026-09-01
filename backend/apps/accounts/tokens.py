@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Final, cast
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 if TYPE_CHECKING:
-    from apps.accounts.models import User
+    from apps.accounts.models import AuthSession, User
 
 AUDIENCE_TENANT: Final = "tenant"
 AUDIENCE_PLATFORM: Final = "platform"
@@ -22,13 +22,15 @@ class TenantRefreshToken(RefreshToken):
     """Refresh token for tenant users; access tokens derive from it."""
 
     @classmethod
-    def for_user(cls, user: Any) -> "TenantRefreshToken":
+    def for_user(cls, user: Any, *, session_id: Any | None = None) -> "TenantRefreshToken":
         """Build a refresh token carrying the ADR 0001 tenant claims."""
         token = cast("TenantRefreshToken", super().for_user(user))
         token["sub"] = str(user.pk)
         token["aud"] = AUDIENCE_TENANT
         token["tenant"] = str(user.tenant_id)
         token["token_use"] = "refresh"
+        if session_id is not None:
+            token["sid"] = str(session_id)
         return token
 
     @property
@@ -39,11 +41,12 @@ class TenantRefreshToken(RefreshToken):
         return access
 
 
-def issue_tokens_for_user(user: "User") -> dict[str, str]:
+def issue_tokens_for_user(user: "User", session: "AuthSession") -> dict[str, str]:
     """Issue the access+refresh pair returned by the login endpoint."""
-    refresh = TenantRefreshToken.for_user(user)
+    refresh = TenantRefreshToken.for_user(user, session_id=session.pk)
     return {
         "access": str(refresh.access_token),
         "refresh": str(refresh),
         "token_type": "Bearer",
+        "session_id": str(session.pk),
     }

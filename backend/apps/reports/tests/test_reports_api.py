@@ -2,7 +2,9 @@
 
 from datetime import date, timedelta
 from decimal import Decimal
+from io import BytesIO
 from typing import Any
+from zipfile import ZipFile
 
 import pytest
 from django.utils import timezone
@@ -286,3 +288,106 @@ class TestOtherReportsApi:
         assert response.status_code == 200
         assert response.json()["meta"]["count"] == 1
         assert response.json()["data"][0]["sku"] == variant.sku
+
+
+class TestReportExports:
+    def enable_export(self, tenant: Any) -> None:
+        tenant.plan.features = {**tenant.plan.features, "export_excel": True}
+        tenant.plan.save(update_fields=["features"])
+
+    def workbook_xml(self, response: Any) -> str:
+        with ZipFile(BytesIO(response.content)) as archive:
+            return "\n".join(
+                archive.read(name).decode("utf-8")
+                for name in archive.namelist()
+                if name.endswith(".xml")
+            )
+
+    def test_daily_sales_download_is_a_filtered_xlsx(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        self.enable_export(tenant)
+        grant(tenant, user, "report.sales")
+
+        response = auth_client(user).get(
+            "/api/v1/reports/export",
+            {"report": "daily-sales", **_today_range()},
+            **host(),
+        )
+
+        assert response.status_code == 200
+        assert response["Content-Type"] == (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        assert 'filename="daily-sales-' in response["Content-Disposition"]
+        assert response.content.startswith(b"PK")
+        xml = self.workbook_xml(response)
+        assert "Business Date Bs" in xml
+        assert "2260.00" in xml
+
+    def test_export_requires_the_report_permission(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        self.enable_export(tenant)
+        grant(tenant, user, "catalog.view")
+
+        response = auth_client(user).get(
+            "/api/v1/reports/export",
+            {"report": "daily-sales", **_today_range()},
+            **host(),
+        )
+
+        assert response.status_code == 403
+
+    def test_excel_feature_is_plan_gated(self, tenant: Any, user: Any, shop: dict) -> None:
+        tenant.plan.features = {**tenant.plan.features, "export_excel": False}
+        tenant.plan.save(update_fields=["features"])
+        grant(tenant, user, "report.sales")
+
+        response = auth_client(user).get(
+            "/api/v1/reports/export",
+            {"report": "daily-sales", **_today_range()},
+            **host(),
+        )
+
+        assert response.status_code == 402
+        assert response.json()["error"]["code"] == "PLAN_FEATURE_REQUIRED"
+
+    def test_stock_export_does_not_leak_cost_without_permission(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        self.enable_export(tenant)
+        grant(tenant, user, "report.stock")
+
+        response = auth_client(user).get(
+            "/api/v1/reports/export",
+            {"report": "stock-summary"},
+            **host(),
+        )
+
+        assert response.status_code == 200
+        xml = self.workbook_xml(response)
+        assert "Avg Cost" not in xml
+        assert "Cost Valuation" not in xml
+        assert "600.00" not in xml
+
+    def test_invalid_report_is_a_machine_readable_400(self, tenant: Any, user: Any) -> None:
+        self.enable_export(tenant)
+        grant(tenant, user, "report.sales")
+
+        response = auth_client(user).get(
+            "/api/v1/reports/export",
+            {"report": "not-real"},
+            **host(),
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "REPORT_INVALID"
+
+
+def test_spreadsheet_cells_never_become_formulas() -> None:
+    from apps.reports.exports import safe_spreadsheet_cell
+
+    assert safe_spreadsheet_cell('=HYPERLINK("https://evil.example")').startswith("'")
+    assert safe_spreadsheet_cell(" +SUM(1,2)").startswith("'")
+    assert safe_spreadsheet_cell("Normal shop") == "Normal shop"

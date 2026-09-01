@@ -187,7 +187,7 @@ describe('QuickAddProductPage', () => {
 
   it('shows the API error message when the create fails', async () => {
     quickCreateMock.mockRejectedValue(
-      new ApiError(400, { code: 'VALIDATION', message: 'Code 0001 already exists.' }),
+      new ApiError(400, { code: 'VALIDATION_ERROR', message: 'Code 0001 already exists.' }),
     );
     renderPage();
     fillBasics();

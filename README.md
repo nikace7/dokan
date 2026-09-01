@@ -17,11 +17,18 @@ and an offline-tolerant POS that runs as a PWA on any phone or laptop.
   linked reversals, and receivables aging; supplier ledgers and cash
   day-close sessions.
 - **Reports** — daily/monthly/top-item sales, stock summary/low/dead, profit,
-  dues, and IRD VAT registers — all native to the BS fiscal calendar.
+  dues, and IRD VAT registers — all native to the BS fiscal calendar, with a
+  BS calendar picker, permission-safe Excel exports, and A4/80mm printing.
 - **Platform control plane** — provision tenants, manage plans and custom
   subscriptions, toggle per-tenant features, inspect usage, and open
   time-boxed, fully audited support sessions into any tenant.
 - **Bilingual UI** — English/नेपाली toggle across the tenant app.
+- **Account security** — optional SMS code at login, enumeration-safe password
+  reset, strong-password validation, and immediate per-device session revocation.
+- **Online storefront** — each enabled shop gets a separate public store host,
+  two selectable templates, safe promotional pricing, email-OTP customers,
+  idempotent ordering, and token-based order tracking; COD works without a
+  gateway while online collection remains an integration item.
 
 ## Stack
 
@@ -41,18 +48,18 @@ docker compose up --build -d  # db, redis, backend, frontend, celery, beat, cadd
 
 # Apply migrations as the dedicated migrator role (NOT the superuser —
 # superuser-created tables miss the GRANTs the app role needs):
-docker compose exec backend sh -c 'DATABASE_USER=dokan_migrator DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" python manage.py migrate'
+docker compose run --rm migrate
 
 # Seed the demo shop (idempotent):
-docker compose exec backend sh -c 'DATABASE_USER=postgres DATABASE_PASSWORD="$POSTGRES_PASSWORD" python manage.py seed_demo'
+docker compose run --rm seed-demo
 ```
 
 Then open:
 
-| URL                     | What                        | Login                                                                       |
-| ----------------------- | --------------------------- | --------------------------------------------------------------------------- |
-| `https://demo.localhost`  | Tenant app (demo shop)      | phone `9800000000`, password `demo1234`                                     |
-| `https://admin.localhost` | Platform control plane      | create with `python manage.py create_platform_user …`, TOTP required        |
+| URL                       | What                   | Login                                                                |
+| ------------------------- | ---------------------- | -------------------------------------------------------------------- |
+| `https://demo.localhost`  | Tenant app (demo shop) | phone `9800000000`, password `demo1234`                              |
+| `https://admin.localhost` | Platform control plane | create with `python manage.py create_platform_user …`, TOTP required |
 
 Two platform gotchas:
 
@@ -71,6 +78,13 @@ The `frontend` container intentionally publishes **no host port** (`docker ps`
 shows bare `8080/tcp`): all public traffic enters through Caddy, which forwards
 `/api` to Django with the original `Host` intact.
 
+Django and Celery connect through the private PgBouncer service on port 6432.
+Its generated runtime configuration is fixed to transaction pooling; privileged
+migration, seed, backup, and restore commands connect directly to `db:5432`.
+Compose uses explicit per-service environment allowlists: privileged database
+credentials are mapped only into short-lived migration/seed containers and are
+never present in the long-running web, worker, pooler, or edge containers.
+
 The demo seed creates a branch, an owner with all permissions, a default
 Retail rate type, three items with M/L variants, and 20 units of opening stock
 per variant. Open the branch cash session from `/payments`, then bill from the
@@ -85,9 +99,11 @@ and enroll the one-time TOTP secret printed by that command. Platform and
 tenant tokens use separate storage, and tenant support sessions are handed off
 through a short-lived URL fragment that is cleared immediately after use.
 
-Local SMS uses the no-network `log` provider: receipt requests are queued and
-delivery state is persisted without sending real messages. A real provider
-adapter is required before enabling SMS in production.
+Local SMS uses the no-network `log` provider: receipt and account-security
+messages are queued and delivery state is persisted without sending real
+messages. Codes therefore appear in the local SMS log instead of reaching a
+phone. A real provider adapter is required before production; security codes
+bypass plan SMS quotas so recovery remains available.
 
 ## Local development (hot reload)
 
@@ -117,16 +133,28 @@ Useful commands (from `backend/`):
 ```bash
 ruff check . && ruff format --check .   # lint + format gate
 mypy .                                  # type gate
-pytest --cov                            # tests (coverage floor 80%)
+pytest --cov --cov-report=json:coverage.json --cov-fail-under=80
+python ../scripts/check_critical_coverage.py coverage.json
 python scripts/generate_bs_golden.py    # regenerate the AD↔BS golden fixture
 python manage.py export_tenant demo --output demo-export.zip
+python manage.py spectacular --file ../openapi/schema.yaml --validate
 ```
+
+Run `npm run api:gen` from `frontend/` after changing an API serializer or
+operation. CI verifies that both the committed OpenAPI schema and generated
+TypeScript declarations are current.
 
 Production database recovery runs under the Compose `production` profile:
 verified nightly logical dumps, weekly physical base backups, and continuous
 WAL upload to S3-compatible storage. Run the guarded monthly check with
 `docker compose --profile ops run --rm restore-drill`; see
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) before operating production.
+
+The optional `monitoring` profile adds private Prometheus/Grafana dashboards,
+30-day privacy-filtered Loki logs, infrastructure/Celery exporters and Uptime
+Kuma. Production runs it alongside the `production` profile; notification
+contact points and external HTTP/TLS checks are required operator setup. The
+exact bootstrap and monitor-role procedure is in the deployment runbook.
 
 ## Repository layout
 
@@ -135,16 +163,17 @@ backend/
 ├── config/            # settings split (base/dev/prod/test), urls, celery
 ├── core/              # platform spine: BS calendar, money, RLS, tenant
 │                      # middleware, numbering, permissions, base models
-├── apps/              # one Django app per business module (15 apps)
+├── apps/              # one Django app per business module (16 apps)
 ├── tests/factories/   # TenantFactory — every factory hangs off it
 └── scripts/           # e.g. golden-fixture generator
 docs/                  # architecture, tenancy, schema, deployment, ADRs, …
 frontend/              # React PWA (tenant app + platform control plane)
-e2e/                   # Playwright smoke suite (local, not in CI)
+openapi/                # reviewable generated OpenAPI 3.1 contract
+e2e/                   # Playwright smoke suite (local + isolated Compose CI)
 loadtests/             # k6 load scripts for the POS hot paths
 docker/postgres/init/  # app/migration role bootstrap
-.github/workflows/     # CI gates: ruff, mypy, pytest+coverage, frontend tests,
-                       # build, migrations, gitleaks
+.github/workflows/     # CI gates: backend, generated contract, JS apps,
+                       # isolated E2E, recovery/infra, dependency + secret scans
 ```
 
 ## Documentation
@@ -155,6 +184,8 @@ docker/postgres/init/  # app/migration role bootstrap
   Postgres RLS model
 - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) — tables, constraints,
   and indexing rules
+- [`docs/API_SPEC.md`](docs/API_SPEC.md) — generated contract, auth, envelopes,
+  error codes, idempotency, and versioning
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — VPS layout, TLS, backups,
   restore drill
 - [`docs/RATE_RULES.md`](docs/RATE_RULES.md) — rate types and price resolution

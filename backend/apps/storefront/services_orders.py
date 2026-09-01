@@ -106,9 +106,7 @@ def place_order(
     ``customer_fields`` carries email/full_name/phone — a new email creates
     the customer right here, fulfilling "account on first order".
     """
-    existing = StoreOrder.objects.filter(
-        tenant=tenant, idempotency_key=idempotency_key
-    ).first()
+    existing = StoreOrder.objects.filter(tenant=tenant, idempotency_key=idempotency_key).first()
     if existing is not None:
         return existing, False
 
@@ -222,11 +220,7 @@ def place_order(
         currency=display_currency,
         subtotal=subtotal,
         total=subtotal,
-        offer_text=(
-            store.offer_text
-            if store and offer_live and store.offer_discount_pct
-            else ""
-        ),
+        offer_text=(store.offer_text if store and offer_live and store.offer_discount_pct else ""),
         idempotency_key=idempotency_key,
         note=note,
         business_date_ad=today,

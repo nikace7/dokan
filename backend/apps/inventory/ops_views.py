@@ -27,9 +27,10 @@ from apps.inventory.serializers import (
 )
 from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
+from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, not_found_code, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "stock.view",
@@ -46,7 +47,7 @@ def _user(request: Request) -> Any:
 def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
     instance = model.objects.filter(tenant=tenant, pk=pk).first()
     if instance is None:
-        raise ServiceError(f"{what.upper()}_NOT_FOUND", f"{what} not found.", http_status=404)
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
     return instance
 
 
@@ -98,6 +99,15 @@ class _TransferAPIView(_OpsAPIView):
 
 
 class TransferListView(_TransferAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StockTransferSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=TransferCreateSerializer,
+            response=StockTransferSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_transfers(
@@ -130,6 +140,10 @@ class TransferListView(_TransferAPIView):
 
 
 class TransferDetailView(_TransferAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StockTransferSerializer),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
@@ -137,6 +151,10 @@ class TransferDetailView(_TransferAPIView):
 
 
 class TransferSendView(_TransferAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(response=StockTransferSerializer),
+    }
+
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
@@ -147,6 +165,13 @@ class TransferSendView(_TransferAPIView):
 
 
 class TransferReceiveView(_TransferAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(
+            request=TransferReceiveSerializer,
+            response=StockTransferSerializer,
+        ),
+    }
+
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         serializer = TransferReceiveSerializer(data=request.data)
@@ -162,6 +187,10 @@ class TransferReceiveView(_TransferAPIView):
 
 
 class TransferCompleteView(_TransferAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(response=StockTransferSerializer),
+    }
+
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
@@ -172,6 +201,8 @@ class TransferCompleteView(_TransferAPIView):
 
 
 class TransferCancelView(_TransferAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
+
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
@@ -182,12 +213,23 @@ class TransferCancelView(_TransferAPIView):
 class InTransitView(_TransferAPIView):
     """GET /inventory/transfers/in-transit — stock between branches now."""
 
+    schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         return ok(selectors.in_transit(tenant, branch_id=_uuid_param(request, "branch")))
 
 
 class CountListView(_OpsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StockCountSerializer, response_many=True, paginated=True),
+        "POST": operation(
+            request=CountCreateSerializer,
+            response=StockCountSerializer,
+            status_code=201,
+        ),
+    }
+
     def get(self, request: Request) -> Response:
         tenant = require_request_tenant(request)
         qs = selectors.list_counts(
@@ -211,6 +253,10 @@ class CountListView(_OpsAPIView):
 
 
 class CountDetailView(_OpsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StockCountSerializer),
+    }
+
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         count = _get_or_404(tenant, StockCount, pk, "Count")
@@ -218,6 +264,10 @@ class CountDetailView(_OpsAPIView):
 
 
 class CountRecordView(_OpsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=CountRecordSerializer, response=StockCountSerializer),
+    }
+
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         serializer = CountRecordSerializer(data=request.data)
@@ -236,6 +286,10 @@ class CountRecordView(_OpsAPIView):
 
 
 class CountFinalizeView(_OpsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(response=StockCountSerializer),
+    }
+
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         count = _get_or_404(tenant, StockCount, pk, "Count")
@@ -244,6 +298,8 @@ class CountFinalizeView(_OpsAPIView):
 
 
 class CountCancelView(_OpsAPIView):
+    schema_contract: ClassVar[dict[str, Any]] = {"POST": operation()}
+
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
         count = _get_or_404(tenant, StockCount, pk, "Count")

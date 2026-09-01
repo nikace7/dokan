@@ -4,13 +4,16 @@ import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/Card';
 import { TableCell } from '@/components/ui/table';
+import { useAuth } from '@/features/auth/useAuth';
 import { currentBsMonthRange, fetchProfit } from '@/features/reports/api';
 import type { BsRange, ProfitReport, ProfitRow } from '@/features/reports/api';
 import { BsRangeControls } from '@/features/reports/BsRangeControls';
+import { ReportActions } from '@/features/reports/ReportActions';
 import { MoneyCell, ReportError, ReportTable, TableSkeleton } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { hasPlanFeature } from '@/lib/plans';
 
 /**
  * Profit report — revenue / COGS / gross (and net when the backend subtracts
@@ -20,6 +23,7 @@ import { formatNpr, useMoneyDisplay } from '@/lib/money';
  */
 export function ProfitReportPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [range, setRange] = useState<BsRange>(currentBsMonthRange);
 
   const query = useQuery({
@@ -31,8 +35,17 @@ export function ProfitReportPage() {
   const forbidden = query.error instanceof ApiError && query.error.status === 403;
 
   return (
-    <main className="mx-auto w-full max-w-6xl p-4">
-      <Card title={t('reports.profit.title')}>
+    <main className="report-print-area mx-auto w-full max-w-6xl p-4">
+      <Card
+        title={t('reports.profit.title')}
+        actions={
+          <ReportActions
+            canExport={hasPlanFeature(user, 'export_excel')}
+            report="profit"
+            params={{ date_from_bs: range.dateFromBs, date_to_bs: range.dateToBs }}
+          />
+        }
+      >
         <div className="mb-4">
           <BsRangeControls value={range} onApply={setRange} />
         </div>

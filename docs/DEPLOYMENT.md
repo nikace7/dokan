@@ -26,15 +26,45 @@ file mode owner-only. Production additionally requires:
 - `CADDY_TLS_CONFIG=/etc/caddy/tls-cloudflare` and a scoped
   `CLOUDFLARE_API_TOKEN`
 - independent app, migrator and PostgreSQL passwords
+- `DATABASE_HOST=pgbouncer`, `DATABASE_PORT=6432`, and
+  `DATABASE_POOL_MODE=transaction`; production settings reject any other pool
+  mode. Size `PGBOUNCER_*` limits for the VPS rather than raising Postgres'
+  connection limit
+- a delivery-capable `EMAIL_BACKEND` (SMTP or another real provider); production
+  refuses console, in-memory and dummy backends because they can expose OTPs
 - `POSTGRES_ARCHIVE_MODE=on`
 - `BACKUP_S3_URI=s3://<private-bucket>/<environment>`
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and the S3-compatible
   `AWS_ENDPOINT_URL` when the provider is not AWS
 - a bucket lifecycle policy that retains logical dumps for at least 35 days,
   physical base backups for at least 35 days, and WAL for at least 35 days
+- `METRICS_ENABLED=true`, unique `DOKAN_MONITOR_PASSWORD` and
+  `GRAFANA_ADMIN_PASSWORD` values, plus `SENTRY_DSN`, `SENTRY_ENVIRONMENT` and
+  the deployed commit/tag in `SENTRY_RELEASE`
 
 The object-storage identity needs only list/get/put/delete access beneath the
 configured bucket prefix. Enable bucket versioning and server-side encryption.
+
+## Production launch gates
+
+Do not infer production readiness from a successful local Compose run. Record
+evidence for every gate against the exact commit/tag being released:
+
+| Gate | Required evidence |
+|---|---|
+| Source integrity | Every required hosted CI job passed; generated OpenAPI/TypeScript artifacts are clean; gitleaks and high-severity dependency audits are green |
+| Review and release | Protected `main`; required approvals (two for pricing, sales services, permissions, or migrations); atomic commits merged without squash; SemVer tag created from `main` |
+| Identity and secrets | Unique strong production credentials, owner-only external `.env` or SOPS injection, TOTP enrolled, admin IP allowlist tested, and runtime secret-boundary policy passed |
+| Edge | Apex, tenant wildcard, and shop wildcard DNS resolve correctly; trusted HTTPS certificates renew; HTTP redirects to HTTPS; admin and tenant host isolation is smoke-tested |
+| Communications/compliance | Delivery-capable email; real SMS adapter if SMS features are enabled; live CBMS provider/certification decision recorded with the Nepal tax adviser/IRD |
+| Recovery | Remote versioned/encrypted object storage receives a verified dump, base backup, and WAL; an isolated restore drill succeeds from those objects |
+| Monitoring | Grafana and Uptime Kuma deliver test notifications; public health/TLS checks and all `severity=page` alerts have an owner and escalation path |
+| Acceptance | Staging runs the complete browser smoke suite plus pilot checks for sale, return, payment, day close, report, storefront order, tenant isolation, and support access |
+| Rollback | Previous image/tag is available; additive migration compatibility and the rollback decision tree have been rehearsed |
+
+Cash/COD workflows do not require an online payment gateway. If a plan promises
+online payment collection, real SMS, or live CBMS submission, its provider must
+be integrated and acceptance-tested before that feature is enabled for tenants.
 
 ## First deployment
 
@@ -47,22 +77,33 @@ configured bucket prefix. Enable bucket versioning and server-side encryption.
 
    ```bash
    docker compose --profile production config --quiet
+   docker compose --profile production --profile ops --profile dev config --format json \
+     | python scripts/check_compose_secret_boundaries.py
    ```
 
 5. Build and start the database and dependencies, then apply migrations with
    the dedicated migrator role:
 
    ```bash
-   docker compose up -d db redis
-   docker compose run --rm \
-     -e DATABASE_USER=dokan_migrator \
-     -e DATABASE_PASSWORD="$DOKAN_MIGRATOR_PASSWORD" \
-     backend python manage.py migrate --noinput
-   docker compose --profile production up -d --build
+   docker compose up -d db redis pgbouncer
+   docker compose run --rm migrate
+   docker compose --profile production --profile monitoring up -d --build
    ```
 
 6. Provision the first platform administrator interactively with
    `create_platform_user`, enroll TOTP, and verify tenant and admin hosts.
+
+PgBouncer admits only the RLS-constrained application role. Migrations, demo
+seeding, logical/physical backups, WAL shipping, and restore drills deliberately
+bypass the pool and connect to the private `db:5432` service with their own
+roles. Never expose either database port on the host firewall.
+
+Compose does not pass `.env` wholesale into any container. Each service has an
+explicit allowlist. The one-off `migrate` and `seed-demo` services translate the
+relevant host-side credential into `DATABASE_PASSWORD`; source variables such as
+`DOKAN_MIGRATOR_PASSWORD` and `POSTGRES_PASSWORD` are absent from the container.
+CI renders the Compose model into the secret-boundary checker so a future broad
+environment injection fails before deployment.
 
 The repository's Caddy image compiles the pinned Cloudflare DNS module. The
 production TLS snippet requests the wildcard certificate through DNS-01; verify
@@ -76,7 +117,7 @@ receive immutable caching.
 1. Confirm the target commit passed every required CI job.
 2. Take an on-demand verified backup: `docker compose exec backup backup.sh`.
 3. Pull the commit and rebuild images.
-4. Run backward-compatible migrations with the migrator role.
+4. Run backward-compatible migrations with `docker compose run --rm migrate`.
 5. Start/recreate services and inspect health checks.
 6. Smoke-test login, item lookup, a held bill and a non-financial report on the
    staging host before promoting the same commit to production.
@@ -137,9 +178,47 @@ and remove the temporary copy after delivery. Password hashes are not exported.
 
 ## Monitoring and alerts
 
-Production dashboards must include HTTP 5xx rate, `POST /sales` latency,
-PostgreSQL connections/locks/disk, Redis memory, Celery queue age, container
-health, logical-backup age, WAL-upload age and TLS expiry. Page when:
+The `monitoring` profile supplies Prometheus, Grafana, Loki, Grafana Alloy,
+PostgreSQL/Redis/Celery/node/container exporters and Uptime Kuma. Grafana,
+Prometheus and Uptime Kuma bind only to `127.0.0.1`; reach them through an SSH
+tunnel, never a public firewall rule:
+
+| Service | Local port | Purpose |
+|---|---:|---|
+| Grafana | 3000 (`GRAFANA_PORT`) | provisioned production dashboard, Prometheus metrics and Loki logs |
+| Uptime Kuma | 3001 (`UPTIME_KUMA_PORT`) | external HTTP/TLS checks |
+| Prometheus | 9090 (`PROMETHEUS_PORT`) | targets, rules and active alerts |
+
+Set `METRICS_ENABLED=true` before starting the profile. The Django metrics
+endpoint is reachable only from the private Compose network; Caddy returns 404
+for public `/api/metrics` requests. `/api/live` is a process-only liveness
+probe, while `/api/health` is readiness and checks PostgreSQL and Redis.
+
+Fresh databases create `dokan_monitor` automatically. For an existing database,
+run the same idempotent bootstrap after setting `DOKAN_MONITOR_PASSWORD`; it
+passes the password as a PostgreSQL variable and never prints it:
+
+```bash
+docker compose exec -T db bash /docker-entrypoint-initdb.d/02_monitoring_role.sh
+```
+
+The role has server-statistics access only: never grant it business-table
+permissions or `BYPASSRLS`.
+
+Start production and monitoring together after provisioning:
+
+```bash
+docker compose --profile production --profile monitoring config --quiet
+docker compose --profile production --profile monitoring up -d --build
+docker compose ps
+```
+
+The provisioned rules and dashboard cover HTTP 5xx rate, `POST /sales` latency,
+PostgreSQL connection saturation, Redis memory, Celery workers/queue depth,
+host disk, scrape targets, logical/base-backup age, WAL-upload age and monthly
+restore-drill age. The backup, WAL and restore scripts publish timestamps through
+node exporter's textfile collector only after successful verification. Page
+when:
 
 - 5xx exceeds 1%
 - sales p95 exceeds one second
@@ -147,9 +226,26 @@ health, logical-backup age, WAL-upload age and TLS expiry. Page when:
 - backup/WAL health fails
 - a monthly restore drill is overdue
 
-Application logs must not contain tokens, PII or cost figures. Send errors to
-Sentry and metrics to the configured Grafana/Postgres-exporter stack; monitor
-every tenant health endpoint externally.
+Prometheus evaluates rules but does not know the operator's notification
+destination. Before launch, configure a Grafana contact point and notification
+policy for every `severity=page` alert. In Uptime Kuma, configure the same
+destination and add HTTPS checks for the apex, `admin`, at least one tenant,
+each live `*.shop` host, and `/api/health`; enable certificate-expiry alerts.
+Until both notification paths deliver a test alert, monitoring is not launch
+ready.
+
+Application logs are allowlist-only JSON. Alloy ships only containers carrying
+the explicit `dokan.logs.safe=true` label (currently Django) to Loki for 30 days;
+it does not indiscriminately collect every Docker container. Search by the
+response's `X-Request-ID` in Grafana when troubleshooting. Raw paths, query
+strings, request bodies, tenant/user identifiers, PII, tokens, cost and price
+fields are excluded. Sentry is inert without a DSN and applies the same privacy
+boundary: no request body, cookies, user object, arbitrary log message, exception
+text or non-allowlisted request headers leave the process.
+
+Node exporter, cAdvisor and Docker-socket log discovery require a Linux Docker
+host. On Windows development machines, validate the profile and run the portable
+services selectively; the supported production topology is Linux.
 
 ## Incident recovery
 

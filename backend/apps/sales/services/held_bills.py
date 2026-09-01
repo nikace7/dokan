@@ -20,11 +20,10 @@ from django.utils import timezone
 
 from apps.audit.services import audit
 from apps.sales.models import SalesInvoice, SalesInvoiceItem
+from apps.sales.services.calculations import compute_totals, resolve_lines
 from apps.sales.services.create_sale import (
     SaleLineInput,
     SaleResult,
-    _compute_totals,
-    _resolve_lines,
     finalize_invoice,
 )
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
@@ -70,14 +69,14 @@ def hold_bill(
         raise ServiceError("LINES_REQUIRED", "A bill needs at least one line.")
 
     # Resolve prices for display now; the completion pipeline re-validates.
-    resolved = _resolve_lines(
+    resolved = resolve_lines(
         tenant,
         rate_type=rate_type,
         lines=lines,
         user=created_by,
         override_reason=override_reason,
     )
-    totals = _compute_totals(
+    totals = compute_totals(
         tenant,
         resolved=resolved,
         is_vat_bill=is_vat_bill,
