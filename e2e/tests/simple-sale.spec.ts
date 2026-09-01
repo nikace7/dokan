@@ -57,6 +57,7 @@ test.describe('simple sale', () => {
     await sale.complete();
     await sale.expectReceipt();
     const invoice = await sale.invoiceNumber();
+    const shopName = await page.getByRole('heading', { level: 1 }).innerText();
 
     const sharePath = await sale.shareBill();
     expect(sharePath).toMatch(/^\/bill\//);
@@ -66,7 +67,7 @@ test.describe('simple sale', () => {
     try {
       await guest.page.goto(sharePath);
       await expect(
-        guest.page.getByRole('heading', { name: 'Everest Outfitters' }),
+        guest.page.getByRole('heading', { name: shopName, exact: true }),
       ).toBeVisible();
       await expect(guest.page.getByRole('heading', { name: invoice })).toBeVisible();
       await expect(guest.page.getByText(/Denim Jacket/)).toBeVisible();
