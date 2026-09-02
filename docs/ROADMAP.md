@@ -3,7 +3,7 @@
 Where the product is going and where it stands. Phase definitions and exit
 criteria live in `docs/SYSTEM_DESIGN.md` §11 — this doc tracks **status
 against the shipped code**, it does not re-specify the phases. Status as of
-2026-09-01 on the current release branch.
+2026-09-02 on the current release branch.
 
 Legend: ✅ shipped · 🔨 in progress · ⬜ not started · ⚠ external gate
 
@@ -19,7 +19,7 @@ real shops:
 |---|---|
 | Local quality baseline | ✅ 967 backend tests pass with 92.05% branch-aware coverage and enforced 100% line/branch coverage on money-critical modules; tenant/admin frontend, storefront, and 12-scenario Compose Playwright suites pass; lint, type, generated-contract, source-size, bundle, dependency, secret, pooling, and recovery checks are wired |
 | Hosted CI on the candidate stack | ✅ Integration PR #125 passed backend, frontend/edge, storefront, recovery, gitleaks, and the 12-scenario fresh-Compose E2E suite |
-| Protected `main`, required approvals, merge, and SemVer tag | 🔨 `main` now requires all seven CI checks, two approvals, resolved conversations, and no admin bypass; merge and tag wait for two reviewers |
+| Protected `main`, review policy, merge, and SemVer release | ✅ `main` requires all seven CI checks, strict freshness, resolved conversations, and no admin bypass; the solo-maintainer self-review policy is active, integration PR #125 is merged, and `v1.1.0` is the current candidate pending this release PR's merge and tag |
 | Production DNS/wildcard TLS, strong secrets, SMTP, SMS, live CBMS decision, and S3-compatible backup target | ⚠ operator/provider setup |
 | Staging restore rehearsal, alert delivery test, external uptime/TLS checks, and pilot acceptance | ⚠ operator validation |
 
