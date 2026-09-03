@@ -15,6 +15,8 @@ concurrency:
 
 env:
   ROOT_DOMAIN: mero-pasal.online
+  TENANT_SLUG: yak-gantok
+  STOREFRONT_SUBDOMAIN: yak-handlooms
   INCIDENT_TITLE: "ops: production smoke check failing"
 
 jobs:
@@ -30,8 +32,10 @@ jobs:
           endpoints=(
             "https://${ROOT_DOMAIN}/api/health"
             "https://admin.${ROOT_DOMAIN}/"
-            "https://demo.${ROOT_DOMAIN}/"
-            "https://demo-store.shop.${ROOT_DOMAIN}/"
+            "https://${TENANT_SLUG}.${ROOT_DOMAIN}/"
+            "https://${STOREFRONT_SUBDOMAIN}.shop.${ROOT_DOMAIN}/"
+            "https://${STOREFRONT_SUBDOMAIN}.shop.${ROOT_DOMAIN}/api/v1/storefront/site"
+            "https://${STOREFRONT_SUBDOMAIN}.shop.${ROOT_DOMAIN}/api/v1/storefront/products"
           )
           for endpoint in "${endpoints[@]}"; do
             curl --fail --silent --show-error --location \
@@ -43,7 +47,7 @@ jobs:
           hosts=(
             "${ROOT_DOMAIN}"
             "admin.${ROOT_DOMAIN}"
-            "demo-store.shop.${ROOT_DOMAIN}"
+            "${STOREFRONT_SUBDOMAIN}.shop.${ROOT_DOMAIN}"
           )
           for host in "${hosts[@]}"; do
             certificate="$(
