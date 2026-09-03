@@ -13,17 +13,27 @@
 
 const baseURL = process.env.E2E_BASE_URL ?? 'https://demo.localhost';
 const baseHost = new URL(baseURL).hostname;
+const base = new URL(baseURL);
 
 /** Host header / SNI the tenant is resolved from. */
 const tenantHost =
   process.env.E2E_TENANT_HOST ??
   (baseHost === 'localhost' || baseHost === '127.0.0.1' ? 'demo.localhost' : baseHost);
+const rootHost = tenantHost.split('.').slice(1).join('.') || 'localhost';
+const storefrontHost = process.env.E2E_STOREFRONT_HOST ?? `demo-store.shop.${rootHost}`;
+const storefrontBaseURL =
+  process.env.E2E_STOREFRONT_BASE_URL ??
+  `${base.protocol}//${storefrontHost}${base.port ? `:${base.port}` : ''}`;
 
 export const config = {
   baseURL,
   /** Direct backend origin used by test-setup API calls. */
   apiURL: process.env.E2E_API_URL ?? 'http://127.0.0.1:8000',
   tenantHost,
+  storefrontBaseURL,
+  storefrontHost,
+  composeProject: process.env.E2E_COMPOSE_PROJECT ?? '',
+  fixedOtp: process.env.E2E_OTP_CODE ?? '',
   phone: process.env.E2E_PHONE ?? '9800000000',
   password: process.env.E2E_PASSWORD ?? 'demo1234',
 } as const;

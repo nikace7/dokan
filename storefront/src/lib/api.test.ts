@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError, getProducts, getSite } from './api';
+import {
+  ApiError,
+  getMyOrders,
+  getProduct,
+  getProducts,
+  getSite,
+  placeOrder,
+  requestOtp,
+  verifyOtp,
+} from './api';
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -82,5 +91,62 @@ describe('storefront api', () => {
   it('throws on a products error envelope too', async () => {
     fetchMock.mockResolvedValueOnce(failure(400, 'BAD_FILTER', 'Unknown category.'));
     await expect(getProducts({})).rejects.toMatchObject({ code: 'BAD_FILTER' });
+  });
+
+  it('loads one product and sends OTP requests as JSON', async () => {
+    fetchMock
+      .mockResolvedValueOnce(envelope({ id: 'p-1', variants: [] }))
+      .mockResolvedValueOnce(envelope({ sent: true }));
+
+    await getProduct('p-1');
+    await requestOtp('buyer@example.com');
+
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/storefront/products/p-1');
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/v1/storefront/auth/otp');
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ email: 'buyer@example.com' }),
+    });
+  });
+
+  it('verifies OTP and sends customer credentials with checkout', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        envelope({
+          token: 'shopper-token',
+          customer: { email: 'buyer@example.com', full_name: '', phone: '' },
+        }),
+      )
+      .mockResolvedValueOnce(envelope({ number_text: 'ORD-000001' }, 201));
+
+    const session = await verifyOtp('buyer@example.com', '123456');
+    await placeOrder(
+      {
+        customer: { email: 'buyer@example.com', full_name: 'Sita', phone: '9812345678' },
+        fulfillment: 'PICKUP',
+        payment_method: 'COD',
+        address: null,
+        note: '',
+        items: [{ variant: 'v-1', qty: '1' }],
+      },
+      session.token,
+      'checkout-key',
+    );
+
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({
+      method: 'POST',
+      headers: expect.objectContaining({
+        Authorization: 'Bearer shopper-token',
+        'Idempotency-Key': 'checkout-key',
+      }),
+    });
+  });
+
+  it('uses the shopper token for order history', async () => {
+    fetchMock.mockResolvedValueOnce(envelope([]));
+    await getMyOrders('shopper-token');
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+      headers: expect.objectContaining({ Authorization: 'Bearer shopper-token' }),
+    });
   });
 });

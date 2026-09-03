@@ -2201,6 +2201,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/storefront/manage/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["storefront_store_order_management_list_view_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storefront/manage/orders/{id}/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["storefront_store_order_advance_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storefront/manage/orders/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["storefront_store_order_cancel_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storefront/manage/orders/{id}/prepare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["storefront_store_order_prepare_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/storefront/my/orders": {
         parameters: {
             query?: never;
@@ -2467,7 +2531,7 @@ export interface components {
             };
         };
         /** @enum {string} */
-        ApiErrorCode: "ACCOUNT_LOCKED" | "ALLOCATION_AMOUNT_INVALID" | "ALLOCATION_EXCEEDS_AMOUNT" | "ALLOCATION_EXCEEDS_OUTSTANDING" | "ALLOCATION_INVOICE_INVALID" | "ALREADY_EXISTS" | "AMOUNT_INVALID" | "AUTHENTICATION_FAILED" | "BANNERS_INVALID" | "BARCODE_INVALID" | "BILL_NOT_FOUND" | "BRANCH_NOT_FOUND" | "BRANCH_REQUIRED" | "BRAND_NOT_FOUND" | "CASH_SESSION_NOT_FOUND" | "CASH_SESSION_REQUIRED" | "CATEGORY_CYCLE" | "CATEGORY_NOT_FOUND" | "CBMS_DOC_TYPE_INVALID" | "CBMS_NOT_COMPLETED" | "COST_INVALID" | "COST_VISIBILITY_REQUIRED" | "COUNT_ALREADY_OPEN" | "COUNT_EMPTY_BRANCH" | "COUNT_INCOMPLETE" | "COUNT_INVALID" | "COUNT_NOT_FOUND" | "COUNT_QTY_INVALID" | "COUNT_STATE_INVALID" | "COUNT_VARIANT_UNKNOWN" | "CREDIT_LIMIT_EXCEEDED" | "CREDIT_NOTE_EXCEEDS_DUES" | "CREDIT_NOTE_WITHOUT_CUSTOMER" | "CREDIT_TENDER_MISMATCH" | "CURRENT_PASSWORD_INVALID" | "CUSTOMER_CREDIT_PERMISSION_REQUIRED" | "CUSTOMER_NOT_FOUND" | "DATE_INVALID" | "DATE_RANGE_INCOMPLETE" | "DATE_RANGE_INVALID" | "DISCOUNT_INVALID" | "DISCOUNT_OUT_OF_RANGE" | "EXPENSE_NOT_FOUND" | "FEATURE_OVERRIDE_INVALID" | "FILTER_INVALID" | "FLOAT_INVALID" | "FROM_BRANCH_NOT_FOUND" | "GROUP_BY_INVALID" | "IDEMPOTENCY_KEY_REQUIRED" | "IDEMPOTENCY_KEY_REUSED" | "IMAGE_REQUIRED" | "IMAGE_TOO_LARGE" | "IMAGE_TYPE_UNSUPPORTED" | "IMPERSONATION_ACTION_BLOCKED" | "IMPERSONATION_DURATION_INVALID" | "IMPERSONATION_ENDED" | "IMPERSONATION_END_FORBIDDEN" | "IMPERSONATION_READ_ONLY" | "IMPERSONATION_REASON_INVALID" | "IMPERSONATION_SCOPE_INVALID" | "IMPERSONATION_TARGET_NOT_FOUND" | "IMPERSONATION_WRITE_FORBIDDEN" | "INVALID_CREDENTIALS" | "INVALID_PERMISSIONS" | "INVALID_ROLE_CODE" | "INVOICE_NOT_EDITABLE" | "INVOICE_NOT_FOUND" | "INVOICE_NOT_SHAREABLE" | "INVOICE_NO_INVALID" | "ITEM_NOT_FOUND" | "ITEM_REQUIRED" | "LAST_OWNER_ROLE" | "LINES_REQUIRED" | "LINK_INVALID" | "LOGIN_REQUIRED" | "LOOKUP_PARAM_REQUIRED" | "MATRIX_EMPTY" | "MISSING_IDEMPOTENCY_KEY" | "NOT_AUTHENTICATED" | "NOT_FOUND" | "NO_ACTIVE_ACCOUNT" | "ORDER_NOT_FOUND" | "OTP_INVALID" | "OTP_LOCKED" | "OTP_REQUIRED" | "OTP_RESEND_TOO_SOON" | "OUT_OF_STOCK" | "OVERPAYMENT" | "OVERRIDE_REASON_REQUIRED" | "OVER_RECEIVE" | "OVER_RETURN" | "OWNER_NOTIFICATION_UNAVAILABLE" | "PARAM_INVALID" | "PASSWORD_INVALID" | "PAYMENT_ALREADY_REVERSED" | "PAYMENT_AMOUNT_INVALID" | "PAYMENT_METHOD_INVALID" | "PAYMENT_NOT_FOUND" | "PERMISSION_CATALOG_INCOMPLETE" | "PERMISSION_DENIED" | "PERMISSION_NOT_FOUND" | "PLAN_CONFIGURATION_ERROR" | "PLAN_CONFIGURATION_INVALID" | "PLAN_FEATURE_REQUIRED" | "PLAN_INACTIVE" | "PLAN_LIMIT_REACHED" | "PLATFORM_HOST_REQUIRED" | "PLATFORM_IP_FORBIDDEN" | "PLATFORM_ROLE_FORBIDDEN" | "PRICE_ABOVE_MAX" | "PRICE_BELOW_MIN" | "PRICE_BOUNDS_INVALID" | "PRICE_INVALID" | "PRICE_NOT_SET" | "PRICING_RATE_FORBIDDEN" | "PRODUCT_NOT_FOUND" | "PURCHASE_INVOICE_NOT_FOUND" | "QTY_INVALID" | "QUANTITY_KEY_INVALID" | "RATE_TYPE_IN_USE" | "RATE_TYPE_NOT_FOUND" | "REALM_MISMATCH" | "REASON_REQUIRED" | "RECEIPT_NOT_PRINTABLE" | "REFUND_AMOUNT_INVALID" | "REFUND_EXCEEDS_CREDIT" | "REFUND_METHOD_INVALID" | "REPORT_INVALID" | "RETURN_LINE_NOT_INVOICED" | "RETURN_NOT_ALLOWED" | "REVERSAL_REASON_REQUIRED" | "ROLE_IN_USE" | "SCOPE_INVALID" | "SCOPE_TARGET_REQUIRED" | "SESSION_ALREADY_CLOSED" | "SESSION_ALREADY_OPEN" | "SESSION_NOT_FOUND" | "SESSION_REVOKED" | "SHOPFRONT_INACTIVE" | "SHOPFRONT_INVALID" | "SHOPFRONT_NOT_FOUND" | "SHOPFRONT_TAKEN" | "SHOP_NOT_READY" | "SIZE_CHART_EMPTY" | "SIZE_CHART_NOT_FOUND" | "SMS_PHONE_INVALID" | "SMS_RECEIPT_NOT_ALLOWED" | "SMS_TEMPLATE_CONTEXT_INVALID" | "SMS_TEMPLATE_INVALID" | "STOCK_INSUFFICIENT" | "SUBSCRIPTION_AMOUNT_INVALID" | "SUBSCRIPTION_PAID_TERMINAL" | "SUBSCRIPTION_PERIOD_INVALID" | "SUPPLIER_NOT_FOUND" | "SUPPORT_SESSION_REQUIRED" | "SYSTEM_ROLE" | "TARGET_INVALID" | "TENANT_INVALID" | "TENANT_REQUIRED" | "THROTTLED" | "TOKEN_NOT_VALID" | "TOKEN_TENANT_MISMATCH" | "TO_BRANCH_NOT_FOUND" | "TRANSFER_LINE_UNKNOWN" | "TRANSFER_NOT_FOUND" | "TRANSFER_SAME_BRANCH" | "TRANSFER_STATE_INVALID" | "TRIAL_END_REQUIRED" | "TWO_FACTOR_NOT_CONFIGURED" | "UDHARO_REQUIRES_CUSTOMER" | "VALIDATION_ERROR" | "VARIANT_NOT_FOUND" | "VARIANT_REQUIRED";
+        ApiErrorCode: "ACCOUNT_LOCKED" | "ALLOCATION_AMOUNT_INVALID" | "ALLOCATION_EXCEEDS_AMOUNT" | "ALLOCATION_EXCEEDS_OUTSTANDING" | "ALLOCATION_INVOICE_INVALID" | "ALREADY_EXISTS" | "AMOUNT_INVALID" | "AUTHENTICATION_FAILED" | "BANNERS_INVALID" | "BARCODE_INVALID" | "BILL_NOT_FOUND" | "BRANCH_NOT_FOUND" | "BRANCH_REQUIRED" | "BRAND_NOT_FOUND" | "CASH_SESSION_NOT_FOUND" | "CASH_SESSION_REQUIRED" | "CATEGORY_CYCLE" | "CATEGORY_NOT_FOUND" | "CBMS_DOC_TYPE_INVALID" | "CBMS_NOT_COMPLETED" | "COMPLETED_ORDER_CANNOT_CANCEL" | "COST_INVALID" | "COST_VISIBILITY_REQUIRED" | "COUNT_ALREADY_OPEN" | "COUNT_EMPTY_BRANCH" | "COUNT_INCOMPLETE" | "COUNT_INVALID" | "COUNT_NOT_FOUND" | "COUNT_QTY_INVALID" | "COUNT_STATE_INVALID" | "COUNT_VARIANT_UNKNOWN" | "CREDIT_LIMIT_EXCEEDED" | "CREDIT_NOTE_EXCEEDS_DUES" | "CREDIT_NOTE_WITHOUT_CUSTOMER" | "CREDIT_TENDER_MISMATCH" | "CURRENT_PASSWORD_INVALID" | "CUSTOMER_CREDIT_PERMISSION_REQUIRED" | "CUSTOMER_MISMATCH" | "CUSTOMER_NOT_FOUND" | "DATE_INVALID" | "DATE_RANGE_INCOMPLETE" | "DATE_RANGE_INVALID" | "DISCOUNT_INVALID" | "DISCOUNT_OUT_OF_RANGE" | "DUPLICATE_VARIANT" | "EXPENSE_NOT_FOUND" | "FEATURE_OVERRIDE_INVALID" | "FILTER_INVALID" | "FLOAT_INVALID" | "FROM_BRANCH_NOT_FOUND" | "GROUP_BY_INVALID" | "IDEMPOTENCY_KEY_CONFLICT" | "IDEMPOTENCY_KEY_REQUIRED" | "IDEMPOTENCY_KEY_REUSED" | "IMAGE_REQUIRED" | "IMAGE_TOO_LARGE" | "IMAGE_TYPE_UNSUPPORTED" | "IMPERSONATION_ACTION_BLOCKED" | "IMPERSONATION_DURATION_INVALID" | "IMPERSONATION_ENDED" | "IMPERSONATION_END_FORBIDDEN" | "IMPERSONATION_READ_ONLY" | "IMPERSONATION_REASON_INVALID" | "IMPERSONATION_SCOPE_INVALID" | "IMPERSONATION_TARGET_NOT_FOUND" | "IMPERSONATION_WRITE_FORBIDDEN" | "INVALID_CREDENTIALS" | "INVALID_PERMISSIONS" | "INVALID_ROLE_CODE" | "INVOICE_NOT_EDITABLE" | "INVOICE_NOT_FOUND" | "INVOICE_NOT_SHAREABLE" | "INVOICE_NO_INVALID" | "ITEM_NOT_FOUND" | "ITEM_REQUIRED" | "LAST_OWNER_ROLE" | "LINES_REQUIRED" | "LINK_INVALID" | "LOGIN_REQUIRED" | "LOOKUP_PARAM_REQUIRED" | "MATRIX_EMPTY" | "MISSING_IDEMPOTENCY_KEY" | "NOT_AUTHENTICATED" | "NOT_FOUND" | "NO_ACTIVE_ACCOUNT" | "ONLINE_PAYMENT_UNAVAILABLE" | "ORDER_NOT_CANCELLABLE" | "ORDER_NOT_FOUND" | "ORDER_NOT_PREPARABLE" | "ORDER_STATUS_INVALID" | "OTP_INVALID" | "OTP_LOCKED" | "OTP_REQUIRED" | "OTP_RESEND_TOO_SOON" | "OUT_OF_STOCK" | "OVERPAYMENT" | "OVERRIDE_REASON_REQUIRED" | "OVER_RECEIVE" | "OVER_RETURN" | "OWNER_NOTIFICATION_UNAVAILABLE" | "PARAM_INVALID" | "PASSWORD_INVALID" | "PAYMENT_ALREADY_REVERSED" | "PAYMENT_AMOUNT_INVALID" | "PAYMENT_METHOD_INVALID" | "PAYMENT_NOT_FOUND" | "PERMISSION_CATALOG_INCOMPLETE" | "PERMISSION_DENIED" | "PERMISSION_NOT_FOUND" | "PLAN_CONFIGURATION_ERROR" | "PLAN_CONFIGURATION_INVALID" | "PLAN_FEATURE_REQUIRED" | "PLAN_INACTIVE" | "PLAN_LIMIT_REACHED" | "PLATFORM_HOST_REQUIRED" | "PLATFORM_IP_FORBIDDEN" | "PLATFORM_ROLE_FORBIDDEN" | "PRICE_ABOVE_MAX" | "PRICE_BELOW_MIN" | "PRICE_BOUNDS_INVALID" | "PRICE_INVALID" | "PRICE_NOT_SET" | "PRICING_RATE_FORBIDDEN" | "PRODUCT_NOT_FOUND" | "PURCHASE_INVOICE_NOT_FOUND" | "QTY_INVALID" | "QUANTITY_KEY_INVALID" | "RATE_TYPE_IN_USE" | "RATE_TYPE_NOT_FOUND" | "REALM_MISMATCH" | "REASON_REQUIRED" | "RECEIPT_NOT_PRINTABLE" | "REFUND_AMOUNT_INVALID" | "REFUND_EXCEEDS_CREDIT" | "REFUND_METHOD_INVALID" | "REPORT_INVALID" | "RETURN_LINE_NOT_INVOICED" | "RETURN_NOT_ALLOWED" | "REVERSAL_REASON_REQUIRED" | "ROLE_IN_USE" | "SALE_NOT_COMPLETED" | "SCOPE_INVALID" | "SCOPE_TARGET_REQUIRED" | "SESSION_ALREADY_CLOSED" | "SESSION_ALREADY_OPEN" | "SESSION_NOT_FOUND" | "SESSION_REVOKED" | "SHOPFRONT_INACTIVE" | "SHOPFRONT_INVALID" | "SHOPFRONT_NOT_FOUND" | "SHOPFRONT_TAKEN" | "SHOP_NOT_READY" | "SIZE_CHART_EMPTY" | "SIZE_CHART_NOT_FOUND" | "SMS_PHONE_INVALID" | "SMS_RECEIPT_NOT_ALLOWED" | "SMS_TEMPLATE_CONTEXT_INVALID" | "SMS_TEMPLATE_INVALID" | "STATUS_INVALID" | "STOCK_INSUFFICIENT" | "SUBSCRIPTION_AMOUNT_INVALID" | "SUBSCRIPTION_PAID_TERMINAL" | "SUBSCRIPTION_PERIOD_INVALID" | "SUPPLIER_NOT_FOUND" | "SUPPORT_SESSION_REQUIRED" | "SYSTEM_ROLE" | "TARGET_INVALID" | "TENANT_INVALID" | "TENANT_REQUIRED" | "THROTTLED" | "TOKEN_NOT_VALID" | "TOKEN_TENANT_MISMATCH" | "TO_BRANCH_NOT_FOUND" | "TRANSFER_LINE_UNKNOWN" | "TRANSFER_NOT_FOUND" | "TRANSFER_SAME_BRANCH" | "TRANSFER_STATE_INVALID" | "TRIAL_END_REQUIRED" | "TWO_FACTOR_NOT_CONFIGURED" | "UDHARO_REQUIRES_CUSTOMER" | "VALIDATION_ERROR" | "VARIANT_NOT_FOUND" | "VARIANT_REQUIRED";
         AuditLog: {
             /** Format: uuid */
             readonly id: string;
@@ -10616,6 +10680,144 @@ export interface operations {
                 "multipart/form-data": components["schemas"]["OtpVerify"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        };
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    storefront_store_order_management_list_view_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        }[];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    storefront_store_order_advance_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        };
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    storefront_store_order_cancel_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        };
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    storefront_store_order_prepare_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

@@ -5,6 +5,12 @@ from apps.storefront.views import (
     StorefrontSiteView,
     StoreSettingsView,
 )
+from apps.storefront.views_management import (
+    StoreOrderAdvanceView,
+    StoreOrderCancelView,
+    StoreOrderManagementListView,
+    StoreOrderPrepareView,
+)
 from apps.storefront.views_order import (
     StorefrontProductDetailView,
     StoreMyOrdersView,
@@ -34,4 +40,24 @@ urlpatterns = [
         name="order-tracking",
     ),
     path("storefront/my/orders", StoreMyOrdersView.as_view(), name="my-orders"),
+    path(
+        "storefront/manage/orders",
+        StoreOrderManagementListView.as_view(),
+        name="manage-orders",
+    ),
+    path(
+        "storefront/manage/orders/<uuid:pk>/prepare",
+        StoreOrderPrepareView.as_view(),
+        name="manage-order-prepare",
+    ),
+    path(
+        "storefront/manage/orders/<uuid:pk>/advance",
+        StoreOrderAdvanceView.as_view(),
+        name="manage-order-advance",
+    ),
+    path(
+        "storefront/manage/orders/<uuid:pk>/cancel",
+        StoreOrderCancelView.as_view(),
+        name="manage-order-cancel",
+    ),
 ]

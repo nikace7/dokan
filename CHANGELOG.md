@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Ecommerce completion
+
+- `storefront` — customers can now choose a size/colour option, keep a
+  persistent bag, verify their email with a six-digit code, place an
+  idempotent COD pickup or delivery order, review order history, and follow a
+  public tracking page. Checkout re-prices every line server-side and requires
+  the verified email identity to match the order
+- `storefront` — active orders reserve stock at the tenant's default branch so
+  concurrent checkouts cannot oversell. Placement never mutates stock; tenant
+  staff accept an order into exactly one linked HELD POS bill, where the
+  existing sale completion path posts the immutable stock ledger movement
+- `frontend` — tenant staff receive an ecommerce-gated Online orders inbox
+  with status filters, prepare/open-held-bill actions, safe cancellation, and
+  the CONFIRMED → PACKED → SHIPPED → DELIVERED lifecycle. Completed invoices
+  remain immutable and require the normal return flow
+- `security` — online payment is explicitly rejected until a verified gateway
+  is integrated; cross-customer idempotency collisions, duplicate variants,
+  unverified checkout, POS-only products, and fully reserved stock are blocked
+- `test` — the fresh-Compose Playwright suite now covers the complete public
+  store → email OTP → COD checkout → staff inbox → held POS bill journey; the
+  demo seed exposes `demo-store.shop.localhost` for local testing
+
 ## [1.1.0] - 2026-09-02
 
 ### Observability and operations

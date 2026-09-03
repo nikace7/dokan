@@ -6576,6 +6576,145 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/storefront/manage/orders:
+    get:
+      operationId: storefront_store_order_management_list_view_get
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/storefront/manage/orders/{id}/advance:
+    post:
+      operationId: storefront_store_order_advance_view_post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/storefront/manage/orders/{id}/cancel:
+    post:
+      operationId: storefront_store_order_cancel_view_post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/storefront/manage/orders/{id}/prepare:
+    post:
+      operationId: storefront_store_order_prepare_view_post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/storefront/my/orders:
     get:
       operationId: storefront_store_my_orders_view_get
@@ -7253,6 +7392,7 @@ components:
       - CATEGORY_NOT_FOUND
       - CBMS_DOC_TYPE_INVALID
       - CBMS_NOT_COMPLETED
+      - COMPLETED_ORDER_CANNOT_CANCEL
       - COST_INVALID
       - COST_VISIBILITY_REQUIRED
       - COUNT_ALREADY_OPEN
@@ -7269,18 +7409,21 @@ components:
       - CREDIT_TENDER_MISMATCH
       - CURRENT_PASSWORD_INVALID
       - CUSTOMER_CREDIT_PERMISSION_REQUIRED
+      - CUSTOMER_MISMATCH
       - CUSTOMER_NOT_FOUND
       - DATE_INVALID
       - DATE_RANGE_INCOMPLETE
       - DATE_RANGE_INVALID
       - DISCOUNT_INVALID
       - DISCOUNT_OUT_OF_RANGE
+      - DUPLICATE_VARIANT
       - EXPENSE_NOT_FOUND
       - FEATURE_OVERRIDE_INVALID
       - FILTER_INVALID
       - FLOAT_INVALID
       - FROM_BRANCH_NOT_FOUND
       - GROUP_BY_INVALID
+      - IDEMPOTENCY_KEY_CONFLICT
       - IDEMPOTENCY_KEY_REQUIRED
       - IDEMPOTENCY_KEY_REUSED
       - IMAGE_REQUIRED
@@ -7314,7 +7457,11 @@ components:
       - NOT_AUTHENTICATED
       - NOT_FOUND
       - NO_ACTIVE_ACCOUNT
+      - ONLINE_PAYMENT_UNAVAILABLE
+      - ORDER_NOT_CANCELLABLE
       - ORDER_NOT_FOUND
+      - ORDER_NOT_PREPARABLE
+      - ORDER_STATUS_INVALID
       - OTP_INVALID
       - OTP_LOCKED
       - OTP_REQUIRED
@@ -7365,6 +7512,7 @@ components:
       - RETURN_NOT_ALLOWED
       - REVERSAL_REASON_REQUIRED
       - ROLE_IN_USE
+      - SALE_NOT_COMPLETED
       - SCOPE_INVALID
       - SCOPE_TARGET_REQUIRED
       - SESSION_ALREADY_CLOSED
@@ -7382,6 +7530,7 @@ components:
       - SMS_RECEIPT_NOT_ALLOWED
       - SMS_TEMPLATE_CONTEXT_INVALID
       - SMS_TEMPLATE_INVALID
+      - STATUS_INVALID
       - STOCK_INSUFFICIENT
       - SUBSCRIPTION_AMOUNT_INVALID
       - SUBSCRIPTION_PAID_TERMINAL
