@@ -194,7 +194,7 @@ class TestCheckout:
         response = post_order(checkout_payload(variant, items=lines), shop=shop)
 
         assert response.status_code == 400
-        assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+        assert response.json()["error"]["code"] == "DUPLICATE_VARIANT"
 
     def test_checkout_uses_default_branch_stock_not_tenant_wide_stock(self) -> None:
         shop = make_shop()
