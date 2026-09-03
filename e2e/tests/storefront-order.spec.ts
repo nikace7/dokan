@@ -43,7 +43,7 @@ test('shopper checkout reaches the tenant online-order inbox', async ({ browser,
 
     // The same real order is immediately actionable by tenant staff.
     await page.goto('/online-orders');
-    const orderCard = page.locator('article').filter({ hasText: email });
+    const orderCard = page.getByRole('article', { name: new RegExp(email) });
     await expect(orderCard).toBeVisible();
     await orderCard.getByRole('button', { name: 'Prepare in POS' }).click();
     await expect(orderCard.getByRole('button', { name: 'Open held bill' })).toBeVisible();
