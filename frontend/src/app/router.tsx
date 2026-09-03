@@ -155,6 +155,11 @@ const OnlineStorePage = lazy(() =>
     default: Component,
   })),
 );
+const OnlineOrdersPage = lazy(() =>
+  import('@/features/storefrontOrders/OnlineOrdersPage').then(
+    ({ OnlineOrdersPage: Component }) => ({ default: Component }),
+  ),
+);
 const StaffPage = lazy(() =>
   import('@/features/settings/StaffPage').then(({ StaffPage: Component }) => ({
     default: Component,
@@ -210,6 +215,7 @@ function getRouter() {
         { path: '/', element: <DashboardPage /> },
         { path: '/billing', element: <BillingPage /> },
         { path: '/billing/simple', element: <SimpleSalePage /> },
+        { path: '/online-orders', element: <OnlineOrdersPage /> },
         { path: '/catalog', element: <ItemsPage /> },
         { path: '/catalog/items/new', element: <QuickAddProductPage /> },
         { path: '/catalog/items/:id', element: <ItemDetailPage /> },

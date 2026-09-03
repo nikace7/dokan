@@ -6,7 +6,8 @@ export type PlanFeature =
   | 'multi_branch'
   | 'custom_rate_types'
   | 'simple_sale'
-  | 'advanced_pos';
+  | 'advanced_pos'
+  | 'ecommerce';
 
 interface PlanUser {
   plan?: { features?: Record<string, unknown> };
@@ -35,6 +36,11 @@ export const PLAN_FEATURE_CATALOG: readonly {
     key: 'advanced_pos',
     label: 'Advanced POS',
     description: 'Full barcode billing with held bills, exchanges, and split tenders.',
+  },
+  {
+    key: 'ecommerce',
+    label: 'Online store',
+    description: 'Public product catalog, customer checkout, tracking, and online-order inbox.',
   },
   {
     key: 'sms',
