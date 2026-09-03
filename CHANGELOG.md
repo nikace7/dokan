@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Operations
+
+- `ci` — production smoke monitoring now checks the active tenant and storefront,
+  including the public store-configuration and product-catalog APIs, instead of
+  accepting a healthy placeholder SPA as ecommerce availability
+
 ## [1.2.0] - 2026-09-03
 
 ### Ecommerce completion
