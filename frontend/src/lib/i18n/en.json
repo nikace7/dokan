@@ -33,6 +33,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "billing": "Billing",
+    "onlineOrders": "Online orders",
     "catalog": "Catalog",
     "pricing": "Pricing",
     "customers": "Customers",
@@ -58,6 +59,36 @@
     },
     "signOut": "Sign out",
     "poweredBy": "Powered by {{brand}}"
+  },
+  "onlineOrders": {
+    "title": "Online orders",
+    "description": "Accept website orders, prepare them in POS, and keep customers updated.",
+    "filterAria": "Filter online orders by status",
+    "allStatuses": "All statuses",
+    "status": {
+      "placed": "Placed",
+      "confirmed": "Confirmed",
+      "packed": "Packed",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "pickup": "Store pickup",
+    "delivery": "Delivery",
+    "bsDate": "BS {{date}}",
+    "note": "Note",
+    "prepare": "Prepare in POS",
+    "openHeld": "Open held bill",
+    "markPacked": "Mark packed",
+    "markShipped": "Mark shipped",
+    "markDelivered": "Mark delivered",
+    "cancel": "Cancel order",
+    "completeBillFirst": "Complete the held bill in Billing before marking the order delivered.",
+    "loading": "Loading online orders…",
+    "empty": "No online orders match this filter.",
+    "loadError": "Could not load online orders.",
+    "updateError": "Could not update this order.",
+    "openError": "Could not open the held bill."
   },
   "auth": {
     "title": "Sign in",
