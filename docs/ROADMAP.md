@@ -17,9 +17,9 @@ real shops:
 
 | Gate | Status |
 |---|---|
-| Local quality baseline | ✅ 980 backend tests, 389 tenant/admin frontend tests, and 50 storefront tests pass; enforced critical coverage remains wired, and the fresh-Compose Playwright suite now contains 13 scenarios; lint, type, generated-contract, source-size, bundle, dependency, secret, pooling, and recovery checks are wired |
-| Hosted CI on the candidate stack | ✅ Integration PR #125 passed backend, frontend/edge, storefront, recovery, gitleaks, and the 12-scenario fresh-Compose E2E suite |
-| Protected `main`, review policy, merge, and SemVer release | ✅ `main` requires all seven CI checks, strict freshness, resolved conversations, and no admin bypass; the solo-maintainer self-review policy is active, integration PR #125 is merged, and `v1.1.0` is the current candidate pending this release PR's merge and tag |
+| Local quality baseline | ✅ 980 backend tests, 389 tenant/admin frontend tests, and 52 storefront tests pass; enforced critical coverage remains wired, and the fresh-Compose Playwright suite contains 13 scenarios; lint, type, generated-contract, source-size, bundle, dependency, secret, pooling, and recovery checks are wired |
+| Hosted CI on the candidate stack | ✅ Ecommerce PR #146 and its merge commit passed backend, frontend/edge, storefront, recovery, gitleaks, and the 13-scenario fresh-Compose E2E suite |
+| Protected `main`, review policy, merge, and SemVer release | 🔨 `main` requires all seven CI checks, strict freshness, resolved conversations, and no admin bypass; the solo-maintainer self-review policy is active, ecommerce PR #146 is merged, and this changelog records the `v1.2.0` candidate pending release merge and tag |
 | Production DNS/wildcard TLS, strong secrets, SMTP, SMS, live CBMS decision, and S3-compatible backup target | ⚠ operator/provider setup |
 | Staging restore rehearsal, alert delivery test, external uptime/TLS checks, and pilot acceptance | ⚠ operator validation |
 

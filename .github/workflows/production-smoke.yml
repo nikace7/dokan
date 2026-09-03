@@ -1,0 +1,92 @@
+name: Production Smoke
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: false
+
+env:
+  ROOT_DOMAIN: mero-pasal.online
+  INCIDENT_TITLE: "ops: production smoke check failing"
+
+jobs:
+  public-edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public routes and certificate lifetime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          endpoints=(
+            "https://${ROOT_DOMAIN}/api/health"
+            "https://admin.${ROOT_DOMAIN}/"
+            "https://demo.${ROOT_DOMAIN}/"
+            "https://demo-store.shop.${ROOT_DOMAIN}/"
+          )
+          for endpoint in "${endpoints[@]}"; do
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-delay 2 --retry-all-errors \
+              --connect-timeout 10 --max-time 30 \
+              "$endpoint" >/dev/null
+          done
+
+          hosts=(
+            "${ROOT_DOMAIN}"
+            "admin.${ROOT_DOMAIN}"
+            "demo-store.shop.${ROOT_DOMAIN}"
+          )
+          for host in "${hosts[@]}"; do
+            certificate="$(
+              timeout 15 openssl s_client \
+                -connect "${host}:443" -servername "$host" </dev/null 2>/dev/null
+            )"
+            printf '%s\n' "$certificate" \
+              | openssl x509 -checkend 1209600 -noout
+          done
+
+      - name: Open or update a production incident
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          issue_number="$(
+            gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+              --search "$INCIDENT_TITLE in:title" \
+              --json number --jq '.[0].number // empty'
+          )"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          message="Production smoke checks failed at $(date -u +'%Y-%m-%dT%H:%M:%SZ'). Run: ${run_url}"
+
+          if [[ -n "$issue_number" ]]; then
+            gh issue comment "$issue_number" --repo "$GITHUB_REPOSITORY" --body "$message"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "$INCIDENT_TITLE" --body "$message"
+          fi
+
+      - name: Close a recovered production incident
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          issue_number="$(
+            gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+              --search "$INCIDENT_TITLE in:title" \
+              --json number --jq '.[0].number // empty'
+          )"
+          if [[ -n "$issue_number" ]]; then
+            gh issue close "$issue_number" --repo "$GITHUB_REPOSITORY" \
+              --comment "Production smoke checks recovered in run ${GITHUB_RUN_ID}."
+          fi
