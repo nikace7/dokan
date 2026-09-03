@@ -108,6 +108,17 @@ class TestProductDetail:
             }
         ]
 
+    def test_detail_uses_variant_minimum_when_no_website_price_exists(self) -> None:
+        shop = make_shop()
+        variant = make_sellable(shop, name="Everyday Tee")
+        variant.min_selling_price = Decimal("850.00")
+        variant.save(update_fields=["min_selling_price", "updated_at"])
+
+        response = APIClient().get(DETAIL_URL.format(pk=variant.item_id), **shopfront_host("yak"))
+
+        assert response.status_code == 200
+        assert response.json()["data"]["variants"][0]["price"] == "850.00"
+
     def test_unknown_product_is_404(self) -> None:
         make_shop()
         response = APIClient().get(

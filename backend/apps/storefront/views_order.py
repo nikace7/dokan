@@ -24,6 +24,7 @@ from apps.storefront.serializers_order import (
 )
 from apps.storefront.throttles import StorefrontAuthThrottle
 from apps.storefront.views import _StorefrontView
+from apps.tenants.models import Branch
 from core.openapi import object_list, operation
 from core.responses import ServiceError, ok
 
@@ -65,25 +66,37 @@ class StorefrontProductDetailView(_StorefrontView):
                 )
             store = selectors.get_settings(tenant)
             price, compare_at, offer_pct = selectors.website_pricing(item, store)
+            display_currency = selectors.display_currency(tenant, store)
+            branch = Branch.objects.filter(tenant=tenant, is_default=True).first()
             stock = dict(
-                StockLevel.objects.filter(tenant=tenant, variant__item=item)
+                StockLevel.objects.filter(tenant=tenant, branch=branch, variant__item=item)
                 .values_list("variant_id")
                 .annotate(on_hand=Sum("qty_on_hand"))
             )
-            variants = [
-                {
-                    "id": str(v.pk),
-                    "size": v.size,
-                    "color": v.color,
-                    "sku": v.sku,
-                    "in_stock": bool((stock.get(v.pk) or 0) > 0),
-                    "price": str(price) if price is not None else None,
-                    "compare_at": str(compare_at) if compare_at is not None else None,
-                }
-                for v in ItemVariant.objects.filter(
-                    tenant=tenant, item=item, is_active=True
-                ).order_by("size", "color")
-            ]
+            variants = []
+            for variant in ItemVariant.objects.filter(
+                tenant=tenant, item=item, is_active=True
+            ).order_by("size", "color"):
+                variant_price = price
+                if variant_price is None:
+                    fallback = variant.min_selling_price or item.min_selling_price
+                    if fallback is not None:
+                        variant_price = selectors.convert_for_display(
+                            fallback,
+                            from_currency=tenant.currency,
+                            to_currency=display_currency,
+                        )
+                variants.append(
+                    {
+                        "id": str(variant.pk),
+                        "size": variant.size,
+                        "color": variant.color,
+                        "sku": variant.sku,
+                        "in_stock": bool((stock.get(variant.pk) or 0) > 0),
+                        "price": str(variant_price) if variant_price is not None else None,
+                        "compare_at": str(compare_at) if compare_at is not None else None,
+                    }
+                )
             return ok(
                 {
                     "id": str(item.pk),
