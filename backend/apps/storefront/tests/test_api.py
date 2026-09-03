@@ -103,6 +103,7 @@ class TestStorefrontSite:
 class TestStorefrontProducts:
     def test_product_grid_payload_is_cost_safe(self) -> None:
         shop = make_shop()
+        branch = BranchFactory(tenant=shop, is_default=True)
         category = CategoryFactory(tenant=shop, name="Jacket")
         item = ItemFactory(
             tenant=shop,
@@ -112,7 +113,12 @@ class TestStorefrontProducts:
             max_selling_price=Decimal("1600.00"),
         )
         variant = ItemVariantFactory(tenant=shop, item=item)
-        StockLevelFactory(tenant=shop, variant=variant, qty_on_hand=Decimal("4"))
+        StockLevelFactory(
+            tenant=shop,
+            branch=branch,
+            variant=variant,
+            qty_on_hand=Decimal("4"),
+        )
         ItemFactory(tenant=shop, name="Out Of Stock Tee")
         ItemFactory(tenant=shop, name="Hidden", is_active=False)
 
@@ -146,6 +152,29 @@ class TestStorefrontProducts:
                 "featured",
                 "in_stock",
             }
+
+    def test_stock_flag_uses_the_fulfilling_default_branch(self) -> None:
+        shop = make_shop()
+        default_branch = BranchFactory(tenant=shop, is_default=True)
+        other_branch = BranchFactory(tenant=shop)
+        item = ItemFactory(tenant=shop, name="Branch-only Jacket")
+        variant = ItemVariantFactory(tenant=shop, item=item)
+        StockLevelFactory(
+            tenant=shop,
+            branch=default_branch,
+            variant=variant,
+            qty_on_hand=Decimal("0"),
+        )
+        StockLevelFactory(
+            tenant=shop,
+            branch=other_branch,
+            variant=variant,
+            qty_on_hand=Decimal("5"),
+        )
+
+        response = APIClient().get(PRODUCTS_URL, **shopfront_host("yak"))
+
+        assert response.json()["data"][0]["in_stock"] is False
 
     def test_category_and_search_filters(self) -> None:
         shop = make_shop()
