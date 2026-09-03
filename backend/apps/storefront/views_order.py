@@ -173,11 +173,13 @@ class StoreOrderCreateView(_StorefrontView):
             )
 
         def build() -> Response:
+            customer = _require_customer(request, self)
             serializer = CheckoutSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             data = serializer.validated_data
             order, created = services_orders.place_order(
                 self._shop_tenant,
+                customer=customer,
                 customer_fields=data["customer"],
                 fulfillment=data["fulfillment"],
                 payment_method=data["payment_method"],
