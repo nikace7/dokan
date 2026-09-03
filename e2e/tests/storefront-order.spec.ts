@@ -39,7 +39,7 @@ test('shopper checkout reaches the tenant online-order inbox', async ({ browser,
 
     await expect(store).toHaveURL(/\/order\/[0-9a-f-]+$/);
     await expect(store.getByRole('heading', { name: /^ORD-/ })).toBeVisible();
-    await expect(store.getByText('Placed', { exact: true })).toBeVisible();
+    await expect(store.getByRole('paragraph').filter({ hasText: /^Placed$/ })).toBeVisible();
 
     // The same real order is immediately actionable by tenant staff.
     await page.goto('/online-orders');
