@@ -258,9 +258,10 @@ local metrics and log retention.
 
 The scheduled `.github/workflows/production-smoke.yml` job supplies the
 resource-constrained deployment's external public-edge baseline without using
-guest RAM. Every 15 minutes it verifies readiness, admin, tenant, and online-
-store routes plus at least 14 days of certificate lifetime. A failure opens or
-updates one GitHub incident issue; the first successful recovery closes it.
+guest RAM. Every 15 minutes it verifies readiness, admin, the active production
+tenant, and both the active online-store shell and its public site/catalog APIs,
+plus at least 14 days of certificate lifetime. A failure opens or updates one
+GitHub incident issue; the first successful recovery closes it.
 This complements rather than replaces off-host database backups, application
 error reporting, and host-level capacity alerts.
 
