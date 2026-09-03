@@ -7,7 +7,7 @@ import { config } from './config';
 // listen, so force the tenant host onto IPv4 loopback for the browser. This
 // is a no-op for setups where the hostname already resolves correctly, and
 // harmless for the Vite dev server (localhost -> 127.0.0.1).
-const hostResolverRules = `--host-resolver-rules=MAP ${config.tenantHost} 127.0.0.1, MAP localhost 127.0.0.1`;
+const hostResolverRules = `--host-resolver-rules=MAP ${config.tenantHost} 127.0.0.1, MAP ${config.storefrontHost} 127.0.0.1, MAP localhost 127.0.0.1`;
 
 export default defineConfig({
   testDir: './tests',

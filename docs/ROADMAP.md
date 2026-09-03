@@ -3,7 +3,7 @@
 Where the product is going and where it stands. Phase definitions and exit
 criteria live in `docs/SYSTEM_DESIGN.md` §11 — this doc tracks **status
 against the shipped code**, it does not re-specify the phases. Status as of
-2026-09-02 on the current release branch.
+2026-09-03 on the current release branch.
 
 Legend: ✅ shipped · 🔨 in progress · ⬜ not started · ⚠ external gate
 
@@ -17,7 +17,7 @@ real shops:
 
 | Gate | Status |
 |---|---|
-| Local quality baseline | ✅ 967 backend tests pass with 92.05% branch-aware coverage and enforced 100% line/branch coverage on money-critical modules; tenant/admin frontend, storefront, and 12-scenario Compose Playwright suites pass; lint, type, generated-contract, source-size, bundle, dependency, secret, pooling, and recovery checks are wired |
+| Local quality baseline | ✅ 980 backend tests, 389 tenant/admin frontend tests, and 50 storefront tests pass; enforced critical coverage remains wired, and the fresh-Compose Playwright suite now contains 13 scenarios; lint, type, generated-contract, source-size, bundle, dependency, secret, pooling, and recovery checks are wired |
 | Hosted CI on the candidate stack | ✅ Integration PR #125 passed backend, frontend/edge, storefront, recovery, gitleaks, and the 12-scenario fresh-Compose E2E suite |
 | Protected `main`, review policy, merge, and SemVer release | ✅ `main` requires all seven CI checks, strict freshness, resolved conversations, and no admin bypass; the solo-maintainer self-review policy is active, integration PR #125 is merged, and `v1.1.0` is the current candidate pending this release PR's merge and tag |
 | Production DNS/wildcard TLS, strong secrets, SMTP, SMS, live CBMS decision, and S3-compatible backup target | ⚠ operator/provider setup |
@@ -79,8 +79,9 @@ start) are counted in the Phase 2 table below.
 | Item | Status |
 |---|---|
 | Public per-shop storefront on `*.shop.<root>`, plan gating, safe catalog/pricing, promotions, featured products, and `aurora`/`bazaar` templates | ✅ |
-| Email-OTP store customers, idempotent COD/pickup/delivery orders, history and token tracking | ✅ |
-| Online order payment collection and POS order-confirmation workflow | 🔨 order records support the states; gateway and final counter workflow remain |
+| Email-OTP store customers, persistent cart, product options, idempotent COD pickup/delivery orders, history and token tracking | ✅ |
+| Online-order stock reservation, staff inbox, HELD POS-bill preparation, cancellation, and fulfillment lifecycle | ✅ |
+| Online payment collection | ⚠ COD is complete; eSewa/Khalti/Fonepay gateway selection, credentials, callbacks, and certification remain external integration work |
 | Account recovery, optional login OTP, and immediate registered-device revocation | ✅ |
 | Permission-safe Excel report exports and A4/80mm report printing | ✅ |
 
