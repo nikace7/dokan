@@ -103,7 +103,11 @@ function OrderCard({ order }: { order: OnlineOrder }) {
   const deliveryBlocked = order.status === 'SHIPPED' && order.sales_invoice?.status !== 'COMPLETED';
 
   return (
-    <Card className="space-y-4">
+    <Card
+      role="article"
+      aria-label={`${order.number_text} · ${order.customer.email}`}
+      className="space-y-4"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
