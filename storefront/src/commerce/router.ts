@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react';
 export function navigate(path: string): void {
   window.history.pushState({}, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const reducedMotion =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
 }
 
 export function usePathname(): string {

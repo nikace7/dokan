@@ -44,11 +44,6 @@ class CheckoutSerializer(serializers.Serializer):
     def validate(self, attrs: dict) -> dict:
         if attrs["fulfillment"] == StoreOrder.Fulfillment.DELIVERY and not attrs.get("address"):
             raise serializers.ValidationError({"address": "Delivery orders need an address."})
-        variant_ids = [line["variant"] for line in attrs["items"]]
-        if len(variant_ids) != len(set(variant_ids)):
-            raise serializers.ValidationError(
-                {"items": "Each product option may appear only once in the cart."}
-            )
         return attrs
 
 
