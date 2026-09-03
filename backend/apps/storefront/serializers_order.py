@@ -44,6 +44,11 @@ class CheckoutSerializer(serializers.Serializer):
     def validate(self, attrs: dict) -> dict:
         if attrs["fulfillment"] == StoreOrder.Fulfillment.DELIVERY and not attrs.get("address"):
             raise serializers.ValidationError({"address": "Delivery orders need an address."})
+        variant_ids = [line["variant"] for line in attrs["items"]]
+        if len(variant_ids) != len(set(variant_ids)):
+            raise serializers.ValidationError(
+                {"items": "Each product option may appear only once in the cart."}
+            )
         return attrs
 
 
@@ -90,3 +95,28 @@ class PublicOrderSerializer(serializers.Serializer):
 def order_payload(order: StoreOrder) -> dict:
     """Serialize an order with its items prefetched by the caller."""
     return PublicOrderSerializer(order).data
+
+
+def management_order_payload(order: StoreOrder) -> dict:
+    """Tenant-staff order view; contains no stock cost or credential fields."""
+    payload = order_payload(order)
+    invoice = order.sales_invoice if order.sales_invoice_id else None
+    return {
+        "id": str(order.pk),
+        **payload,
+        "customer": {
+            "email": order.customer.email,
+            "full_name": order.customer.full_name,
+            "phone": order.customer.phone,
+        },
+        "branch": {"id": str(order.branch_id), "name": order.branch.name},
+        "sales_invoice": (
+            {
+                "id": str(invoice.pk),
+                "status": invoice.status,
+                "invoice_no": invoice.invoice_no,
+            }
+            if invoice is not None
+            else None
+        ),
+    }
