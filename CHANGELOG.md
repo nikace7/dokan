@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Inventory
+
+- `inventory` — the Stock screen now calculates tenant-wide current on-hand,
+  reserved, and available quantities across all branches; users with cost
+  visibility also see the moving-average stock valuation
+
 ### Operations
 
 - `ci` — production smoke monitoring now checks the active tenant and storefront,

@@ -1211,6 +1211,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inventory/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /inventory/summary — current totals across all tenant branches. */
+        get: operations["inventory_stock_summary_view_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/inventory/transfers": {
         parameters: {
             query?: never;
@@ -4313,6 +4330,17 @@ export interface components {
             readonly created_by_name: string;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        /** @description Tenant-wide current stock totals; valuation is cost-permission protected. */
+        StockSummary: {
+            /** Format: decimal */
+            total_qty_on_hand: string;
+            /** Format: decimal */
+            total_qty_reserved: string;
+            /** Format: decimal */
+            total_qty_available: string;
+            /** Format: decimal */
+            stock_value?: string;
         };
         /**
          * @description Drops line unit_cost for users without pricing.view_cost.
@@ -8120,6 +8148,37 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["StockMovement"];
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    inventory_stock_summary_view_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StockSummary"];
                         error: null;
                     };
                 };
