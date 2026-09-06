@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Catalog
+
+- `frontend` — catalog item cards now show the configured minimum-to-maximum
+  selling-price range, clearly labelled as SP, instead of the variants' MRP
+  range
+
 ### Inventory
 
 - `inventory` — the Stock screen now calculates tenant-wide current on-hand,
