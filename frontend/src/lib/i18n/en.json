@@ -1006,6 +1006,7 @@
       "open": "Open",
       "deactivate": "Deactivate",
       "variantsCount": "{{count}} variants",
+      "sellingPriceRange": "SP: {{range}}",
       "pageInfo": "Page {{page}} of {{pages}} ({{count}} items)",
       "columns": {
         "code": "Code",
