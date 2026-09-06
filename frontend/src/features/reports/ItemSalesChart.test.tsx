@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ItemSalesChart } from '@/features/reports/ItemSalesChart';
 import type { ItemSalesRow } from '@/features/reports/api';
@@ -16,7 +16,32 @@ const ROWS: ItemSalesRow[] = Array.from({ length: 10 }, (_, index) => ({
   amount: String((10 - index) * 750),
 }));
 
+class ChartResizeObserver implements ResizeObserver {
+  constructor(private readonly callback: ResizeObserverCallback) {}
+
+  observe(target: Element) {
+    this.callback(
+      [
+        {
+          target,
+          contentRect: {
+            width: 760,
+            height: 444,
+          } as DOMRectReadOnly,
+        } as ResizeObserverEntry,
+      ],
+      this,
+    );
+  }
+
+  unobserve() {}
+  disconnect() {}
+}
+
 describe('ItemSalesChart', () => {
+  beforeEach(() => vi.stubGlobal('ResizeObserver', ChartResizeObserver));
+  afterEach(() => vi.unstubAllGlobals());
+
   it('gives each product a non-overlapping, truncated two-line label', () => {
     render(<ItemSalesChart rows={ROWS} />);
 

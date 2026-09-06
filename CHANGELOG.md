@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reserved, and available quantities across all branches; users with cost
   visibility also see the moving-average stock valuation
 
+### Reports
+
+- `frontend` — the Top Items sales chart now gives each product a readable
+  two-line label, grows with the number of bars, shows full hover details, and
+  switches interactively between quantity sold and sales amount
+
 ### Operations
 
 - `ci` — production smoke monitoring now checks the active tenant and storefront,
