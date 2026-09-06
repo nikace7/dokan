@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-07
+
 ### Catalog
 
 - `frontend` — catalog item cards now show the configured minimum-to-maximum
@@ -25,6 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `frontend` — the Top Items sales chart now gives each product a readable
   two-line label, grows with the number of bars, shows full hover details, and
   switches interactively between quantity sold and sales amount
+
+### What shopkeepers get
+
+- Catalog cards show the usable minimum-to-maximum selling-price range at a
+  glance, so staff can quote the right price without opening each product
+- The Stock screen totals on-hand, reserved, and available stock across the
+  whole shop, with stock value shown only to staff allowed to see cost
+- The Top Items report keeps long product names readable and lets staff compare
+  either units sold or sales amount with clear hover details
+
+## [1.2.1] - 2026-09-03
 
 ### Operations
 
