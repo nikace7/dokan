@@ -29,6 +29,7 @@ pytestmark = pytest.mark.django_db
 
 SLUG = "shreeganesh"
 LEVELS_URL = "/api/v1/inventory/levels"
+SUMMARY_URL = "/api/v1/inventory/summary"
 MOVEMENTS_URL = "/api/v1/inventory/movements"
 OPENING_URL = "/api/v1/inventory/opening"
 ADJUST_URL = "/api/v1/inventory/adjustments"
@@ -88,6 +89,7 @@ class TestAuthAndPermissions:
     def test_missing_stock_view_is_403(self, tenant: Any, user: Any) -> None:
         grant(tenant, user, "sale.create")
         assert auth_client(user).get(LEVELS_URL, **host()).status_code == 403
+        assert auth_client(user).get(SUMMARY_URL, **host()).status_code == 403
 
     def test_write_without_stock_adjust_is_403(self, tenant: Any, user: Any, refs: Any) -> None:
         grant(tenant, user, "stock.view")
@@ -216,6 +218,80 @@ class TestCostVisibility:
         grant(tenant, user, "stock.view", "pricing.view_cost")
         response = auth_client(user).get(MOVEMENTS_URL, **host())
         assert response.json()["data"][0]["unit_cost"] == "99.00"
+
+
+class TestStockSummary:
+    def test_summary_totals_current_stock_across_tenant_branches(
+        self, tenant: Any, user: Any, refs: Any
+    ) -> None:
+        StockLevelFactory(
+            tenant=tenant,
+            branch=refs["branch"],
+            variant=refs["variant"],
+            qty_on_hand="8",
+            qty_reserved="2",
+            avg_cost="100",
+        )
+        second_branch = BranchFactory(tenant=tenant)
+        second_variant = ItemVariantFactory(tenant=tenant)
+        StockLevelFactory(
+            tenant=tenant,
+            branch=second_branch,
+            variant=second_variant,
+            qty_on_hand="5.5",
+            qty_reserved="1",
+            avg_cost="200",
+        )
+        other_tenant = TenantFactory(slug="summary-other")
+        StockLevelFactory(tenant=other_tenant, qty_on_hand="999", avg_cost="999")
+        grant(tenant, user, "stock.view", "pricing.view_cost")
+
+        response = auth_client(user).get(SUMMARY_URL, **host())
+
+        assert response.status_code == 200
+        assert response.json()["data"] == {
+            "total_qty_on_hand": "13.500",
+            "total_qty_reserved": "3.000",
+            "total_qty_available": "10.500",
+            "stock_value": "1900.00",
+        }
+
+    def test_summary_hides_stock_value_without_cost_permission(
+        self, tenant: Any, user: Any, refs: Any
+    ) -> None:
+        StockLevelFactory(
+            tenant=tenant,
+            branch=refs["branch"],
+            variant=refs["variant"],
+            qty_on_hand="4",
+            qty_reserved="1.5",
+            avg_cost="120",
+        )
+        grant(tenant, user, "stock.view")
+
+        response = auth_client(user).get(SUMMARY_URL, **host())
+
+        assert response.status_code == 200
+        assert response.json()["data"] == {
+            "total_qty_on_hand": "4.000",
+            "total_qty_reserved": "1.500",
+            "total_qty_available": "2.500",
+        }
+
+    def test_summary_returns_zero_totals_before_stock_is_posted(
+        self, tenant: Any, user: Any
+    ) -> None:
+        grant(tenant, user, "stock.view", "pricing.view_cost")
+
+        response = auth_client(user).get(SUMMARY_URL, **host())
+
+        assert response.status_code == 200
+        assert response.json()["data"] == {
+            "total_qty_on_hand": "0.000",
+            "total_qty_reserved": "0.000",
+            "total_qty_available": "0.000",
+            "stock_value": "0.00",
+        }
 
 
 class TestListEndpoints:

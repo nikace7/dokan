@@ -82,6 +82,14 @@ function mockBase(permissions: string[], levels: (typeof level)[] = [level]) {
   fetchMock.mockImplementation(async (input, init) => {
     const url = String(input);
     if (url.includes('/v1/auth/me')) return envelope(me(permissions));
+    if (url.includes('/v1/inventory/summary')) {
+      return envelope({
+        total_qty_on_hand: '13.500',
+        total_qty_reserved: '3.000',
+        total_qty_available: '10.500',
+        ...(permissions.includes('pricing.view_cost') ? { stock_value: '1900.00' } : {}),
+      });
+    }
     if (url.includes('/v1/inventory/levels')) return envelope(levels);
     if (url.includes('/v1/inventory/movements')) return envelope([movement]);
     if (url.includes('/v1/branches')) {
@@ -153,6 +161,27 @@ describe('StockPage', () => {
     expect(screen.getAllByText('Opening stock').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Adjust stock' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Write off damage' })).not.toBeInTheDocument();
+  });
+
+  it('shows tenant-wide on-hand, reserved, and available stock totals', async () => {
+    mockBase(['stock.view']);
+    renderPage();
+
+    expect(await screen.findByText('Total stock')).toBeInTheDocument();
+    expect(screen.getByText('13.5')).toBeInTheDocument();
+    expect(screen.getByText('Reserved stock')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('Available stock')).toBeInTheDocument();
+    expect(screen.getByText('10.5')).toBeInTheDocument();
+    expect(screen.queryByText('Stock value')).not.toBeInTheDocument();
+  });
+
+  it('shows tenant-wide stock value only with cost visibility', async () => {
+    mockBase(['stock.view', 'pricing.view_cost']);
+    renderPage();
+
+    expect(await screen.findByText('Stock value')).toBeInTheDocument();
+    expect(screen.getByText('रू1,900.00')).toBeInTheDocument();
   });
 
   it('posts a signed adjustment with a reason', async () => {
