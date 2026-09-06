@@ -181,7 +181,7 @@ describe('StockPage', () => {
     renderPage();
 
     expect(await screen.findByText('Stock value')).toBeInTheDocument();
-    expect(screen.getByText('रू1,900.00')).toBeInTheDocument();
+    expect(screen.getByText('रू 1,900.00')).toBeInTheDocument();
   });
 
   it('posts a signed adjustment with a reason', async () => {

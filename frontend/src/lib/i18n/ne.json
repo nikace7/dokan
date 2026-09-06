@@ -1165,6 +1165,14 @@
       "low": "कम",
       "costAmount": "लागत {{amount}}",
       "reserved": "रिजर्भ {{qty}}",
+      "summary": {
+        "label": "पसलको कुल स्टक",
+        "onHand": "कुल स्टक",
+        "reserved": "रिजर्भ स्टक",
+        "available": "उपलब्ध स्टक",
+        "value": "स्टकको मूल्य",
+        "loadError": "कुल स्टक लोड हुन सकेन।"
+      },
       "columns": {
         "item": "वस्तु",
         "sku": "SKU",
