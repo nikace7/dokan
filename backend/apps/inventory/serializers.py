@@ -73,6 +73,22 @@ class StockLevelSerializer(CostAwareSerializer):
         return image.url if image else None
 
 
+class StockSummarySerializer(serializers.Serializer):
+    """Tenant-wide current stock totals; valuation is cost-permission protected."""
+
+    total_qty_on_hand = serializers.DecimalField(max_digits=24, decimal_places=3)
+    total_qty_reserved = serializers.DecimalField(max_digits=24, decimal_places=3)
+    total_qty_available = serializers.DecimalField(max_digits=24, decimal_places=3)
+    stock_value = serializers.DecimalField(max_digits=30, decimal_places=2, required=False)
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        representation = super().to_representation(instance)
+        user = self.context.get("user")
+        if not user or not user.has_perm("pricing.view_cost"):
+            representation.pop("stock_value", None)
+        return representation
+
+
 class StockMovementSerializer(CostAwareSerializer):
     branch_code = serializers.CharField(source="branch.code", read_only=True)
     variant_sku = serializers.CharField(source="variant.sku", read_only=True)

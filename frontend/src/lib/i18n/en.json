@@ -1165,6 +1165,14 @@
       "low": "Low",
       "costAmount": "Cost {{amount}}",
       "reserved": "Reserved {{qty}}",
+      "summary": {
+        "label": "Shop stock totals",
+        "onHand": "Total stock",
+        "reserved": "Reserved stock",
+        "available": "Available stock",
+        "value": "Stock value",
+        "loadError": "Failed to load stock totals."
+      },
       "columns": {
         "item": "Item",
         "sku": "SKU",
