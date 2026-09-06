@@ -1006,6 +1006,7 @@
       "open": "खोल्नुहोस्",
       "deactivate": "निष्क्रिय गर्नुहोस्",
       "variantsCount": "{{count}} भेरियन्ट",
+      "sellingPriceRange": "बिक्री मूल्य: {{range}}",
       "pageInfo": "पृष्ठ {{page}} / {{pages}} ({{count}} वस्तु)",
       "columns": {
         "code": "कोड",
