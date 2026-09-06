@@ -47,7 +47,9 @@ function truncateLabel(label: string): string {
 }
 
 function formatQuantity(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+  return Number.isInteger(value)
+    ? String(value)
+    : value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
 function ItemAxisTick({ x = 0, y = 0, payload, rows }: AxisTickProps) {
