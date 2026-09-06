@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import type { ItemSalesRow } from '@/features/reports/api';
-import { formatNpr, formatPaisa, useMoneyDisplay } from '@/lib/money';
+import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 
 const TOP_N = 10;
 const MIN_CHART_HEIGHT = 260;
@@ -91,7 +91,7 @@ function ItemChartTooltip({ active, payload }: Partial<TooltipContentProps<numbe
         <dd className="text-right font-medium tabular-nums">{formatQuantity(row.qty)}</dd>
         <dt className="text-muted-foreground">{t('reports.itemChart.amount')}</dt>
         <dd className="text-right font-medium tabular-nums">
-          {formatNpr((row.amountPaisa / 100).toFixed(2))}
+          {formatPaisa(row.amountPaisa, { symbol: 'auto' })}
         </dd>
       </dl>
     </div>
@@ -112,7 +112,7 @@ export function ItemSalesChart({ rows }: { rows: ItemSalesRow[] }) {
     itemName: row.item_name,
     variantLabel: `${row.size} / ${row.color}`,
     qty: Number(row.qty),
-    amountPaisa: Math.round(Number(row.amount) * 100),
+    amountPaisa: toPaisa(row.amount),
   }));
 
   if (data.length === 0) {
