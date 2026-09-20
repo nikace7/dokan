@@ -53,7 +53,7 @@ evidence for every gate against the exact commit/tag being released:
 | Gate | Required evidence |
 |---|---|
 | Source integrity | Every required hosted CI job passed; generated OpenAPI/TypeScript artifacts are clean; gitleaks and high-severity dependency audits are green |
-| Review and release | Protected `main`; required approvals (two for pricing, sales services, permissions, or migrations); atomic commits merged without squash; SemVer tag created from `main` |
+| Review and release | Protected `main`; the active solo-maintainer self-review policy (or independent approvals after the documented team-mode transition); atomic commits merged without squash; SemVer tag created from `main` |
 | Identity and secrets | Unique strong production credentials, owner-only external `.env` or SOPS injection, TOTP enrolled, admin IP allowlist tested, and runtime secret-boundary policy passed |
 | Edge | Apex, tenant wildcard, and shop wildcard DNS resolve correctly; trusted HTTPS certificates renew; HTTP redirects to HTTPS; admin and tenant host isolation is smoke-tested |
 | Communications/compliance | Delivery-capable email; real SMS adapter if SMS features are enabled; live CBMS provider/certification decision recorded with the Nepal tax adviser/IRD |
@@ -246,6 +246,24 @@ text or non-allowlisted request headers leave the process.
 Node exporter, cAdvisor and Docker-socket log discovery require a Linux Docker
 host. On Windows development machines, validate the profile and run the portable
 services selectively; the supported production topology is Linux.
+
+On a resource-constrained Linux VM below the 8 GB / 4-vCPU reference size, do
+not start the complete monitoring profile beside the application. Keep
+application metrics disabled unless a private collector is present, retain the
+existing worker cap in the host override, and use external HTTPS/readiness,
+certificate-expiry, and backup-age alerts. This is an operational fallback, not
+evidence that the full monitoring launch gate has passed; move monitoring off
+the VM or resize the host before onboarding enough tenants to need continuous
+local metrics and log retention.
+
+The scheduled `.github/workflows/production-smoke.yml` job supplies the
+resource-constrained deployment's external public-edge baseline without using
+guest RAM. Every 15 minutes it verifies readiness, admin, the active production
+tenant, and both the active online-store shell and its public site/catalog APIs,
+plus at least 14 days of certificate lifetime. A failure opens or updates one
+GitHub incident issue; the first successful recovery closes it.
+This complements rather than replaces off-host database backups, application
+error reporting, and host-level capacity alerts.
 
 ## Incident recovery
 

@@ -8,6 +8,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-07
+
+### Catalog
+
+- `frontend` — catalog item cards now show the configured minimum-to-maximum
+  selling-price range, clearly labelled as SP, instead of the variants' MRP
+  range
+
+### Inventory
+
+- `inventory` — the Stock screen now calculates tenant-wide current on-hand,
+  reserved, and available quantities across all branches; users with cost
+  visibility also see the moving-average stock valuation
+
+### Reports
+
+- `frontend` — the Top Items sales chart now gives each product a readable
+  two-line label, grows with the number of bars, shows full hover details, and
+  switches interactively between quantity sold and sales amount
+
+### What shopkeepers get
+
+- Catalog cards show the usable minimum-to-maximum selling-price range at a
+  glance, so staff can quote the right price without opening each product
+- The Stock screen totals on-hand, reserved, and available stock across the
+  whole shop, with stock value shown only to staff allowed to see cost
+- The Top Items report keeps long product names readable and lets staff compare
+  either units sold or sales amount with clear hover details
+
+## [1.2.1] - 2026-09-03
+
+### Operations
+
+- `ci` — production smoke monitoring now checks the active tenant and storefront,
+  including the public store-configuration and product-catalog APIs, instead of
+  accepting a healthy placeholder SPA as ecommerce availability
+
+## [1.2.0] - 2026-09-03
+
+### Ecommerce completion
+
+- `storefront` — customers can now choose a size/colour option, keep a
+  persistent bag, verify their email with a six-digit code, place an
+  idempotent COD pickup or delivery order, review order history, and follow a
+  public tracking page. Checkout re-prices every line server-side and requires
+  the verified email identity to match the order
+- `storefront` — active orders reserve stock at the tenant's default branch so
+  concurrent checkouts cannot oversell. Placement never mutates stock; tenant
+  staff accept an order into exactly one linked HELD POS bill, where the
+  existing sale completion path posts the immutable stock ledger movement
+- `frontend` — tenant staff receive an ecommerce-gated Online orders inbox
+  with status filters, prepare/open-held-bill actions, safe cancellation, and
+  the CONFIRMED → PACKED → SHIPPED → DELIVERED lifecycle. Completed invoices
+  remain immutable and require the normal return flow
+- `security` — online payment is explicitly rejected until a verified gateway
+  is integrated; cross-customer idempotency collisions, duplicate variants,
+  unverified checkout, POS-only products, and fully reserved stock are blocked
+- `test` — the fresh-Compose Playwright suite now covers the complete public
+  store → email OTP → COD checkout → staff inbox → held POS bill journey; the
+  demo seed exposes `demo-store.shop.localhost` for local testing
+
+## [1.1.0] - 2026-09-02
+
 ### Observability and operations
 
 - `infra` — Compose now uses explicit environment allowlists instead of passing

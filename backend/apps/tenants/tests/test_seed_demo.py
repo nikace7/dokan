@@ -23,6 +23,8 @@ class TestSeedDemo:
         _seed()
         tenant = Tenant.objects.get(slug="demo")
         assert tenant.status == "ACTIVE"
+        assert tenant.shopfront_subdomain == "demo-store"
+        assert tenant.plan.features["ecommerce"] is True
         owner = User.objects.get(tenant=tenant, phone="9800000000")
         assert owner.check_password("demo1234")
         assert Item.objects.filter(tenant=tenant).count() == 3
@@ -35,7 +37,9 @@ class TestSeedDemo:
 
     def test_idempotent_rerun(self) -> None:
         _seed()
+        Tenant.objects.filter(slug="demo").update(shopfront_subdomain=None)
         _seed()  # second run must not duplicate or raise
         tenant = Tenant.objects.get(slug="demo")
+        assert tenant.shopfront_subdomain == "demo-store"
         assert Item.objects.filter(tenant=tenant).count() == 3
         assert ItemVariant.objects.filter(tenant=tenant).count() == 6

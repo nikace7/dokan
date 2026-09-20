@@ -35,8 +35,8 @@ const ITEM = {
   variants_count: 2,
   mrp_min: '1000.00',
   mrp_max: '1200.00',
-  min_selling_price: null,
-  max_selling_price: null,
+  min_selling_price: '800.00',
+  max_selling_price: '1100.00',
   reorder_level: null,
   is_active: true,
 };
@@ -97,12 +97,13 @@ describe('ItemsPage', () => {
     expect((await screen.findAllByText('T-Shirt')).length).toBeGreaterThan(0);
   });
 
-  it('shows the MRP range, variant count, and a detail link on each card', async () => {
+  it('shows the minimum-to-maximum selling-price range instead of MRP', async () => {
     renderItems();
 
     await screen.findAllByText('T-Shirt');
-    expect(screen.getByText(/1,000\.00/)).toBeInTheDocument();
-    expect(screen.getByText(/1,200\.00/)).toBeInTheDocument();
+    expect(screen.getByText('SP: रू 800.00 – रू 1,100.00')).toBeInTheDocument();
+    expect(screen.queryByText(/1,000\.00/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1,200\.00/)).not.toBeInTheDocument();
     expect(screen.getByText('2 variants')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'T-Shirt (TS)' })).toHaveAttribute(
       'href',
@@ -110,7 +111,7 @@ describe('ItemsPage', () => {
     );
   });
 
-  it('shows a single price when the variant MRPs agree', async () => {
+  it('shows one selling price when the minimum and maximum agree', async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes('/v1/catalog/categories')) {
@@ -119,7 +120,14 @@ describe('ItemsPage', () => {
       if (url.includes('/v1/catalog/items')) {
         return Promise.resolve(
           envelope(
-            [{ ...ITEM, image_url: null, mrp_min: '1500.00', mrp_max: '1500.00' }],
+            [
+              {
+                ...ITEM,
+                image_url: null,
+                min_selling_price: '1500.00',
+                max_selling_price: '1500.00',
+              },
+            ],
             PAGE_META,
           ),
         );
@@ -129,7 +137,29 @@ describe('ItemsPage', () => {
     renderItems();
 
     await screen.findAllByText('T-Shirt');
-    expect(screen.getByText('रू 1,500.00')).toBeInTheDocument();
+    expect(screen.getByText('SP: रू 1,500.00')).toBeInTheDocument();
+  });
+
+  it('labels an item whose selling-price range is not configured', async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/catalog/categories')) {
+        return Promise.resolve(envelope([], PAGE_META));
+      }
+      if (url.includes('/v1/catalog/items')) {
+        return Promise.resolve(
+          envelope(
+            [{ ...ITEM, min_selling_price: null, max_selling_price: null }],
+            PAGE_META,
+          ),
+        );
+      }
+      return Promise.reject(new Error(`Unexpected request: GET ${url}`));
+    });
+    renderItems();
+
+    await screen.findAllByText('T-Shirt');
+    expect(screen.getByText('SP: —')).toBeInTheDocument();
   });
 
   it('renders the item photo, or a placeholder tile when image_url is null', async () => {
