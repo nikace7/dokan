@@ -15,10 +15,11 @@ from typing import TYPE_CHECKING, Any
 
 from django.core.mail import send_mail
 from django.db import connection, transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 
 from apps.catalog.models import ItemVariant
 from apps.inventory.models import StockLevel
+from apps.sales.models import SalesInvoice
 from apps.storefront import selectors
 from apps.storefront.models import StoreCustomer, StoreOrder, StoreOrderItem, StoreSettings
 from apps.tenants.models import Branch
@@ -93,6 +94,7 @@ def _send_confirmation(order: StoreOrder, customer: StoreCustomer) -> None:
 def place_order(
     tenant: "Tenant",
     *,
+    customer: StoreCustomer,
     customer_fields: dict[str, str],
     fulfillment: str,
     payment_method: str,
@@ -103,26 +105,46 @@ def place_order(
 ) -> tuple[StoreOrder, bool]:
     """Place an order; replays return the original with ``created=False``.
 
-    ``customer_fields`` carries email/full_name/phone — a new email creates
-    the customer right here, fulfilling "account on first order".
+    The customer must come from a verified email-OTP token. The submitted
+    email must match that identity; checkout never creates an unverified
+    shopper account.
     """
+    # One short tenant-scoped lock serializes idempotency checks. Variant
+    # StockLevel locks below serialize reservation capacity per branch/item.
+    type(tenant).objects.select_for_update().only("pk").get(pk=tenant.pk)
     existing = StoreOrder.objects.filter(tenant=tenant, idempotency_key=idempotency_key).first()
     if existing is not None:
+        if existing.customer_id != customer.pk:
+            raise ServiceError(
+                "IDEMPOTENCY_KEY_CONFLICT",
+                "This checkout key belongs to a different order.",
+                http_status=409,
+            )
         return existing, False
+
+    if customer.tenant_id != tenant.pk:
+        raise ServiceError(
+            "CUSTOMER_MISMATCH", "This customer does not belong to this shop.", http_status=403
+        )
+
+    email = customer_fields["email"].strip().lower()
+    if email != customer.email.strip().lower():
+        raise ServiceError(
+            "CUSTOMER_MISMATCH",
+            "Checkout email must match the verified email address.",
+            http_status=403,
+        )
+    if payment_method != StoreOrder.PaymentMethod.COD:
+        raise ServiceError(
+            "ONLINE_PAYMENT_UNAVAILABLE",
+            "Online payment is not available yet. Please choose cash on delivery.",
+            http_status=409,
+        )
 
     store = selectors.get_settings(tenant)
     display_currency = selectors.display_currency(tenant, store)
     offer_live = selectors.offer_is_live(store)
 
-    email = customer_fields["email"].strip().lower()
-    customer, _ = StoreCustomer.objects.get_or_create(
-        tenant=tenant,
-        email=email,
-        defaults={
-            "full_name": customer_fields["full_name"].strip(),
-            "phone": customer_fields["phone"].strip(),
-        },
-    )
     # Keep the profile fresh from the latest order; the order itself snapshots.
     profile_updates: dict[str, Any] = {}
     new_name = customer_fields["full_name"].strip()
@@ -139,6 +161,12 @@ def place_order(
         customer.save(update_fields=[*profile_updates, "updated_at"])
 
     variant_ids = [line["variant"] for line in lines]
+    if len(variant_ids) != len(set(variant_ids)):
+        raise ServiceError(
+            "DUPLICATE_VARIANT",
+            "Each product option may appear only once in the cart.",
+            http_status=400,
+        )
     variants = {
         v.pk: v
         for v in ItemVariant.objects.filter(
@@ -157,10 +185,40 @@ def place_order(
             http_status=409,
         )
 
-    stock = dict(
-        StockLevel.objects.filter(tenant=tenant, variant_id__in=variant_ids)
-        .values_list("variant_id")
-        .annotate(on_hand=Sum("qty_on_hand"))
+    branch = Branch.objects.filter(tenant=tenant, is_default=True).first()
+    if branch is None:
+        raise ServiceError(
+            "SHOP_NOT_READY", "This store is not ready to take orders yet.", http_status=409
+        )
+
+    stock = {
+        row.variant_id: row.qty_on_hand
+        for row in StockLevel.objects.select_for_update().filter(
+            tenant=tenant,
+            branch=branch,
+            variant_id__in=variant_ids,
+        )
+    }
+    reserving_statuses = (
+        StoreOrder.Status.PLACED,
+        StoreOrder.Status.CONFIRMED,
+        StoreOrder.Status.PACKED,
+        StoreOrder.Status.SHIPPED,
+    )
+    reserved = dict(
+        StoreOrderItem.objects.filter(
+            tenant=tenant,
+            order__branch=branch,
+            order__status__in=reserving_statuses,
+            variant_id__in=variant_ids,
+        )
+        .filter(
+            Q(order__sales_invoice__isnull=True)
+            | Q(order__sales_invoice__status=SalesInvoice.Status.HELD)
+        )
+        .values("variant_id")
+        .annotate(qty=Sum("qty"))
+        .values_list("variant_id", "qty")
     )
     order_lines: list[dict[str, Any]] = []
     subtotal = Decimal("0")
@@ -168,7 +226,8 @@ def place_order(
         variant = variants[line["variant"]]
         qty = line["qty"]
         on_hand = stock.get(variant.pk) or Decimal("0")
-        if on_hand < qty:
+        available = on_hand - (reserved.get(variant.pk) or Decimal("0"))
+        if available < qty:
             raise ServiceError(
                 "OUT_OF_STOCK",
                 f"'{variant.item.name}' ({variant.size} / {variant.color}) does not have "
@@ -193,11 +252,6 @@ def place_order(
             }
         )
 
-    branch = Branch.objects.filter(tenant=tenant, is_default=True).first()
-    if branch is None:
-        raise ServiceError(
-            "SHOP_NOT_READY", "This store is not ready to take orders yet.", http_status=409
-        )
     today = date.today()
     fiscal_year = fiscal_year_bs(today)
     number = allocate_number(

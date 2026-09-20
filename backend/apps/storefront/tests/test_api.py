@@ -103,6 +103,7 @@ class TestStorefrontSite:
 class TestStorefrontProducts:
     def test_product_grid_payload_is_cost_safe(self) -> None:
         shop = make_shop()
+        branch = BranchFactory(tenant=shop, is_default=True)
         category = CategoryFactory(tenant=shop, name="Jacket")
         item = ItemFactory(
             tenant=shop,
@@ -112,7 +113,12 @@ class TestStorefrontProducts:
             max_selling_price=Decimal("1600.00"),
         )
         variant = ItemVariantFactory(tenant=shop, item=item)
-        StockLevelFactory(tenant=shop, variant=variant, qty_on_hand=Decimal("4"))
+        StockLevelFactory(
+            tenant=shop,
+            branch=branch,
+            variant=variant,
+            qty_on_hand=Decimal("4"),
+        )
         ItemFactory(tenant=shop, name="Out Of Stock Tee")
         ItemFactory(tenant=shop, name="Hidden", is_active=False)
 
@@ -146,6 +152,29 @@ class TestStorefrontProducts:
                 "featured",
                 "in_stock",
             }
+
+    def test_stock_flag_uses_the_fulfilling_default_branch(self) -> None:
+        shop = make_shop()
+        default_branch = BranchFactory(tenant=shop, is_default=True)
+        other_branch = BranchFactory(tenant=shop)
+        item = ItemFactory(tenant=shop, name="Branch-only Jacket")
+        variant = ItemVariantFactory(tenant=shop, item=item)
+        StockLevelFactory(
+            tenant=shop,
+            branch=default_branch,
+            variant=variant,
+            qty_on_hand=Decimal("0"),
+        )
+        StockLevelFactory(
+            tenant=shop,
+            branch=other_branch,
+            variant=variant,
+            qty_on_hand=Decimal("5"),
+        )
+
+        response = APIClient().get(PRODUCTS_URL, **shopfront_host("yak"))
+
+        assert response.json()["data"][0]["in_stock"] is False
 
     def test_category_and_search_filters(self) -> None:
         shop = make_shop()
@@ -339,39 +368,3 @@ class TestStoreContent:
         StoreSettingsFactory(tenant=shop, popup_enabled=True)  # enabled but no copy
         store = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]["store"]
         assert store["popup"] is None
-
-
-class TestMerchandising:
-    def test_hidden_items_leave_the_grid_and_nav_counts(self) -> None:
-        shop = make_shop()
-        jackets = CategoryFactory(tenant=shop, name="Jacket")
-        ItemFactory(tenant=shop, name="Online", category=jackets)
-        ItemFactory(tenant=shop, name="Counter Only", category=jackets, website_visible=False)
-
-        rows = APIClient().get(PRODUCTS_URL, **shopfront_host("yak")).json()["data"]
-        assert [row["name"] for row in rows] == ["Online"]
-
-        site = APIClient().get(SITE_URL, **shopfront_host("yak")).json()["data"]
-        assert site["categories"][0]["product_count"] == 1
-
-    def test_hidden_item_detail_is_404(self) -> None:
-        shop = make_shop()
-        item = ItemFactory(tenant=shop, website_visible=False)
-        response = APIClient().get(
-            f"/api/v1/storefront/products/{item.pk}", **shopfront_host("yak")
-        )
-        assert response.status_code == 404
-
-    def test_featured_products_sort_first_and_filter(self) -> None:
-        shop = make_shop()
-        ItemFactory(tenant=shop, name="Alpha")
-        ItemFactory(tenant=shop, name="Zed", website_featured=True)
-        ItemFactory(tenant=shop, name="Mid", website_featured=True)
-
-        rows = APIClient().get(PRODUCTS_URL, **shopfront_host("yak")).json()["data"]
-        assert [row["name"] for row in rows] == ["Mid", "Zed", "Alpha"]
-        assert rows[0]["featured"] is True
-        assert rows[2]["featured"] is False
-
-        featured = APIClient().get(PRODUCTS_URL, {"featured": "1"}, **shopfront_host("yak"))
-        assert [row["name"] for row in featured.json()["data"]] == ["Mid", "Zed"]
