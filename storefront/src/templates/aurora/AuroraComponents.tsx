@@ -233,18 +233,8 @@ export function AuroraQuickView({
           <span className={price.compareAt ? ACCENT : ""}>{price.text}</span>
         </p>
         <div className="mt-auto pt-8">
-          {phone ? (
-            <a
-              href={`tel:${phone}`}
-              className="block border border-[#1a1a18] py-3 text-center text-xs uppercase tracking-[0.25em] transition-colors hover:bg-[#1a1a18] hover:text-[#faf9f6]"
-            >
-              Call to order · {phone}
-            </a>
-          ) : (
-            <p className="text-center text-xs uppercase tracking-[0.25em] text-[#1a1a18]/50">
-              Visit our store to order
-            </p>
-          )}
+          <a href={`/product/${product.id}`} className="block border border-[#1a1a18] py-3 text-center text-xs uppercase tracking-[0.25em] transition-colors hover:bg-[#1a1a18] hover:text-[#faf9f6]">Choose options</a>
+          {phone ? <p className="mt-3 text-center text-xs text-[#1a1a18]/50">Questions? Call {phone}</p> : null}
         </div>
       </div>
     </div>

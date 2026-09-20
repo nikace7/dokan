@@ -158,6 +158,25 @@ cash-session guard before stock is posted. `POST /sales/hold` remains available 
 the drawer is closed, and idempotent replays return the original invoice without
 re-running the guard.
 
+Online orders reuse that same boundary instead of inventing a second inventory
+writer:
+
+```
+verified shopper checkout
+    → lock tenant + default-branch stock
+    → subtract active order reservations
+    → snapshot StoreOrder + lines (no stock movement)
+staff prepares order
+    → create/reuse ledger customer
+    → hold_bill(...) exactly once and link the HELD invoice
+staff completes held bill in POS
+    → normal sales service posts SALE movement + completed invoice
+```
+
+Cancellation releases an unposted reservation. A completed linked invoice cannot
+be cancelled; it follows the normal RETURN path. Online payment is rejected until
+a real provider adapter and callback verification are configured.
+
 ---
 
 ## 4. Module map
@@ -241,8 +260,9 @@ Decisions that follow from this:
 - Tenant and admin portals plus feature pages are route-lazy. CI rejects a
   production initial JavaScript entry above 500 KiB so feature-only code cannot
   silently return to the startup path.
-- The anonymous customer store is a separate Vite SPA under `storefront/`, with
-  its own host namespace and `aurora`/`bazaar` template registry.
+- The customer store is a separate Vite SPA under `storefront/`, with its own
+  host namespace, `aurora`/`bazaar` template registry, persistent cart,
+  email-OTP session, COD checkout, history, and tokenized tracking routes.
 
 ---
 
