@@ -959,6 +959,11 @@ is editable by the shop and read anonymously by the public storefront.
 | announcement | text | no | `''` = hidden (top strip / marquee) |
 | offer_text | text | no | e.g. `Dashain Sale` |
 | offer_discount_pct | numeric(5,2) | yes | 0 < pct ≤ 90 (service-enforced); applies to `item.website_price` only, never counter prices |
+| offer_ends_at | date | yes | offer lapses automatically after this AD date |
+| popup_enabled | boolean | no | show the offer popup once per visitor session |
+| popup_title / popup_text | text | no | popup copy |
+| popup_cta_text / popup_cta_link | text | no | optional CTA; service rejects unsafe URL schemes |
+| banners | jsonb | no | up to five shape-validated promotional cards |
 | currency | text | no | `NPR`/`INR`, default `NPR` — website price entry + display currency; when ≠ tenant currency the public range converts at the 1.6 peg for display |
 | created_at | timestamptz | no | default now() |
 | updated_at | timestamptz | no | |
@@ -966,8 +971,9 @@ is editable by the shop and read anonymously by the public storefront.
 ### 9.8 `store_customer`
 
 An online shopper, identified by email per tenant. No password — login is a
-6-digit email OTP; the row is auto-created on first OTP login or first order.
-Distinct from `user` (shop staff) and `customer` (the udharo khata).
+6-digit email OTP and the row is auto-created after successful verification.
+Distinct from `user` (shop staff) and linked on first order preparation to a
+normal `customer` row for the POS/udharo ledger.
 
 | Column | Type | Null | Notes |
 |---|---|---|---|
@@ -977,6 +983,7 @@ Distinct from `user` (shop staff) and `customer` (the udharo khata).
 | full_name | text | no | refreshed from the latest order |
 | phone | text | no | |
 | default_address | jsonb | yes | last delivery address — pre-fills the next checkout |
+| ledger_customer_id | uuid FK → customer | yes | canonical tenant customer created/reused when staff prepare the first order |
 
 ### 9.9 `store_otp`
 
@@ -997,9 +1004,10 @@ Index: `(tenant_id, email, created_at)`.
 
 ### 9.10 `store_order` / 9.11 `store_order_item`
 
-An online order. Placement validates stock but never decrements it — the
-shop confirms in the POS, which posts the SALE through the existing
-pipeline (invariant 1). Numbering is the gapless per-branch series
+An online order. Placement validates and reserves default-branch stock but
+never decrements it. Preparing creates exactly one linked HELD POS bill;
+completing that bill posts the SALE through the existing pipeline (invariant
+1), while cancellation releases the reservation. Numbering is the gapless per-branch series
 (`doc_type = STORE_ORDER`, prefix `ORD`). Customer-facing payload fields are
 snapshotted at placement (address, prices, item names) so later catalog or
 profile edits never rewrite order history.
@@ -1012,8 +1020,15 @@ branch), `customer_id` FK → store_customer, `order_number` + `number_text`
 (`PENDING,PAID,REFUNDED`), `address` jsonb (delivery snapshot incl. lat/lng,
 NULL for pickup), `currency`, `subtotal`/`total`, `offer_text` (snapshot),
 `tracking_token` uuid UNIQUE (public tracking link), `idempotency_key`
-(UNIQUE when set — mandatory at checkout), plus the standard BS
+(UNIQUE when set — mandatory at checkout), `sales_invoice_id` (nullable,
+UNIQUE FK → the HELD/COMPLETED POS bill), plus the standard BS
 denormalization (`business_date_ad`, `business_date_bs`, `fiscal_year_bs`).
+
+Checkout requires a valid tenant-bound customer token and a matching email,
+rejects duplicate variants and unavailable stock, and accepts `COD` only until
+a real online gateway is configured. Fulfillment follows `PLACED → CONFIRMED
+→ PACKED → SHIPPED → DELIVERED`; delivery requires a completed linked sale.
+Completed bills are never cancelled—staff use the existing return flow.
 
 `store_order_item`: `order_id` FK CASCADE, `variant_id` FK PROTECT,
 `name`/`size`/`color` snapshots, `unit_price` (discounted website price or
