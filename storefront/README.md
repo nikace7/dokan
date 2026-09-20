@@ -1,13 +1,15 @@
 # Storefront — public online shop
 
-The customer-facing, anonymous, read-only storefront for Dokan tenants. A
-shop's customers browse products by category/search, view prices and stock,
-and call the store to order. No login, no cart (yet).
+The customer-facing ecommerce storefront for Dokan tenants. Shoppers browse
+and search the catalog, choose a size/colour option, keep a persistent cart,
+verify their email with a one-time code, place a COD pickup or delivery order,
+and return to order history or a tokenized tracking page.
 
 - Stack: Vite 6 · React 18 · TypeScript (strict) · Tailwind CSS 3 · Vitest.
-- Data: same-origin fetches of `GET /api/v1/storefront/site` and
-  `GET /api/v1/storefront/products` (envelope `{ data, meta, error }`).
-  Product images come from same-origin `/media/...` paths.
+- Data: same-origin storefront APIs for site/catalog, product detail, OTP
+  authentication, idempotent order placement, customer history, and public
+  token tracking (envelope `{ data, meta, error }`). Product images come from
+  same-origin `/media/...` paths.
 - Tenant-controlled content: the site payload's `store` block carries the
   shop's own hero title/subtitle, announcement, and offer (text + discount
   %). Products carry `website_price` (single online price, already
@@ -38,13 +40,20 @@ export const TEMPLATES: Record<string, ComponentType<TemplateProps>> = {
 export const DEFAULT_TEMPLATE = 'aurora';
 ```
 
-`src/App.tsx` fetches the site info, then renders
+`src/App.tsx` fetches the site info, then routes the catalog through
 `TEMPLATES[site.template] ?? TEMPLATES[DEFAULT_TEMPLATE]` (unknown keys fall
-back to aurora). Each template owns its entire page: header, hero, category
+back to aurora). Commerce routes (`/product/:id`, `/cart`, `/checkout`,
+`/orders`, `/order/:token`) share `CommerceProvider`; only customer tokens and
+cart contents persist in browser storage. Each template owns its catalog page: header, hero, category
 chips, debounced search, product grid with "Load more", quick-view modal,
 and footer. Shared, look-agnostic pieces (API client, money formatting,
 `useProducts`, `useDebouncedValue`, `useRevealOnScroll`, `QuickViewModal`,
 `ProductImage`) live in `src/lib/` and `src/components/`.
+
+Checkout supports COD only. The API rejects `ONLINE` until a verified gateway
+is connected; the UI does not advertise or simulate an unavailable payment.
+Stock is reserved by active online orders and is posted to the immutable stock
+ledger only when staff complete the linked POS bill.
 
 ## Adding a new template
 

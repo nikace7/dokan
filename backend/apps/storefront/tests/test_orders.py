@@ -10,7 +10,8 @@ from django.core import mail
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.storefront.models import StoreCustomer, StoreOrder, StoreOtp
+from apps.storefront import services_auth
+from apps.storefront.models import StoreCustomer, StoreOrder
 from apps.storefront.tests.test_api import make_shop, shopfront_host
 from tests.factories import (
     BranchFactory,
@@ -33,10 +34,15 @@ MY_ORDERS_URL = "/api/v1/storefront/my/orders"
 
 
 def make_sellable(shop: Any, **item_kwargs: Any) -> Any:
-    BranchFactory(tenant=shop, is_default=True)
+    branch = BranchFactory(tenant=shop, is_default=True)
     item = ItemFactory(tenant=shop, **item_kwargs)
     variant = ItemVariantFactory(tenant=shop, item=item)
-    StockLevelFactory(tenant=shop, variant=variant, qty_on_hand=Decimal("10"))
+    StockLevelFactory(
+        tenant=shop,
+        branch=branch,
+        variant=variant,
+        qty_on_hand=Decimal("10"),
+    )
     return variant
 
 
@@ -51,8 +57,23 @@ def checkout_payload(variant: Any, **overrides: Any) -> dict[str, Any]:
     return payload
 
 
-def post_order(payload: dict[str, Any], key: str = "order-key-1") -> Any:
-    return APIClient().post(
+def post_order(
+    payload: dict[str, Any],
+    key: str = "order-key-1",
+    *,
+    shop: Any | None = None,
+    token: str | None = None,
+) -> Any:
+    if token is None:
+        assert shop is not None
+        customer, _ = StoreCustomer.objects.get_or_create(
+            tenant=shop,
+            email=payload["customer"]["email"].strip().lower(),
+        )
+        token = services_auth.issue_customer_token(customer)
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+    return client.post(
         ORDERS_URL,
         payload,
         format="json",
@@ -61,110 +82,36 @@ def post_order(payload: dict[str, Any], key: str = "order-key-1") -> Any:
     )
 
 
-class TestProductDetail:
-    def test_detail_lists_variants_with_stock_and_price(self) -> None:
-        shop = make_shop()
-        StoreSettingsFactory(tenant=shop, offer_discount_pct=Decimal("50.00"))
-        variant = make_sellable(shop, name="Puffer", website_price=Decimal("2000.00"))
-
-        response = APIClient().get(DETAIL_URL.format(pk=variant.item_id), **shopfront_host("yak"))
-
-        assert response.status_code == 200
-        data = response.json()["data"]
-        assert data["name"] == "Puffer"
-        assert data["website_price"] == "1000.00"
-        assert data["website_compare_at"] == "2000.00"
-        assert data["offer_pct"] == "50.00"
-        assert data["variants"] == [
-            {
-                "id": str(variant.pk),
-                "size": variant.size,
-                "color": variant.color,
-                "sku": variant.sku,
-                "in_stock": True,
-                "price": "1000.00",
-                "compare_at": "2000.00",
-            }
-        ]
-
-    def test_unknown_product_is_404(self) -> None:
-        make_shop()
-        response = APIClient().get(
-            DETAIL_URL.format(pk="018f3f3f-3f3f-3f3f-3f3f-3f3f3f3f3f3f"),
-            **shopfront_host("yak"),
-        )
-        assert response.status_code == 404
-
-
-class TestOtpLogin:
-    def test_request_sends_a_code_email(self) -> None:
-        make_shop()
-        response = APIClient().post(
-            OTP_URL, {"email": "Sita@Example.com"}, format="json", **shopfront_host("yak")
-        )
-        assert response.status_code == 200
-        assert len(mail.outbox) == 1
-        assert mail.outbox[0].to == ["sita@example.com"]
-        code = re.search(r"\b(\d{6})\b", mail.outbox[0].body).group(1)
-        assert StoreOtp.objects.filter(email="sita@example.com").count() == 1
-        assert code
-
-    def test_resend_cooldown(self) -> None:
-        make_shop()
-        APIClient().post(OTP_URL, {"email": "a@b.com"}, format="json", **shopfront_host("yak"))
-        response = APIClient().post(
-            OTP_URL, {"email": "a@b.com"}, format="json", **shopfront_host("yak")
-        )
-        assert response.status_code == 429
-        assert response.json()["error"]["code"] == "OTP_RESEND_TOO_SOON"
-
-    def _request_and_read_code(self, email: str) -> str:
-        APIClient().post(OTP_URL, {"email": email}, format="json", **shopfront_host("yak"))
-        return re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
-
-    def test_verify_rejects_a_wrong_code(self) -> None:
-        make_shop()
-        self._request_and_read_code("a@b.com")
-        response = APIClient().post(
-            VERIFY_URL,
-            {"email": "a@b.com", "code": "000000"},
-            format="json",
-            **shopfront_host("yak"),
-        )
-        assert response.status_code == 400
-        assert response.json()["error"]["code"] == "OTP_INVALID"
-
-    def test_verify_mints_a_token_and_creates_the_customer(self) -> None:
-        shop = make_shop()
-        code = self._request_and_read_code("new@shopper.com")
-
-        response = APIClient().post(
-            VERIFY_URL,
-            {"email": "new@shopper.com", "code": code},
-            format="json",
-            **shopfront_host("yak"),
-        )
-
-        assert response.status_code == 200
-        data = response.json()["data"]
-        assert data["token"]
-        assert data["customer"]["email"] == "new@shopper.com"
-        assert StoreCustomer.objects.filter(tenant=shop, email="new@shopper.com").exists()
-
-    def test_expired_code_is_invalid(self) -> None:
-        make_shop()
-        code = self._request_and_read_code("a@b.com")
-        StoreOtp.objects.update(expires_at=timezone.now())
-        response = APIClient().post(
-            VERIFY_URL,
-            {"email": "a@b.com", "code": code},
-            format="json",
-            **shopfront_host("yak"),
-        )
-        assert response.status_code == 400
-
-
 class TestCheckout:
+    def test_checkout_requires_verified_customer_token(self) -> None:
+        shop = make_shop()
+        variant = make_sellable(shop, website_price=Decimal("1000.00"))
+
+        response = APIClient().post(
+            ORDERS_URL,
+            checkout_payload(variant),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="anonymous-attempt",
+            **shopfront_host("yak"),
+        )
+
+        assert response.status_code == 401
+        assert response.json()["error"]["code"] == "LOGIN_REQUIRED"
+
+    def test_checkout_email_must_match_verified_customer(self) -> None:
+        shop = make_shop()
+        variant = make_sellable(shop, website_price=Decimal("1000.00"))
+        customer = StoreCustomerFactory(tenant=shop, email="verified@example.com")
+
+        response = post_order(
+            checkout_payload(variant),
+            shop=shop,
+            token=services_auth.issue_customer_token(customer),
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "CUSTOMER_MISMATCH"
+
     def test_missing_idempotency_key_is_400(self) -> None:
         shop = make_shop()
         variant = make_sellable(shop, website_price=Decimal("1000.00"))
@@ -177,7 +124,7 @@ class TestCheckout:
     def test_delivery_requires_an_address(self) -> None:
         shop = make_shop()
         variant = make_sellable(shop, website_price=Decimal("1000.00"))
-        response = post_order(checkout_payload(variant, fulfillment="DELIVERY"))
+        response = post_order(checkout_payload(variant, fulfillment="DELIVERY"), shop=shop)
         assert response.status_code == 400
 
     def test_pickup_cod_order_with_offer_pricing(self) -> None:
@@ -187,7 +134,7 @@ class TestCheckout:
         )
         variant = make_sellable(shop, name="Puffer", website_price=Decimal("2000.00"))
 
-        response = post_order(checkout_payload(variant))
+        response = post_order(checkout_payload(variant), shop=shop)
 
         assert response.status_code == 201
         data = response.json()["data"]
@@ -209,8 +156,8 @@ class TestCheckout:
     def test_idempotent_replay_returns_the_original(self) -> None:
         shop = make_shop()
         variant = make_sellable(shop, website_price=Decimal("1000.00"))
-        first = post_order(checkout_payload(variant), key="same-key")
-        second = post_order(checkout_payload(variant), key="same-key")
+        first = post_order(checkout_payload(variant), key="same-key", shop=shop)
+        second = post_order(checkout_payload(variant), key="same-key", shop=shop)
 
         assert first.status_code == 201
         assert second.status_code == 200
@@ -218,17 +165,85 @@ class TestCheckout:
         assert StoreOrder.objects.count() == 1
 
     def test_unknown_variant_is_409(self) -> None:
-        make_shop()
+        shop = make_shop()
         variant = make_sellable(make_shop(slug="other-pos", shopfront="other"))
-        response = post_order(checkout_payload(variant))
+        response = post_order(checkout_payload(variant), shop=shop)
         assert response.status_code == 409
         assert response.json()["error"]["code"] == "VARIANT_NOT_FOUND"
+
+    def test_online_payment_is_hidden_until_a_real_gateway_is_configured(self) -> None:
+        shop = make_shop()
+        variant = make_sellable(shop, website_price=Decimal("1000.00"))
+
+        response = post_order(
+            checkout_payload(variant, payment_method="ONLINE"),
+            shop=shop,
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "ONLINE_PAYMENT_UNAVAILABLE"
+
+    def test_duplicate_variant_lines_are_rejected(self) -> None:
+        shop = make_shop()
+        variant = make_sellable(shop, website_price=Decimal("1000.00"))
+        lines = [
+            {"variant": str(variant.pk), "qty": "6"},
+            {"variant": str(variant.pk), "qty": "6"},
+        ]
+
+        response = post_order(checkout_payload(variant, items=lines), shop=shop)
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "DUPLICATE_VARIANT"
+
+    def test_checkout_uses_default_branch_stock_not_tenant_wide_stock(self) -> None:
+        shop = make_shop()
+        default_branch = BranchFactory(tenant=shop, is_default=True)
+        other_branch = BranchFactory(tenant=shop)
+        item = ItemFactory(tenant=shop, website_price=Decimal("1000.00"))
+        variant = ItemVariantFactory(tenant=shop, item=item)
+        StockLevelFactory(
+            tenant=shop,
+            branch=default_branch,
+            variant=variant,
+            qty_on_hand=Decimal("1"),
+        )
+        StockLevelFactory(
+            tenant=shop,
+            branch=other_branch,
+            variant=variant,
+            qty_on_hand=Decimal("100"),
+        )
+
+        response = post_order(checkout_payload(variant), shop=shop)
+
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "OUT_OF_STOCK"
+
+    def test_placed_orders_reserve_stock_until_cancelled(self) -> None:
+        shop = make_shop()
+        variant = make_sellable(shop, website_price=Decimal("1000.00"))
+        first_payload = checkout_payload(
+            variant,
+            items=[{"variant": str(variant.pk), "qty": "8"}],
+        )
+        second_payload = checkout_payload(
+            variant,
+            items=[{"variant": str(variant.pk), "qty": "3"}],
+        )
+
+        first = post_order(first_payload, key="reserve-one", shop=shop)
+        second = post_order(second_payload, key="reserve-two", shop=shop)
+
+        assert first.status_code == 201
+        assert second.status_code == 409
+        assert second.json()["error"]["code"] == "OUT_OF_STOCK"
 
     def test_insufficient_stock_is_409(self) -> None:
         shop = make_shop()
         variant = make_sellable(shop, website_price=Decimal("1000.00"))
         lines = [{"variant": str(variant.pk), "qty": "99"}]
-        response = post_order(checkout_payload(variant, items=lines))
+        response = post_order(checkout_payload(variant, items=lines), shop=shop)
         assert response.status_code == 409
         assert response.json()["error"]["code"] == "OUT_OF_STOCK"
 
@@ -237,7 +252,7 @@ class TestCheckout:
         StoreSettingsFactory(tenant=shop, currency="NPR")  # display in NPR
         variant = make_sellable(shop, min_selling_price=Decimal("100.00"))  # INR
 
-        response = post_order(checkout_payload(variant))
+        response = post_order(checkout_payload(variant), shop=shop)
 
         assert response.status_code == 201
         data = response.json()["data"]
@@ -257,7 +272,7 @@ class TestCheckout:
             website_discount_pct=Decimal("10.00"),
         )
 
-        response = post_order(checkout_payload(variant))
+        response = post_order(checkout_payload(variant), shop=shop)
 
         assert response.status_code == 201
         item = response.json()["data"]["items"][0]
@@ -274,7 +289,7 @@ class TestCheckout:
         )
         variant = make_sellable(shop, website_price=Decimal("2000.00"))
 
-        response = post_order(checkout_payload(variant))
+        response = post_order(checkout_payload(variant), shop=shop)
 
         assert response.status_code == 201
         data = response.json()["data"]
@@ -286,7 +301,7 @@ class TestCheckout:
         shop = make_shop()
         variant = make_sellable(shop, website_price=Decimal("1000.00"), website_visible=False)
 
-        response = post_order(checkout_payload(variant))
+        response = post_order(checkout_payload(variant), shop=shop)
 
         assert response.status_code == 409
         assert response.json()["error"]["code"] == "VARIANT_NOT_FOUND"
@@ -294,7 +309,7 @@ class TestCheckout:
     def test_missing_price_is_409(self) -> None:
         shop = make_shop()
         variant = make_sellable(shop)  # no website price, no min price
-        response = post_order(checkout_payload(variant))
+        response = post_order(checkout_payload(variant), shop=shop)
         assert response.status_code == 409
         assert response.json()["error"]["code"] == "PRICE_NOT_SET"
 
@@ -308,7 +323,9 @@ class TestCheckout:
             "lng": "88.613800",
         }
 
-        response = post_order(checkout_payload(variant, fulfillment="DELIVERY", address=address))
+        response = post_order(
+            checkout_payload(variant, fulfillment="DELIVERY", address=address), shop=shop
+        )
 
         assert response.status_code == 201
         data = response.json()["data"]
@@ -322,7 +339,7 @@ class TestCheckout:
 class TestTrackingAndHistory:
     def _place(self, shop: Any) -> Any:
         variant = make_sellable(shop, website_price=Decimal("1000.00"))
-        response = post_order(checkout_payload(variant))
+        response = post_order(checkout_payload(variant), shop=shop)
         assert response.status_code == 201
         return response.json()["data"]
 

@@ -68,9 +68,10 @@ class StoreSettings(TenantScopedModel):
 
 class StoreCustomer(TenantScopedModel):
     """An online shopper, identified by email. Rows are auto-created on first
-    OTP login or first order — there is no registration form and no password.
+    OTP login — there is no registration form and no password.
     Separate from ``accounts.User`` (shop staff) and ``customers.Customer``
-    (the udharo khata), though a person may appear in all three."""
+    (the udharo khata). The optional link is created when staff prepares the
+    shopper's first order as a POS bill."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField()
@@ -78,6 +79,13 @@ class StoreCustomer(TenantScopedModel):
     phone = models.TextField(blank=True, default="")
     #: Last delivery address, so the next checkout comes pre-filled.
     default_address = models.JSONField(null=True, blank=True)
+    ledger_customer = models.ForeignKey(
+        "customers.Customer",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = "store_customer"
@@ -139,6 +147,13 @@ class StoreOrder(TenantScopedModel):
         "tenants.Branch", on_delete=models.PROTECT, related_name="+"
     )  # fulfilling branch — the default branch at checkout
     customer = models.ForeignKey(StoreCustomer, on_delete=models.PROTECT, related_name="orders")
+    sales_invoice = models.OneToOneField(
+        "sales.SalesInvoice",
+        on_delete=models.PROTECT,
+        related_name="store_order",
+        null=True,
+        blank=True,
+    )
     order_number = models.IntegerField()
     number_text = models.TextField()
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PLACED)

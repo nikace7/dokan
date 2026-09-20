@@ -14,15 +14,15 @@ interface ItemCardProps {
 
 /**
  * Storefront-style catalog card: square photo with a hover zoom, name, code ·
- * category, the active-variant MRP range, and a variant count. The whole card
+ * category, the configured selling-price range, and a variant count. The whole card
  * links to the item detail; management actions (edit/deactivate) live there.
  */
 export function ItemCard({ item, categoryName }: ItemCardProps) {
   const { t } = useTranslation();
   useMoneyDisplay();
 
-  const min = item.mrp_min ?? null;
-  const max = item.mrp_max ?? null;
+  const min = item.min_selling_price;
+  const max = item.max_selling_price;
   const priceLabel =
     min !== null && max !== null
       ? min === max
@@ -57,7 +57,9 @@ export function ItemCard({ item, categoryName }: ItemCardProps) {
           {item.code}
           {categoryName ? ` · ${categoryName}` : ''}
         </p>
-        <p className="mt-1 text-sm font-semibold tabular-nums">{priceLabel}</p>
+        <p className="mt-1 text-sm font-semibold tabular-nums">
+          {t('catalog.items.sellingPriceRange', { range: priceLabel })}
+        </p>
         <p className="text-xs text-muted-foreground">
           {t('catalog.items.variantsCount', { count: item.variants_count ?? 0 })}
         </p>
