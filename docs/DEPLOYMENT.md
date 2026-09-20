@@ -256,6 +256,15 @@ evidence that the full monitoring launch gate has passed; move monitoring off
 the VM or resize the host before onboarding enough tenants to need continuous
 local metrics and log retention.
 
+The scheduled `.github/workflows/production-smoke.yml` job supplies the
+resource-constrained deployment's external public-edge baseline without using
+guest RAM. Every 15 minutes it verifies readiness, admin, the active production
+tenant, and both the active online-store shell and its public site/catalog APIs,
+plus at least 14 days of certificate lifetime. A failure opens or updates one
+GitHub incident issue; the first successful recovery closes it.
+This complements rather than replaces off-host database backups, application
+error reporting, and host-level capacity alerts.
+
 ## Incident recovery
 
 Preserve the failed host and remote backups before changing anything. Decide
