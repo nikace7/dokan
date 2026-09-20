@@ -3798,6 +3798,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/inventory/summary:
+    get:
+      operationId: inventory_stock_summary_view_get
+      description: GET /inventory/summary — current totals across all tenant branches.
+      tags:
+      - v1
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StockSummary'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/inventory/transfers:
     get:
       operationId: inventory_transfer_list_view_get
@@ -12327,6 +12356,31 @@ components:
       - type
       - variant
       - variant_sku
+    StockSummary:
+      type: object
+      description: Tenant-wide current stock totals; valuation is cost-permission
+        protected.
+      properties:
+        total_qty_on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,21}(?:\.\d{0,3})?$
+        total_qty_reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,21}(?:\.\d{0,3})?$
+        total_qty_available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,21}(?:\.\d{0,3})?$
+        stock_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,28}(?:\.\d{0,2})?$
+      required:
+      - total_qty_available
+      - total_qty_on_hand
+      - total_qty_reserved
     StockTransfer:
       type: object
       description: |-

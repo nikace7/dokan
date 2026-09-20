@@ -985,6 +985,12 @@
     },
     "itemChart": {
       "aria": "Top selling items by quantity",
+      "ariaAmount": "Top selling items by sales amount",
+      "title": "Top 10 products",
+      "hint": "Compare quantity or sales amount. Hover or focus a bar for full details.",
+      "metricAria": "Chart metric",
+      "quantity": "Quantity sold",
+      "salesAmount": "Sales amount",
       "qtySold": "Qty sold",
       "amount": "Amount"
     }
@@ -1006,6 +1012,7 @@
       "open": "Open",
       "deactivate": "Deactivate",
       "variantsCount": "{{count}} variants",
+      "sellingPriceRange": "SP: {{range}}",
       "pageInfo": "Page {{page}} of {{pages}} ({{count}} items)",
       "columns": {
         "code": "Code",
@@ -1165,6 +1172,14 @@
       "low": "Low",
       "costAmount": "Cost {{amount}}",
       "reserved": "Reserved {{qty}}",
+      "summary": {
+        "label": "Shop stock totals",
+        "onHand": "Total stock",
+        "reserved": "Reserved stock",
+        "available": "Available stock",
+        "value": "Stock value",
+        "loadError": "Failed to load stock totals."
+      },
       "columns": {
         "item": "Item",
         "sku": "SKU",
