@@ -30,9 +30,9 @@ dev = [
     "pytest-cov>=5.0",
     "factory-boy>=3.3",
     "ruff>=0.16,<0.17",
-    "mypy>=2.1,<2.2",
+    "mypy>=2.1,<2.4",
     "django-stubs[compatible-mypy]>=6.0,<6.1",
-    "djangorestframework-stubs[compatible-mypy]>=3.17,<3.18",
+    "djangorestframework-stubs[compatible-mypy]>=3.17,<3.19",
     "types-openpyxl>=3.1,<4",
 ]
 

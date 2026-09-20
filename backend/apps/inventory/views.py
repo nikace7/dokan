@@ -21,6 +21,7 @@ from apps.inventory.serializers import (
     OpeningStockSerializer,
     StockLevelSerializer,
     StockMovementSerializer,
+    StockSummarySerializer,
     WriteOffSerializer,
 )
 from apps.tenants.models import Branch
@@ -115,6 +116,20 @@ class LevelListView(_InventoryAPIView):
             search=request.query_params.get("search", ""),
         )
         return self._paginated(request, qs, StockLevelSerializer)
+
+
+class StockSummaryView(_InventoryAPIView):
+    """GET /inventory/summary — current totals across all tenant branches."""
+
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "GET": operation(response=StockSummarySerializer),
+    }
+
+    def get(self, request: Request) -> Response:
+        tenant = require_request_tenant(request)
+        totals = selectors.stock_totals(tenant, _user(request))
+        serializer = StockSummarySerializer(totals, context=self._context(request))
+        return ok(serializer.data)
 
 
 class MovementListView(_InventoryAPIView):

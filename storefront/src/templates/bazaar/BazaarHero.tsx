@@ -138,7 +138,7 @@ export function BazaarHero({
       </section>
 
       {/* Brass marquee — slow, quiet, aria-hidden with an sr-only equivalent. */}
-      <div className="border-y border-[#c9a84c]/25 bg-[#17241f] py-3 text-[#e6d3a3]">
+      <div className="overflow-hidden border-y border-[#c9a84c]/25 bg-[#17241f] py-3 text-[#e6d3a3]">
         <div
           className="flex w-max whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.35em] motion-safe:animate-[bazaar-marquee_36s_linear_infinite]"
           aria-hidden="true"
