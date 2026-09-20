@@ -29,6 +29,14 @@ export interface StockLevel {
   updated_at: string;
 }
 
+export interface StockSummary {
+  total_qty_on_hand: string;
+  total_qty_reserved: string;
+  total_qty_available: string;
+  /** Only present for users with `pricing.view_cost`. */
+  stock_value?: string;
+}
+
 export interface OpeningStockPayload {
   branch: string;
   variant: string;
@@ -153,6 +161,11 @@ export function listLevels(filters: LevelListFilters = {}): Promise<Page<StockLe
   }
   params.set('limit', '50');
   return authedRequestPage<StockLevel>(`/v1/inventory/levels?${params}`);
+}
+
+/** Tenant-wide current stock totals across every branch. */
+export function getStockSummary(): Promise<StockSummary> {
+  return authedRequest<StockSummary>('/v1/inventory/summary');
 }
 
 /** Read the immutable movement ledger, newest first. */
