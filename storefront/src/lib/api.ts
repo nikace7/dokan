@@ -1,5 +1,5 @@
 /**
- * Storefront API client — same-origin, anonymous, read-only.
+ * Storefront API client — same-origin public catalog plus shopper commerce.
  *
  * Every endpoint answers the Dokan envelope:
  *   success: { data: T, meta?: {...}, error: null }
@@ -79,6 +79,85 @@ export interface Product {
   in_stock: boolean;
 }
 
+export interface ProductVariant {
+  id: string;
+  size: string;
+  color: string;
+  sku: string;
+  in_stock: boolean;
+  price: string | null;
+  compare_at: string | null;
+}
+
+export interface ProductDetail {
+  id: string;
+  code: string;
+  name: string;
+  name_np: string | null;
+  image: string | null;
+  category: string | null;
+  brand: string | null;
+  website_price: string | null;
+  website_compare_at: string | null;
+  offer_pct: string | null;
+  variants: ProductVariant[];
+}
+
+export interface ShopperProfile {
+  email: string;
+  full_name: string;
+  phone: string;
+}
+
+export interface ShopperSession {
+  token: string;
+  customer: ShopperProfile;
+}
+
+export interface CheckoutPayload {
+  customer: ShopperProfile;
+  fulfillment: 'DELIVERY' | 'PICKUP';
+  payment_method: 'COD';
+  address: {
+    line1: string;
+    city: string;
+    area: string;
+    landmark: string;
+    note: string;
+  } | null;
+  note: string;
+  items: Array<{ variant: string; qty: string }>;
+}
+
+export interface StoreOrderItem {
+  name: string;
+  size: string;
+  color: string;
+  unit_price: string;
+  compare_at: string | null;
+  qty: string;
+  line_total: string;
+}
+
+export interface StoreOrder {
+  number_text: string;
+  status: 'PLACED' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  fulfillment: 'DELIVERY' | 'PICKUP';
+  payment_method: 'COD';
+  payment_status: 'PENDING' | 'PAID' | 'REFUNDED';
+  address: CheckoutPayload['address'];
+  note: string;
+  currency: 'NPR' | 'INR';
+  subtotal: string;
+  total: string;
+  offer_text: string;
+  tracking_token: string;
+  business_date_ad: string;
+  business_date_bs: string;
+  created_at: string;
+  items: StoreOrderItem[];
+}
+
 export interface PageMeta {
   count: number;
   page: number;
@@ -112,8 +191,13 @@ function isEnvelope(value: unknown): value is { data: unknown; error: ErrorBody 
   return typeof value === 'object' && value !== null && ('data' in value || 'error' in value);
 }
 
-async function request<T>(path: string): Promise<T> {
-  const response = await fetch(path, { headers: { Accept: 'application/json' } });
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+    ...((init.headers ?? {}) as Record<string, string>),
+  };
+  const response = await fetch(path, { ...init, headers });
   const parsed: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -137,6 +221,51 @@ async function request<T>(path: string): Promise<T> {
 
 export function getSite(): Promise<SiteInfo> {
   return request<SiteInfo>('/api/v1/storefront/site');
+}
+
+export function getProduct(id: string): Promise<ProductDetail> {
+  return request<ProductDetail>(`/api/v1/storefront/products/${encodeURIComponent(id)}`);
+}
+
+export function requestOtp(email: string): Promise<{ sent: boolean }> {
+  return request<{ sent: boolean }>('/api/v1/storefront/auth/otp', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function verifyOtp(email: string, code: string): Promise<ShopperSession> {
+  return request<ShopperSession>('/api/v1/storefront/auth/verify', {
+    method: 'POST',
+    body: JSON.stringify({ email, code }),
+  });
+}
+
+export function placeOrder(
+  payload: CheckoutPayload,
+  token: string,
+  idempotencyKey: string,
+): Promise<StoreOrder> {
+  return request<StoreOrder>('/api/v1/storefront/orders', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Idempotency-Key': idempotencyKey,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getOrder(trackingToken: string): Promise<StoreOrder> {
+  return request<StoreOrder>(
+    `/api/v1/storefront/orders/${encodeURIComponent(trackingToken)}`,
+  );
+}
+
+export function getMyOrders(token: string): Promise<StoreOrder[]> {
+  return request<StoreOrder[]>('/api/v1/storefront/my/orders', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 export async function getProducts(params: {

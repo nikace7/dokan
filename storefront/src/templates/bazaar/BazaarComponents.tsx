@@ -256,18 +256,8 @@ export function BazaarQuickView({
           </span>
         </p>
         <div className="mt-auto pt-7">
-          {phone ? (
-            <a
-              href={`tel:${phone}`}
-              className="block rounded-full bg-[#17241f] py-3.5 text-center text-xs font-semibold uppercase tracking-[0.25em] text-[#f7f3eb] transition-colors hover:bg-[#24382f]"
-            >
-              Call to order · {phone}
-            </a>
-          ) : (
-            <p className="text-center text-xs uppercase tracking-[0.25em] text-[#17241f]/50">
-              Visit our store to order
-            </p>
-          )}
+          <a href={`/product/${product.id}`} className="block rounded-full bg-[#17241f] py-3.5 text-center text-xs font-semibold uppercase tracking-[0.25em] text-[#f7f3eb] transition-colors hover:bg-[#24382f]">Choose options</a>
+          {phone ? <p className="mt-3 text-center text-xs text-[#17241f]/50">Questions? Call {phone}</p> : null}
         </div>
       </div>
     </div>

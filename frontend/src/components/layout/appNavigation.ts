@@ -9,6 +9,7 @@ import {
   Repeat,
   ScanLine,
   ScrollText,
+  ShoppingBag,
   ShieldCheck,
   Settings,
   Tag,
@@ -48,6 +49,13 @@ const REPORT_VIEW_CODES: PermissionCodename[] = [
 const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'dashboard', icon: LayoutDashboard, end: true },
   { to: '/billing', labelKey: 'billing', icon: ScanLine, anyOf: ['sale.create'] },
+  {
+    to: '/online-orders',
+    labelKey: 'onlineOrders',
+    icon: ShoppingBag,
+    anyOf: ['sale.view'],
+    feature: 'ecommerce',
+  },
   { to: '/catalog', labelKey: 'catalog', icon: Package, anyOf: ['catalog.view'] },
   { to: '/pricing', labelKey: 'pricing', icon: Tag, anyOf: ['pricing.view'] },
   { to: '/customers', labelKey: 'customers', icon: Users, anyOf: ['customer.view'] },
@@ -87,6 +95,7 @@ type NavSectionKey = (typeof NAV_SECTION_ORDER)[number];
 export const NAV_SECTION_BY_PATH: Record<string, NavSectionKey> = {
   '/billing': 'sales',
   '/billing/simple': 'sales',
+  '/online-orders': 'sales',
   '/payments': 'sales',
   '/ledgers': 'sales',
   '/returns': 'sales',
