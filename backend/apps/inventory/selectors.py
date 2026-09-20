@@ -21,10 +21,50 @@ from apps.inventory.models import (
     StockTransfer,
     StockTransferItem,
 )
+from core.money import quantize_money
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
     from apps.tenants.models import Tenant
+
+
+def stock_totals(tenant: "Tenant", user: "User") -> dict[str, Decimal]:
+    """Tenant-wide current quantity totals and permission-safe valuation.
+
+    Totals come from the current ``StockLevel`` projection, rather than from
+    historical OPENING movements, so sales, purchases, returns, write-offs,
+    counts, and transfers are all reflected. ``avg_cost`` is not referenced in
+    the query at all unless the user may view cost.
+    """
+    quantity_field = models.DecimalField(max_digits=24, decimal_places=3)
+    aggregates: dict[str, Any] = {
+        "total_qty_on_hand": Sum("qty_on_hand", default=Decimal("0"), output_field=quantity_field),
+        "total_qty_reserved": Sum(
+            "qty_reserved", default=Decimal("0"), output_field=quantity_field
+        ),
+    }
+    can_view_cost = user.has_perm("pricing.view_cost")
+    if can_view_cost:
+        valuation_field = models.DecimalField(max_digits=30, decimal_places=5)
+        aggregates["stock_value"] = Sum(
+            models.ExpressionWrapper(
+                F("qty_on_hand") * F("avg_cost"), output_field=valuation_field
+            ),
+            default=Decimal("0"),
+            output_field=valuation_field,
+        )
+
+    totals = StockLevel.objects.filter(tenant=tenant).aggregate(**aggregates)
+    on_hand = totals["total_qty_on_hand"] or Decimal("0")
+    reserved = totals["total_qty_reserved"] or Decimal("0")
+    result = {
+        "total_qty_on_hand": on_hand,
+        "total_qty_reserved": reserved,
+        "total_qty_available": on_hand - reserved,
+    }
+    if can_view_cost:
+        result["stock_value"] = quantize_money(totals["stock_value"] or Decimal("0"))
+    return result
 
 
 def list_levels(
