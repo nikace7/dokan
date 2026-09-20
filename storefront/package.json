@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Public, anonymous, read-only online shop for Dokan tenants (design showcase).",
+  "description": "Customer ecommerce storefront for Dokan tenants with cart, OTP checkout, and order tracking.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
