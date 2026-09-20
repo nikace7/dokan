@@ -1,8 +1,9 @@
 """Seed a demo shop so the project can be tried locally end-to-end.
 
 Creates one tenant (slug ``demo``) with an owner login, a branch, a default
-rate type, a small catalog, and opening stock. Idempotent: re-running updates
-nothing and reports what already existed. Demo only — never run in prod.
+rate type, a small catalog, opening stock, and a public ecommerce address.
+Idempotent: re-running does not duplicate business rows. Demo only — never run
+in prod.
 
 Usage (from backend/):
 
@@ -41,6 +42,7 @@ class Command(BaseCommand):
             owner = self._seed()
         self.stdout.write(self.style.SUCCESS("Demo shop ready."))
         self.stdout.write("  URL:      http://demo.localhost:8000/api/docs/")
+        self.stdout.write("  Store:    https://demo-store.shop.localhost")
         self.stdout.write(f"  Login:    phone {DEMO_PHONE} / password {DEMO_PASSWORD}")
         self.stdout.write(f"  Owner:    {owner.full_name}")
 
@@ -70,16 +72,24 @@ class Command(BaseCommand):
                     "max_rate_types": 10,
                     "multi_branch": True,
                     "vat_module": True,
-                    # Online storefront — off until the shop gets a shopfront
-                    # subdomain from the platform admin.
-                    "ecommerce": False,
+                    # The demo is an end-to-end fixture, so its public store is
+                    # enabled. Real tenant addresses remain platform-admin only.
+                    "ecommerce": True,
                 },
             },
         )
         tenant, _ = Tenant.objects.get_or_create(
             slug="demo",
-            defaults={"name": "Demo Store", "plan": plan, "status": "ACTIVE"},
+            defaults={
+                "name": "Demo Store",
+                "plan": plan,
+                "status": "ACTIVE",
+                "shopfront_subdomain": "demo-store",
+            },
         )
+        if tenant.shopfront_subdomain is None:
+            tenant.shopfront_subdomain = "demo-store"
+            tenant.save(update_fields=["shopfront_subdomain"])
         branch, _ = Branch.objects.get_or_create(
             tenant=tenant,
             code="MAIN",
