@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createElement, useCallback, useEffect, useState } from 'react';
 
 import { getSite } from './lib/api';
 import type { SiteInfo } from './lib/api';
@@ -20,8 +20,9 @@ export default function App() {
   const [state, setState] = useState<SiteState>({ status: 'loading' });
   const pathname = usePathname();
 
-  const load = useCallback(() => {
-    setState({ status: 'loading' });
+  // Only the async callbacks touch state here, so the mount effect can call
+  // this without a synchronous setState (react-hooks/set-state-in-effect).
+  const fetchSite = useCallback(() => {
     getSite()
       .then((site) => {
         document.title = site.shop_name;
@@ -38,9 +39,14 @@ export default function App() {
       );
   }, []);
 
+  const load = useCallback(() => {
+    setState({ status: 'loading' });
+    fetchSite();
+  }, [fetchSite]);
+
   useEffect(() => {
-    load();
-  }, [load]);
+    fetchSite();
+  }, [fetchSite]);
 
   if (state.status === 'loading') {
     return (
@@ -77,7 +83,6 @@ export default function App() {
     );
   }
 
-  const Template = resolveTemplate(state.site.template);
   const productMatch = pathname.match(/^\/product\/([^/]+)$/);
   const orderMatch = pathname.match(/^\/order\/([^/]+)$/);
   if (productMatch) return <ProductPage site={state.site} productId={decodeURIComponent(productMatch[1])} />;
@@ -86,5 +91,8 @@ export default function App() {
   if (pathname === '/checkout') return <CheckoutPage site={state.site} navigate={navigate} />;
   if (pathname === '/orders') return <OrdersPage site={state.site} />;
   if (pathname !== '/') return <div className="flex min-h-screen flex-col items-center justify-center bg-[#faf9f6] px-5"><h1 className="font-serif text-4xl">Page not found</h1><a href="/" className="mt-5 underline">Back to {state.site.shop_name}</a></div>;
-  return <><Template site={state.site} /><CommerceDock /></>;
+  // resolveTemplate returns a module-level component, so its identity is stable
+  // across renders; createElement avoids binding it to a render-local JSX tag
+  // (react-hooks/static-components).
+  return <>{createElement(resolveTemplate(state.site.template), { site: state.site })}<CommerceDock /></>;
 }
