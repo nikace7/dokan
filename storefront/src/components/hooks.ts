@@ -26,15 +26,13 @@ function prefersReducedMotion(): boolean {
  */
 export function useRevealOnScroll<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(
+    () => prefersReducedMotion() || typeof IntersectionObserver === 'undefined',
+  );
 
   useEffect(() => {
     const node = ref.current;
     if (!node || visible) {
-      return;
-    }
-    if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
       return;
     }
     const observer = new IntersectionObserver(
