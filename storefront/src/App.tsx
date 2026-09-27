@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createElement, useCallback, useEffect, useState } from 'react';
 
 import { getSite } from './lib/api';
 import type { SiteInfo } from './lib/api';
+import { CartPage } from './commerce/CartPage';
+import { CheckoutPage } from './commerce/CheckoutPage';
+import { CommerceDock } from './commerce/CommerceShell';
+import { OrdersPage } from './commerce/OrdersPage';
+import { ProductPage } from './commerce/ProductPage';
+import { TrackingPage } from './commerce/TrackingPage';
+import { navigate, usePathname } from './commerce/router';
 import { resolveTemplate } from './templates';
 
 type SiteState =
@@ -11,11 +18,16 @@ type SiteState =
 
 export default function App() {
   const [state, setState] = useState<SiteState>({ status: 'loading' });
+  const pathname = usePathname();
 
-  const load = useCallback(() => {
-    setState({ status: 'loading' });
+  // Only the async callbacks touch state here, so the mount effect can call
+  // this without a synchronous setState (react-hooks/set-state-in-effect).
+  const fetchSite = useCallback(() => {
     getSite()
-      .then((site) => setState({ status: 'ready', site }))
+      .then((site) => {
+        document.title = site.shop_name;
+        setState({ status: 'ready', site });
+      })
       .catch((err: unknown) =>
         setState({
           status: 'error',
@@ -27,9 +39,14 @@ export default function App() {
       );
   }, []);
 
+  const load = useCallback(() => {
+    setState({ status: 'loading' });
+    fetchSite();
+  }, [fetchSite]);
+
   useEffect(() => {
-    load();
-  }, [load]);
+    fetchSite();
+  }, [fetchSite]);
 
   if (state.status === 'loading') {
     return (
@@ -66,6 +83,16 @@ export default function App() {
     );
   }
 
-  const Template = resolveTemplate(state.site.template);
-  return <Template site={state.site} />;
+  const productMatch = pathname.match(/^\/product\/([^/]+)$/);
+  const orderMatch = pathname.match(/^\/order\/([^/]+)$/);
+  if (productMatch) return <ProductPage site={state.site} productId={decodeURIComponent(productMatch[1])} />;
+  if (orderMatch) return <TrackingPage site={state.site} trackingToken={decodeURIComponent(orderMatch[1])} />;
+  if (pathname === '/cart') return <CartPage site={state.site} />;
+  if (pathname === '/checkout') return <CheckoutPage site={state.site} navigate={navigate} />;
+  if (pathname === '/orders') return <OrdersPage site={state.site} />;
+  if (pathname !== '/') return <div className="flex min-h-screen flex-col items-center justify-center bg-[#faf9f6] px-5"><h1 className="font-serif text-4xl">Page not found</h1><a href="/" className="mt-5 underline">Back to {state.site.shop_name}</a></div>;
+  // resolveTemplate returns a module-level component, so its identity is stable
+  // across renders; createElement avoids binding it to a render-local JSX tag
+  // (react-hooks/static-components).
+  return <>{createElement(resolveTemplate(state.site.template), { site: state.site })}<CommerceDock /></>;
 }

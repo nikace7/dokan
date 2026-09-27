@@ -21,12 +21,14 @@ from apps.inventory.views import (
     LevelListView,
     MovementListView,
     OpeningStockView,
+    StockSummaryView,
     WriteOffView,
 )
 
 app_name = "inventory"
 
 urlpatterns = [
+    path("inventory/summary", StockSummaryView.as_view(), name="stock-summary"),
     path("inventory/levels", LevelListView.as_view(), name="level-list"),
     path("inventory/movements", MovementListView.as_view(), name="movement-list"),
     path("inventory/opening", OpeningStockView.as_view(), name="opening"),

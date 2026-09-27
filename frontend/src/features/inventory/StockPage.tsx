@@ -16,6 +16,7 @@ import { listLevels, listMovements } from '@/features/inventory/api';
 import type { StockLevel } from '@/features/inventory/api';
 import { OpeningStockDialog } from '@/features/inventory/OpeningStockDialog';
 import { StockOperationDialog } from '@/features/inventory/StockOperationDialog';
+import { StockSummary } from '@/features/inventory/StockSummary';
 import { VariantStockInfo } from '@/features/inventory/VariantStockInfo';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
@@ -95,6 +96,7 @@ export function StockPage() {
   ];
   const posted = () => {
     setDialog(null);
+    void queryClient.invalidateQueries({ queryKey: ['inventory', 'summary'] });
     void queryClient.invalidateQueries({ queryKey: ['inventory', 'levels'] });
     void queryClient.invalidateQueries({ queryKey: ['inventory', 'movements'] });
   };
@@ -129,6 +131,7 @@ export function StockPage() {
           </div>
         }
       >
+        <StockSummary />
         <Input
           aria-label={t('inventory.stock.searchAria')}
           value={search}
