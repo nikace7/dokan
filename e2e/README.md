@@ -1,8 +1,9 @@
 # Dokan E2E tests (Playwright)
 
-End-to-end smoke suite for the tenant frontend: **login → billing loads**,
-**scan → cart → cash bill → receipt**, a **return against the created bill**,
-the Simple Sale flow, and public shared bills. CI runs the suite against a
+End-to-end smoke suite for the tenant and customer frontends: **login → billing
+loads**, **scan → cart → cash bill → receipt**, a **return against the created
+bill**, the Simple Sale flow, public shared bills, and **public store → product
+option → email OTP → COD order → staff inbox → held POS bill**. CI runs the suite against a
 fresh, seeded Compose stack on every PR; it remains useful locally after
 touching tenant routing, authentication, billing, returns, or the public bill.
 
@@ -53,6 +54,10 @@ CA — `ignoreHTTPSErrors` is set). Two environment notes:
 | `E2E_BASE_URL`    | `https://demo.localhost` | What the browser loads.                        |
 | `E2E_API_URL`     | `http://127.0.0.1:8000`  | Backend origin used by setup/teardown helpers. |
 | `E2E_TENANT_HOST` | `demo.localhost`         | Host header/SNI the tenant is resolved from.   |
+| `E2E_STOREFRONT_BASE_URL` | `https://demo-store.shop.localhost` | Public store loaded by the browser. |
+| `E2E_STOREFRONT_HOST` | `demo-store.shop.localhost` | Store host mapped to IPv4 by Chromium. |
+| `E2E_COMPOSE_PROJECT` | inferred from repo | Explicit Compose project name used to read local OTP mail logs. |
+| `E2E_OTP_CODE` | empty | Optional fixed code for a purpose-built non-Compose test environment. |
 | `E2E_PHONE`       | `9800000000`             | Demo login (from `seed_demo`).                 |
 | `E2E_PASSWORD`    | `demo1234`               | Demo password.                                 |
 
@@ -87,8 +92,11 @@ The Vite proxy already rewrites the API `Host` header to the demo tenant (see
 ## What the tests do to the data
 
 The suite writes to the demo tenant: it opens a cash session if none is open
-(invariant 12 — POS completion requires one), completes real cash bills, and
-records a return. Each run consumes a couple of units of demo stock. If stock
+(invariant 12 — POS completion requires one), completes real cash bills,
+records a return, and creates/prepares one real online order. The storefront
+test reads the OTP addressed to its unique test mailbox from the local
+console-email backend's Compose logs; production refuses that email backend.
+Each run consumes a couple of units of demo stock. If stock
 runs out, re-run `seed_demo` does **not** top it up — post new opening stock
 from the inventory screen, or reset the database volume.
 
@@ -101,4 +109,4 @@ from the inventory screen, or reset the database volume.
   session, sale creation) against the tenant API.
 - `pages/` — Page Object Model for login, billing, returns. Locators use
   labels/roles/text from the real UI; no `data-testid` was needed.
-- `tests/` — `login.spec.ts`, `billing.spec.ts`, `return.spec.ts`.
+- `tests/` — tenant billing/return tests plus the complete storefront-order journey.

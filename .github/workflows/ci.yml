@@ -161,7 +161,7 @@ jobs:
           printf test-wal > .ops-wal/000000010000000000000001
           docker run -d --name dokan-ci-minio --network host \
             -e MINIO_ROOT_USER=dokan_test -e MINIO_ROOT_PASSWORD=testpassword123 \
-            minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e \
+            quay.io/minio/minio@sha256:cf3dadcfa1fb0324f43958bad1abba986d53c4ecc04d4d50b46c7dcda28bd3cd \
             server /data --address :9000
           trap 'docker rm -f dokan-ci-minio >/dev/null 2>&1 || true' EXIT
           for attempt in $(seq 1 30); do
@@ -299,6 +299,7 @@ jobs:
           E2E_BASE_URL: https://demo.localhost
           E2E_API_URL: http://127.0.0.1:8000
           E2E_TENANT_HOST: demo.localhost
+          E2E_COMPOSE_PROJECT: dokan-e2e-ci
 
       - name: Upload Playwright failure artifacts
         if: failure()

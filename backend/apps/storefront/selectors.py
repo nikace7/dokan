@@ -130,7 +130,10 @@ def public_products(
     a boolean; featured products surface first, and ``featured=True`` narrows
     the feed to the storefront rail."""
     in_stock = StockLevel.objects.filter(
-        tenant=tenant, variant__item=OuterRef("pk"), qty_on_hand__gt=0
+        tenant=tenant,
+        branch__is_default=True,
+        variant__item=OuterRef("pk"),
+        qty_on_hand__gt=0,
     )
     items = (
         Item.objects.filter(tenant=tenant, is_active=True, website_visible=True)

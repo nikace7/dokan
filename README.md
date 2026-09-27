@@ -26,9 +26,10 @@ and an offline-tolerant POS that runs as a PWA on any phone or laptop.
 - **Account security** — optional SMS code at login, enumeration-safe password
   reset, strong-password validation, and immediate per-device session revocation.
 - **Online storefront** — each enabled shop gets a separate public store host,
-  two selectable templates, safe promotional pricing, email-OTP customers,
-  idempotent ordering, and token-based order tracking; COD works without a
-  gateway while online collection remains an integration item.
+  two selectable templates, safe promotional pricing, product options, a
+  persistent cart, email-OTP checkout, COD pickup/delivery, order history and
+  token-based tracking. Tenant staff accept orders from an online-order inbox,
+  open the linked held POS bill, and advance fulfillment through delivery.
 
 ## Stack
 
@@ -59,6 +60,7 @@ Then open:
 | URL                       | What                   | Login                                                                |
 | ------------------------- | ---------------------- | -------------------------------------------------------------------- |
 | `https://demo.localhost`  | Tenant app (demo shop) | phone `9800000000`, password `demo1234`                              |
+| `https://demo-store.shop.localhost` | Public demo store | email code checkout; read the local code from backend logs |
 | `https://admin.localhost` | Platform control plane | create with `python manage.py create_platform_user …`, TOTP required |
 
 Two platform gotchas:
@@ -67,7 +69,7 @@ Two platform gotchas:
   Windows may try IPv6 `::1` first, where nothing (or the wrong Windows
   service) answers. Force IPv4 by adding this line to
   `C:\Windows\System32\drivers\etc\hosts` (edit as Administrator):
-  `127.0.0.1 demo.localhost admin.localhost app.localhost www.localhost`
+  `127.0.0.1 demo.localhost demo-store.shop.localhost admin.localhost app.localhost www.localhost`
   (one line, space-separated), then `ipconfig /flushdns`.
 - **Certificate warning.** Local Caddy issues certs from its own dev CA.
   Either accept the browser warning once, or trust it permanently:
@@ -86,10 +88,14 @@ credentials are mapped only into short-lived migration/seed containers and are
 never present in the long-running web, worker, pooler, or edge containers.
 
 The demo seed creates a branch, an owner with all permissions, a default
-Retail rate type, three items with M/L variants, and 20 units of opening stock
-per variant. Open the branch cash session from `/payments`, then bill from the
-simple-sale screen. The tenant comes from the subdomain, never from a header —
-every tenant endpoint must be called on the `demo.localhost` host.
+Retail rate type, three items with M/L variants, 20 units of opening stock per
+variant, and an ecommerce-enabled public store at
+`demo-store.shop.localhost`. Open the branch cash session from `/payments`,
+then bill from the simple-sale screen or place a COD order in the public store.
+For local email checkout, follow `docker compose logs -f backend` and use the
+six-digit code printed by the development email backend. The tenant comes from
+the subdomain, never from a header — every tenant endpoint must be called on
+the `demo.localhost` host.
 
 The same build serves the isolated platform control plane on
 `https://admin.localhost`. Set `PLATFORM_ADMIN_ALLOWED_IPS` for the client
