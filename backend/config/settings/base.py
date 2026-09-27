@@ -103,6 +103,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Required by catalog.SizeChart.values (ArrayField); Django 6 enforces
+    # this with system check postgres.E005.
+    "django.contrib.postgres",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
