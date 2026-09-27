@@ -97,7 +97,7 @@ describe('PartyLedgerPage', () => {
     fireEvent.change(screen.getByLabelText('Search customer ledger'), {
       target: { value: 'Sita' },
     });
-    fireEvent.click(await screen.findByRole('button', { name: /Sita Rai 9800000000/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Sita Rai\s*9800000000/i }));
 
     // Rows render in both the mobile card list and the desktop table.
     expect((await screen.findAllByText('Bill 1001')).length).toBeGreaterThan(0);
@@ -125,7 +125,7 @@ describe('PartyLedgerPage', () => {
     fireEvent.change(screen.getByLabelText('Search supplier ledger'), {
       target: { value: 'ABC' },
     });
-    fireEvent.click(await screen.findByRole('button', { name: /ABC Garments 9811111111/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ABC Garments\s*9811111111/i }));
 
     expect((await screen.findAllByText('Bill 2001')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('रू 4,000.00').length).toBeGreaterThan(0);
