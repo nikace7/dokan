@@ -202,7 +202,7 @@ describe('PaymentsPage', () => {
     fireEvent.change(screen.getByLabelText('Search customer for receipt'), {
       target: { value: 'Sita' },
     });
-    fireEvent.click(await screen.findByRole('button', { name: /Sita Rai 9800000000/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Sita Rai\s*9800000000/i }));
     fireEvent.change(screen.getAllByLabelText('Amount (NPR)')[0], { target: { value: '2500' } });
     fireEvent.click(screen.getByRole('button', { name: 'Record receipt' }));
 
@@ -221,7 +221,7 @@ describe('PaymentsPage', () => {
     fireEvent.change(screen.getByLabelText('Search customer for receipt'), {
       target: { value: 'Sita' },
     });
-    fireEvent.click(await screen.findByRole('button', { name: /Sita Rai 9800000000/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Sita Rai\s*9800000000/i }));
     fireEvent.change(screen.getAllByLabelText('Amount (NPR)')[0], { target: { value: '2500' } });
     const allocation = await screen.findByLabelText('Allocation for invoice 1001');
     expect(allocation).toHaveAttribute('max', '3000.00');
@@ -259,7 +259,7 @@ describe('PaymentsPage', () => {
     fireEvent.change(screen.getByLabelText('Search supplier for payment'), {
       target: { value: 'ABC' },
     });
-    fireEvent.click(await screen.findByRole('button', { name: /ABC Garments 9811111111/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ABC Garments\s*9811111111/i }));
     fireEvent.change(screen.getAllByLabelText('Amount (NPR)')[1], {
       target: { value: '3000' },
     });
