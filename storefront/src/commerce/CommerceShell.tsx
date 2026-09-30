@@ -13,7 +13,7 @@ export function CommerceShell({
   const { itemCount, session, signOut } = useCommerce();
   return (
     <div className="min-h-screen bg-[#faf9f6] text-[#1a1a18]">
-      <header className="sticky top-0 z-30 border-b border-[#1a1a18]/10 bg-[#faf9f6]/95 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-[#1a1a18]/10 bg-[#faf9f6]/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4">
           <a href="/" className="font-serif text-xl tracking-tight">
             {site.shop_name}
