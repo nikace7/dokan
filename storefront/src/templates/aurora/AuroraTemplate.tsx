@@ -219,7 +219,7 @@ export function AuroraTemplate({ site }: TemplateProps) {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search the collection…"
-              className="w-full border-b border-[#1a1a18]/25 bg-transparent py-2 text-sm outline-none transition-colors placeholder:text-[#1a1a18]/40 focus:border-[#6d2b2b]"
+              className="w-full border-b border-[#1a1a18]/25 bg-transparent py-2 text-sm outline-hidden transition-colors placeholder:text-[#1a1a18]/40 focus:border-[#6d2b2b]"
             />
           </label>
         </div>
@@ -327,8 +327,8 @@ export function AuroraTemplate({ site }: TemplateProps) {
         open={quickView !== null}
         onClose={() => setQuickView(null)}
         label={quickView?.name ?? "Product details"}
-        backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-[#1a1a18]/40 p-4 backdrop-blur-sm"
-        panelClassName="w-full max-w-2xl border border-[#1a1a18]/15 bg-[#faf9f6] shadow-2xl outline-none"
+        backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-[#1a1a18]/40 p-4 backdrop-blur-xs"
+        panelClassName="w-full max-w-2xl border border-[#1a1a18]/15 bg-[#faf9f6] shadow-2xl outline-hidden"
       >
         {quickView ? (
           <AuroraQuickView
@@ -342,8 +342,8 @@ export function AuroraTemplate({ site }: TemplateProps) {
 
       <OfferPopup
         popup={site.store.popup}
-        backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-[#1a1a18]/40 p-4 backdrop-blur-sm"
-        panelClassName="w-full max-w-md border border-[#1a1a18]/15 bg-[#faf9f6] shadow-2xl outline-none"
+        backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-[#1a1a18]/40 p-4 backdrop-blur-xs"
+        panelClassName="w-full max-w-md border border-[#1a1a18]/15 bg-[#faf9f6] shadow-2xl outline-hidden"
       >
         {(close) => (
           <div className="relative p-8 text-center sm:p-10">

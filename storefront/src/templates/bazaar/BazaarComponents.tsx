@@ -67,7 +67,7 @@ export function BazaarCard({
         aria-label={`Quick view ${product.name}`}
         className="group block w-full rounded-[1.4rem] bg-[#fffdf8] p-3 text-left shadow-[0_1px_3px_rgba(23,36,31,0.08)] ring-1 ring-[#17241f]/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-20px_rgba(23,36,31,0.35)]"
       >
-        <div className="relative aspect-[4/5] overflow-hidden rounded-[1rem] bg-[#ece5d8]">
+        <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-[#ece5d8]">
           <ProductImage
             src={product.image}
             alt={product.name}
@@ -75,7 +75,7 @@ export function BazaarCard({
             fallbackClassName="flex h-full w-full items-center justify-center font-serif text-6xl text-[#17241f]/20"
           />
           {badge ? (
-            <span className="absolute right-3 top-3 rounded-full bg-[#a5812e] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#fffdf8] shadow-sm">
+            <span className="absolute right-3 top-3 rounded-full bg-[#a5812e] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#fffdf8] shadow-xs">
               {badge}
             </span>
           ) : null}
@@ -172,9 +172,9 @@ export function BazaarSkeleton() {
           key={i}
           className="animate-pulse rounded-[1.4rem] bg-[#fffdf8] p-3 ring-1 ring-[#17241f]/5"
         >
-          <div className="aspect-[4/5] rounded-[1rem] bg-[#ece5d8]" />
-          <div className="mx-1.5 mt-4 h-4 w-2/3 rounded bg-[#ece5d8]" />
-          <div className="mx-1.5 mb-1 mt-2 h-3 w-1/3 rounded bg-[#ece5d8]" />
+          <div className="aspect-4/5 rounded-2xl bg-[#ece5d8]" />
+          <div className="mx-1.5 mt-4 h-4 w-2/3 rounded-sm bg-[#ece5d8]" />
+          <div className="mx-1.5 mb-1 mt-2 h-3 w-1/3 rounded-sm bg-[#ece5d8]" />
         </div>
       ))}
     </div>
@@ -195,7 +195,7 @@ export function BazaarQuickView({
   const price = productPriceDisplay(product, currency);
   return (
     <div className="grid sm:grid-cols-2">
-      <div className="relative aspect-[4/3] bg-[#ece5d8] sm:aspect-[4/5]">
+      <div className="relative aspect-4/3 bg-[#ece5d8] sm:aspect-4/5">
         <ProductImage
           src={product.image}
           alt={product.name}

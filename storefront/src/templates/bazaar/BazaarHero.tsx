@@ -112,7 +112,7 @@ export function BazaarHero({
           </div>
 
           <div className="relative mx-auto w-full max-w-sm pb-8 lg:max-w-none">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-b-[1.5rem] rounded-t-[999px] border border-[#c9a84c]/30 bg-[#ece5d8] shadow-[0_30px_60px_-30px_rgba(23,36,31,0.35)]">
+            <div className="relative aspect-4/5 overflow-hidden rounded-b-3xl rounded-t-[999px] border border-[#c9a84c]/30 bg-[#ece5d8] shadow-[0_30px_60px_-30px_rgba(23,36,31,0.35)]">
               <ProductImage
                 src={heroProduct?.image ?? null}
                 alt={heroProduct?.name ?? site.shop_name}
@@ -123,7 +123,7 @@ export function BazaarHero({
             </div>
             {heroSecond?.image ? (
               <div className="absolute -bottom-2 -left-4 w-32 overflow-hidden rounded-b-[1.25rem] rounded-t-[999px] border-4 border-[#f7f3eb] bg-[#ece5d8] shadow-lg sm:-left-8 sm:w-40">
-                <div className="aspect-[4/5]">
+                <div className="aspect-4/5">
                   <ProductImage
                     src={heroSecond.image}
                     alt={heroSecond.name}
