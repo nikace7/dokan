@@ -35,7 +35,7 @@ export function ProductPage({ site, productId }: { site: SiteInfo; productId: st
     return <CommerceShell site={site}><main className="mx-auto max-w-3xl px-5 py-20 text-center"><h1 className="font-serif text-3xl">Product unavailable</h1><p className="mt-3 text-[#1a1a18]/60">{error}</p><a href="/" className="mt-6 inline-block underline">Back to the collection</a></main></CommerceShell>;
   }
   if (!product) {
-    return <CommerceShell site={site}><main className="mx-auto max-w-5xl animate-pulse px-5 py-16"><div className="aspect-[4/3] rounded-2xl bg-black/10" /></main></CommerceShell>;
+    return <CommerceShell site={site}><main className="mx-auto max-w-5xl animate-pulse px-5 py-16"><div className="aspect-4/3 rounded-2xl bg-black/10" /></main></CommerceShell>;
   }
 
   const price = selected?.price ?? product.website_price;
@@ -45,7 +45,7 @@ export function ProductPage({ site, productId }: { site: SiteInfo; productId: st
   return (
     <CommerceShell site={site}>
       <main className="mx-auto grid max-w-5xl gap-10 px-5 py-10 md:grid-cols-2 md:py-16">
-        <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-[#efece4]">
+        <div className="aspect-4/5 overflow-hidden rounded-2xl bg-[#efece4]">
           <ProductImage src={product.image} alt={product.name} className="h-full w-full object-cover" fallbackClassName="flex h-full items-center justify-center font-serif text-8xl text-black/15" />
         </div>
         <div className="md:pt-8">

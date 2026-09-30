@@ -19,7 +19,7 @@ export function CartPage({ site }: { site: SiteInfo }) {
               {items.map((item) => (
                 <article key={item.variantId} className="grid grid-cols-[1fr_auto] gap-4 py-5">
                   <div><a href={`/product/${item.productId}`} className="font-serif text-xl">{item.name}</a><p className="mt-1 text-sm text-black/55">{item.size} / {item.color}</p><p className="mt-2 text-sm font-semibold">{formatPriceRange(item.unitPrice, null, site.currency)}</p></div>
-                  <div className="text-right"><label className="text-xs text-black/55">Quantity<input aria-label={`Quantity for ${item.name}`} type="number" min="1" max="99" value={item.qty} onChange={(event) => setQuantity(item.variantId, Number(event.target.value))} className="ml-2 w-16 rounded border border-black/20 px-2 py-1" /></label><button type="button" onClick={() => removeItem(item.variantId)} className="mt-3 block w-full text-xs underline">Remove</button></div>
+                  <div className="text-right"><label className="text-xs text-black/55">Quantity<input aria-label={`Quantity for ${item.name}`} type="number" min="1" max="99" value={item.qty} onChange={(event) => setQuantity(item.variantId, Number(event.target.value))} className="ml-2 w-16 rounded-sm border border-black/20 px-2 py-1" /></label><button type="button" onClick={() => removeItem(item.variantId)} className="mt-3 block w-full text-xs underline">Remove</button></div>
                 </article>
               ))}
             </div>

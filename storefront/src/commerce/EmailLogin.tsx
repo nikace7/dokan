@@ -40,7 +40,7 @@ export function EmailLogin() {
   }
 
   return (
-    <section className="mx-auto max-w-md rounded-2xl border border-[#1a1a18]/10 bg-white p-6 shadow-sm">
+    <section className="mx-auto max-w-md rounded-2xl border border-[#1a1a18]/10 bg-white p-6 shadow-xs">
       <p className="text-xs uppercase tracking-[0.22em] text-[#6d2b2b]">Secure checkout</p>
       <h1 className="mt-2 font-serif text-3xl">Continue with email</h1>
       <p className="mt-2 text-sm leading-relaxed text-[#1a1a18]/60">
@@ -56,7 +56,7 @@ export function EmailLogin() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#1a1a18]/20 bg-transparent px-3 py-3 outline-none focus:border-[#1a1a18]"
+              className="mt-2 w-full rounded-lg border border-[#1a1a18]/20 bg-transparent px-3 py-3 outline-hidden focus:border-[#1a1a18]"
             />
           </label>
           <button
@@ -81,7 +81,7 @@ export function EmailLogin() {
               autoComplete="one-time-code"
               value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="mt-2 w-full rounded-lg border border-[#1a1a18]/20 bg-transparent px-3 py-3 text-center text-2xl tracking-[0.35em] outline-none focus:border-[#1a1a18]"
+              className="mt-2 w-full rounded-lg border border-[#1a1a18]/20 bg-transparent px-3 py-3 text-center text-2xl tracking-[0.35em] outline-hidden focus:border-[#1a1a18]"
             />
           </label>
           <button

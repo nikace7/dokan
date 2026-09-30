@@ -52,13 +52,13 @@ export default function App() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#faf9f6]">
         <div className="w-full max-w-5xl animate-pulse px-5" aria-label="Loading the shop">
-          <div className="h-10 w-1/3 rounded bg-black/10" />
-          <div className="mt-4 h-4 w-1/4 rounded bg-black/10" />
+          <div className="h-10 w-1/3 rounded-sm bg-black/10" />
+          <div className="mt-4 h-4 w-1/4 rounded-sm bg-black/10" />
           <div className="mt-12 grid grid-cols-2 gap-6 md:grid-cols-3">
             {Array.from({ length: 6 }, (_, i) => (
               <div key={i}>
-                <div className="aspect-[4/5] rounded bg-black/10" />
-                <div className="mt-3 h-4 w-2/3 rounded bg-black/10" />
+                <div className="aspect-4/5 rounded-sm bg-black/10" />
+                <div className="mt-3 h-4 w-2/3 rounded-sm bg-black/10" />
               </div>
             ))}
           </div>
