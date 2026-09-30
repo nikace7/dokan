@@ -63,7 +63,7 @@ export function AuroraCard({
         aria-label={`Quick view ${product.name}`}
         className="group block w-full text-left"
       >
-        <div className="relative aspect-[4/5] overflow-hidden bg-[#efece4]">
+        <div className="relative aspect-4/5 overflow-hidden bg-[#efece4]">
           <ProductImage
             src={product.image}
             alt={product.name}
@@ -163,7 +163,7 @@ export function AuroraSkeleton() {
     >
       {Array.from({ length: 6 }, (_, i) => (
         <div key={i} className="animate-pulse">
-          <div className="aspect-[4/5] bg-[#efece4]" />
+          <div className="aspect-4/5 bg-[#efece4]" />
           <div className="mt-4 h-4 w-2/3 bg-[#efece4]" />
           <div className="mt-2 h-3 w-1/3 bg-[#efece4]" />
         </div>
@@ -186,7 +186,7 @@ export function AuroraQuickView({
   const price = productPriceDisplay(product, currency);
   return (
     <div className="grid sm:grid-cols-2">
-      <div className="relative aspect-[4/5] bg-[#efece4]">
+      <div className="relative aspect-4/5 bg-[#efece4]">
         <ProductImage
           src={product.image}
           alt={product.name}

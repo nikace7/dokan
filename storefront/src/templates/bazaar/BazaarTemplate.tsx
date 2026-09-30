@@ -159,7 +159,7 @@ export function BazaarTemplate({ site }: TemplateProps) {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search the collection…"
-              className="w-full rounded-full border border-[#17241f]/15 bg-[#fffdf8] px-5 py-2.5 text-sm outline-none transition-all placeholder:text-[#17241f]/40 focus:border-[#a5812e] focus:ring-4 focus:ring-[#c9a84c]/20"
+              className="w-full rounded-full border border-[#17241f]/15 bg-[#fffdf8] px-5 py-2.5 text-sm outline-hidden transition-all placeholder:text-[#17241f]/40 focus:border-[#a5812e] focus:ring-4 focus:ring-[#c9a84c]/20"
             />
           </label>
         </div>
@@ -272,8 +272,8 @@ export function BazaarTemplate({ site }: TemplateProps) {
         open={quickView !== null}
         onClose={() => setQuickView(null)}
         label={quickView?.name ?? "Product details"}
-        backdropClassName="fixed inset-0 z-50 flex items-end justify-center bg-[#17241f]/50 backdrop-blur-sm sm:items-center sm:p-6"
-        panelClassName="w-full max-w-lg overflow-hidden rounded-t-[1.75rem] bg-[#f7f3eb] shadow-2xl outline-none motion-safe:animate-[bazaar-slide-up_0.25s_ease-out] sm:max-w-3xl sm:rounded-[1.75rem] sm:motion-safe:animate-[bazaar-pop_0.3s_ease-out]"
+        backdropClassName="fixed inset-0 z-50 flex items-end justify-center bg-[#17241f]/50 backdrop-blur-xs sm:items-center sm:p-6"
+        panelClassName="w-full max-w-lg overflow-hidden rounded-t-[1.75rem] bg-[#f7f3eb] shadow-2xl outline-hidden motion-safe:animate-[bazaar-slide-up_0.25s_ease-out] sm:max-w-3xl sm:rounded-[1.75rem] sm:motion-safe:animate-[bazaar-pop_0.3s_ease-out]"
       >
         {quickView ? (
           <BazaarQuickView
@@ -287,8 +287,8 @@ export function BazaarTemplate({ site }: TemplateProps) {
 
       <OfferPopup
         popup={site.store.popup}
-        backdropClassName="fixed inset-0 z-50 flex items-end justify-center bg-[#17241f]/50 backdrop-blur-sm sm:items-center sm:p-6"
-        panelClassName="w-full max-w-md overflow-hidden rounded-t-[1.75rem] bg-[#f7f3eb] shadow-2xl outline-none motion-safe:animate-[bazaar-slide-up_0.25s_ease-out] sm:rounded-[1.75rem] sm:motion-safe:animate-[bazaar-pop_0.3s_ease-out]"
+        backdropClassName="fixed inset-0 z-50 flex items-end justify-center bg-[#17241f]/50 backdrop-blur-xs sm:items-center sm:p-6"
+        panelClassName="w-full max-w-md overflow-hidden rounded-t-[1.75rem] bg-[#f7f3eb] shadow-2xl outline-hidden motion-safe:animate-[bazaar-slide-up_0.25s_ease-out] sm:rounded-[1.75rem] sm:motion-safe:animate-[bazaar-pop_0.3s_ease-out]"
       >
         {(close) => (
           <div className="relative p-8 text-center sm:p-10">
