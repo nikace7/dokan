@@ -20,7 +20,7 @@ not go through i18n.
   JSON. Plurals: i18next `_one` / `_other` suffixes with `{ count }`.
 - Components use `useTranslation()`; pure TS modules (e.g.
   `simpleSaleModel.ts`) import the shared instance with `import i18n from
-  'i18next'` and call `i18n.t(...)`. Only `app/main.tsx` may import
+'i18next'` and call `i18n.t(...)`. Only `app/main.tsx` may import
   `@/lib/i18n` (it initializes the app config incl. the Nepali default);
   tests initialize the same global instance in `src/test/setup.ts`.
 

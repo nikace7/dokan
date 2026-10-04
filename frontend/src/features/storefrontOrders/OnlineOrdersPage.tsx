@@ -115,22 +115,30 @@ function OrderCard({ order }: { order: OnlineOrder }) {
             <Badge variant={STATUS_VARIANTS[order.status]}>{t(STATUS_KEYS[order.status])}</Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {order.customer.full_name || order.customer.email} · {order.customer.phone || order.customer.email}
+            {order.customer.full_name || order.customer.email} ·{' '}
+            {order.customer.phone || order.customer.email}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {order.fulfillment === 'PICKUP'
-              ? t('onlineOrders.pickup')
-              : t('onlineOrders.delivery')}{' '}
+            {order.fulfillment === 'PICKUP' ? t('onlineOrders.pickup') : t('onlineOrders.delivery')}{' '}
             · {order.branch.name} · {t('onlineOrders.bsDate', { date: order.business_date_bs })}
           </p>
         </div>
-        <p className="font-semibold tabular-nums">{order.currency} {order.total}</p>
+        <p className="font-semibold tabular-nums">
+          {order.currency} {order.total}
+        </p>
       </div>
       <ul className="divide-y divide-border rounded-md border border-border px-3">
         {order.items.map((item, index) => (
-          <li key={`${item.name}-${item.size}-${item.color}-${index}`} className="flex justify-between gap-3 py-2 text-sm">
-            <span>{item.name} · {item.size}/{item.color} × {Number(item.qty)}</span>
-            <span className="tabular-nums">{order.currency} {item.line_total}</span>
+          <li
+            key={`${item.name}-${item.size}-${item.color}-${index}`}
+            className="flex justify-between gap-3 py-2 text-sm"
+          >
+            <span>
+              {item.name} · {item.size}/{item.color} × {Number(item.qty)}
+            </span>
+            <span className="tabular-nums">
+              {order.currency} {item.line_total}
+            </span>
           </li>
         ))}
       </ul>
@@ -144,12 +152,40 @@ function OrderCard({ order }: { order: OnlineOrder }) {
           {t('onlineOrders.completeBillFirst')}
         </p>
       ) : null}
-      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
-        {order.status === 'PLACED' && canCreate ? <Button loading={action.isPending} onClick={() => action.mutate('prepare')}>{t('onlineOrders.prepare')}</Button> : null}
-        {order.sales_invoice?.status === 'HELD' && canCreate ? <Button variant="secondary" onClick={() => void openHeldBill()}>{t('onlineOrders.openHeld')}</Button> : null}
-        {advanceLabel && canCreate ? <Button variant="outline" loading={action.isPending} onClick={() => action.mutate('advance')}>{t(advanceLabel)}</Button> : null}
-        {!['DELIVERED', 'CANCELLED'].includes(order.status) && canCancel ? <Button variant="ghost" loading={action.isPending} onClick={() => action.mutate('cancel')}>{t('onlineOrders.cancel')}</Button> : null}
+        {order.status === 'PLACED' && canCreate ? (
+          <Button loading={action.isPending} onClick={() => action.mutate('prepare')}>
+            {t('onlineOrders.prepare')}
+          </Button>
+        ) : null}
+        {order.sales_invoice?.status === 'HELD' && canCreate ? (
+          <Button variant="secondary" onClick={() => void openHeldBill()}>
+            {t('onlineOrders.openHeld')}
+          </Button>
+        ) : null}
+        {advanceLabel && canCreate ? (
+          <Button
+            variant="outline"
+            loading={action.isPending}
+            onClick={() => action.mutate('advance')}
+          >
+            {t(advanceLabel)}
+          </Button>
+        ) : null}
+        {!['DELIVERED', 'CANCELLED'].includes(order.status) && canCancel ? (
+          <Button
+            variant="ghost"
+            loading={action.isPending}
+            onClick={() => action.mutate('cancel')}
+          >
+            {t('onlineOrders.cancel')}
+          </Button>
+        ) : null}
       </div>
     </Card>
   );
@@ -164,11 +200,43 @@ export function OnlineOrdersPage() {
   });
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-4 sm:p-6">
-      <PageHeader title={t('onlineOrders.title')} description={t('onlineOrders.description')} actions={<select aria-label={t('onlineOrders.filterAria')} value={status} onChange={(event) => setStatus(event.target.value as OnlineOrderStatus | '')} className="rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="">{t('onlineOrders.allStatuses')}</option>{Object.entries(STATUS_KEYS).map(([value, key]) => <option key={value} value={value}>{t(key)}</option>)}</select>} />
-      {orders.isPending ? <p className="text-sm text-muted-foreground">{t('onlineOrders.loading')}</p> : null}
-      {orders.error ? <p role="alert" className="text-sm text-destructive">{orders.error instanceof ApiError ? orders.error.message : t('onlineOrders.loadError')}</p> : null}
-      {orders.data?.length === 0 ? <Card><p className="py-8 text-center text-sm text-muted-foreground">{t('onlineOrders.empty')}</p></Card> : null}
-      {orders.data?.map((order) => <OrderCard key={order.id} order={order} />)}
+      <PageHeader
+        title={t('onlineOrders.title')}
+        description={t('onlineOrders.description')}
+        actions={
+          <select
+            aria-label={t('onlineOrders.filterAria')}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as OnlineOrderStatus | '')}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">{t('onlineOrders.allStatuses')}</option>
+            {Object.entries(STATUS_KEYS).map(([value, key]) => (
+              <option key={value} value={value}>
+                {t(key)}
+              </option>
+            ))}
+          </select>
+        }
+      />
+      {orders.isPending ? (
+        <p className="text-sm text-muted-foreground">{t('onlineOrders.loading')}</p>
+      ) : null}
+      {orders.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {orders.error instanceof ApiError ? orders.error.message : t('onlineOrders.loadError')}
+        </p>
+      ) : null}
+      {orders.data?.length === 0 ? (
+        <Card>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            {t('onlineOrders.empty')}
+          </p>
+        </Card>
+      ) : null}
+      {orders.data?.map((order) => (
+        <OrderCard key={order.id} order={order} />
+      ))}
     </main>
   );
 }

@@ -198,7 +198,9 @@ export function SupportAccessPanel({
           label="Reason"
           htmlFor="assist-reason"
           className="sm:col-span-2"
-          error={reasonTooShort ? `Reason must be at least ${MIN_REASON_LENGTH} characters.` : undefined}
+          error={
+            reasonTooShort ? `Reason must be at least ${MIN_REASON_LENGTH} characters.` : undefined
+          }
           hint="The shop owner sees this reason. It is stored in the audit log (min 20 characters)."
         >
           <textarea

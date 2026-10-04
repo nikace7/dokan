@@ -13,7 +13,11 @@ export function LanguageToggle({ className }: { className?: string }) {
   const current = i18n.language.startsWith('ne') ? 'ne' : 'en';
 
   return (
-    <div role="group" aria-label={t('language.label')} className={cn('flex items-center', className)}>
+    <div
+      role="group"
+      aria-label={t('language.label')}
+      className={cn('flex items-center', className)}
+    >
       <Languages className="mr-1 h-4 w-4 text-muted-foreground" aria-hidden />
       {(
         [

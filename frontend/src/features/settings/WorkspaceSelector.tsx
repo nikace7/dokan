@@ -50,9 +50,7 @@ export function WorkspaceSelector() {
     return <span className="text-xs text-muted-foreground">{t('settings.workspace.loading')}</span>;
   }
   if (workspace.error) {
-    return (
-      <span className="text-xs text-destructive">{t('settings.workspace.unavailable')}</span>
-    );
+    return <span className="text-xs text-destructive">{t('settings.workspace.unavailable')}</span>;
   }
   if (!workspace.isReady) {
     return <span className="text-xs text-warning">{t('settings.workspace.notReady')}</span>;
