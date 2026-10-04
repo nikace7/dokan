@@ -27,7 +27,8 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          # Keep in step with backend/Dockerfile's base image.
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: backend/pyproject.toml
 
