@@ -94,7 +94,7 @@ Failure traces and the HTML report are uploaded as artifacts.
 - `gitleaks` — secret scan over full history
 - `recovery` — validates the Compose secret allowlists, PgBouncer transaction
   isolation, Prometheus/Loki/Alloy configuration, backup/restore paths against
-  real PostgreSQL, and S3-compatible WAL upload against MinIO
+  real PostgreSQL, and S3-compatible WAL upload against Versity Gateway
 
 Dependabot opens weekly update PRs for GitHub Actions, Python, all three npm
 workspaces, and Docker images. It does not replace the CI advisory gates.
