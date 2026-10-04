@@ -196,7 +196,11 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
         value={refNo}
         onChange={(event) => setRefNo(event.target.value)}
       />
-      <Input label={t('common.note')} value={note} onChange={(event) => setNote(event.target.value)} />
+      <Input
+        label={t('common.note')}
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
+      />
       {error ? (
         <p role="alert" className="text-sm text-destructive sm:col-span-2">
           {error}

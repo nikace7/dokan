@@ -101,8 +101,12 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
                 ) : null}
               </td>
               <td className="py-1.5 text-right">{item.qty}</td>
-              <td className="py-1.5 text-right">{formatNpr(item.unit_price, { symbol: '', currency: base })}</td>
-              <td className="py-1.5 text-right">{formatNpr(item.line_total, { symbol: '', currency: base })}</td>
+              <td className="py-1.5 text-right">
+                {formatNpr(item.unit_price, { symbol: '', currency: base })}
+              </td>
+              <td className="py-1.5 text-right">
+                {formatNpr(item.line_total, { symbol: '', currency: base })}
+              </td>
             </tr>
           ))}
         </tbody>

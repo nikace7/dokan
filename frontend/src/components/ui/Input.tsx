@@ -34,9 +34,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         aria-describedby={error ? `${inputId}-error` : undefined}
         className={cn(
           inputClasses,
-          error
-            ? 'border-destructive focus-visible:ring-destructive'
-            : 'border-input',
+          error ? 'border-destructive focus-visible:ring-destructive' : 'border-input',
           className,
         )}
         {...props}

@@ -156,9 +156,7 @@ function installApiMock(saleResponse?: Response, forSaleRows: unknown[] = [TSHIR
       return Promise.resolve(envelope({ id: 'sale-1', print_count: 1 }));
     }
     if (url.endsWith('/api/v1/sales/sale-1/share') && method === 'POST') {
-      return Promise.resolve(
-        envelope({ share_token: 'tok-1', share_url_path: '/bill/tok-1' }),
-      );
+      return Promise.resolve(envelope({ share_token: 'tok-1', share_url_path: '/bill/tok-1' }));
     }
     return Promise.reject(new Error(`Unexpected request: ${method} ${url}`));
   });
@@ -298,9 +296,7 @@ describe('SimpleSalePage', () => {
     // Back inside the range the sale can go through again.
     fireEvent.change(priceInput, { target: { value: '1500' } });
     await waitFor(() => expect(completeButton()).toBeEnabled());
-    expect(
-      fetchMock.mock.calls.some(([, init]) => (init?.method ?? 'GET') === 'POST'),
-    ).toBe(false);
+    expect(fetchMock.mock.calls.some(([, init]) => (init?.method ?? 'GET') === 'POST')).toBe(false);
   });
 
   it('sends explicit unit_price, one tender, and an Idempotency-Key', async () => {

@@ -33,7 +33,7 @@ and an offline-tolerant POS that runs as a PWA on any phone or laptop.
 
 ## Stack
 
-- **Backend:** Django 5 + DRF + SimpleJWT, PostgreSQL 16 (Row-Level Security
+- **Backend:** Django 6 + DRF + SimpleJWT, PostgreSQL 16 (Row-Level Security
   for tenant isolation), Redis, Celery.
 - **Frontend:** Vite + React + TypeScript tenant/admin SPA, Tailwind,
   TanStack Query, Zustand; built into an unprivileged production image.

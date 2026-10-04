@@ -235,9 +235,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
       {canSetBounds && (scope === 'ITEM' || scope === 'VARIANT') ? (
         <section className="mt-5 border-t border-border pt-4">
           <h3 className="mb-2 text-sm font-semibold">{t('pricing.editor.guardrails')}</h3>
-          <p className="mb-3 text-xs text-muted-foreground">
-            {t('pricing.editor.guardrailsHint')}
-          </p>
+          <p className="mb-3 text-xs text-muted-foreground">{t('pricing.editor.guardrailsHint')}</p>
           <div className="flex flex-wrap items-end gap-3">
             <Input
               label={t('pricing.editor.minPrice')}

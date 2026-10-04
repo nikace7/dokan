@@ -3,7 +3,7 @@
 Where the product is going and where it stands. Phase definitions and exit
 criteria live in `docs/SYSTEM_DESIGN.md` §11 — this doc tracks **status
 against the shipped code**, it does not re-specify the phases. Status as of
-2026-09-03 on the current release branch.
+2026-10-04 on `main`.
 
 Legend: ✅ shipped · 🔨 in progress · ⬜ not started · ⚠ external gate
 
@@ -17,9 +17,9 @@ real shops:
 
 | Gate | Status |
 |---|---|
-| Local quality baseline | ✅ 980 backend tests, 389 tenant/admin frontend tests, and 52 storefront tests pass; enforced critical coverage remains wired, and the fresh-Compose Playwright suite contains 13 scenarios; lint, type, generated-contract, source-size, bundle, dependency, secret, pooling, and recovery checks are wired |
-| Hosted CI on the candidate stack | ✅ Ecommerce PR #146 and its merge commit passed backend, frontend/edge, storefront, recovery, gitleaks, and the 13-scenario fresh-Compose E2E suite |
-| Protected `main`, review policy, merge, and SemVer release | 🔨 `main` requires all seven CI checks, strict freshness, resolved conversations, and no admin bypass; the solo-maintainer self-review policy is active, ecommerce PR #146 is merged, and this changelog records the `v1.2.0` candidate pending release merge and tag |
+| Local quality baseline | ✅ 983 backend tests (91.9% coverage), 394 tenant/admin frontend tests, and 52 storefront tests pass; enforced critical coverage remains wired, and the fresh-Compose Playwright suite contains 13 scenarios; lint, type, generated-contract, source-size, bundle, dependency, secret, pooling, and recovery checks are wired |
+| Hosted CI on the candidate stack | ✅ PR #174 passed all seven required checks (backend, frontend/edge, storefront, recovery, gitleaks, change detection, and the 13-scenario fresh-Compose E2E suite) on the current dependency stack: Django 6, Node 24, React 19 storefront, Tailwind 4 storefront, Vite 8 |
+| Protected `main`, review policy, merge, and SemVer release | ✅ `main` requires all seven CI checks, strict freshness, resolved conversations, and no admin bypass; the solo-maintainer self-review policy is active; releases are tagged from `main` (latest `v1.3.0`) |
 | Production DNS/wildcard TLS, strong secrets, SMTP, SMS, live CBMS decision, and S3-compatible backup target | ⚠ operator/provider setup |
 | Staging restore rehearsal, alert delivery test, external uptime/TLS checks, and pilot acceptance | ⚠ operator validation |
 
@@ -33,7 +33,7 @@ One shop can run its entire counter on Dokan. Shipped:
 
 | Area | What landed |
 |---|---|
-| Platform spine | Django 5 + DRF, Postgres RLS with `FORCE ROW LEVEL SECURITY`, subdomain tenant resolution, BS calendar + money core, gapless numbering, permission catalog, response envelope |
+| Platform spine | Django 6 + DRF, Postgres RLS with `FORCE ROW LEVEL SECURITY`, subdomain tenant resolution, BS calendar + money core, gapless numbering, permission catalog, response envelope |
 | Tenancy & plans | Plans, tenants, subscriptions, feature overrides, usage snapshots; plan enforcement above route permissions (feature-gated routes return 402; staff/item/rate-type/SMS write limits hard-block) |
 | Auth & RBAC | Phone + password JWT login per ADR 0001, optional SMS OTP, enumeration-safe SMS reset, revocable registered-device sessions, failed-login lockout, tenant-claim binding, custom roles, branch-aware staff assignments |
 | Platform admin | Separate `admin.` host auth realm with IP allowlist + TOTP, plan CRUD, atomic tenant provisioning/lifecycle, append-only platform audit, time-boxed support impersonation with durable + Redis revocation and tenant-side red banner/end-now |

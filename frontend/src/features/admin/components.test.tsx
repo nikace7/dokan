@@ -13,7 +13,11 @@ import {
 describe('PageHeader', () => {
   it('renders title, description, and actions', () => {
     render(
-      <PageHeader title="Tenants" description="Every shop on the platform." actions={<button>New</button>} />,
+      <PageHeader
+        title="Tenants"
+        description="Every shop on the platform."
+        actions={<button>New</button>}
+      />,
     );
     expect(screen.getByRole('heading', { name: 'Tenants' })).toBeInTheDocument();
     expect(screen.getByText('Every shop on the platform.')).toBeInTheDocument();
@@ -79,7 +83,11 @@ describe('EmptyState', () => {
   it('renders title, body, and action', () => {
     const onClick = vi.fn();
     render(
-      <EmptyState title="No tenants yet" body="Provision the first shop." action={{ label: 'New tenant', onClick }} />,
+      <EmptyState
+        title="No tenants yet"
+        body="Provision the first shop."
+        action={{ label: 'New tenant', onClick }}
+      />,
     );
     expect(screen.getByText('No tenants yet')).toBeInTheDocument();
     expect(screen.getByText('Provision the first shop.')).toBeInTheDocument();

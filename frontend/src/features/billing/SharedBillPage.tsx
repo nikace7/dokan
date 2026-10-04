@@ -86,7 +86,9 @@ function BillCard({ bill }: { bill: SharedBill }) {
       <div className="text-center">
         <h1 className="text-xl font-bold">{bill.tenant_name}</h1>
         {bill.tenant_name_np ? <p className="font-medium">{bill.tenant_name_np}</p> : null}
-        {bill.legal_name ? <p className="text-xs text-muted-foreground">{bill.legal_name}</p> : null}
+        {bill.legal_name ? (
+          <p className="text-xs text-muted-foreground">{bill.legal_name}</p>
+        ) : null}
         <p className="text-xs text-muted-foreground">
           {bill.branch_name}
           {bill.branch_address ? ` · ${bill.branch_address}` : ''}
@@ -98,7 +100,9 @@ function BillCard({ bill }: { bill: SharedBill }) {
         <p className="mt-2 text-xs font-semibold uppercase">
           {bill.is_vat_bill ? t('sharedBill.taxInvoice') : t('sharedBill.invoice')}
         </p>
-        <h2 className="mt-1 text-2xl font-bold">{t('sharedBill.invoiceNumber', { number: invoiceNumber })}</h2>
+        <h2 className="mt-1 text-2xl font-bold">
+          {t('sharedBill.invoiceNumber', { number: invoiceNumber })}
+        </h2>
         <p className="mt-1 text-sm">
           BS {bill.business_date_bs} · FY {bill.fiscal_year_bs}
           {bill.customer_name ? ` · ${bill.customer_name}` : ''}
@@ -139,7 +143,9 @@ function BillCard({ bill }: { bill: SharedBill }) {
           <Row label={t('sharedBill.discount')} value={`-${bill.discount_amount}`} />
         ) : null}
         {bill.is_vat_bill ? <Row label={t('sharedBill.vat')} value={bill.vat_amount} /> : null}
-        {bill.round_off !== '0.00' ? <Row label={t('sharedBill.roundOff')} value={bill.round_off} /> : null}
+        {bill.round_off !== '0.00' ? (
+          <Row label={t('sharedBill.roundOff')} value={bill.round_off} />
+        ) : null}
         <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
           <dt>{t('sharedBill.total')}</dt>
           <dd>{formatNpr(bill.total)}</dd>

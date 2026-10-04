@@ -230,7 +230,9 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
                       variant="danger"
                       disabled={deleteMutation.isPending}
                       onClick={() => {
-                        if (window.confirm(t('settings.roles.deleteConfirm', { name: role.name }))) {
+                        if (
+                          window.confirm(t('settings.roles.deleteConfirm', { name: role.name }))
+                        ) {
                           deleteMutation.mutate(role.id);
                         }
                       }}

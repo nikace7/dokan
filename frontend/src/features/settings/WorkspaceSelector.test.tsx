@@ -61,9 +61,10 @@ describe('WorkspaceSelector', () => {
     const branchGroup = screen.getByRole('group', { name: 'Branch' });
     const rateGroup = screen.getByRole('group', { name: 'Rate type' });
     // The active rows carry the check (aria-pressed); inactive ones don't.
-    expect(
-      within(branchGroup).getByRole('button', { name: 'Main Branch' }),
-    ).toHaveAttribute('aria-pressed', 'true');
+    expect(within(branchGroup).getByRole('button', { name: 'Main Branch' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     expect(within(branchGroup).getByRole('button', { name: 'Lakeside' })).toHaveAttribute(
       'aria-pressed',
       'false',
@@ -85,7 +86,9 @@ describe('WorkspaceSelector', () => {
 
   it('renders a static readout when there is nothing to switch at all', () => {
     renderSelector({ branches: [BRANCHES[0]], rateTypes: [RATE_TYPES[0]] });
-    expect(screen.queryByRole('button', { name: /switch branch or rate/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /switch branch or rate/i }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Main Branch')).toBeInTheDocument();
     expect(screen.getByText('Retail')).toBeInTheDocument();
   });

@@ -44,12 +44,30 @@ const ORDER = {
   customer: { email: 'buyer@example.com', full_name: 'Sita Buyer', phone: '9812345678' },
   branch: { id: 'branch-1', name: 'Main' },
   sales_invoice: null,
-  items: [{ name: 'Winter Coat', size: 'M', color: 'Black', unit_price: '1800.00', compare_at: null, qty: '1.000', line_total: '1800.00' }],
+  items: [
+    {
+      name: 'Winter Coat',
+      size: 'M',
+      color: 'Black',
+      unit_price: '1800.00',
+      compare_at: null,
+      qty: '1.000',
+      line_total: '1800.00',
+    },
+  ],
 };
 
 function renderPage() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<QueryClientProvider client={queryClient}><MemoryRouter><OnlineOrdersPage /></MemoryRouter></QueryClientProvider>);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <OnlineOrdersPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 }
 
 describe('OnlineOrdersPage', () => {
@@ -71,10 +89,28 @@ describe('OnlineOrdersPage', () => {
       const method = init?.method ?? 'GET';
       if (url.endsWith('/v1/storefront/manage/orders/order-1/prepare') && method === 'POST') {
         prepared = true;
-        return Promise.resolve(envelope({ ...ORDER, status: 'CONFIRMED', sales_invoice: { id: 'sale-1', status: 'HELD', invoice_no: null } }));
+        return Promise.resolve(
+          envelope({
+            ...ORDER,
+            status: 'CONFIRMED',
+            sales_invoice: { id: 'sale-1', status: 'HELD', invoice_no: null },
+          }),
+        );
       }
       if (url.includes('/v1/storefront/manage/orders')) {
-        return Promise.resolve(envelope(prepared ? [{ ...ORDER, status: 'CONFIRMED', sales_invoice: { id: 'sale-1', status: 'HELD', invoice_no: null } }] : [ORDER]));
+        return Promise.resolve(
+          envelope(
+            prepared
+              ? [
+                  {
+                    ...ORDER,
+                    status: 'CONFIRMED',
+                    sales_invoice: { id: 'sale-1', status: 'HELD', invoice_no: null },
+                  },
+                ]
+              : [ORDER],
+          ),
+        );
       }
       return Promise.reject(new Error(`Unexpected request: ${method} ${url}`));
     });
@@ -84,7 +120,13 @@ describe('OnlineOrdersPage', () => {
     expect(screen.getByText(/Sita Buyer/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Prepare in POS' }));
 
-    await waitFor(() => expect(fetchMock.mock.calls.some(([url, init]) => String(url).endsWith('/order-1/prepare') && init?.method === 'POST')).toBe(true));
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) => String(url).endsWith('/order-1/prepare') && init?.method === 'POST',
+        ),
+      ).toBe(true),
+    );
     expect(await screen.findByRole('button', { name: 'Open held bill' })).toBeInTheDocument();
   });
 });

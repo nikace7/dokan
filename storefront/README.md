@@ -21,7 +21,7 @@ and return to order history or a tokenized tracking page.
 
 ```bash
 npm install       # once — creates package-lock.json (CI uses npm ci)
-npm run dev       # Vite dev server; proxies /api and /media → http://localhost:8000
+npm run dev       # Vite dev server; open http://demo.shop.localhost:5173 (proxies /api, /media → :8000)
 npm test          # vitest run (jsdom)
 npm run lint      # eslint .
 npm run build     # tsc --noEmit && vite build → dist/
