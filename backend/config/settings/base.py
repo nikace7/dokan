@@ -97,7 +97,6 @@ ROOT_DOMAIN = env("ROOT_DOMAIN", "dokan.com.np")
 PLATFORM_ADMIN_ALLOWED_IPS = env_list("PLATFORM_ADMIN_ALLOWED_IPS")
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -323,6 +322,11 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
 }
+
+# /api/schema/ and /api/docs/ (Swagger UI). Off in production: the published
+# contract is openapi/schema.yaml, and the live endpoints would map the whole
+# API, platform-admin routes included, for anyone.
+API_DOCS_ENABLED = True
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "mero-pasal.online API",
