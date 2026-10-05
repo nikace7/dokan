@@ -109,7 +109,9 @@ export function PlansPage() {
                 ) : null}
               </div>
             </div>
-            <p className="mt-2 text-lg font-semibold text-foreground">{formatNpr(plan.price_npr)}</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">
+              {formatNpr(plan.price_npr)}
+            </p>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <ConfigList title="Limits" values={plan.limits} />
               <ConfigList title="Features" values={plan.features} />

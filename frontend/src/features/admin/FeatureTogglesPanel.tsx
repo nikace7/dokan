@@ -55,9 +55,7 @@ export function FeatureTogglesPanel({
     >
       <ul className="divide-y divide-border">
         {PLAN_FEATURE_CATALOG.map((entry) => {
-          const override = overrides.data?.data.find(
-            (row) => row.key === `features.${entry.key}`,
-          );
+          const override = overrides.data?.data.find((row) => row.key === `features.${entry.key}`);
           const planDefault = planFeatures[entry.key] === true;
           const effective = override ? override.value === true : planDefault;
           return (

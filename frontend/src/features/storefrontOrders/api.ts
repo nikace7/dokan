@@ -1,12 +1,7 @@
 import { authedRequest } from '@/lib/api/authed';
 
 export type OnlineOrderStatus =
-  | 'PLACED'
-  | 'CONFIRMED'
-  | 'PACKED'
-  | 'SHIPPED'
-  | 'DELIVERED'
-  | 'CANCELLED';
+  'PLACED' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
 export interface OnlineOrderItem {
   name: string;
@@ -37,7 +32,11 @@ export interface OnlineOrder {
   created_at: string;
   customer: { email: string; full_name: string; phone: string };
   branch: { id: string; name: string };
-  sales_invoice: { id: string; status: 'HELD' | 'COMPLETED' | 'CANCELLED'; invoice_no: number | null } | null;
+  sales_invoice: {
+    id: string;
+    status: 'HELD' | 'COMPLETED' | 'CANCELLED';
+    invoice_no: number | null;
+  } | null;
   items: OnlineOrderItem[];
 }
 

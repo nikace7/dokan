@@ -54,36 +54,36 @@ const sheetVariants = cva(
 );
 
 interface SheetContentProps
-  extends ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
+  extends
+    ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
     VariantProps<typeof sheetVariants> {}
 
-const SheetContent = forwardRef<
-  ElementRef<typeof SheetPrimitive.Content>,
-  SheetContentProps
->(function SheetContent({ side = 'right', className, children, ...props }, ref) {
-  return (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content
-        ref={ref}
-        className={cn(sheetVariants({ side }), className)}
-        {...props}
-      >
-        {children}
-        <SheetPrimitive.Close
-          className={cn(
-            'absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-            'disabled:pointer-events-none',
-          )}
-          aria-label="Close"
+const SheetContent = forwardRef<ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
+  function SheetContent({ side = 'right', className, children, ...props }, ref) {
+    return (
+      <SheetPortal>
+        <SheetOverlay />
+        <SheetPrimitive.Content
+          ref={ref}
+          className={cn(sheetVariants({ side }), className)}
+          {...props}
         >
-          <X className="h-4 w-4" />
-        </SheetPrimitive.Close>
-      </SheetPrimitive.Content>
-    </SheetPortal>
-  );
-});
+          {children}
+          <SheetPrimitive.Close
+            className={cn(
+              'absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+              'disabled:pointer-events-none',
+            )}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </SheetPrimitive.Close>
+        </SheetPrimitive.Content>
+      </SheetPortal>
+    );
+  },
+);
 
 function SheetHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (

@@ -79,8 +79,9 @@ describe('SupportAccessPanel', () => {
   it('renders the impersonation targets in the select', async () => {
     renderPanel();
 
-    expect(await screen.findByRole('option', { name: 'Ram Sharma · 9800000001' }))
-      .toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', { name: 'Ram Sharma · 9800000001' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Sita KC · 9800000002' })).toBeInTheDocument();
   });
 

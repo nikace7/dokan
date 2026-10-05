@@ -55,9 +55,7 @@ function blankForm(plan: string): TenantCreatePayload {
 export function NewTenantDialog({ open, plans, onOpenChange }: NewTenantDialogProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<TenantCreatePayload>(() =>
-    blankForm(plans[0]?.id ?? ''),
-  );
+  const [form, setForm] = useState<TenantCreatePayload>(() => blankForm(plans[0]?.id ?? ''));
   const [fieldErrors, setFieldErrors] = useState<{ slug?: string; owner_password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -77,7 +75,8 @@ export function NewTenantDialog({ open, plans, onOpenChange }: NewTenantDialogPr
     },
   });
 
-  const patch = (values: Partial<TenantCreatePayload>) => setForm((prev) => ({ ...prev, ...values }));
+  const patch = (values: Partial<TenantCreatePayload>) =>
+    setForm((prev) => ({ ...prev, ...values }));
 
   const submit = (event: FormEvent) => {
     event.preventDefault();

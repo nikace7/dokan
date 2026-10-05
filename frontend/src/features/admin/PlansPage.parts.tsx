@@ -57,7 +57,9 @@ export function PlanForm({ plan, onDone }: { plan?: Plan; onDone: () => void }) 
   const [code, setCode] = useState(plan?.code ?? '');
   const [name, setName] = useState(plan?.name ?? '');
   const [price, setPrice] = useState(plan?.price_npr ?? '0.00');
-  const [cycle, setCycle] = useState<PlanPayload['billing_cycle']>(plan?.billing_cycle ?? 'monthly');
+  const [cycle, setCycle] = useState<PlanPayload['billing_cycle']>(
+    plan?.billing_cycle ?? 'monthly',
+  );
   const [sortOrder, setSortOrder] = useState(String(plan?.sort_order ?? 0));
   const [isActive, setIsActive] = useState(plan?.is_active ?? true);
   const [limits, setLimits] = useState<Record<string, string>>(() => {
@@ -150,11 +152,7 @@ export function PlanForm({ plan, onDone }: { plan?: Plan; onDone: () => void }) 
     });
   };
 
-  const extraEditor = (
-    rows: ExtraRow[],
-    setRows: (rows: ExtraRow[]) => void,
-    addLabel: string,
-  ) => (
+  const extraEditor = (rows: ExtraRow[], setRows: (rows: ExtraRow[]) => void, addLabel: string) => (
     <div className="space-y-2 sm:col-span-2">
       {rows.map((row, index) => (
         <div key={index} className="flex items-center gap-2">

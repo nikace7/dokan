@@ -148,10 +148,7 @@ describe('ItemsPage', () => {
       }
       if (url.includes('/v1/catalog/items')) {
         return Promise.resolve(
-          envelope(
-            [{ ...ITEM, min_selling_price: null, max_selling_price: null }],
-            PAGE_META,
-          ),
+          envelope([{ ...ITEM, min_selling_price: null, max_selling_price: null }], PAGE_META),
         );
       }
       return Promise.reject(new Error(`Unexpected request: GET ${url}`));

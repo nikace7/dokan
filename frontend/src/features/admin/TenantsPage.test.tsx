@@ -194,8 +194,6 @@ describe('TenantsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'lowercase letters, numbers and hyphens',
     );
-    expect(
-      fetchMock.mock.calls.some(([, init]) => init?.method === 'POST'),
-    ).toBe(false);
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
   });
 });

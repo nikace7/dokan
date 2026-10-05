@@ -3,12 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import {
-  listOverrides,
-  listPlans,
-  setOverride,
-  updateTenant,
-} from '@/features/admin/api';
+import { listOverrides, listPlans, setOverride, updateTenant } from '@/features/admin/api';
 import type { Tenant } from '@/features/admin/api';
 import { AdminCard, Field } from '@/features/admin/components';
 import { ApiError } from '@/lib/api/client';
@@ -89,7 +84,12 @@ export function ShopfrontPanel({ tenant, canWrite }: { tenant: Tenant; canWrite:
   });
   const enableMutation = useMutation({
     mutationFn: () =>
-      setOverride(tenant.id, { key: 'features.ecommerce', value: true, expires_at: null, note: null }),
+      setOverride(tenant.id, {
+        key: 'features.ecommerce',
+        value: true,
+        expires_at: null,
+        note: null,
+      }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ['platform', 'tenants', tenant.id, 'overrides'],
