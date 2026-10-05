@@ -163,7 +163,10 @@ export function VariantMatrix({
 
       {selectedCount > 0 ? (
         <div className="overflow-x-auto">
-          <table aria-label={t('catalog.matrix.gridAria')} className="w-auto border-collapse text-xs">
+          <table
+            aria-label={t('catalog.matrix.gridAria')}
+            className="w-auto border-collapse text-xs"
+          >
             <thead>
               <tr>
                 <th className="border border-border bg-muted/50 px-2 py-1 text-left font-medium text-muted-foreground">

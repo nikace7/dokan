@@ -76,9 +76,7 @@ export function ProgressDonut({
     return { ...s, start };
   });
 
-  const ariaLabel = segments
-    .map((s) => `${s.label} ${formatPercent(s.fraction * 100)}`)
-    .join(', ');
+  const ariaLabel = segments.map((s) => `${s.label} ${formatPercent(s.fraction * 100)}`).join(', ');
 
   return (
     <div className={cn('flex flex-wrap items-center gap-5', className)}>

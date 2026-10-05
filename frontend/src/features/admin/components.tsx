@@ -93,13 +93,7 @@ const STATUS_LABEL: Record<TenantStatus, string> = {
 };
 
 /** Tenant lifecycle status pill with semantic colors. */
-export function StatusBadge({
-  status,
-  className,
-}: {
-  status: TenantStatus;
-  className?: string;
-}) {
+export function StatusBadge({ status, className }: { status: TenantStatus; className?: string }) {
   return (
     <Badge variant={STATUS_VARIANT[status]} className={className}>
       {STATUS_LABEL[status]}

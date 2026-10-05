@@ -31,12 +31,7 @@ const DropdownMenuSubTrigger = forwardRef<
   return (
     <DropdownMenuPrimitive.SubTrigger
       ref={ref}
-      className={cn(
-        itemClasses,
-        'data-[state=open]:bg-accent',
-        inset && 'pl-8',
-        className,
-      )}
+      className={cn(itemClasses, 'data-[state=open]:bg-accent', inset && 'pl-8', className)}
       {...props}
     >
       {children}
