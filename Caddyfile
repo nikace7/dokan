@@ -15,7 +15,7 @@
 		respond @metrics 404
 	}
 
-	@backend path /api/* /django-admin*
+	@backend path /api/*
 	handle @backend {
 		reverse_proxy backend:8000 {
 			# Deployment-specific header directives (empty by default). Behind an

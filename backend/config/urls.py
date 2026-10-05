@@ -6,7 +6,6 @@ their feature lands; including them now keeps the routing table stable.
 
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
@@ -16,9 +15,6 @@ urlpatterns = [
     path("api/live", liveness, name="liveness"),
     path("api/health", healthcheck, name="healthcheck"),
     path("api/metrics", metrics, name="metrics"),
-    path("django-admin/", admin.site.urls),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
     path("api/v1/", include("apps.tenants.urls")),
     path("api/v1/", include("apps.platformadmin.urls")),
     path("api/v1/", include("apps.accounts.urls")),
@@ -36,6 +32,12 @@ urlpatterns = [
     path("api/v1/", include("apps.compliance.urls")),
     path("api/v1/", include("apps.storefront.urls")),
 ]
+
+if settings.API_DOCS_ENABLED:
+    urlpatterns += [
+        path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+        path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
+    ]
 
 # Local dev only: serve uploaded media from Django (production serves the
 # same files from the shared media volume via Caddy's file_server).
