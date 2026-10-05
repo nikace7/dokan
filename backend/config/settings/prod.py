@@ -16,6 +16,7 @@ assert_production_email_backend(EMAIL_BACKEND)  # noqa: F405
 assert_transaction_pooling(env("DATABASE_POOL_MODE"))
 
 DEBUG = False
+API_DOCS_ENABLED = False
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS")
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

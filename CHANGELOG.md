@@ -8,6 +8,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-05
+
+### Security
+
+- `backend` — production no longer serves `/api/schema/` or `/api/docs/`
+  (new `API_DOCS_ENABLED` setting, off in `prod.py`); the published contract
+  remains `openapi/schema.yaml`, and dev keeps the live Swagger UI
+- `backend`, `edge` — removed Django's built-in admin and its `/django-admin/`
+  route. No account could ever pass its permission check, but its login page was
+  reachable on every host without the platform realm's IP allowlist or TOTP
+
+### Platform
+
+- `backend` — runs on Django 6 (`django.contrib.postgres` is now registered,
+  as Django 6 requires for the size-chart `ArrayField`) and on a Python 3.14
+  base image; the backend test suite now runs on 3.14 in CI to match. No new
+  migrations, so rolling back to `v1.3.0` is an image redeploy
+- `frontend`, `storefront` — build images and CI move to Node 24; Vite 8 with
+  `@vitejs/plugin-react` 6, ESLint 10 (storefront), and jsdom 30 for tests
+
+### Storefront
+
+- `storefront` — upgraded to React 19 and Tailwind CSS 4. Rendering was checked
+  element by element against the previous build on the home, product, cart, and
+  orders pages; v3 defaults the markup relied on (grey borders, pointer cursor on
+  buttons, white form fields) are kept. Tailwind 4 requires Safari 16.4+,
+  Chrome/Edge 111+, or Firefox 128+; older browsers, notably iPhones that stop at
+  iOS 15, are no longer supported by the public storefront. The tenant/admin app
+  is unchanged and stays on Tailwind 3
+
+### Operations
+
+- `ci` — the backup-recovery job's WAL-upload check runs against Versity Gateway
+  after MinIO withdrew its public images from Docker Hub and quay.io
+- `ci` — frontend dependency audit clears new `brace-expansion` advisories and
+  allowlists only GHSA-vfj7-8cjw-p6xm (`braces`, no patched release), reachable
+  solely through Tailwind 3's build-time globbing; every other high or critical
+  advisory still fails the build
+- `storefront` — `npm run dev` now keeps the shop host when proxying to the
+  local backend, so the dev server shows the shop instead of "The shop is closed"
+
+### What shopkeepers get
+
+- Nothing changes in how the counter, stock, or reports work; this release keeps
+  the system on supported, security-patched software
+- The online store looks the same as before on current phones and computers.
+  Customers on old iPhones that cannot update past iOS 15 will see it without
+  its styling; every browser on those iPhones uses the same engine, so the fix
+  is a newer phone or a computer
+
 ## [1.3.0] - 2026-09-07
 
 ### Catalog
