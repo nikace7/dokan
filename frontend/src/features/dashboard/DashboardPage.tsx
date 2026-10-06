@@ -276,7 +276,11 @@ export function DashboardPage() {
       </nav>
 
       {data.recent_bills ? (
-        <RecentBills bills={data.recent_bills} canViewSalesReport={canViewSalesReport} />
+        <RecentBills
+          bills={data.recent_bills}
+          canViewSalesReport={canViewSalesReport}
+          canViewBills={hasPermission(user, 'sale.view')}
+        />
       ) : null}
     </main>
   );

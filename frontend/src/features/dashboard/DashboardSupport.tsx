@@ -36,9 +36,11 @@ export function DashboardSkeleton() {
 export function RecentBills({
   bills,
   canViewSalesReport,
+  canViewBills,
 }: {
   bills: DashboardBill[];
   canViewSalesReport: boolean;
+  canViewBills: boolean;
 }) {
   const { t } = useTranslation();
   useMoneyDisplay();
@@ -46,7 +48,11 @@ export function RecentBills({
     <Card
       title={t('dashboard.recentBills')}
       actions={
-        canViewSalesReport ? (
+        canViewBills ? (
+          <Link to="/bills" className="text-sm font-medium text-primary hover:underline">
+            {t('dashboard.allBills')}
+          </Link>
+        ) : canViewSalesReport ? (
           <Link to="/reports/sales" className="text-sm font-medium text-primary hover:underline">
             {t('dashboard.viewSales')}
           </Link>
@@ -63,7 +69,16 @@ export function RecentBills({
               className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5 text-sm"
             >
               <div className="min-w-0">
-                <p className="font-mono font-medium">{bill.invoice_no}</p>
+                {canViewBills ? (
+                  <Link
+                    to={`/bills/${bill.id}`}
+                    className="font-mono font-medium text-primary hover:underline"
+                  >
+                    {bill.invoice_no}
+                  </Link>
+                ) : (
+                  <p className="font-mono font-medium">{bill.invoice_no}</p>
+                )}
                 <p className="truncate text-muted-foreground">
                   {bill.customer_name ?? t('billing.walkIn')}
                 </p>

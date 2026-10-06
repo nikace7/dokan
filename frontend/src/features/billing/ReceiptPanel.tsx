@@ -4,14 +4,15 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { recordReceiptPrint } from '@/features/billing/api';
+import { billNumber, recordReceiptPrint } from '@/features/billing/api';
 import type { SalesInvoice } from '@/features/billing/api';
 import { formatNpr } from '@/lib/money';
 import { useCurrencyStore } from '@/stores/currency';
 
 interface ReceiptPanelProps {
   invoice: SalesInvoice;
-  onNewBill: () => void;
+  /** Checkout flow only: shows "Sale completed" and the New bill button. */
+  onNewBill?: () => void;
 }
 
 /**
@@ -36,7 +37,7 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
   const printInFlight = useRef(false);
-  const invoiceNumber = `${invoice.doc_type === 'RETURN' ? 'RET' : invoice.invoice_prefix}-${invoice.invoice_no}`;
+  const invoiceNumber = billNumber(invoice);
 
   const printReceipt = useCallback(async () => {
     if (printInFlight.current) return;
@@ -57,9 +58,11 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
 
   return (
     <Card id="sales-receipt" className="mx-auto max-w-lg">
-      <div className="receipt-screen-only text-center">
-        <p className="text-sm font-medium text-green-700">{t('billing.receipt.saleCompleted')}</p>
-      </div>
+      {onNewBill ? (
+        <div className="receipt-screen-only text-center">
+          <p className="text-sm font-medium text-green-700">{t('billing.receipt.saleCompleted')}</p>
+        </div>
+      ) : null}
       <div className="text-center">
         <h1 className="text-xl font-bold">{invoice.tenant_name}</h1>
         {invoice.tenant_name_np ? <p className="font-medium">{invoice.tenant_name_np}</p> : null}
@@ -141,7 +144,7 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
 
       <p className="mt-4 text-center text-xs">Thank you / धन्यवाद</p>
 
-      <div className="receipt-actions mt-6 grid gap-2 sm:grid-cols-2">
+      <div className={`receipt-actions mt-6 grid gap-2 ${onNewBill ? 'sm:grid-cols-2' : ''}`}>
         <Button
           variant="secondary"
           size="lg"
@@ -150,9 +153,11 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
         >
           {isPrinting ? t('billing.receipt.printing') : t('billing.receipt.reprint')}
         </Button>
-        <Button size="lg" onClick={onNewBill} autoFocus>
-          {t('billing.receipt.newBill')}
-        </Button>
+        {onNewBill ? (
+          <Button size="lg" onClick={onNewBill} autoFocus>
+            {t('billing.receipt.newBill')}
+          </Button>
+        ) : null}
       </div>
       {printError ? (
         <p role="alert" className="receipt-screen-only mt-3 text-sm text-amber-700">
