@@ -6,6 +6,7 @@ import {
   Boxes,
   LayoutDashboard,
   Package,
+  ReceiptText,
   Repeat,
   ScanLine,
   ScrollText,
@@ -49,6 +50,7 @@ const REPORT_VIEW_CODES: PermissionCodename[] = [
 const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'dashboard', icon: LayoutDashboard, end: true },
   { to: '/billing', labelKey: 'billing', icon: ScanLine, anyOf: ['sale.create'] },
+  { to: '/bills', labelKey: 'bills', icon: ReceiptText, anyOf: ['sale.view'] },
   {
     to: '/online-orders',
     labelKey: 'onlineOrders',
@@ -95,6 +97,7 @@ type NavSectionKey = (typeof NAV_SECTION_ORDER)[number];
 export const NAV_SECTION_BY_PATH: Record<string, NavSectionKey> = {
   '/billing': 'sales',
   '/billing/simple': 'sales',
+  '/bills': 'sales',
   '/online-orders': 'sales',
   '/payments': 'sales',
   '/ledgers': 'sales',

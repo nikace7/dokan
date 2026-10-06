@@ -25,6 +25,16 @@ const SharedBillPage = lazy(() =>
     default: Component,
   })),
 );
+const BillsPage = lazy(() =>
+  import('@/features/bills/BillsPage').then(({ BillsPage: Component }) => ({
+    default: Component,
+  })),
+);
+const BillDetailPage = lazy(() =>
+  import('@/features/bills/BillDetailPage').then(({ BillDetailPage: Component }) => ({
+    default: Component,
+  })),
+);
 const SimpleSalePage = lazy(() =>
   import('@/features/billing/SimpleSalePage').then(({ SimpleSalePage: Component }) => ({
     default: Component,
@@ -215,6 +225,8 @@ function getRouter() {
         { path: '/', element: <DashboardPage /> },
         { path: '/billing', element: <BillingPage /> },
         { path: '/billing/simple', element: <SimpleSalePage /> },
+        { path: '/bills', element: <BillsPage /> },
+        { path: '/bills/:id', element: <BillDetailPage /> },
         { path: '/online-orders', element: <OnlineOrdersPage /> },
         { path: '/catalog', element: <ItemsPage /> },
         { path: '/catalog/items/new', element: <QuickAddProductPage /> },

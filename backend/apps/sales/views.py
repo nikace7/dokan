@@ -149,6 +149,7 @@ class SaleListView(_SalesAPIView):
             tenant,
             _user(request),
             status=request.query_params.get("status", ""),
+            doc_type=request.query_params.get("doc_type", ""),
             branch_id=_uuid_param(request, "branch"),
             customer_id=_uuid_param(request, "customer"),
             invoice_no=_invoice_no_param(request),
