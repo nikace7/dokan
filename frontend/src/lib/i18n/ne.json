@@ -33,6 +33,7 @@
   "nav": {
     "dashboard": "ड्यासबोर्ड",
     "billing": "बिलिङ",
+    "bills": "बिलहरू",
     "onlineOrders": "अनलाइन अर्डर",
     "catalog": "क्याटालग",
     "pricing": "मूल्य",
@@ -237,6 +238,86 @@
       "priceRange": "मूल्य दायरा: {{min}} – {{max}}",
       "minOnly": "न्यूनतम मूल्य: {{price}}",
       "maxOnly": "अधिकतम मूल्य: {{price}}"
+    }
+  },
+  "bills": {
+    "title": "बिलहरू",
+    "description": "पसलले बनाएका सबै बिल। कुनै बिल खोलेर त्यसका सामान र जम्मा कसरी निस्कियो हेर्नुहोस्।",
+    "count_one": "{{count}} बिल",
+    "count_other": "{{count}} बिल",
+    "searchingNumber": "जुनसुकै मितिको बिल नं. {{number}} देखाउँदै।",
+    "empty": "यी फिल्टरसँग मिल्ने बिल छैन।",
+    "noNumber": {
+      "HELD": "होल्ड गरिएको बिल (नम्बर छैन)",
+      "CANCELLED": "रद्द गरिएको बिल (नम्बर छैन)"
+    },
+    "credit": "उधारो",
+    "pagination": "बिल पृष्ठ",
+    "previous": "अघिल्लो",
+    "next": "अर्को",
+    "pageOf": "पृष्ठ {{page}} / {{total}}",
+    "back": "बिलहरूमा फर्कनुहोस्",
+    "notFound": "यो बिल भेटिएन।",
+    "billTitle": "बिल {{number}}",
+    "filters": {
+      "status": "स्थिति",
+      "type": "प्रकार",
+      "allStatuses": "सबै स्थिति",
+      "allTypes": "सबै प्रकार"
+    },
+    "status": {
+      "COMPLETED": "पूरा",
+      "HELD": "होल्ड",
+      "CANCELLED": "रद्द"
+    },
+    "docType": {
+      "SALE": "बिक्री",
+      "RETURN": "फिर्ता",
+      "EXCHANGE_OUT": "साटफेर"
+    },
+    "search": {
+      "label": "बिल नं.",
+      "placeholder": "जस्तै 42",
+      "button": "खोज्नुहोस्",
+      "clear": "हटाउनुहोस्",
+      "invalid": "पूरा बिल नम्बर लेख्नुहोस्।"
+    },
+    "columns": {
+      "number": "बिल नं.",
+      "date": "मिति (वि.सं.)",
+      "customer": "ग्राहक",
+      "payment": "भुक्तानी",
+      "status": "स्थिति",
+      "total": "जम्मा"
+    },
+    "detail": {
+      "details": "बिल विवरण",
+      "date": "मिति",
+      "bsDate": "वि.सं. {{date}}",
+      "customer": "ग्राहक",
+      "branch": "शाखा",
+      "cashier": "बिल बनाउने",
+      "billKind": "बिलको प्रकार",
+      "vatBill": "भ्याट बिल",
+      "normalBill": "सामान्य बिल",
+      "prints": "प्रिन्ट संख्या",
+      "discountReason": "छूटको कारण",
+      "reason": "कारण",
+      "itemsAndCalculation": "सामान र हिसाब",
+      "item": "वस्तु",
+      "qty": "परिमाण",
+      "rate": "दर",
+      "lineDiscount": "छूट",
+      "amount": "रकम",
+      "returnedQty": "{{qty}} फिर्ता भयो",
+      "subtotal": "उप-जम्मा",
+      "billDiscount": "बिल छूट",
+      "taxable": "करयोग्य रकम",
+      "vat": "भ्याट",
+      "roundOff": "राउन्ड अफ",
+      "total": "जम्मा",
+      "paid": "भुक्तानी",
+      "due": "बाँकी (उधारो)"
     }
   },
   "share": {
@@ -823,6 +904,7 @@
     "itemsCount_other": "{{count}} वस्तु",
     "atOrBelowReorder": "रिअर्डर स्तर वा त्यसभन्दा कम",
     "viewSales": "बिक्री हेर्नुहोस्",
+    "allBills": "सबै बिल",
     "recentBills": "भर्खरका बिलहरू",
     "noBills": "अहिलेसम्म कुनै बिल छैन।",
     "credit": "उधारो",

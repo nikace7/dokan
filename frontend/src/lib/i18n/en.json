@@ -33,6 +33,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "billing": "Billing",
+    "bills": "Bills",
     "onlineOrders": "Online orders",
     "catalog": "Catalog",
     "pricing": "Pricing",
@@ -237,6 +238,86 @@
       "priceRange": "Price range: {{min}} – {{max}}",
       "minOnly": "Min: {{price}}",
       "maxOnly": "Max: {{price}}"
+    }
+  },
+  "bills": {
+    "title": "Bills",
+    "description": "Every bill your shop has made. Open one to see its items and how the total was worked out.",
+    "count_one": "{{count}} bill",
+    "count_other": "{{count}} bills",
+    "searchingNumber": "Showing bill no. {{number}} from any date.",
+    "empty": "No bills match these filters.",
+    "noNumber": {
+      "HELD": "Held bill (no number yet)",
+      "CANCELLED": "Cancelled bill (never numbered)"
+    },
+    "credit": "Credit",
+    "pagination": "Bill pages",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{total}}",
+    "back": "Back to bills",
+    "notFound": "This bill was not found.",
+    "billTitle": "Bill {{number}}",
+    "filters": {
+      "status": "Status",
+      "type": "Type",
+      "allStatuses": "All statuses",
+      "allTypes": "All types"
+    },
+    "status": {
+      "COMPLETED": "Completed",
+      "HELD": "Held",
+      "CANCELLED": "Cancelled"
+    },
+    "docType": {
+      "SALE": "Sale",
+      "RETURN": "Return",
+      "EXCHANGE_OUT": "Exchange"
+    },
+    "search": {
+      "label": "Bill no.",
+      "placeholder": "e.g. 42",
+      "button": "Find",
+      "clear": "Clear",
+      "invalid": "Enter a whole bill number."
+    },
+    "columns": {
+      "number": "Bill no.",
+      "date": "Date (BS)",
+      "customer": "Customer",
+      "payment": "Payment",
+      "status": "Status",
+      "total": "Total"
+    },
+    "detail": {
+      "details": "Bill details",
+      "date": "Date",
+      "bsDate": "BS {{date}}",
+      "customer": "Customer",
+      "branch": "Branch",
+      "cashier": "Billed by",
+      "billKind": "Bill type",
+      "vatBill": "VAT bill",
+      "normalBill": "Normal bill",
+      "prints": "Times printed",
+      "discountReason": "Discount reason",
+      "reason": "Reason",
+      "itemsAndCalculation": "Items and calculation",
+      "item": "Item",
+      "qty": "Qty",
+      "rate": "Rate",
+      "lineDiscount": "Discount",
+      "amount": "Amount",
+      "returnedQty": "{{qty}} returned",
+      "subtotal": "Subtotal",
+      "billDiscount": "Bill discount",
+      "taxable": "Taxable amount",
+      "vat": "VAT",
+      "roundOff": "Round off",
+      "total": "Total",
+      "paid": "Paid",
+      "due": "Due (udharo)"
     }
   },
   "share": {
@@ -823,6 +904,7 @@
     "itemsCount_other": "{{count}} items",
     "atOrBelowReorder": "At or below reorder level",
     "viewSales": "View sales",
+    "allBills": "All bills",
     "recentBills": "Recent bills",
     "noBills": "No completed bills yet.",
     "credit": "Credit",

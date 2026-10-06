@@ -44,6 +44,7 @@ def list_invoices(
     user: "User",
     *,
     status: str = "",
+    doc_type: str = "",
     branch_id: UUID | None = None,
     customer_id: UUID | None = None,
     invoice_no: int | None = None,
@@ -61,6 +62,8 @@ def list_invoices(
     )
     if status:
         qs = qs.filter(status=status)
+    if doc_type:
+        qs = qs.filter(doc_type=doc_type)
     if branch_id:
         qs = qs.filter(branch_id=branch_id)
     if customer_id:

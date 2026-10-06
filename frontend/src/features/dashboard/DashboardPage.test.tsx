@@ -254,7 +254,8 @@ describe('DashboardPage', () => {
     expect(screen.getAllByRole('link', { name: 'Reports' })).not.toHaveLength(0);
     expect(screen.getByRole('link', { name: 'Customers' })).toHaveAttribute('href', '/customers');
 
-    expect(screen.getByText('INV-1042')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'INV-1042' })).toHaveAttribute('href', '/bills/sale-1');
+    expect(screen.getByRole('link', { name: 'All bills' })).toHaveAttribute('href', '/bills');
     expect(screen.getByText('Sita Rai')).toBeInTheDocument();
     expect(screen.getAllByText('CASH').length).toBeGreaterThan(1);
   });
