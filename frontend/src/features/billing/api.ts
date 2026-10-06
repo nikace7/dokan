@@ -109,6 +109,7 @@ export interface SalesInvoice {
   rate_type_code: string;
   subtotal: string;
   discount_amount: string;
+  discount_reason: string | null;
   taxable_amount: string;
   vat_amount: string;
   round_off: string;
@@ -122,7 +123,17 @@ export interface SalesInvoice {
   business_date_ad: string;
   business_date_bs: string;
   fiscal_year_bs: string;
+  created_by_name: string | null;
+  created_at: string;
   items: SalesInvoiceItem[];
+}
+
+/** Printed bill number (`MAIN-42`, `RET-7` for credit notes); null while a bill is held. */
+export function billNumber(
+  invoice: Pick<SalesInvoice, 'doc_type' | 'invoice_prefix' | 'invoice_no'>,
+): string | null {
+  if (invoice.invoice_no == null) return null;
+  return `${invoice.doc_type === 'RETURN' ? 'RET' : invoice.invoice_prefix}-${invoice.invoice_no}`;
 }
 
 export interface PlanUsageWarning {

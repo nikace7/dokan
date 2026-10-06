@@ -352,3 +352,12 @@ class TestListAndFilters:
         response = auth_client(user).get(SALES_URL, {"invoice_no": "abc"}, **host())
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "INVOICE_NO_INVALID"
+
+    def test_doc_type_filter(self, tenant: Any, user: Any) -> None:
+        SalesInvoiceFactory(tenant=tenant, doc_type="SALE")
+        SalesInvoiceFactory(tenant=tenant, doc_type="RETURN")
+        grant(tenant, user, "sale.view")
+
+        response = auth_client(user).get(SALES_URL, {"doc_type": "RETURN"}, **host())
+        assert response.json()["meta"]["count"] == 1
+        assert response.json()["data"][0]["doc_type"] == "RETURN"
