@@ -8,6 +8,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-06
+
+### Features
+
+- `frontend` — new **Bills** page (Sales → Bills, `sale.view`): every bill
+  with a count, filtered by BS date range, status, type (sale / return /
+  exchange), or bill number (searched across all dates). Filters live in the
+  URL, so Back from a bill keeps them; phones get a card list
+- `frontend` — bill page (`/bills/:id`): date and time, customer, branch, who
+  billed it, VAT or normal bill, print count, and discount or return reason;
+  every line with qty, rate, line discount, amount, and returned qty; then the
+  calculation from subtotal through bill discount, taxable amount, VAT, and
+  round off to total, paid by tender, and due. Completed bills also show the
+  receipt with Reprint and Share
+- `frontend` — dashboard Recent bills open their bill page, with an "All
+  bills" link
+- `backend` — `GET /sales` accepts `doc_type` (`SALE`, `RETURN`,
+  `EXCHANGE_OUT`). No migrations, so rolling back to `v1.4.0` is an image
+  redeploy
+
+### Security
+
+- `frontend`, `storefront` — `source-map-js` 1.2.2 for GHSA-68fv-2mgg-jv7q
+  (high, build-time only)
+
+### What shopkeepers get
+
+- Open **Sales → Bills** to see how many bills you made in a day or month,
+  find any old bill by its number, and see exactly what was sold on it and how
+  the total, VAT, payment, and udharo were worked out
+- Reprint or share any completed bill again from that page, not only right
+  after the sale
+
 ## [1.4.0] - 2026-10-05
 
 ### Security
