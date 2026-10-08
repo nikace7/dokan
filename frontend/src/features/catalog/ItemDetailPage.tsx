@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
 import { TableCell } from '@/components/ui/table';
+import { useAuth } from '@/features/auth/useAuth';
 import {
   deactivateItem,
   getItem,
@@ -23,6 +24,7 @@ import { VariantMatrix } from '@/features/catalog/VariantMatrix';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { hasPermission } from '@/lib/permissions';
 
 /** Item.gender codes → the shared genderOptions i18n keys. */
 const GENDER_LABEL_KEY = {
@@ -52,6 +54,8 @@ export function ItemDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const canManage = hasPermission(user, 'catalog.manage');
   useMoneyDisplay();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
@@ -166,37 +170,39 @@ export function ItemDetailPage() {
         <Card
           title={`${item.name} (${item.code})`}
           actions={
-            <div className="flex items-center gap-2">
-              {item.is_active ? (
-                confirmDeactivate ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={deactivateMutation.isPending}
-                      onClick={() => setConfirmDeactivate(false)}
-                    >
-                      {t('common.cancel')}
+            canManage ? (
+              <div className="flex items-center gap-2">
+                {item.is_active ? (
+                  confirmDeactivate ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={deactivateMutation.isPending}
+                        onClick={() => setConfirmDeactivate(false)}
+                      >
+                        {t('common.cancel')}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={deactivateMutation.isPending}
+                        onClick={() => deactivateMutation.mutate(item.id)}
+                      >
+                        {t('catalog.detail.deactivateConfirm')}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmDeactivate(true)}>
+                      {t('catalog.items.deactivate')}
                     </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      disabled={deactivateMutation.isPending}
-                      onClick={() => deactivateMutation.mutate(item.id)}
-                    >
-                      {t('catalog.detail.deactivateConfirm')}
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="ghost" size="sm" onClick={() => setConfirmDeactivate(true)}>
-                    {t('catalog.items.deactivate')}
-                  </Button>
-                )
-              ) : null}
-              <Button asChild variant="secondary" size="sm">
-                <Link to={`/catalog/items/${item.id}/edit`}>{t('catalog.detail.edit')}</Link>
-              </Button>
-            </div>
+                  )
+                ) : null}
+                <Button asChild variant="secondary" size="sm">
+                  <Link to={`/catalog/items/${item.id}/edit`}>{t('catalog.detail.edit')}</Link>
+                </Button>
+              </div>
+            ) : undefined
           }
         >
           <div className="mb-3 flex flex-wrap items-center gap-1.5">

@@ -2,6 +2,7 @@
 
 from typing import Any, ClassVar
 
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -61,8 +62,9 @@ class TenantSettingsView(APIView):
 class BranchListView(APIView):
     """GET /branches — active tenant branch choices."""
 
-    permission_classes = (HasPermission,)
-    method_permissions: ClassVar[dict[str, str]] = {"GET": "catalog.view"}
+    # Every signed-in staff member: each role needs the branch picker, and
+    # branch names are not sensitive within the tenant.
+    permission_classes = (IsAuthenticated,)
     schema_contract: ClassVar[dict[str, Any]] = {
         "GET": operation(response=BranchSerializer, response_many=True, paginated=True),
     }

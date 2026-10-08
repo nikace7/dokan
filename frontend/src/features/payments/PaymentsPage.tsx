@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAuth } from '@/features/auth/useAuth';
 import type { Customer } from '@/features/billing/api';
 import { getCustomer, listPayments, recordReceipt } from '@/features/payments/api';
 import type { Payment, ReceiptMethod } from '@/features/payments/api';
@@ -26,6 +27,7 @@ import { SupplierPaymentForm } from '@/features/payments/SupplierPaymentForm';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { hasPermission } from '@/lib/permissions';
 
 const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
 
@@ -236,16 +238,22 @@ function PaymentList({ payments }: { payments: Payment[] }) {
   );
 }
 
-/** Customer khata collection and append-only payment history. */
+/**
+ * Customer khata collection and append-only payment history. Each section is
+ * shown only to roles that can use it (a cashier sees just the receipt form).
+ */
 export function PaymentsPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const canViewHistory = hasPermission(user, 'payment.view');
   const [method, setMethod] = useState<ReceiptMethod | ''>('');
   const [page, setPage] = useState(1);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const paymentsQuery = useQuery({
     queryKey: ['payments', 'list', method, page],
     queryFn: () => listPayments({ direction: 'RECEIPT', method: method || undefined, page }),
+    enabled: canViewHistory,
   });
   const payments = paymentsQuery.data?.data ?? [];
   const meta = paymentsQuery.data?.meta ?? null;
@@ -257,81 +265,89 @@ export function PaymentsPage() {
           {statusMessage}
         </p>
       ) : null}
-      <CashSessionPanel />
-      <Card title={t('payments.receiptTitle')}>
-        <ReceiptForm
-          onRecorded={() => {
-            setStatusMessage(t('payments.receiptRecorded'));
-            void queryClient.invalidateQueries({ queryKey: ['payments', 'list'] });
-          }}
-        />
-      </Card>
-      <Card title={t('payments.supplierTitle')}>
-        <SupplierPaymentForm onRecorded={() => setStatusMessage(t('payments.supplierRecorded'))} />
-      </Card>
-      <Card title={t('payments.historyTitle')}>
-        <div className="mb-3 flex flex-wrap items-end gap-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="payment-method-filter">{t('payments.filterByMethod')}</Label>
-            <select
-              id="payment-method-filter"
-              value={method}
-              onChange={(event) => {
-                setMethod(event.target.value as ReceiptMethod | '');
-                setPage(1);
-              }}
-              className={selectClasses}
-            >
-              <option value="">{t('payments.allMethods')}</option>
-              {METHODS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        {paymentsQuery.isFetching ? (
-          <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
-        ) : null}
-        {paymentsQuery.isError ? (
-          <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {message(paymentsQuery.error, t('payments.historyLoadError'))}
-          </p>
-        ) : null}
-        {paymentsQuery.data && payments.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            {t('payments.historyEmpty')}
-          </p>
-        ) : null}
-        {payments.length > 0 ? <PaymentList payments={payments} /> : null}
-        {meta && meta.total_pages > 1 ? (
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {t('common.pageOf', { page: meta.page, total: meta.total_pages })} (
-              {t('payments.historyCount', { count: meta.count })})
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((current) => current - 1)}
+      {hasPermission(user, 'cash.manage') ? <CashSessionPanel /> : null}
+      {hasPermission(user, 'payment.receive') ? (
+        <Card title={t('payments.receiptTitle')}>
+          <ReceiptForm
+            onRecorded={() => {
+              setStatusMessage(t('payments.receiptRecorded'));
+              void queryClient.invalidateQueries({ queryKey: ['payments', 'list'] });
+            }}
+          />
+        </Card>
+      ) : null}
+      {hasPermission(user, 'payment.pay') ? (
+        <Card title={t('payments.supplierTitle')}>
+          <SupplierPaymentForm
+            onRecorded={() => setStatusMessage(t('payments.supplierRecorded'))}
+          />
+        </Card>
+      ) : null}
+      {canViewHistory ? (
+        <Card title={t('payments.historyTitle')}>
+          <div className="mb-3 flex flex-wrap items-end gap-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="payment-method-filter">{t('payments.filterByMethod')}</Label>
+              <select
+                id="payment-method-filter"
+                value={method}
+                onChange={(event) => {
+                  setMethod(event.target.value as ReceiptMethod | '');
+                  setPage(1);
+                }}
+                className={selectClasses}
               >
-                {t('common.previous')}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={meta.page >= meta.total_pages}
-                onClick={() => setPage((current) => current + 1)}
-              >
-                {t('common.next')}
-              </Button>
+                <option value="">{t('payments.allMethods')}</option>
+                {METHODS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
-        ) : null}
-      </Card>
+          {paymentsQuery.isFetching ? (
+            <p className="py-4 text-sm text-muted-foreground">{t('common.loading')}</p>
+          ) : null}
+          {paymentsQuery.isError ? (
+            <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {message(paymentsQuery.error, t('payments.historyLoadError'))}
+            </p>
+          ) : null}
+          {paymentsQuery.data && payments.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {t('payments.historyEmpty')}
+            </p>
+          ) : null}
+          {payments.length > 0 ? <PaymentList payments={payments} /> : null}
+          {meta && meta.total_pages > 1 ? (
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {t('common.pageOf', { page: meta.page, total: meta.total_pages })} (
+                {t('payments.historyCount', { count: meta.count })})
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((current) => current - 1)}
+                >
+                  {t('common.previous')}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={meta.page >= meta.total_pages}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  {t('common.next')}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
     </main>
   );
 }
