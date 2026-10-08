@@ -9,10 +9,12 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/features/auth/useAuth';
 import { listCategories, listItems } from '@/features/catalog/api';
 import type { ItemListFilters } from '@/features/catalog/api';
 import { ItemCard } from '@/features/catalog/ItemCard';
 import { selectClasses } from '@/features/catalog/ui';
+import { hasPermission } from '@/lib/permissions';
 
 /**
  * The catalog — a storefront-style photo grid (2-up on phones, up to 5-up on
@@ -22,6 +24,8 @@ import { selectClasses } from '@/features/catalog/ui';
 export function ItemsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canManage = hasPermission(user, 'catalog.manage');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('active');
@@ -57,9 +61,11 @@ export function ItemsPage() {
         className="mb-4"
         title={t('catalog.items.title')}
         actions={
-          <Button asChild size="sm">
-            <Link to="/catalog/items/new">{t('catalog.items.new')}</Link>
-          </Button>
+          canManage ? (
+            <Button asChild size="sm">
+              <Link to="/catalog/items/new">{t('catalog.items.new')}</Link>
+            </Button>
+          ) : undefined
         }
       />
 
@@ -118,7 +124,11 @@ export function ItemsPage() {
         <EmptyState
           icon={PackageSearch}
           title={t('catalog.items.empty')}
-          action={{ label: t('catalog.items.new'), onClick: () => navigate('/catalog/items/new') }}
+          action={
+            canManage
+              ? { label: t('catalog.items.new'), onClick: () => navigate('/catalog/items/new') }
+              : undefined
+          }
         />
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

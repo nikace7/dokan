@@ -60,12 +60,14 @@ class TestBranchList:
     def test_unauthenticated_is_401(self, tenant: Any) -> None:
         assert APIClient().get(BRANCHES_URL, **host(tenant.slug)).status_code == 401
 
-    def test_missing_catalog_view_is_403(self, tenant: Any) -> None:
+    def test_any_signed_in_staff_can_list_branches(self, tenant: Any) -> None:
+        # Every role needs the branch picker (an accountant has no catalog.view).
         user = UserFactory(tenant=tenant)
-        grant(tenant, user, "sale.create")
-        assert (
-            auth_client(user, tenant.slug).get(BRANCHES_URL, **host(tenant.slug)).status_code == 403
-        )
+        grant(tenant, user, "report.sales")
+        BranchFactory(tenant=tenant, code="MAIN", name="Main")
+        response = auth_client(user, tenant.slug).get(BRANCHES_URL, **host(tenant.slug))
+        assert response.status_code == 200
+        assert [row["code"] for row in response.json()["data"]] == ["MAIN"]
 
     def test_lists_active_branches_with_default_first(self, tenant: Any) -> None:
         user = UserFactory(tenant=tenant)
