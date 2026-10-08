@@ -8,6 +8,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-10-08
+
+### Fixes
+
+- `frontend` — one `ROUTE_ACCESS` map drives both the sidebar and a new route
+  guard (`RequireAccess`), so a page is either listed and usable or hidden and
+  blocked. A typed URL or old link to a page outside the role shows a single
+  "This page isn't part of your role" screen (English and Nepali) instead of
+  the page's failing API calls (#191)
+- `frontend` — Payments shows each section only to roles that can use it: the
+  cash-session panel needs `cash.manage`, receipts `payment.receive`, supplier
+  payments `payment.pay`, history `payment.view` (#191)
+- `frontend` — catalog New item / Edit / Deactivate need `catalog.manage`;
+  receipt Reprint needs `sale.create`, since every print is recorded for the
+  "Copy N" marker (#191)
+- `backend` — `GET /branches` is open to any signed-in staff member of the
+  shop; it required `catalog.view`, which broke the branch picker for the
+  Accountant role on every page (#191)
+
+### Roles
+
+- `backend` — the built-in Cashier role can open and close the cash drawer
+  (`cash.manage`), which every sale needs. Migration `accounts.0003` grants it
+  to the existing system Cashier role of every shop; owner-made roles are
+  untouched. Rolling back to `v1.5.0` means reversing that migration first
+  (`migrate accounts 0002`) (#192)
+
+### Platform
+
+- `api` — the published schema records the stock count status default
+  (`OPEN`) that the current drf-spectacular emits (#191)
+
+### What shopkeepers get
+
+- Staff see only the pages and buttons their role can use. No more "You do
+  not have permission" messages inside pages in their menu
+- Cashiers can open the cash drawer in the morning and close it at night
+  from **Payments**, without waiting for the owner
+
 ## [1.5.0] - 2026-10-06
 
 ### Features
