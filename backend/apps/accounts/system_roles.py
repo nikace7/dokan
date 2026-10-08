@@ -16,6 +16,8 @@ SYSTEM_ROLE_PERMISSIONS: Final[dict[str, frozenset[str]]] = {
     },
     "CASHIER": frozenset(
         {
+            # Open and close the cash drawer: a sale needs an open cash session.
+            "cash.manage",
             "catalog.view",
             "customer.credit",
             "customer.manage",
