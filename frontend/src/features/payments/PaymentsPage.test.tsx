@@ -22,6 +22,8 @@ vi.mock('@/features/settings/useWorkspace', () => ({
 
 const fetchMock = vi.fn<typeof fetch>();
 let currentSession: Record<string, unknown> | null = null;
+const ALL_PAYMENT_PERMISSIONS = ['payment.receive', 'payment.pay', 'payment.view', 'cash.manage'];
+let permissions: string[] = ALL_PAYMENT_PERMISSIONS;
 
 function envelope(data: unknown, status = 200): Response {
   return new Response(JSON.stringify({ data, error: null }), {
@@ -123,9 +125,13 @@ describe('PaymentsPage', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock);
     currentSession = null;
+    permissions = ALL_PAYMENT_PERMISSIONS;
     setTokens({ access: 'a', refresh: 'r' });
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
+      if (url.includes('/v1/auth/me')) {
+        return envelope({ id: 'user-1', full_name: 'Staff', permissions, plan: null });
+      }
       if (url.includes('/v1/cash-sessions/current?')) {
         return envelope({ session: currentSession });
       }
@@ -174,6 +180,18 @@ describe('PaymentsPage', () => {
     expect(screen.getAllByText('रू 2,500.00').length).toBeGreaterThan(0);
   });
 
+  it('shows a cashier only the receipt form, without calls it is not allowed to make', async () => {
+    permissions = ['payment.receive'];
+    renderPayments();
+
+    expect(await screen.findByText('Collect customer receipt')).toBeInTheDocument();
+    expect(screen.queryByText('Pay supplier')).not.toBeInTheDocument();
+    expect(screen.queryByText('Payment history')).not.toBeInTheDocument();
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(urls.some((url) => url.includes('/v1/cash-sessions/current'))).toBe(false);
+    expect(urls.some((url) => url.includes('/v1/payments?'))).toBe(false);
+  });
+
   it('renders payment methods as outline badges', async () => {
     renderPayments();
 
@@ -188,6 +206,7 @@ describe('PaymentsPage', () => {
     renderPayments('/payments?customer=customer-1');
 
     // The receipt form swaps its search input for the selected-customer chip.
+    await screen.findByText('Collect customer receipt');
     await waitFor(() =>
       expect(screen.queryByLabelText('Search customer for receipt')).not.toBeInTheDocument(),
     );
@@ -199,7 +218,7 @@ describe('PaymentsPage', () => {
   it('searches for a customer and records a receipt', async () => {
     renderPayments();
 
-    fireEvent.change(screen.getByLabelText('Search customer for receipt'), {
+    fireEvent.change(await screen.findByLabelText('Search customer for receipt'), {
       target: { value: 'Sita' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /Sita Rai\s*9800000000/i }));
@@ -218,7 +237,7 @@ describe('PaymentsPage', () => {
   it('allocates a customer receipt to an invoice', async () => {
     renderPayments();
 
-    fireEvent.change(screen.getByLabelText('Search customer for receipt'), {
+    fireEvent.change(await screen.findByLabelText('Search customer for receipt'), {
       target: { value: 'Sita' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /Sita Rai\s*9800000000/i }));
@@ -256,7 +275,7 @@ describe('PaymentsPage', () => {
   it('records a supplier payment', async () => {
     renderPayments();
 
-    fireEvent.change(screen.getByLabelText('Search supplier for payment'), {
+    fireEvent.change(await screen.findByLabelText('Search supplier for payment'), {
       target: { value: 'ABC' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /ABC Garments\s*9811111111/i }));

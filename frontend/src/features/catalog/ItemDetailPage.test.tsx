@@ -70,10 +70,13 @@ const VARIANTS = [
   },
 ];
 
-function installApiMock() {
+function installApiMock(permissions = ['catalog.view', 'catalog.manage']) {
   fetchMock.mockImplementation((input, init) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
+    if (url.includes('/v1/auth/me')) {
+      return Promise.resolve(envelope({ id: 'user-1', permissions, plan: null }));
+    }
     if (url.includes('/v1/catalog/items/item-1') && method === 'DELETE') {
       return Promise.resolve(envelope({ id: 'item-1', is_active: false }));
     }
@@ -178,7 +181,7 @@ describe('ItemDetailPage', () => {
     renderDetail();
 
     await screen.findByText('T-Shirt (TS)');
-    fireEvent.click(screen.getByRole('button', { name: 'Deactivate' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Deactivate' }));
 
     // No DELETE until the confirm button is pressed.
     expect(fetchMock.mock.calls.some(([, init]) => (init?.method ?? 'GET') === 'DELETE')).toBe(
@@ -196,5 +199,19 @@ describe('ItemDetailPage', () => {
       ).toBe(true);
     });
     expect(await screen.findByText('Catalog grid')).toBeInTheDocument();
+  });
+
+  it('shows a view-only role the item without Edit or Deactivate', async () => {
+    installApiMock(['catalog.view']);
+    renderDetail();
+
+    await screen.findByText('T-Shirt (TS)');
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/v1/auth/me'))).toBe(
+        true,
+      ),
+    );
+    expect(screen.queryByRole('button', { name: 'Deactivate' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /edit/i })).not.toBeInTheDocument();
   });
 });

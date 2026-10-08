@@ -1,7 +1,9 @@
 import { lazy } from 'react';
+import type { ReactNode } from 'react';
 import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 
 import { AppShell } from '@/components/layout/AppShell';
+import { RequireAccess } from '@/features/auth/RequireAccess';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 
 const AuditPage = lazy(() =>
@@ -205,6 +207,11 @@ function NotFound() {
   );
 }
 
+/** A signed-in page, blocked for roles that cannot use it (ROUTE_ACCESS). */
+function page(path: string, element: ReactNode) {
+  return { path, element: <RequireAccess path={path}>{element}</RequireAccess> };
+}
+
 let router: ReturnType<typeof createBrowserRouter> | null = null;
 
 function getRouter() {
@@ -222,39 +229,39 @@ function getRouter() {
         </RequireAuth>
       ),
       children: [
-        { path: '/', element: <DashboardPage /> },
-        { path: '/billing', element: <BillingPage /> },
-        { path: '/billing/simple', element: <SimpleSalePage /> },
-        { path: '/bills', element: <BillsPage /> },
-        { path: '/bills/:id', element: <BillDetailPage /> },
-        { path: '/online-orders', element: <OnlineOrdersPage /> },
-        { path: '/catalog', element: <ItemsPage /> },
-        { path: '/catalog/items/new', element: <QuickAddProductPage /> },
-        { path: '/catalog/items/:id', element: <ItemDetailPage /> },
-        { path: '/catalog/items/:id/edit', element: <ItemFormPage /> },
-        { path: '/pricing', element: <PricingPage /> },
-        { path: '/customers', element: <CustomersPage /> },
-        { path: '/stock', element: <StockPage /> },
-        { path: '/stock/transfers', element: <TransfersPage /> },
-        { path: '/stock/counts', element: <CountsPage /> },
-        { path: '/purchasing', element: <PurchasingPage /> },
-        { path: '/expenses', element: <ExpensesPage /> },
-        { path: '/payments', element: <PaymentsPage /> },
-        { path: '/ledgers', element: <PartyLedgerPage /> },
-        { path: '/returns', element: <ReturnsPage /> },
-        { path: '/audit', element: <AuditPage /> },
-        { path: '/settings', element: <SettingsPage /> },
-        { path: '/settings/security', element: <SecurityPage /> },
-        { path: '/settings/staff', element: <StaffPage /> },
-        { path: '/settings/online-store', element: <OnlineStorePage /> },
-        { path: '/settings/support-access', element: <SupportAccessPage /> },
-        { path: '/exchanges', element: <ExchangePage /> },
-        { path: '/reports', element: <ReportsHomePage /> },
-        { path: '/reports/sales', element: <SalesReportPage /> },
-        { path: '/reports/stock', element: <StockReportsPage /> },
-        { path: '/reports/profit', element: <ProfitReportPage /> },
-        { path: '/reports/dues', element: <DuesReportPage /> },
-        { path: '/reports/vat', element: <VatRegisterPage /> },
+        page('/', <DashboardPage />),
+        page('/billing', <BillingPage />),
+        page('/billing/simple', <SimpleSalePage />),
+        page('/bills', <BillsPage />),
+        page('/bills/:id', <BillDetailPage />),
+        page('/online-orders', <OnlineOrdersPage />),
+        page('/catalog', <ItemsPage />),
+        page('/catalog/items/new', <QuickAddProductPage />),
+        page('/catalog/items/:id', <ItemDetailPage />),
+        page('/catalog/items/:id/edit', <ItemFormPage />),
+        page('/pricing', <PricingPage />),
+        page('/customers', <CustomersPage />),
+        page('/stock', <StockPage />),
+        page('/stock/transfers', <TransfersPage />),
+        page('/stock/counts', <CountsPage />),
+        page('/purchasing', <PurchasingPage />),
+        page('/expenses', <ExpensesPage />),
+        page('/payments', <PaymentsPage />),
+        page('/ledgers', <PartyLedgerPage />),
+        page('/returns', <ReturnsPage />),
+        page('/audit', <AuditPage />),
+        page('/settings', <SettingsPage />),
+        page('/settings/security', <SecurityPage />),
+        page('/settings/staff', <StaffPage />),
+        page('/settings/online-store', <OnlineStorePage />),
+        page('/settings/support-access', <SupportAccessPage />),
+        page('/exchanges', <ExchangePage />),
+        page('/reports', <ReportsHomePage />),
+        page('/reports/sales', <SalesReportPage />),
+        page('/reports/stock', <StockReportsPage />),
+        page('/reports/profit', <ProfitReportPage />),
+        page('/reports/dues', <DuesReportPage />),
+        page('/reports/vat', <VatRegisterPage />),
       ],
     },
     { path: '*', element: <NotFound /> },

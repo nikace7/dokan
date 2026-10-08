@@ -30,6 +30,11 @@
   "currency": {
     "label": "Currency"
   },
+  "access": {
+    "title": "This page isn't part of your role",
+    "body": "Your account can't use this page. If you need it, ask the shop owner to add it to your role in Settings → Staff.",
+    "home": "Go to dashboard"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "billing": "Billing",
