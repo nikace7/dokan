@@ -12099,6 +12099,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/StockCountStatusEnum'
           readOnly: true
+          default: OPEN
         started_at:
           type: string
           format: date-time
