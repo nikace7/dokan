@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useAuth } from '@/features/auth/useAuth';
 import { billNumber, recordReceiptPrint } from '@/features/billing/api';
 import type { SalesInvoice } from '@/features/billing/api';
 import { formatNpr } from '@/lib/money';
+import { hasPermission } from '@/lib/permissions';
 import { useCurrencyStore } from '@/stores/currency';
 
 interface ReceiptPanelProps {
@@ -38,6 +40,9 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
   const [printError, setPrintError] = useState<string | null>(null);
   const printInFlight = useRef(false);
   const invoiceNumber = billNumber(invoice);
+  // Every print is recorded for the "Copy N" marker, which needs sale.create;
+  // a view-only role (accountant) reads the receipt but does not print it.
+  const canPrint = hasPermission(useAuth().user, 'sale.create');
 
   const printReceipt = useCallback(async () => {
     if (printInFlight.current) return;
@@ -145,14 +150,16 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
       <p className="mt-4 text-center text-xs">Thank you / धन्यवाद</p>
 
       <div className={`receipt-actions mt-6 grid gap-2 ${onNewBill ? 'sm:grid-cols-2' : ''}`}>
-        <Button
-          variant="secondary"
-          size="lg"
-          disabled={isPrinting}
-          onClick={() => void printReceipt()}
-        >
-          {isPrinting ? t('billing.receipt.printing') : t('billing.receipt.reprint')}
-        </Button>
+        {canPrint ? (
+          <Button
+            variant="secondary"
+            size="lg"
+            disabled={isPrinting}
+            onClick={() => void printReceipt()}
+          >
+            {isPrinting ? t('billing.receipt.printing') : t('billing.receipt.reprint')}
+          </Button>
+        ) : null}
         {onNewBill ? (
           <Button size="lg" onClick={onNewBill} autoFocus>
             {t('billing.receipt.newBill')}

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -69,6 +69,15 @@ const BILL = {
   ],
 };
 
+/** Serves the bill, plus /auth/me with the given permissions. */
+function serveBill(bill: unknown, permissions = ['sale.view', 'sale.create']) {
+  fetchMock.mockImplementation(async (input) =>
+    String(input).includes('/v1/auth/me')
+      ? respond(200, { data: { id: 'user-1', permissions, plan: null }, error: null })
+      : respond(200, { data: bill, error: null }),
+  );
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -95,11 +104,13 @@ describe('BillDetailPage', () => {
   });
 
   it('shows who and when, every line, and the calculation step by step', async () => {
-    fetchMock.mockResolvedValue(respond(200, { data: BILL, error: null }));
+    serveBill(BILL);
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Bill MAIN-42' })).toBeInTheDocument();
-    expect(String(fetchMock.mock.calls[0]?.[0])).toMatch(/\/v1\/sales\/bill-1$/);
+    expect(fetchMock.mock.calls.some(([input]) => /\/v1\/sales\/bill-1$/.test(String(input)))).toBe(
+      true,
+    );
     expect(screen.getByText('Sita Cashier')).toBeInTheDocument();
     expect(screen.getByText('Festival offer')).toBeInTheDocument();
     expect(screen.getByText('VAT bill')).toBeInTheDocument();
@@ -115,7 +126,7 @@ describe('BillDetailPage', () => {
   });
 
   it('offers reprint and share for a completed bill, without checkout buttons', async () => {
-    fetchMock.mockResolvedValue(respond(200, { data: BILL, error: null }));
+    serveBill(BILL);
     renderPage();
 
     expect(await screen.findByRole('button', { name: 'Reprint' })).toBeInTheDocument();
@@ -123,10 +134,21 @@ describe('BillDetailPage', () => {
     expect(screen.queryByText('Sale completed')).not.toBeInTheDocument();
   });
 
-  it('shows a held bill without a receipt to print', async () => {
-    fetchMock.mockResolvedValue(
-      respond(200, { data: { ...BILL, status: 'HELD', invoice_no: null }, error: null }),
+  it('hides Reprint from a view-only role, since every print is recorded', async () => {
+    serveBill(BILL, ['sale.view']);
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Bill MAIN-42' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/v1/auth/me'))).toBe(
+        true,
+      ),
     );
+    expect(screen.queryByRole('button', { name: 'Reprint' })).not.toBeInTheDocument();
+  });
+
+  it('shows a held bill without a receipt to print', async () => {
+    serveBill({ ...BILL, status: 'HELD', invoice_no: null });
     renderPage();
 
     expect(
