@@ -4244,6 +4244,7 @@ export interface components {
             /** Format: uuid */
             readonly branch: string;
             readonly branch_code: string;
+            /** @default OPEN */
             readonly status: components["schemas"]["StockCountStatusEnum"];
             /** Format: date-time */
             readonly started_at: string;
