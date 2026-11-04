@@ -27,7 +27,7 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, not_found_code, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "pricing.view",
@@ -39,13 +39,6 @@ _METHOD_PERMISSIONS: dict[str, str] = {
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
-    instance = model.objects.filter(tenant=tenant, pk=pk).first()
-    if instance is None:
-        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
-    return instance
 
 
 def _uuid_param(request: Request, name: str) -> UUID | None:
@@ -124,7 +117,7 @@ class RateTypeDetailView(_PricingAPIView):
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        rate_type = _get_or_404(tenant, RateType, pk, "Rate type")
+        rate_type = get_or_404(tenant, RateType, pk, "Rate type")
         serializer = RateTypeSerializer(
             rate_type, data=request.data, partial=True, context=self._context(request)
         )
@@ -134,7 +127,7 @@ class RateTypeDetailView(_PricingAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        rate_type = _get_or_404(tenant, RateType, pk, "Rate type")
+        rate_type = get_or_404(tenant, RateType, pk, "Rate type")
         services.deactivate_rate_type(rate_type)
         return ok({"id": str(pk), "is_active": False})
 
@@ -154,11 +147,11 @@ class ResolvePriceView(_PricingAPIView):
         variant_id = _uuid_param(request, "variant")
         if variant_id is None:
             return error(400, "VARIANT_REQUIRED", "Provide a variant query parameter.")
-        variant = _get_or_404(tenant, ItemVariant, variant_id, "Variant")
+        variant = get_or_404(tenant, ItemVariant, variant_id, "Variant")
 
         rate_type_id = _uuid_param(request, "rate_type")
         rate_type = (
-            _get_or_404(tenant, RateType, rate_type_id, "Rate type")
+            get_or_404(tenant, RateType, rate_type_id, "Rate type")
             if rate_type_id
             else services.get_default_rate_type(tenant)
         )
@@ -206,7 +199,7 @@ class PriceListView(_PricingAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        rate_type = _get_or_404(tenant, RateType, data["rate_type"], "Rate type")
+        rate_type = get_or_404(tenant, RateType, data["rate_type"], "Rate type")
         targets: dict[str, Any] = {}
         for scope_fk, model, what in (
             ("variant", ItemVariant, "Variant"),
@@ -214,7 +207,7 @@ class PriceListView(_PricingAPIView):
             ("category", Category, "Category"),
         ):
             if data.get(scope_fk):
-                targets[scope_fk] = _get_or_404(tenant, model, data[scope_fk], what)
+                targets[scope_fk] = get_or_404(tenant, model, data[scope_fk], what)
 
         item_price = services.set_price(
             tenant,
@@ -275,7 +268,7 @@ class BoundsView(_PricingAPIView):
         model = {"item": Item, "variant": ItemVariant}.get(target_kind)
         if model is None:
             return error(400, "TARGET_INVALID", "Target kind must be 'item' or 'variant'.")
-        target = _get_or_404(tenant, model, pk, target_kind.capitalize())
+        target = get_or_404(tenant, model, pk, target_kind.capitalize())
 
         serializer = BoundsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

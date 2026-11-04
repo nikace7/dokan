@@ -29,7 +29,7 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, not_found_code, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "stock.view",
@@ -41,13 +41,6 @@ _METHOD_PERMISSIONS: dict[str, str] = {
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
-    instance = model.objects.filter(tenant=tenant, pk=pk).first()
-    if instance is None:
-        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
-    return instance
 
 
 class _PurchasingAPIView(APIView):
@@ -111,12 +104,12 @@ class SupplierDetailView(_PurchasingAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        supplier = _get_or_404(tenant, Supplier, pk, "Supplier")
+        supplier = get_or_404(tenant, Supplier, pk, "Supplier")
         return ok(SupplierSerializer(supplier, context=self._context(request)).data)
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        supplier = _get_or_404(tenant, Supplier, pk, "Supplier")
+        supplier = get_or_404(tenant, Supplier, pk, "Supplier")
         serializer = SupplierSerializer(
             supplier, data=request.data, partial=True, context=self._context(request)
         )
@@ -126,7 +119,7 @@ class SupplierDetailView(_PurchasingAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        supplier = _get_or_404(tenant, Supplier, pk, "Supplier")
+        supplier = get_or_404(tenant, Supplier, pk, "Supplier")
         services.deactivate_supplier(supplier)
         return ok({"id": str(pk), "is_active": False})
 
@@ -189,11 +182,11 @@ class InvoiceListView(_PurchasingAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        branch = _get_or_404(tenant, Branch, data["branch"], "Branch")
-        supplier = _get_or_404(tenant, Supplier, data["supplier"], "Supplier")
+        branch = get_or_404(tenant, Branch, data["branch"], "Branch")
+        supplier = get_or_404(tenant, Supplier, data["supplier"], "Supplier")
         lines = [
             {
-                "variant": _get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
+                "variant": get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
                 "qty": raw["qty"],
                 "unit_cost": raw["unit_cost"],
                 "discount": raw.get("discount", 0),
@@ -230,13 +223,13 @@ class InvoiceDetailView(_PurchasingAPIView):
     def get(self, request: Request, pk: UUID) -> Response:
 
         tenant = require_request_tenant(request)
-        invoice = _get_or_404(tenant, PurchaseInvoice, pk, "Purchase invoice")
+        invoice = get_or_404(tenant, PurchaseInvoice, pk, "Purchase invoice")
         return ok(PurchaseInvoiceSerializer(invoice, context=self._context(request)).data)
 
     def patch(self, request: Request, pk: UUID) -> Response:
 
         tenant = require_request_tenant(request)
-        invoice = _get_or_404(tenant, PurchaseInvoice, pk, "Purchase invoice")
+        invoice = get_or_404(tenant, PurchaseInvoice, pk, "Purchase invoice")
         serializer = PurchaseInvoiceUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -246,13 +239,13 @@ class InvoiceDetailView(_PurchasingAPIView):
             if name in data:
                 fields[name] = data[name]
         if "supplier" in data:
-            fields["supplier"] = _get_or_404(tenant, Supplier, data["supplier"], "Supplier")
+            fields["supplier"] = get_or_404(tenant, Supplier, data["supplier"], "Supplier")
 
         lines = None
         if "lines" in data:
             lines = [
                 {
-                    "variant": _get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
+                    "variant": get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
                     "qty": raw["qty"],
                     "unit_cost": raw["unit_cost"],
                     "discount": raw.get("discount", 0),
@@ -275,7 +268,7 @@ class InvoiceConfirmView(_PurchasingAPIView):
     def post(self, request: Request, pk: UUID) -> Response:
 
         tenant = require_request_tenant(request)
-        invoice = _get_or_404(tenant, PurchaseInvoice, pk, "Purchase invoice")
+        invoice = get_or_404(tenant, PurchaseInvoice, pk, "Purchase invoice")
         invoice = services.confirm_purchase_invoice(
             tenant, invoice=invoice, created_by=_user(request)
         )
@@ -289,6 +282,6 @@ class InvoiceCancelView(_PurchasingAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        invoice = _get_or_404(tenant, PurchaseInvoice, pk, "Purchase invoice")
+        invoice = get_or_404(tenant, PurchaseInvoice, pk, "Purchase invoice")
         invoice = services.cancel_purchase_invoice(tenant, invoice=invoice)
         return ok({"id": str(pk), "status": invoice.status})

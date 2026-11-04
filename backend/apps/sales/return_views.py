@@ -15,10 +15,10 @@ from apps.sales.serializers import (
     ReturnCreateSerializer,
     SalesInvoiceDetailSerializer,
 )
-from apps.sales.views import _get_or_404, _idempotency_key, _SalesAPIView, _user
+from apps.sales.views import _idempotency_key, _SalesAPIView, _user
 from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
-from core.responses import error, ok
+from core.responses import error, get_or_404, ok
 
 
 class ReturnCreateView(_SalesAPIView):
@@ -38,10 +38,10 @@ class ReturnCreateView(_SalesAPIView):
         serializer = ReturnCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        original = _get_or_404(tenant, SalesInvoice, data["original_invoice"], "Invoice")
+        original = get_or_404(tenant, SalesInvoice, data["original_invoice"], "Invoice")
         lines = [
             services.ReturnLineInput(
-                variant=_get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
+                variant=get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
                 qty=raw["qty"],
             )
             for raw in data["lines"]
@@ -78,10 +78,10 @@ class ExchangeCreateView(_SalesAPIView):
         serializer = ExchangeCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        original = _get_or_404(tenant, SalesInvoice, data["original_invoice"], "Invoice")
+        original = get_or_404(tenant, SalesInvoice, data["original_invoice"], "Invoice")
         returned_lines = [
             services.ReturnLineInput(
-                variant=_get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
+                variant=get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
                 qty=raw["qty"],
             )
             for raw in data["returned_lines"]

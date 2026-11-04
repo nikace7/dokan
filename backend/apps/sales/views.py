@@ -35,7 +35,7 @@ from core.middleware.tenant import get_request_tenant, require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, not_found_code, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "sale.view",
@@ -46,13 +46,6 @@ _METHOD_PERMISSIONS: dict[str, str] = {
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
-    instance = model.objects.filter(tenant=tenant, pk=pk).first()
-    if instance is None:
-        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
-    return instance
 
 
 def _uuid_param(request: Request, name: str) -> UUID | None:
@@ -115,7 +108,7 @@ class _SalesAPIView(APIView):
     def _build_lines(self, tenant: Any, raw_lines: list[dict[str, Any]]) -> list[Any]:
         lines = []
         for raw in raw_lines:
-            variant = _get_or_404(tenant, ItemVariant, raw["variant"], "Variant")
+            variant = get_or_404(tenant, ItemVariant, raw["variant"], "Variant")
             lines.append(
                 services.SaleLineInput(
                     variant=variant,
@@ -170,10 +163,10 @@ class SaleListView(_SalesAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        branch = _get_or_404(tenant, Branch, data["branch"], "Branch")
-        rate_type = _get_or_404(tenant, RateType, data["rate_type"], "Rate type")
+        branch = get_or_404(tenant, Branch, data["branch"], "Branch")
+        rate_type = get_or_404(tenant, RateType, data["rate_type"], "Rate type")
         customer = (
-            _get_or_404(tenant, Customer, data["customer"], "Customer")
+            get_or_404(tenant, Customer, data["customer"], "Customer")
             if data.get("customer")
             else None
         )
@@ -221,7 +214,7 @@ class ReceiptPrintView(_SalesAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        invoice = _get_or_404(tenant, SalesInvoice, pk, "Invoice")
+        invoice = get_or_404(tenant, SalesInvoice, pk, "Invoice")
         print_count = services.record_receipt_print(tenant, invoice=invoice, actor=_user(request))
         return ok({"id": str(pk), "print_count": print_count})
 
@@ -245,10 +238,10 @@ class HoldBillView(_SalesAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        branch = _get_or_404(tenant, Branch, data["branch"], "Branch")
-        rate_type = _get_or_404(tenant, RateType, data["rate_type"], "Rate type")
+        branch = get_or_404(tenant, Branch, data["branch"], "Branch")
+        rate_type = get_or_404(tenant, RateType, data["rate_type"], "Rate type")
         customer = (
-            _get_or_404(tenant, Customer, data["customer"], "Customer")
+            get_or_404(tenant, Customer, data["customer"], "Customer")
             if data.get("customer")
             else None
         )
@@ -305,7 +298,7 @@ class CompleteBillView(_SalesAPIView):
         tenant = require_request_tenant(request)
         serializer = CompleteBillSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        invoice = _get_or_404(tenant, SalesInvoice, pk, "Invoice")
+        invoice = get_or_404(tenant, SalesInvoice, pk, "Invoice")
         completed = services.complete_held_bill(
             tenant,
             invoice=invoice,
@@ -325,7 +318,7 @@ class CancelBillView(_SalesAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        invoice = _get_or_404(tenant, SalesInvoice, pk, "Invoice")
+        invoice = get_or_404(tenant, SalesInvoice, pk, "Invoice")
         cancelled = services.cancel_held_bill(tenant, invoice=invoice)
         return ok({"id": str(pk), "status": cancelled.status})
 
@@ -338,7 +331,7 @@ class SaleShareView(_SalesAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        invoice = _get_or_404(tenant, SalesInvoice, pk, "Invoice")
+        invoice = get_or_404(tenant, SalesInvoice, pk, "Invoice")
         shared = services.get_or_create_share_token(tenant, invoice=invoice, actor=_user(request))
         assert shared.share_token is not None  # set by the service
         return ok(

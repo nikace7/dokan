@@ -17,6 +17,14 @@ def not_found_code(label: str) -> str:
     return f"{canonical_error_code(label)}_NOT_FOUND"
 
 
+def get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
+    """Fetch a tenant's row, or raise the standard not-found ServiceError."""
+    instance = model.objects.filter(tenant=tenant, pk=pk).first()
+    if instance is None:
+        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
+    return instance
+
+
 def ok(data: Any, http_status: int = status.HTTP_200_OK) -> Response:
     """Success envelope."""
     return Response({"data": data, "error": None}, status=http_status)

@@ -29,7 +29,7 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, not_found_code, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "stock.view",
@@ -39,13 +39,6 @@ _METHOD_PERMISSIONS: dict[str, str] = {
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, model: Any, pk: UUID, what: str) -> Any:
-    instance = model.objects.filter(tenant=tenant, pk=pk).first()
-    if instance is None:
-        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
-    return instance
 
 
 def _uuid_param(request: Request, name: str) -> UUID | None:
@@ -93,8 +86,8 @@ class _InventoryAPIView(APIView):
 
     def _resolve_refs(self, tenant: Any, validated: dict[str, Any]) -> tuple[Any, Any]:
         """Tenant-scoped branch/variant lookup for the write payloads."""
-        branch = _get_or_404(tenant, Branch, validated["branch"], "Branch")
-        variant = _get_or_404(tenant, ItemVariant, validated["variant"], "Variant")
+        branch = get_or_404(tenant, Branch, validated["branch"], "Branch")
+        variant = get_or_404(tenant, ItemVariant, validated["variant"], "Variant")
         return branch, variant
 
 
