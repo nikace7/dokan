@@ -26,7 +26,7 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, not_found_code, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "catalog.view",
@@ -38,13 +38,6 @@ _METHOD_PERMISSIONS: dict[str, str] = {
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, model: Any, pk: UUID, what: str) -> Any:
-    instance = model.objects.filter(tenant=tenant, pk=pk).first()
-    if instance is None:
-        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
-    return instance
 
 
 def _uuid_param(request: Request, name: str) -> UUID | None:
@@ -125,12 +118,12 @@ class CategoryDetailView(_CatalogAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        category = _get_or_404(tenant, Category, pk, "Category")
+        category = get_or_404(tenant, Category, pk, "Category")
         return ok(CategorySerializer(category, context=self._context(request)).data)
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        category = _get_or_404(tenant, Category, pk, "Category")
+        category = get_or_404(tenant, Category, pk, "Category")
         serializer = CategorySerializer(
             category, data=request.data, partial=True, context=self._context(request)
         )
@@ -140,7 +133,7 @@ class CategoryDetailView(_CatalogAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        category = _get_or_404(tenant, Category, pk, "Category")
+        category = get_or_404(tenant, Category, pk, "Category")
         services.deactivate(category)
         return ok({"id": str(pk), "is_active": False})
 
@@ -179,7 +172,7 @@ class BrandDetailView(_CatalogAPIView):
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        brand = _get_or_404(tenant, Brand, pk, "Brand")
+        brand = get_or_404(tenant, Brand, pk, "Brand")
         serializer = BrandSerializer(
             brand, data=request.data, partial=True, context=self._context(request)
         )
@@ -189,7 +182,7 @@ class BrandDetailView(_CatalogAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        brand = _get_or_404(tenant, Brand, pk, "Brand")
+        brand = get_or_404(tenant, Brand, pk, "Brand")
         services.deactivate(brand)
         return ok({"id": str(pk), "is_active": False})
 
@@ -227,7 +220,7 @@ class SizeChartDetailView(_CatalogAPIView):
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        chart = _get_or_404(tenant, SizeChart, pk, "Size chart")
+        chart = get_or_404(tenant, SizeChart, pk, "Size chart")
         serializer = SizeChartSerializer(
             chart, data=request.data, partial=True, context=self._context(request)
         )
@@ -237,7 +230,7 @@ class SizeChartDetailView(_CatalogAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        chart = _get_or_404(tenant, SizeChart, pk, "Size chart")
+        chart = get_or_404(tenant, SizeChart, pk, "Size chart")
         services.deactivate(chart)
         return ok({"id": str(pk), "is_active": False})
 
@@ -279,12 +272,12 @@ class ItemDetailView(_CatalogAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        item = _get_or_404(tenant, Item, pk, "Item")
+        item = get_or_404(tenant, Item, pk, "Item")
         return ok(ItemSerializer(item, context=self._context(request)).data)
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        item = _get_or_404(tenant, Item, pk, "Item")
+        item = get_or_404(tenant, Item, pk, "Item")
         serializer = ItemSerializer(
             item, data=request.data, partial=True, context=self._context(request)
         )
@@ -294,7 +287,7 @@ class ItemDetailView(_CatalogAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        item = _get_or_404(tenant, Item, pk, "Item")
+        item = get_or_404(tenant, Item, pk, "Item")
         services.deactivate(item)
         return ok({"id": str(pk), "is_active": False})
 
@@ -323,7 +316,7 @@ class ItemImageView(_CatalogAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        item = _get_or_404(tenant, Item, pk, "Item")
+        item = get_or_404(tenant, Item, pk, "Item")
         uploaded = request.FILES.get("image")
         if uploaded is None:
             raise ServiceError("IMAGE_REQUIRED", "Attach an image file as the 'image' field.")
@@ -332,6 +325,6 @@ class ItemImageView(_CatalogAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        item = _get_or_404(tenant, Item, pk, "Item")
+        item = get_or_404(tenant, Item, pk, "Item")
         item = services.clear_item_image(item)
         return ok({"id": str(item.pk), "image_url": None})

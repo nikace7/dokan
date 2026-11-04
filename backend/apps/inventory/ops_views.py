@@ -30,7 +30,7 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, not_found_code, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "stock.view",
@@ -42,13 +42,6 @@ _METHOD_PERMISSIONS: dict[str, str] = {
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
-    instance = model.objects.filter(tenant=tenant, pk=pk).first()
-    if instance is None:
-        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
-    return instance
 
 
 def _uuid_param(request: Request, name: str) -> UUID | None:
@@ -82,7 +75,7 @@ class _OpsAPIView(APIView):
     def _lines(self, tenant: Any, raw_lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
-                "variant": _get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
+                "variant": get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
                 "qty": raw["qty"],
             }
             for raw in raw_lines
@@ -123,8 +116,8 @@ class TransferListView(_TransferAPIView):
         serializer = TransferCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        from_branch = _get_or_404(tenant, Branch, data["from_branch"], "From branch")
-        to_branch = _get_or_404(tenant, Branch, data["to_branch"], "To branch")
+        from_branch = get_or_404(tenant, Branch, data["from_branch"], "From branch")
+        to_branch = get_or_404(tenant, Branch, data["to_branch"], "To branch")
         transfer = transfer_services.create_transfer(
             tenant,
             from_branch=from_branch,
@@ -146,7 +139,7 @@ class TransferDetailView(_TransferAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
+        transfer = get_or_404(tenant, StockTransfer, pk, "Transfer")
         return ok(StockTransferSerializer(transfer, context=self._context(request)).data)
 
 
@@ -157,7 +150,7 @@ class TransferSendView(_TransferAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
+        transfer = get_or_404(tenant, StockTransfer, pk, "Transfer")
         transfer = transfer_services.send_transfer(
             tenant, transfer=transfer, created_by=_user(request)
         )
@@ -176,7 +169,7 @@ class TransferReceiveView(_TransferAPIView):
         tenant = require_request_tenant(request)
         serializer = TransferReceiveSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
+        transfer = get_or_404(tenant, StockTransfer, pk, "Transfer")
         transfer = transfer_services.receive_transfer(
             tenant,
             transfer=transfer,
@@ -193,7 +186,7 @@ class TransferCompleteView(_TransferAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
+        transfer = get_or_404(tenant, StockTransfer, pk, "Transfer")
         transfer = transfer_services.complete_transfer(
             tenant, transfer=transfer, created_by=_user(request)
         )
@@ -205,7 +198,7 @@ class TransferCancelView(_TransferAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        transfer = _get_or_404(tenant, StockTransfer, pk, "Transfer")
+        transfer = get_or_404(tenant, StockTransfer, pk, "Transfer")
         transfer = transfer_services.cancel_transfer(tenant, transfer=transfer)
         return ok({"id": str(pk), "status": transfer.status})
 
@@ -244,7 +237,7 @@ class CountListView(_OpsAPIView):
         tenant = require_request_tenant(request)
         serializer = CountCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        branch = _get_or_404(tenant, Branch, serializer.validated_data["branch"], "Branch")
+        branch = get_or_404(tenant, Branch, serializer.validated_data["branch"], "Branch")
         count = count_services.start_count(tenant, branch=branch, created_by=_user(request))
         return ok(
             StockCountSerializer(count, context=self._context(request)).data,
@@ -259,7 +252,7 @@ class CountDetailView(_OpsAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        count = _get_or_404(tenant, StockCount, pk, "Count")
+        count = get_or_404(tenant, StockCount, pk, "Count")
         return ok(StockCountSerializer(count, context=self._context(request)).data)
 
 
@@ -272,10 +265,10 @@ class CountRecordView(_OpsAPIView):
         tenant = require_request_tenant(request)
         serializer = CountRecordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        count = _get_or_404(tenant, StockCount, pk, "Count")
+        count = get_or_404(tenant, StockCount, pk, "Count")
         counts = [
             {
-                "variant": _get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
+                "variant": get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
                 "counted_qty": raw["counted_qty"],
                 "note": raw.get("note", ""),
             }
@@ -292,7 +285,7 @@ class CountFinalizeView(_OpsAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        count = _get_or_404(tenant, StockCount, pk, "Count")
+        count = get_or_404(tenant, StockCount, pk, "Count")
         count = count_services.finalize_count(tenant, count=count, created_by=_user(request))
         return ok(StockCountSerializer(count, context=self._context(request)).data)
 
@@ -302,6 +295,6 @@ class CountCancelView(_OpsAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        count = _get_or_404(tenant, StockCount, pk, "Count")
+        count = get_or_404(tenant, StockCount, pk, "Count")
         count = count_services.cancel_count(tenant, count=count)
         return ok({"id": str(pk), "status": count.status})
