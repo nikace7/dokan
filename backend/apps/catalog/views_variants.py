@@ -1,7 +1,7 @@
 """Variant views — matrix entry, POS lookup hot paths, and quick-create.
 
 Split from ``views.py`` to keep files under 400 lines; the shared plumbing
-(``_CatalogAPIView``, ``_get_or_404``, ``_uuid_param``, ``_user``) lives in
+(``_CatalogAPIView``, ``_uuid_param``, ``_user``) lives in
 ``apps.catalog.views``.
 """
 
@@ -20,12 +20,12 @@ from apps.catalog.serializers import (
     QuickCreateProductSerializer,
     VariantBulkSerializer,
 )
-from apps.catalog.views import _CatalogAPIView, _get_or_404, _user, _uuid_param
+from apps.catalog.views import _CatalogAPIView, _user, _uuid_param
 from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 
 class VariantListView(_CatalogAPIView):
@@ -57,7 +57,7 @@ class VariantListView(_CatalogAPIView):
             item_pk = UUID(str(payload.get("item")))
         except ValueError:
             raise ServiceError("ITEM_REQUIRED", "Provide a valid item id.") from None
-        item = _get_or_404(tenant, Item, item_pk, "Item")
+        item = get_or_404(tenant, Item, item_pk, "Item")
         serializer = ItemVariantSerializer(data=request.data, context=self._context(request))
         serializer.is_valid(raise_exception=True)
         validated = serializer.validated_data
@@ -77,7 +77,7 @@ class VariantDetailView(_CatalogAPIView):
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        variant = _get_or_404(tenant, ItemVariant, pk, "Variant")
+        variant = get_or_404(tenant, ItemVariant, pk, "Variant")
         serializer = ItemVariantSerializer(
             variant, data=request.data, partial=True, context=self._context(request)
         )
@@ -87,7 +87,7 @@ class VariantDetailView(_CatalogAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        variant = _get_or_404(tenant, ItemVariant, pk, "Variant")
+        variant = get_or_404(tenant, ItemVariant, pk, "Variant")
         services.deactivate(variant)
         return ok({"id": str(pk), "is_active": False})
 
@@ -101,7 +101,7 @@ class VariantBulkView(_CatalogAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        item = _get_or_404(tenant, Item, pk, "Item")
+        item = get_or_404(tenant, Item, pk, "Item")
         serializer = VariantBulkSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         result = services.bulk_create_variants(tenant, item=item, **serializer.validated_data)
@@ -152,7 +152,7 @@ class QuickCreateProductView(_CatalogAPIView):
                     "Adding opening stock requires the stock.adjust permission.",
                     http_status=403,
                 )
-            branch = _get_or_404(tenant, Branch, stock["branch"], "Branch")
+            branch = get_or_404(tenant, Branch, stock["branch"], "Branch")
             stock_rows = stock["quantities"]
             unit_cost = stock["unit_cost"]
             note = stock.get("note", "")
@@ -218,7 +218,7 @@ class VariantForSaleView(_CatalogAPIView):
         branch_id = _uuid_param(request, "branch_id")
         if branch_id is None:
             return error(400, "BRANCH_REQUIRED", "Provide a branch_id query parameter.")
-        _get_or_404(tenant, Branch, branch_id, "Branch")
+        get_or_404(tenant, Branch, branch_id, "Branch")
         rows: Any = selectors.list_variants_for_sale(  # a plain list, not a QuerySet
             tenant,
             _user(request),

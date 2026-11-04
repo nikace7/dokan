@@ -18,7 +18,7 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "customer.view",
@@ -30,13 +30,6 @@ _METHOD_PERMISSIONS: dict[str, str] = {
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, pk: UUID) -> Customer:
-    customer = Customer.objects.filter(tenant=tenant, pk=pk).first()
-    if customer is None:
-        raise ServiceError("CUSTOMER_NOT_FOUND", "Customer not found.", http_status=404)
-    return customer
 
 
 class _CustomerAPIView(APIView):
@@ -99,12 +92,12 @@ class CustomerDetailView(_CustomerAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        customer = _get_or_404(tenant, pk)
+        customer = get_or_404(tenant, Customer, pk, "Customer")
         return ok(CustomerSerializer(customer, context=self._context(request)).data)
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        customer = _get_or_404(tenant, pk)
+        customer = get_or_404(tenant, Customer, pk, "Customer")
         serializer = CustomerSerializer(
             customer, data=request.data, partial=True, context=self._context(request)
         )
@@ -116,7 +109,7 @@ class CustomerDetailView(_CustomerAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        customer = _get_or_404(tenant, pk)
+        customer = get_or_404(tenant, Customer, pk, "Customer")
         services.deactivate_customer(customer)
         return ok({"id": str(pk), "is_active": False})
 
@@ -129,7 +122,7 @@ class CustomerOutstandingView(_CustomerAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        customer = _get_or_404(tenant, pk)
+        customer = get_or_404(tenant, Customer, pk, "Customer")
         breakdown = selectors.get_customer_outstanding_breakdown(tenant, customer)
         return ok(
             {

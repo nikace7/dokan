@@ -842,7 +842,7 @@ backend/
 Each app: `models.py · services.py · selectors.py · serializers.py · views.py · urls.py · permissions.py · admin.py · tasks.py · tests/`.
 
 Files stay under 400 lines. When `sales/services.py` grows, it becomes
-`sales/services/{create_sale,void_sale,returns,exchange}.py` — split by use case, not by layer.
+`sales/services/{create_sale,held_bills,returns,exchange}.py` — split by use case, not by layer.
 
 ### 8.3 Frontend structure
 
@@ -853,12 +853,12 @@ frontend/src/
 │   ├── billing/            # POS — the most optimised feature in the app
 │   ├── catalog/  inventory/  purchasing/  customers/
 │   ├── reports/  settings/  admin/          # admin/ = super-admin route tree
-├── components/ui/          # Button, Input, DataTable, Money, BSDatePicker, Modal
+├── components/ui/          # Button, Input, Card, dialog, table, select, EmptyState, StatTile
 ├── lib/
 │   ├── api/                # generated typed client from OpenAPI
 │   ├── bs/                 # BS conversion + formatting (mirrors backend contract)
 │   ├── offline/            # Dexie queue, sync engine, conflict policy
-│   ├── permissions.ts      # <Can perm="pricing.view_cost">
+│   ├── permissions.ts      # hasPermission(user, code)
 │   └── money.ts            # Nepali lakh grouping, Devanagari numerals
 ├── hooks/  stores/         # TanStack Query (server), Zustand (cart/UI)
 └── styles/tokens.css

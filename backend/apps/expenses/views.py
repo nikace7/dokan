@@ -27,7 +27,7 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, not_found_code, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 _METHOD_PERMISSIONS: dict[str, str] = {
     "GET": "expense.view",
@@ -39,13 +39,6 @@ _METHOD_PERMISSIONS: dict[str, str] = {
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
-    instance = model.objects.filter(tenant=tenant, pk=pk).first()
-    if instance is None:
-        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
-    return instance
 
 
 def _uuid_param(request: Request, name: str) -> UUID | None:
@@ -134,7 +127,7 @@ class CategoryDetailView(_ExpensesAPIView):
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        category = _get_or_404(tenant, ExpenseCategory, pk, "Category")
+        category = get_or_404(tenant, ExpenseCategory, pk, "Category")
         serializer = ExpenseCategorySerializer(
             category, data=request.data, partial=True, context=self._context(request)
         )
@@ -144,7 +137,7 @@ class CategoryDetailView(_ExpensesAPIView):
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        category = _get_or_404(tenant, ExpenseCategory, pk, "Category")
+        category = get_or_404(tenant, ExpenseCategory, pk, "Category")
         services.deactivate_category(category)
         return ok({"id": str(pk), "is_active": False})
 
@@ -179,9 +172,9 @@ class ExpenseListView(_ExpensesAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         branch = (
-            _get_or_404(tenant, Branch, data["branch"], "Branch") if data.get("branch") else None
+            get_or_404(tenant, Branch, data["branch"], "Branch") if data.get("branch") else None
         )
-        category = _get_or_404(tenant, ExpenseCategory, data["category"], "Category")
+        category = get_or_404(tenant, ExpenseCategory, data["category"], "Category")
         expense = services.create_expense(
             tenant,
             branch=branch,
@@ -207,27 +200,25 @@ class ExpenseDetailView(_ExpensesAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        expense = _get_or_404(tenant, Expense, pk, "Expense")
+        expense = get_or_404(tenant, Expense, pk, "Expense")
         return ok(ExpenseSerializer(expense, context=self._context(request)).data)
 
     def patch(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        expense = _get_or_404(tenant, Expense, pk, "Expense")
+        expense = get_or_404(tenant, Expense, pk, "Expense")
         serializer = ExpenseUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         fields: dict[str, Any] = dict(serializer.validated_data)
         if "branch" in fields and fields["branch"] is not None:
-            fields["branch"] = _get_or_404(tenant, Branch, fields["branch"], "Branch")
+            fields["branch"] = get_or_404(tenant, Branch, fields["branch"], "Branch")
         if "category" in fields:
-            fields["category"] = _get_or_404(
-                tenant, ExpenseCategory, fields["category"], "Category"
-            )
+            fields["category"] = get_or_404(tenant, ExpenseCategory, fields["category"], "Category")
         expense = services.update_expense(tenant, expense, **fields)
         return ok(ExpenseSerializer(expense, context=self._context(request)).data)
 
     def delete(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        expense = _get_or_404(tenant, Expense, pk, "Expense")
+        expense = get_or_404(tenant, Expense, pk, "Expense")
         services.delete_expense(tenant, expense)
         return ok({"id": str(pk), "deleted": True})
 

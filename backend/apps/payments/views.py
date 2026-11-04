@@ -35,18 +35,11 @@ from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.pagination import EnvelopePageNumberPagination
 from core.permissions import HasPermission
-from core.responses import ServiceError, error, not_found_code, ok
+from core.responses import ServiceError, error, get_or_404, ok
 
 
 def _user(request: Request) -> Any:
     return request.user  # IsAuthenticated via HasPermission
-
-
-def _get_or_404(tenant: Any, model: Any, pk: Any, what: str) -> Any:
-    instance = model.objects.filter(tenant=tenant, pk=pk).first()
-    if instance is None:
-        raise ServiceError(not_found_code(what), f"{what} not found.", http_status=404)
-    return instance
 
 
 def _uuid_param(request: Request, name: str) -> UUID | None:
@@ -121,11 +114,11 @@ class ReceiptCreateView(_PaymentsAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        branch = _get_or_404(tenant, Branch, data["branch"], "Branch")
-        customer = _get_or_404(tenant, Customer, data["customer"], "Customer")
+        branch = get_or_404(tenant, Branch, data["branch"], "Branch")
+        customer = get_or_404(tenant, Customer, data["customer"], "Customer")
         allocations = [
             {
-                "sales_invoice": _get_or_404(tenant, SalesInvoice, raw["invoice"], "Invoice"),
+                "sales_invoice": get_or_404(tenant, SalesInvoice, raw["invoice"], "Invoice"),
                 "amount": raw["amount"],
             }
             for raw in data.get("allocations", [])
@@ -165,11 +158,11 @@ class SupplierPaymentCreateView(_PaymentsAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        branch = _get_or_404(tenant, Branch, data["branch"], "Branch")
-        supplier = _get_or_404(tenant, Supplier, data["supplier"], "Supplier")
+        branch = get_or_404(tenant, Branch, data["branch"], "Branch")
+        supplier = get_or_404(tenant, Supplier, data["supplier"], "Supplier")
         allocations = [
             {
-                "purchase_invoice": _get_or_404(
+                "purchase_invoice": get_or_404(
                     tenant, PurchaseInvoice, raw["invoice"], "Purchase invoice"
                 ),
                 "amount": raw["amount"],
@@ -206,7 +199,7 @@ class PaymentReverseView(_PaymentsAPIView):
 
     def post(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        payment = _get_or_404(tenant, Payment, pk, "Payment")
+        payment = get_or_404(tenant, Payment, pk, "Payment")
         key = _idempotency_key(request)
         serializer = PaymentReversalSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -278,7 +271,7 @@ class CashSessionOpenView(_PaymentsAPIView):
         tenant = require_request_tenant(request)
         serializer = CashSessionOpenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        branch = _get_or_404(tenant, Branch, serializer.validated_data["branch"], "Branch")
+        branch = get_or_404(tenant, Branch, serializer.validated_data["branch"], "Branch")
         session = services.open_session(
             tenant,
             branch=branch,
@@ -307,7 +300,7 @@ class CashSessionCloseView(_PaymentsAPIView):
         tenant = require_request_tenant(request)
         serializer = CashSessionCloseSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        session = _get_or_404(tenant, CashSession, pk, "Cash session")
+        session = get_or_404(tenant, CashSession, pk, "Cash session")
         session = services.close_session(
             tenant,
             session=session,
@@ -328,7 +321,7 @@ class CashSessionCurrentView(_PaymentsAPIView):
         branch_id = _uuid_param(request, "branch")
         if branch_id is None:
             return error(400, "BRANCH_REQUIRED", "Provide a branch query parameter.")
-        branch = _get_or_404(tenant, Branch, branch_id, "Branch")
+        branch = get_or_404(tenant, Branch, branch_id, "Branch")
         session = services.get_open_session(tenant, branch)
         if session is None:
             return ok({"session": None})
@@ -345,7 +338,7 @@ class CustomerLedgerView(_PaymentsAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        customer = _get_or_404(tenant, Customer, pk, "Customer")
+        customer = get_or_404(tenant, Customer, pk, "Customer")
         rows = selectors.customer_ledger(tenant, customer)
         return ok(LedgerRowSerializer(rows, many=True).data)
 
@@ -360,6 +353,6 @@ class SupplierLedgerView(_PaymentsAPIView):
 
     def get(self, request: Request, pk: UUID) -> Response:
         tenant = require_request_tenant(request)
-        supplier = _get_or_404(tenant, Supplier, pk, "Supplier")
+        supplier = get_or_404(tenant, Supplier, pk, "Supplier")
         rows = selectors.supplier_ledger(tenant, supplier)
         return ok(LedgerRowSerializer(rows, many=True).data)

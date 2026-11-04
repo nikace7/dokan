@@ -184,7 +184,7 @@ a real provider adapter and callback verification are configured.
 One Django app per module under `backend/apps/` (SYSTEM_DESIGN §8.2). Each app:
 `models.py · services.py · selectors.py · serializers.py · views.py · urls.py ·
 permissions.py · admin.py · tasks.py · tests/`. Files stay under 400 lines; a
-growing `services.py` splits by use case (`sales/services/{create_sale,void_sale,
+growing `services.py` splits by use case (`sales/services/{create_sale,held_bills,
 returns,exchange}.py`), never by layer.
 
 | App | Owns | Boundary rule |
@@ -214,7 +214,7 @@ spine shared by all apps:
 backend/core/
 ├── calendar/bs.py        # the ONLY place BS conversion exists
 ├── db/rls.py             # SET LOCAL app.tenant_id helpers
-├── middleware/           # tenant, audit, plan_gate
+├── middleware/           # tenant, audit, plan_gate, platform_admin
 ├── permissions/          # permission catalog (single source of truth), DRF glue
 ├── money.py              # Decimal money, rounding, Nepali lakh/crore formatting
 ├── numbering.py          # gapless per-branch per-fiscal-year sequences
@@ -233,13 +233,13 @@ authenticated POS gains nothing from it.
 frontend/src/
 ├── app/                  # router, providers, error boundary
 ├── features/             # one folder per module; billing/ is the most optimised
-├── components/ui/        # Button, Input, DataTable, Money, BSDatePicker, Modal
+├── components/ui/        # Button, Input, Card, dialog, table, select, EmptyState, StatTile
 ├── lib/
 │   ├── api/              # typed client GENERATED from OpenAPI — never hand-written
 │   ├── bs/               # BS conversion/formatting; mirrors backend contract,
 │   │                     # same golden fixture, same pinned conversion table
 │   ├── offline/          # Dexie queue, sync engine, conflict policy (Phase 3)
-│   ├── permissions.ts    # <Can perm="pricing.view_cost"> — unrendered, not CSS-hidden
+│   ├── permissions.ts    # hasPermission(user, code) — unrendered, not CSS-hidden
 │   └── money.ts          # Nepali lakh grouping, optional Devanagari numerals
 ├── hooks/  stores/       # TanStack Query (server state), Zustand (cart/UI state)
 └── styles/tokens.css
