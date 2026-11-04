@@ -30,10 +30,15 @@ jobs:
           # Keep in step with backend/Dockerfile's base image.
           python-version: "3.14"
           cache: pip
-          cache-dependency-path: backend/pyproject.toml
+          cache-dependency-path: backend/requirements-dev.txt
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        # Installing both locks fails if their pins disagree; pip check fails
+        # if pyproject.toml declares something the locks are missing.
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install --no-deps -e .
+          pip check
 
       - name: Architecture source-size boundary
         run: python ../scripts/check_source_size.py
