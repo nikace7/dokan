@@ -123,6 +123,19 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+Production images and CI install the exact versions pinned in
+`backend/requirements.txt` and `backend/requirements-dev.txt`. After changing
+dependencies in `pyproject.toml`, or to take upgrades, regenerate both inside
+the production Python image. To upgrade one package, add `--upgrade-package
+<name>` to both commands; to upgrade everything, delete both files first:
+
+```bash
+docker run --rm -v "$PWD/backend:/src" -w /src python:3.14-slim sh -c '
+  pip install pip-tools==7.6.2 &&
+  pip-compile --generate-hashes --allow-unsafe --strip-extras --output-file requirements.txt pyproject.toml &&
+  pip-compile --generate-hashes --allow-unsafe --strip-extras --extra dev --constraint requirements.txt --output-file requirements-dev.txt pyproject.toml'
+```
+
 Frontend (Node 20+):
 
 ```bash
