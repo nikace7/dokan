@@ -7,11 +7,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Copy source, then install the project and the production server.
-# (Dependencies are declared in backend/pyproject.toml.)
+# Copy source, then install the pinned dependencies and the project.
+# (Declared in backend/pyproject.toml, pinned in backend/requirements.txt.)
 COPY backend/ ./
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir . gunicorn
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir --no-deps . \
+    && pip check
 
 # Run as a non-root user.
 RUN groupadd --system dokan && useradd --system --create-home --home-dir /home/dokan --gid dokan dokan \
