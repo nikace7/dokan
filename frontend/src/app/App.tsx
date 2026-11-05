@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 
 import { onPlatformSignedOut } from '@/features/admin/authed';
 import { isPlatformHost } from '@/features/admin/supportHandoff';
+import { isLandingHost } from '@/features/landing/isLandingHost';
 import { onSignedOut } from '@/lib/api/authed';
 import { initOfflineSync } from '@/lib/offline/sync';
 import { initVersionCheck } from '@/lib/versionCheck';
@@ -14,6 +15,11 @@ const AdminRouter = lazy(() =>
 const TenantRouter = lazy(() =>
   import('./router').then(({ AppRouter: Component }) => ({ default: Component })),
 );
+const LandingPage = lazy(() =>
+  import('@/features/landing/LandingPage').then(({ LandingPage: Component }) => ({
+    default: Component,
+  })),
+);
 
 function AppLoading() {
   return (
@@ -25,14 +31,15 @@ function AppLoading() {
 
 export default function App() {
   const platformHost = isPlatformHost(window.location.hostname);
+  const landingHost = isLandingHost(window.location.hostname);
 
   useEffect(() => {
     // The offline POS is a tenant-screen concern only — the admin host
-    // never bills, so no queue drain runs there.
-    if (!platformHost) {
+    // and the public landing page never bill, so no queue drain runs there.
+    if (!platformHost && !landingHost) {
       initOfflineSync();
     }
-  }, [platformHost]);
+  }, [platformHost, landingHost]);
 
   useEffect(
     // A 401 that even a token refresh can't fix means the session is dead
@@ -53,7 +60,7 @@ export default function App() {
   return (
     <AppProviders>
       <Suspense fallback={<AppLoading />}>
-        {platformHost ? <AdminRouter /> : <TenantRouter />}
+        {platformHost ? <AdminRouter /> : landingHost ? <LandingPage /> : <TenantRouter />}
       </Suspense>
     </AppProviders>
   );
