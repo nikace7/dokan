@@ -39,7 +39,6 @@ Thumbs.db
 .worktrees/
 
 # Local-only development helpers (kept on disk, never published)
-AGENTS.md
 OPS-LOCAL.md
 OPS-totp-qr.png
 OPS-totp-secret.txt
