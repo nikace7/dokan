@@ -35,7 +35,7 @@
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.28.0",
     "nepali-date-converter": "^3.3.5",
-    "openapi-fetch": "^0.15.0",
+    "openapi-fetch": "^0.17.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
