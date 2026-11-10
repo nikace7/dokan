@@ -217,3 +217,10 @@ docker/postgres/init/  # app/migration role bootstrap
 - [`docs/DECISIONS/`](docs/DECISIONS/) — architecture decision records
 - [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) ·
   [`docs/ROADMAP.md`](docs/ROADMAP.md) · [`CHANGELOG.md`](CHANGELOG.md)
+
+## License
+
+Copyright © 2026 Nikesh Khatri. All rights reserved.
+
+The source is public so the work can be read and reviewed. No license is
+granted to use, copy, modify, or redistribute it.
