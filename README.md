@@ -4,6 +4,17 @@ Multi-tenant SaaS for clothing retail shops in Nepal: one subdomain per shop
 (`<slug>.mero-pasal.online`), Nepali (BS) calendar native, IRD-oriented billing,
 and an offline-tolerant POS that runs as a PWA on any phone or laptop.
 
+<p align="center">
+  <img src="docs/assets/readme/storefront.webp" width="49%" alt="A demo shop's public storefront with a Dashain sale badge and a featured kurta.">
+  <img src="docs/assets/readme/khata.webp" width="49%" alt="Customer khata ledger: credit sales and receipts with debit, credit and running-balance columns.">
+</p>
+<p align="center">
+  <img src="docs/assets/readme/tenants.webp" width="62%" alt="Platform Tenants console listing demo shops with plan and colour-coded status.">
+  <img src="docs/assets/readme/pos-mobile.webp" width="17%" alt="Phone POS mid-sale with a negotiated price inside the owner's range and Cash and QR buttons.">
+</p>
+
+<sub>Storefront per shop · customer credit as a real ledger · platform tenant console · phone-first counter sale. All data is demo data.</sub>
+
 ## Features
 
 - **Simple Sale** — a mobile-first counter flow: pick an item, pick a size,
