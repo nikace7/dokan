@@ -10,29 +10,19 @@ import golden from './golden.json';
  * diverge. `golden.json` derives from the backend's
  * `core/tests/fixtures/bs_golden.json`:
  *
- * - `inRange` (~100 pairs both tables agree on, spread across BS
+ * - `inRange` (~130 pairs both tables agree on, spread across BS
  *   2000–2090 with month boundaries and the supported-range edges) are
  *   asserted equal in BOTH directions.
- * - `divergent` is a KNOWN, PINNED disagreement: for BS 2084–2085 the two
- *   libraries publish different month lengths (e.g. backend
- *   nepali-datetime 1.0.8.5 has 2084 Jestha=31/Shrawan=31 where frontend
- *   nepali-date-converter 3.3.5 and the independent py-nepali have 32/32).
- *   These years are future panchanga predictions (2084 starts AD
- *   2027-04); no present-day date is affected. The test asserts the
- *   divergence exactly as recorded — if either library is re-pinned and
- *   the tables converge, this test FAILS LOUDLY and the pair must be
- *   moved to `inRange`. Do not "fix" it by editing pairs.
+ *   The BS 2084–2085 pairs used to be pinned as a known divergence
+ *   (nepali-date-converter 3.3.5 published different month lengths for
+ *   those years); 3.4.2 agrees with the backend table, so they are now
+ *   ordinary `inRange` pairs.
  * - `outOfRange` pairs (BS 1975 / 2100) must be rejected by the guards.
  */
 
 interface Pair {
   ad: string;
   bs: string;
-}
-
-interface DivergentPair extends Pair {
-  /** What the frontend table computes for `ad` (≠ `bs` by definition). */
-  frontend: string;
 }
 
 function parseBs(bs: string): BsDate {
@@ -61,17 +51,4 @@ describe('BS golden fixture (shared with the backend)', () => {
       expect(() => bsToAd(parseBs(bs))).toThrow(BsDateError);
     },
   );
-
-  it('pins the known BS 2084–2085 table divergence (see file header)', () => {
-    const divergent = golden.divergent as DivergentPair[];
-    expect(divergent.length).toBeGreaterThan(0);
-    for (const pair of divergent) {
-      expect(pair.bs.startsWith('2084') || pair.bs.startsWith('2085')).toBe(true);
-      // The frontend computes exactly its recorded value — never the
-      // backend fixture's. A library re-pin changes this and must be
-      // resolved consciously, not absorbed.
-      expect(toBsString(adToBs(pair.ad))).toBe(pair.frontend);
-      expect(pair.frontend).not.toBe(pair.bs);
-    }
-  });
 });

@@ -13,7 +13,7 @@
  *   date-dependent feature and must run on both sides.
  *
  * NOTE: the design doc's target SUPPORTED_RANGE is BS 1970–2100, but the
- * installed library (nepali-date-converter 3.4.0) covers BS 2000-01-01 →
+ * installed library (nepali-date-converter 3.4.2) covers BS 2000-01-01 →
  * 2090-12-30 only. The narrower library range is the effective limit until
  * a wider table is adopted on both sides.
  */
