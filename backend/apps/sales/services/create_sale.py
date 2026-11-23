@@ -16,12 +16,15 @@ Order of operations (invariant map, ARCHITECTURE §6):
 
 Idempotency (#8): ``idempotency_key`` is mandatory and unique per tenant; a
 replay returns the original invoice with ``replayed=True`` (the view
-answers 200, not 201).
+answers 200, not 201). The same key with a DIFFERENT bill is refused: handing
+back the old invoice would let the new items leave the shop unbilled.
 """
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from django.db import IntegrityError, connection, transaction
@@ -56,6 +59,62 @@ _ZERO = Decimal("0")
 class SaleResult:
     invoice: SalesInvoice
     replayed: bool
+
+
+def _tender_rows(payments: list[dict[str, Any]]) -> list[dict[str, str]]:
+    return [
+        {"method": payment["method"], "amount": str(quantize_money(payment["amount"]))}
+        for payment in payments
+    ]
+
+
+def _replay(
+    invoice: SalesInvoice,
+    *,
+    branch: Any,
+    rate_type: "RateType",
+    customer: Any,
+    lines: list[SaleLineInput],
+    payments: list[dict[str, Any]],
+    is_vat_bill: bool,
+    bill_discount: Decimal,
+    round_off: Decimal,
+) -> SaleResult:
+    """Return the original invoice, but only for the bill that created it."""
+    # Lines without an explicit price were priced by the server, so a later
+    # price change must not make an honest retry look like a different bill.
+    priced = all(line.unit_price is not None for line in lines)
+    requested = Counter(
+        (
+            line.variant.pk,
+            Decimal(line.qty),
+            quantize_money(line.discount),
+            quantize_money(line.unit_price) if priced and line.unit_price is not None else None,
+        )
+        for line in lines
+    )
+    stored = Counter(
+        (item.variant_id, item.qty, item.discount, item.unit_price if priced else None)
+        for item in invoice.items.all()
+    )
+    line_discounts = sum((quantize_money(line.discount) for line in lines), _ZERO)
+    is_same_bill = (
+        requested == stored
+        and invoice.branch_id == branch.pk
+        and invoice.rate_type_id == rate_type.pk
+        and invoice.customer_id == (customer.pk if customer else None)
+        and invoice.is_vat_bill == is_vat_bill
+        and invoice.discount_amount == line_discounts + quantize_money(bill_discount)
+        and invoice.round_off == quantize_money(round_off)
+        and invoice.tenders == _tender_rows(payments)
+    )
+    if not is_same_bill:
+        raise ServiceError(
+            "IDEMPOTENCY_KEY_REUSED",
+            "This Idempotency-Key belongs to a different bill.",
+            http_status=409,
+        )
+    return SaleResult(invoice=invoice, replayed=True)
 
 
 def finalize_invoice(
@@ -133,10 +192,7 @@ def finalize_invoice(
     invoice.business_date_ad = date_ad
     invoice.business_date_bs = ad_to_bs(date_ad)
     invoice.fiscal_year_bs = fy_bs
-    invoice.tenders = [
-        {"method": payment["method"], "amount": str(quantize_money(payment["amount"]))}
-        for payment in payments
-    ]
+    invoice.tenders = _tender_rows(payments)
     invoice.subtotal = totals["subtotal"]
     invoice.discount_amount = totals["discount_amount"]
     invoice.taxable_amount = totals["taxable_amount"]
@@ -197,10 +253,21 @@ def create_sale(
     if not lines:
         raise ServiceError("LINES_REQUIRED", "A bill needs at least one line.")
     key = idempotency_key.strip()
+    replay = partial(
+        _replay,
+        branch=branch,
+        rate_type=rate_type,
+        customer=customer,
+        lines=lines,
+        payments=payments,
+        is_vat_bill=is_vat_bill,
+        bill_discount=bill_discount,
+        round_off=round_off,
+    )
     if require_open_cash_session:
         existing = SalesInvoice.objects.filter(tenant=tenant, idempotency_key=key).first()
         if existing is not None:
-            return SaleResult(invoice=existing, replayed=True)
+            return replay(existing)
 
     try:
         with transaction.atomic():
@@ -240,6 +307,5 @@ def create_sale(
             return SaleResult(invoice=invoice, replayed=False)
     except IntegrityError as exc:
         if "idempotency" in str(exc):
-            original = SalesInvoice.objects.get(tenant=tenant, idempotency_key=key)
-            return SaleResult(invoice=original, replayed=True)
+            return replay(SalesInvoice.objects.get(tenant=tenant, idempotency_key=key))
         raise
