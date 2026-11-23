@@ -2663,7 +2663,8 @@ paths:
   /api/v1/catalog/variants/lookup:
     get:
       operationId: catalog_variant_lookup_view_get
-      description: GET /catalog/variants/lookup?barcode=|sku= — the POS hot path.
+      description: GET /catalog/variants/lookup?barcode=|sku=&rate_type= — the POS
+        hot path.
       tags:
       - v1
       security:
