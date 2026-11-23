@@ -856,7 +856,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description GET /catalog/variants/lookup?barcode=|sku= — the POS hot path. */
+        /** @description GET /catalog/variants/lookup?barcode=|sku=&rate_type= — the POS hot path. */
         get: operations["catalog_variant_lookup_view_get"];
         put?: never;
         post?: never;

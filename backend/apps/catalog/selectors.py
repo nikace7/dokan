@@ -19,6 +19,7 @@ from core.calendar.bs import ad_to_bs
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
+    from apps.pricing.models import RateType
     from apps.tenants.models import Tenant
 
 _LOOKUP_PUBLIC_FIELDS = (
@@ -33,6 +34,7 @@ _LOOKUP_PUBLIC_FIELDS = (
     "item__name",
     "item__name_np",
     "item__code",
+    "item__is_vat_applicable",
 )
 
 
@@ -110,13 +112,20 @@ def list_variants(
 
 
 def get_variant_for_lookup(
-    tenant: "Tenant", user: "User", *, barcode: str = "", sku: str = ""
+    tenant: "Tenant",
+    user: "User",
+    *,
+    barcode: str = "",
+    sku: str = "",
+    rate_type: "RateType | None" = None,
 ) -> dict[str, Any] | None:
     """POS hot path: one indexed exact-match query by barcode or SKU.
 
     Returns a plain dict (no ORM instance) containing only the fields the
     caller may see: ``avg_cost`` is only included — and only selected — when
-    the user has ``pricing.view_cost``.
+    the user has ``pricing.view_cost``. With a ``rate_type`` it also carries
+    ``price``: what a sale at that rate will charge, so the counter never
+    shows (and takes payment for) an MRP the server then replaces.
     """
     fields = [*_LOOKUP_PUBLIC_FIELDS, "item__image"]
     include_cost = user.has_perm("pricing.view_cost")
@@ -139,6 +148,14 @@ def get_variant_for_lookup(
         # Money crosses the API as a string, matching DRF's serializer
         # coercion (COERCE_DECIMAL_TO_STRING) — never as a JSON float.
         row["avg_cost"] = str(row["avg_cost"])
+    if row is not None and rate_type is not None:
+        from apps.pricing.services import resolve_price
+
+        variant = ItemVariant.objects.select_related("item__category").get(
+            tenant=tenant, pk=row["id"]
+        )
+        resolved = resolve_price(tenant, variant=variant, rate_type=rate_type, user=user)
+        row["price"] = str(resolved.price)
     return row
 
 
