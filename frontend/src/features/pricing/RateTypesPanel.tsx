@@ -36,6 +36,7 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
     >
       {editing && canEdit ? (
         <RateTypeForm
+          key={editing === 'new' ? 'new' : editing.id}
           rate={editing === 'new' ? undefined : editing}
           onDone={() => setEditing(null)}
         />

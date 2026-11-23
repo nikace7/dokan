@@ -79,6 +79,7 @@ export function CustomersPage() {
       >
         {editing && canManage ? (
           <CustomerForm
+            key={editing === 'new' ? 'new' : editing.id}
             customer={editing === 'new' ? undefined : editing}
             canSetCredit={canSetCredit}
             rates={rates.data?.data ?? []}
