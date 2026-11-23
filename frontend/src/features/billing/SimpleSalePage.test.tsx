@@ -283,7 +283,7 @@ describe('SimpleSalePage', () => {
     renderPage();
     await pickItem('T-Shirt');
 
-    const priceInput = screen.getByLabelText(/^price$/i);
+    const priceInput = screen.getByLabelText(/^price \(रू\)$/i);
 
     fireEvent.change(priceInput, { target: { value: '2000' } });
     expect(await screen.findByText(/^Max /)).toBeInTheDocument();
