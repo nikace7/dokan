@@ -8996,6 +8996,8 @@ components:
           - 'null'
         currency:
           type: string
+        vat_registered:
+          type: boolean
       required:
       - currency
       - email
@@ -9009,6 +9011,7 @@ components:
       - plan
       - shop_name
       - shop_name_np
+      - vat_registered
     NullEnum:
       type: 'null'
     OpeningStock:
