@@ -53,7 +53,7 @@ describe('ScanInput', () => {
   it('shows the last-scanned card with photo, price, and running quantity', async () => {
     // Fresh Response per call — a body can only be read once.
     fetchMock.mockImplementation(() => Promise.resolve(envelope(VARIANT)));
-    render(<ScanInput />);
+    render(<ScanInput rateTypeId={null} />);
 
     // Hidden until the first successful scan of the session.
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -91,7 +91,7 @@ describe('ScanInput', () => {
         }),
       ),
     );
-    render(<ScanInput />);
+    render(<ScanInput rateTypeId={null} />);
 
     scan('0000000000000');
 
@@ -102,12 +102,41 @@ describe('ScanInput', () => {
 
   it('falls back to the placeholder tile when the variant has no photo', async () => {
     fetchMock.mockImplementation(() => Promise.resolve(envelope({ ...VARIANT, image_url: null })));
-    render(<ScanInput />);
+    render(<ScanInput rateTypeId={null} />);
 
     scan('8901234567890');
     const card = await screen.findByRole('status', { name: /last scanned item/i });
 
     expect(within(card).queryByRole('img')).not.toBeInTheDocument();
     expect(within(card).getByText('In cart: 1')).toBeInTheDocument();
+  });
+
+  it('adds the item at the price of the selected rate, not its MRP', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(envelope({ ...VARIANT, price: '700.00' })));
+    render(<ScanInput rateTypeId="rate-1" />);
+
+    scan('8901234567890');
+    const card = await screen.findByRole('status', { name: /last scanned item/i });
+
+    expect(within(card).getByText('रू 700.00')).toBeInTheDocument();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('rate_type=rate-1');
+    expect(useCartStore.getState().lines[0].rateTypeId).toBe('rate-1');
+  });
+
+  it('says so and adds nothing when the rate has no price for the item', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ data: null, error: { code: 'PRICE_NOT_SET', message: 'No price.' } }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    render(<ScanInput rateTypeId="rate-1" />);
+
+    scan('8901234567890');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No price.');
+    expect(useCartStore.getState().lines).toHaveLength(0);
   });
 });

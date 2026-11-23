@@ -90,6 +90,7 @@ function OrderCard({ order }: { order: OnlineOrder }) {
         invoice.customer && invoice.customer_name
           ? { id: invoice.customer, name: invoice.customer_name, phone: '' }
           : null,
+        toPaisa(invoice.total),
       );
       navigate('/billing');
     } catch (reason) {

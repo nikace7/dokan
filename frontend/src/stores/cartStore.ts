@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import type { CreateSalePayload } from '@/features/billing/api';
 import type { Paisa } from '@/lib/money';
-import { addPaisa, multiplyPaisa } from '@/lib/money';
+import { addPaisa, multiplyPaisa, parseAmount } from '@/lib/money';
 
 /**
  * Cart store for the billing screen.
@@ -22,7 +22,15 @@ export interface CartLine {
   unitPricePaisa: Paisa;
   /** Flat line discount in paisa (maps to `discount` on the sale line). */
   discountPaisa: Paisa;
+  /** The discount as typed, so a wrong one stays on screen to be fixed. */
+  discountRaw?: string;
+  /** Rate the price belongs to; a different selected rate makes it stale. */
+  rateTypeId?: string | null;
+  vatApplicable?: boolean;
 }
+
+/** What a lookup says one unit costs at a rate. */
+export type LinePricing = Pick<CartLine, 'unitPricePaisa' | 'rateTypeId' | 'vatApplicable'>;
 
 export interface CartCustomer {
   id: string;
@@ -41,16 +49,27 @@ export interface CartState {
   customer: CartCustomer | null;
   /** Set when the cart was loaded from a parked bill (complete, not re-post). */
   heldSaleId: string | null;
+  /** The parked bill's total as the server stored it. */
+  heldTotalPaisa: Paisa | null;
+  /** Changes with every bill, so inputs that belong to one bill can reset. */
+  billNo: number;
   /** While set, the cart is locked: the server may already hold this bill. */
   unconfirmedSale: UnconfirmedSale | null;
   addLine: (line: CartLine) => void;
   removeLine: (variantId: string) => void;
   setQuantity: (variantId: string, quantity: number) => void;
-  setDiscount: (variantId: string, discountPaisa: Paisa) => void;
+  setDiscount: (variantId: string, raw: string) => void;
+  /** Apply the prices of a newly selected rate, by variant id. */
+  reprice: (pricing: Record<string, LinePricing>) => void;
   setCustomer: (customer: CartCustomer | null) => void;
   setUnconfirmedSale: (sale: UnconfirmedSale | null) => void;
   /** Replace the cart with a parked bill's lines (resume flow). */
-  resumeHeld: (heldSaleId: string, lines: CartLine[], customer: CartCustomer | null) => void;
+  resumeHeld: (
+    heldSaleId: string,
+    lines: CartLine[],
+    customer: CartCustomer | null,
+    heldTotalPaisa: Paisa,
+  ) => void;
   clear: () => void;
 }
 
@@ -58,6 +77,7 @@ const initialState = {
   lines: [] as CartLine[],
   customer: null as CartCustomer | null,
   heldSaleId: null as string | null,
+  heldTotalPaisa: null as Paisa | null,
   unconfirmedSale: null as UnconfirmedSale | null,
 };
 
@@ -71,19 +91,38 @@ export function cartTotalPaisa(lines: readonly CartLine[]): Paisa {
   return addPaisa(...lines.map(lineTotalPaisa));
 }
 
+/** The total to charge: a parked bill keeps the total it was stored with. */
+export function billTotalPaisa(state: Pick<CartState, 'lines' | 'heldTotalPaisa'>): Paisa {
+  return state.heldTotalPaisa ?? cartTotalPaisa(state.lines);
+}
+
+/** 13% VAT on the taxable lines, half up like the server. */
+export function vatPaisa(lines: readonly CartLine[]): Paisa {
+  return Math.round((cartTotalPaisa(lines.filter((l) => l.vatApplicable)) * 13) / 100);
+}
+
+export function discountProblem(line: CartLine): 'invalid' | 'tooLarge' | null {
+  if (line.discountRaw?.trim() && parseAmount(line.discountRaw) === null) return 'invalid';
+  return line.discountPaisa > multiplyPaisa(line.unitPricePaisa, line.quantity) ? 'tooLarge' : null;
+}
+
 export const useCartStore = create<CartState>()((set) => ({
   ...initialState,
+  billNo: 0,
   addLine: (line) =>
     set((state) => {
       const existing = state.lines.find((l) => l.variantId === line.variantId);
       if (existing) {
-        // Merging keeps the existing line's discount — re-scanning an item
-        // must not silently wipe a discount the counter already entered.
-        return {
-          lines: state.lines.map((l) =>
-            l.variantId === line.variantId ? { ...l, quantity: l.quantity + line.quantity } : l,
-          ),
+        // Merging takes the newest price but keeps the existing discount —
+        // re-scanning must not wipe one the counter already entered.
+        const merged = {
+          ...existing,
+          ...line,
+          quantity: existing.quantity + line.quantity,
+          discountPaisa: existing.discountPaisa,
+          discountRaw: existing.discountRaw,
         };
+        return { lines: state.lines.map((l) => (l === existing ? merged : l)) };
       }
       return { lines: [...state.lines, line] };
     }),
@@ -96,13 +135,30 @@ export const useCartStore = create<CartState>()((set) => ({
           ? state.lines.filter((l) => l.variantId !== variantId)
           : state.lines.map((l) => (l.variantId === variantId ? { ...l, quantity } : l)),
     })),
-  setDiscount: (variantId, discountPaisa) =>
+  setDiscount: (variantId, raw) =>
     set((state) => ({
-      lines: state.lines.map((l) => (l.variantId === variantId ? { ...l, discountPaisa } : l)),
+      lines: state.lines.map((l) =>
+        l.variantId === variantId
+          ? { ...l, discountRaw: raw, discountPaisa: parseAmount(raw) ?? 0 }
+          : l,
+      ),
     })),
+  reprice: (pricing) =>
+    set((state) =>
+      state.heldSaleId || state.unconfirmedSale
+        ? state
+        : { lines: state.lines.map((l) => ({ ...l, ...pricing[l.variantId] })) },
+    ),
   setCustomer: (customer) => set({ customer }),
   setUnconfirmedSale: (unconfirmedSale) => set({ unconfirmedSale }),
-  resumeHeld: (heldSaleId, lines, customer) =>
-    set({ heldSaleId, lines, customer, unconfirmedSale: null }),
-  clear: () => set(initialState),
+  resumeHeld: (heldSaleId, lines, customer, heldTotalPaisa) =>
+    set((state) => ({
+      heldSaleId,
+      lines,
+      customer,
+      heldTotalPaisa,
+      unconfirmedSale: null,
+      billNo: state.billNo + 1,
+    })),
+  clear: () => set((state) => ({ ...initialState, billNo: state.billNo + 1 })),
 }));
