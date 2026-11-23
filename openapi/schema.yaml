@@ -8157,6 +8157,11 @@ components:
       type: object
       description: POST /sales/<id>/complete payload.
       properties:
+        customer:
+          type:
+          - string
+          - 'null'
+          format: uuid
         payments:
           type: array
           items:

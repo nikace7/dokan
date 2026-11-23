@@ -52,6 +52,7 @@ class HoldBillSerializer(SaleCreateSerializer):
 class CompleteBillSerializer(serializers.Serializer):
     """POST /sales/<id>/complete payload."""
 
+    customer = serializers.UUIDField(required=False, allow_null=True)
     payments = SalePaymentSerializer(many=True, required=False, default=list)
     override_reason = serializers.CharField(required=False, allow_blank=True, default="")
 
