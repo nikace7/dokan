@@ -169,6 +169,30 @@ describe('CustomersPage', () => {
     );
   });
 
+  it('loads the customer being edited when switching without closing the form', async () => {
+    const other = { ...customer, id: 'customer-2', name: 'Hari Thapa', phone: '9800000001' };
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/v1/auth/me')) {
+        return Promise.resolve(envelope(me(['customer.view', 'customer.manage'])));
+      }
+      if (url.includes('/v1/customers')) return Promise.resolve(envelope([customer, other]));
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+    renderPage();
+    await screen.findAllByText('Sita Rai');
+    const [editSita, editHari] = within(screen.getByRole('table')).getAllByRole('button', {
+      name: 'Edit',
+    });
+
+    fireEvent.click(editSita);
+    expect(screen.getByLabelText('Customer name')).toHaveValue('Sita Rai');
+    fireEvent.click(editHari);
+    expect(screen.getByLabelText('Customer name')).toHaveValue('Hari Thapa');
+    fireEvent.click(screen.getByRole('button', { name: 'New customer' }));
+    expect(screen.getByLabelText('Customer name')).toHaveValue('');
+  });
+
   it('renders khata quick actions for an active customer', async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);

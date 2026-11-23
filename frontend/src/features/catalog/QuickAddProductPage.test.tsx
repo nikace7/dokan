@@ -154,6 +154,33 @@ describe('QuickAddProductPage', () => {
     expect(submittedPayload()).not.toHaveProperty('stock');
   });
 
+  it('sends only the quantities still shown after a size is removed', async () => {
+    renderPage();
+    fillBasics();
+    fireEvent.change(screen.getByLabelText('Quantity for S / Black'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText('Quantity for M / Black'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Unit cost (रू)'), { target: { value: '700' } });
+    fireEvent.click(screen.getByRole('button', { name: 'S' }));
+    expect(screen.queryByLabelText('Quantity for S / Black')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add product' }));
+
+    await waitFor(() => expect(quickCreateMock).toHaveBeenCalledTimes(1));
+    expect(submittedPayload().stock?.quantities).toEqual({ 'M::Black': '5' });
+  });
+
+  it('says so when the product is saved but its photo is not', async () => {
+    uploadImageMock.mockRejectedValue(new Error('offline'));
+    renderPage();
+    fillBasics();
+    const photo = new File(['x'], 'photo.png', { type: 'image/png' });
+    fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [photo] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add product' }));
+
+    expect(await screen.findByText('Product "Uniqlo Jacket" added.')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/photo could not be uploaded/i);
+  });
+
   it('requires a unit cost before submitting when quantities are set', async () => {
     renderPage();
     fillBasics();
