@@ -110,7 +110,7 @@ export function QuickAddProductPage() {
         try {
           await uploadItemImage(data.item.id, pendingImage);
         } catch {
-          // best-effort
+          setImageError(t('catalog.quickCreate.photoFailed'));
         }
       }
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'items'] });
@@ -159,8 +159,10 @@ export function QuickAddProductPage() {
       setError(t('catalog.quickCreate.errorRequired'));
       return;
     }
+    // Quantities typed for a size or colour that was then removed stay behind.
+    const shown = new Set(effectiveSizes.flatMap((s) => effectiveColors.map((c) => `${s}::${c}`)));
     const entered = Object.fromEntries(
-      Object.entries(quantities).filter(([, qty]) => qty.trim() !== '' && Number(qty) > 0),
+      Object.entries(quantities).filter(([key, qty]) => shown.has(key) && Number(qty) > 0),
     );
     let stock: QuickCreateProductPayload['stock'];
     if (Object.keys(entered).length > 0) {
@@ -239,6 +241,11 @@ export function QuickAddProductPage() {
                 : ''}
             </p>
           </div>
+          {imageError ? (
+            <p role="alert" className="mt-3 text-sm text-destructive">
+              {imageError}
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <Button size="lg" className="w-full sm:w-auto" onClick={resetForm}>
               {t('catalog.quickCreate.addAnother')}

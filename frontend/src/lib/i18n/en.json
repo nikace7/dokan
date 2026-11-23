@@ -1208,6 +1208,7 @@
       "success": "Product \"{{name}}\" added.",
       "successStock_one": "{{count}} stock entry posted",
       "successStock_other": "{{count}} stock entries posted",
+      "photoFailed": "The photo could not be uploaded. Open the product to add it again.",
       "addAnother": "Add another",
       "viewProduct": "View product"
     },
