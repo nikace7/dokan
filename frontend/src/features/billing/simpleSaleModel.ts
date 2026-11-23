@@ -7,7 +7,7 @@
 import i18n from 'i18next';
 
 import type { VariantForSale } from '@/features/billing/api';
-import { formatNpr, multiplyPaisa, toPaisa } from '@/lib/money';
+import { formatBaseMoney, multiplyPaisa, toPaisa } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 
 /** One bill line as the counter edits it (inputs stay text until submit). */
@@ -60,10 +60,10 @@ export function priceError(line: SimpleLine): string | null {
   if (price === null) return i18n.t('simpleSale.validation.enterPrice');
   const { min_selling_price: min, max_selling_price: max } = line.variant;
   if (min !== null && price < toPaisa(min)) {
-    return i18n.t('simpleSale.validation.minPrice', { price: formatNpr(min) });
+    return i18n.t('simpleSale.validation.minPrice', { price: formatBaseMoney(toPaisa(min)) });
   }
   if (max !== null && price > toPaisa(max)) {
-    return i18n.t('simpleSale.validation.maxPrice', { price: formatNpr(max) });
+    return i18n.t('simpleSale.validation.maxPrice', { price: formatBaseMoney(toPaisa(max)) });
   }
   return null;
 }
@@ -92,11 +92,13 @@ export function priceRangeHint(variant: VariantForSale): string | null {
   const { min_selling_price: min, max_selling_price: max, mrp } = variant;
   if (min !== null && max !== null) {
     return i18n.t('simpleSale.validation.priceRange', {
-      min: formatNpr(min),
-      max: formatNpr(max),
+      min: formatBaseMoney(toPaisa(min)),
+      max: formatBaseMoney(toPaisa(max)),
     });
   }
-  if (min !== null) return i18n.t('simpleSale.validation.minOnly', { price: formatNpr(min) });
-  if (max !== null) return i18n.t('simpleSale.validation.maxOnly', { price: formatNpr(max) });
-  return mrp !== null ? `MRP: ${formatNpr(mrp)}` : null;
+  if (min !== null)
+    return i18n.t('simpleSale.validation.minOnly', { price: formatBaseMoney(toPaisa(min)) });
+  if (max !== null)
+    return i18n.t('simpleSale.validation.maxOnly', { price: formatBaseMoney(toPaisa(max)) });
+  return mrp !== null ? `MRP: ${formatBaseMoney(toPaisa(mrp))}` : null;
 }
