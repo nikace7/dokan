@@ -3095,6 +3095,7 @@ export interface components {
             shop_name: string;
             shop_name_np: string | null;
             currency: string;
+            vat_registered: boolean;
         };
         NullEnum: null;
         /** @description POST /inventory/opening payload. */
