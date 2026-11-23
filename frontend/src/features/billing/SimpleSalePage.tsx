@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuth } from '@/features/auth/useAuth';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, isUnconfirmed } from '@/lib/api/client';
 import { createSale, currentSaleContext, paisaToApiString } from '@/features/billing/api';
 import type {
   PaymentMethod,
@@ -20,12 +20,14 @@ import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { ShareBillPanel } from '@/features/billing/ShareBillPanel';
 import { SimpleSaleLineCard } from '@/features/billing/SimpleSaleLineCard';
 import { SimpleSaleQuickPick } from '@/features/billing/SimpleSaleQuickPick';
+import { UnconfirmedSaleNotice } from '@/features/billing/UnconfirmedSaleNotice';
 import { grandTotalPaisa, linesValid } from '@/features/billing/simpleSaleModel';
 import type { SimpleLine } from '@/features/billing/simpleSaleModel';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { useSyncStore } from '@/lib/offline/sync';
 import { hasPermission } from '@/lib/permissions';
+import type { UnconfirmedSale } from '@/stores/cartStore';
 
 type TenderMethod = Extract<PaymentMethod, 'CASH' | 'QR'>;
 
@@ -72,9 +74,9 @@ export function SimpleSalePage() {
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
   const [saleError, setSaleError] = useState<string | null>(null);
-  // One Idempotency-Key per composed bill; a failed Complete retries with the
-  // SAME key (a safe replay), and only a completed/new bill rotates it.
-  const idempotencyKey = useRef(crypto.randomUUID());
+  // Recorded BEFORE the sale is sent and kept until a definite answer, so a
+  // retry after a lost reply re-sends the same bill under the same key.
+  const [unconfirmedSale, setUnconfirmedSale] = useState<UnconfirmedSale | null>(null);
 
   // The tender bar is FIXED so it stays rigid at the viewport bottom while
   // scrolling (sticky visibly followed the scroll). An in-flow spacer of
@@ -96,35 +98,48 @@ export function SimpleSalePage() {
   const canSubmit = online && workspace.isReady && linesValid(lines) && total > 0;
 
   const saleMutation = useMutation({
-    mutationFn: () => {
-      if (!workspace.branchId || !workspace.rateTypeId) {
-        throw new Error('Select an active branch and rate type before billing.');
-      }
-      return createSale(
-        {
-          ...currentSaleContext(workspace.branchId, workspace.rateTypeId),
-          lines: lines.map((line) => ({
-            variant: line.variant.id,
-            qty: String(Number(line.qty)),
-            // linesValid() gates submission, so these parse cleanly.
-            unit_price: paisaToApiString(toPaisa(line.price)),
-            discount: '0.00',
-          })),
-          payments: [{ method: tender, amount: paisaToApiString(total) }],
-          is_vat_bill: false,
-        },
-        idempotencyKey.current,
-      );
+    // Offline must fail now, not pause and bill later on reconnect.
+    networkMode: 'always',
+    mutationFn: ({ payload, key }: UnconfirmedSale) => createSale(payload, key),
+    onMutate: (sale) => {
+      setSaleError(null);
+      setUnconfirmedSale(sale);
     },
     onSuccess: ({ invoice, planWarning: warning }) => {
       setReceipt(invoice);
       setPlanWarning(warning);
       setSaleError(null);
       setLines([]);
-      idempotencyKey.current = crypto.randomUUID();
+      setUnconfirmedSale(null);
     },
-    onError: (err) => setSaleError(saleErrorMessage(err)),
+    onError: (err) => {
+      if (isUnconfirmed(err)) return;
+      setUnconfirmedSale(null);
+      setSaleError(saleErrorMessage(err));
+    },
   });
+  // Nothing on the bill may change while the server might already hold it.
+  const locked = unconfirmedSale !== null;
+
+  const complete = () => {
+    // canSubmit gates this on a ready workspace; the check narrows the types.
+    if (!workspace.branchId || !workspace.rateTypeId) return;
+    saleMutation.mutate({
+      payload: {
+        ...currentSaleContext(workspace.branchId, workspace.rateTypeId),
+        lines: lines.map((line) => ({
+          variant: line.variant.id,
+          qty: String(Number(line.qty)),
+          // linesValid() gates submission, so these parse cleanly.
+          unit_price: paisaToApiString(toPaisa(line.price)),
+          discount: '0.00',
+        })),
+        payments: [{ method: tender, amount: paisaToApiString(total) }],
+        is_vat_bill: false,
+      },
+      key: crypto.randomUUID(),
+    });
+  };
 
   if (user && !hasPermission(user, 'sale.create')) {
     return (
@@ -186,7 +201,7 @@ export function SimpleSalePage() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3">
+      <fieldset disabled={locked} className="flex min-w-0 flex-col gap-3">
         {lines.map((line) => (
           <SimpleSaleLineCard
             key={line.key}
@@ -197,13 +212,13 @@ export function SimpleSalePage() {
             onRemove={(key) => setLines((current) => current.filter((l) => l.key !== key))}
           />
         ))}
-      </div>
+      </fieldset>
 
       <Button
         variant="outline"
         size="lg"
         className="w-full border-dashed"
-        disabled={!workspace.isReady}
+        disabled={!workspace.isReady || locked}
         onClick={() => setPickerOpen(true)}
       >
         + {t('simpleSale.addItem')}
@@ -223,10 +238,12 @@ export function SimpleSalePage() {
           counter tap items straight onto the bill; hidden while offline or
           before the workspace resolves (the banners above explain why). */}
       {online && workspace.isReady && workspace.branchId ? (
-        <SimpleSaleQuickPick
-          branchId={workspace.branchId}
-          onPick={(variant) => setLines((current) => [...current, newLine(variant)])}
-        />
+        <fieldset disabled={locked} className="min-w-0">
+          <SimpleSaleQuickPick
+            branchId={workspace.branchId}
+            onPick={(variant) => setLines((current) => [...current, newLine(variant)])}
+          />
+        </fieldset>
       ) : null}
 
       {/* In-flow spacer exactly the bar's height, so the last line and any
@@ -258,6 +275,7 @@ export function SimpleSalePage() {
                 key={method}
                 type="button"
                 aria-pressed={tender === method}
+                disabled={locked}
                 onClick={() => setTender(method)}
                 className={
                   tender === method
@@ -272,13 +290,23 @@ export function SimpleSalePage() {
           <Button
             size="lg"
             className="h-14 w-full text-lg"
-            disabled={!canSubmit || saleMutation.isPending}
-            onClick={() => saleMutation.mutate()}
+            disabled={!canSubmit || locked}
+            onClick={complete}
           >
             {saleMutation.isPending
               ? t('simpleSale.saving')
               : `${t('simpleSale.complete')} · ${formatPaisa(total, { symbol: 'auto' })}`}
           </Button>
+          {unconfirmedSale && !saleMutation.isPending ? (
+            <UnconfirmedSaleNotice
+              retryDisabled={!online}
+              onRetry={() => saleMutation.mutate(unconfirmedSale)}
+              onDiscard={() => {
+                setUnconfirmedSale(null);
+                setLines([]);
+              }}
+            />
+          ) : null}
           {saleError ? (
             <p
               role="alert"

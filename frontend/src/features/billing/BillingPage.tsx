@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/features/auth/useAuth';
-import { ApiError, isNetworkError } from '@/lib/api/client';
+import { ApiError, isNetworkError, isUnconfirmed } from '@/lib/api/client';
 import {
   completeSale,
   createSale,
@@ -22,11 +22,13 @@ import { PaymentPanel } from '@/features/billing/PaymentPanel';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { ScanInput } from '@/features/billing/ScanInput';
 import { SyncStatusBanner } from '@/features/billing/SyncStatusBanner';
+import { UnconfirmedSaleNotice } from '@/features/billing/UnconfirmedSaleNotice';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { enqueueSale } from '@/lib/offline/queue';
 import { refreshSyncState } from '@/lib/offline/sync';
 import { hasPlanFeature } from '@/lib/plans';
 import { useCartStore } from '@/stores/cartStore';
+import type { UnconfirmedSale } from '@/stores/cartStore';
 
 function serverMessage(err: unknown): string {
   // The server's error.message is shown verbatim — it carries codes like
@@ -47,6 +49,8 @@ export function BillingPage() {
   const customer = useCartStore((s) => s.customer);
   const heldSaleId = useCartStore((s) => s.heldSaleId);
   const clear = useCartStore((s) => s.clear);
+  const unconfirmedSale = useCartStore((s) => s.unconfirmedSale);
+  const setUnconfirmedSale = useCartStore((s) => s.setUnconfirmedSale);
   const queryClient = useQueryClient();
   const workspace = useWorkspace();
   const { user } = useAuth();
@@ -79,18 +83,17 @@ export function BillingPage() {
   });
 
   const saleMutation = useMutation({
-    // One Idempotency-Key per bill attempt (per Complete click). Mutations
-    // are not auto-retried (see providers.tsx), and the key would be reused
-    // if a manual retry of the SAME attempt is ever added — never regenerated.
-    mutationFn: ({ tender, key }: { tender: Tender; key: string }) => {
-      if (heldSaleId) {
-        return completeSale(
-          heldSaleId,
-          [{ method: tender.method, amount: paisaToApiString(tender.amountPaisa) }],
-          key,
-        );
-      }
-      return createSale(buildSalePayload(tender), key);
+    // Offline must fail now, not pause and bill later on reconnect.
+    networkMode: 'always',
+    // One Idempotency-Key per bill attempt (per Complete click). A new sale is
+    // recorded as unconfirmed BEFORE it is sent and stays locked until a
+    // definite answer, so a retry always re-sends the same payload and key.
+    // (A held bill needs none of this: the server completes its id only once.)
+    mutationFn: ({ payload, key }: UnconfirmedSale) =>
+      heldSaleId ? completeSale(heldSaleId, payload.payments, key) : createSale(payload, key),
+    onMutate: (sale) => {
+      setSaleError(null);
+      if (!heldSaleId) setUnconfirmedSale(sale);
     },
     onSuccess: ({ invoice, planWarning: warning }) => {
       setReceipt(invoice);
@@ -105,7 +108,7 @@ export function BillingPage() {
       // is a real rejection (stock, credit limit, …) and never queues.
       // Held-bill completion needs the server id — it stays online-only.
       if (!heldSaleId && isNetworkError(err)) {
-        void enqueueSale(buildSalePayload(variables.tender), variables.key).then(async (op) => {
+        void enqueueSale(variables.payload, variables.key).then(async (op) => {
           setQueuedRef(op.localRef);
           setSaleError(null);
           clear();
@@ -113,9 +116,13 @@ export function BillingPage() {
         });
         return;
       }
+      if (!heldSaleId && isUnconfirmed(err)) return;
+      setUnconfirmedSale(null);
       setSaleError(serverMessage(err));
     },
   });
+  // Nothing on the bill may change while the server might already hold it.
+  const locked = saleMutation.isPending || unconfirmedSale !== null;
 
   const holdMutation = useMutation({
     mutationFn: () => holdSale(buildBasePayload(), crypto.randomUUID()),
@@ -183,45 +190,62 @@ export function BillingPage() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-4">
+      <fieldset disabled={locked} className="flex min-w-0 flex-col gap-4">
         <Card>
           <ScanInput />
         </Card>
         <Card title={heldSaleId ? t('billing.billResumed') : t('billing.bill')}>
           <CartTable />
         </Card>
-      </div>
+      </fieldset>
 
       <div>
         <Card title={t('billing.payment')}>
-          <PaymentPanel
-            busy={saleMutation.isPending}
-            disabled={!workspace.isReady}
-            allowVatBill={hasPlanFeature(user, 'vat_module')}
-            onComplete={(tender) => saleMutation.mutate({ tender, key: crypto.randomUUID() })}
-          />
-          <div className="mt-3 border-t border-slate-200 pt-3">
-            <button
-              type="button"
-              disabled={
-                holdMutation.isPending ||
-                lines.length === 0 ||
-                heldSaleId !== null ||
-                !workspace.isReady
+          <fieldset disabled={locked} className="min-w-0">
+            <PaymentPanel
+              busy={saleMutation.isPending}
+              disabled={!workspace.isReady || locked}
+              allowVatBill={hasPlanFeature(user, 'vat_module')}
+              onComplete={(tender) =>
+                saleMutation.mutate({
+                  payload: buildSalePayload(tender),
+                  key: crypto.randomUUID(),
+                })
               }
-              onClick={() => holdMutation.mutate()}
-              className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300"
-            >
-              {holdMutation.isPending ? t('billing.parking') : t('billing.holdBill')}
-            </button>
-          </div>
+            />
+            <div className="mt-3 border-t border-slate-200 pt-3">
+              <button
+                type="button"
+                disabled={
+                  holdMutation.isPending ||
+                  lines.length === 0 ||
+                  heldSaleId !== null ||
+                  !workspace.isReady
+                }
+                onClick={() => holdMutation.mutate()}
+                className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300"
+              >
+                {holdMutation.isPending ? t('billing.parking') : t('billing.holdBill')}
+              </button>
+            </div>
+          </fieldset>
+          {unconfirmedSale && !saleMutation.isPending ? (
+            <div className="mt-3">
+              <UnconfirmedSaleNotice
+                onRetry={() => saleMutation.mutate(unconfirmedSale)}
+                onDiscard={clear}
+              />
+            </div>
+          ) : null}
           {saleError ? (
             <p role="alert" className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
               {saleError}
             </p>
           ) : null}
         </Card>
-        <HeldBillsPanel />
+        <fieldset disabled={locked} className="min-w-0">
+          <HeldBillsPanel />
+        </fieldset>
       </div>
     </main>
   );

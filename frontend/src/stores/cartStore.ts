@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import type { CreateSalePayload } from '@/features/billing/api';
 import type { Paisa } from '@/lib/money';
 import { addPaisa, multiplyPaisa } from '@/lib/money';
 
@@ -29,16 +30,25 @@ export interface CartCustomer {
   phone: string;
 }
 
+/** A sale sent to the server that has no definite answer yet. */
+export interface UnconfirmedSale {
+  payload: CreateSalePayload;
+  key: string;
+}
+
 export interface CartState {
   lines: CartLine[];
   customer: CartCustomer | null;
   /** Set when the cart was loaded from a parked bill (complete, not re-post). */
   heldSaleId: string | null;
+  /** While set, the cart is locked: the server may already hold this bill. */
+  unconfirmedSale: UnconfirmedSale | null;
   addLine: (line: CartLine) => void;
   removeLine: (variantId: string) => void;
   setQuantity: (variantId: string, quantity: number) => void;
   setDiscount: (variantId: string, discountPaisa: Paisa) => void;
   setCustomer: (customer: CartCustomer | null) => void;
+  setUnconfirmedSale: (sale: UnconfirmedSale | null) => void;
   /** Replace the cart with a parked bill's lines (resume flow). */
   resumeHeld: (heldSaleId: string, lines: CartLine[], customer: CartCustomer | null) => void;
   clear: () => void;
@@ -48,6 +58,7 @@ const initialState = {
   lines: [] as CartLine[],
   customer: null as CartCustomer | null,
   heldSaleId: null as string | null,
+  unconfirmedSale: null as UnconfirmedSale | null,
 };
 
 /** Display-only line total: `qty × unit price − discount`, floored at zero. */
@@ -90,6 +101,8 @@ export const useCartStore = create<CartState>()((set) => ({
       lines: state.lines.map((l) => (l.variantId === variantId ? { ...l, discountPaisa } : l)),
     })),
   setCustomer: (customer) => set({ customer }),
-  resumeHeld: (heldSaleId, lines, customer) => set({ heldSaleId, lines, customer }),
+  setUnconfirmedSale: (unconfirmedSale) => set({ unconfirmedSale }),
+  resumeHeld: (heldSaleId, lines, customer) =>
+    set({ heldSaleId, lines, customer, unconfirmedSale: null }),
   clear: () => set(initialState),
 }));

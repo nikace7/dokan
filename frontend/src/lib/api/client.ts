@@ -44,6 +44,18 @@ export function isNetworkError(err: unknown): boolean {
   return err instanceof TypeError;
 }
 
+/**
+ * True when a write may or may not have happened: the reply was lost, or a
+ * gateway/server error hides the outcome. Retry only with the SAME payload
+ * and Idempotency-Key until a definite answer arrives.
+ */
+export function isUnconfirmed(err: unknown): boolean {
+  return (
+    isNetworkError(err) ||
+    (err instanceof ApiError && (err.status >= 500 || err.status === 408 || err.status === 429))
+  );
+}
+
 interface ApiEnvelope<T> {
   data: T | null;
   meta?: Record<string, unknown>;

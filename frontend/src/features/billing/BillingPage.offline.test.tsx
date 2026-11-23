@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BillingPage } from '@/features/billing/BillingPage';
@@ -88,6 +88,7 @@ describe('BillingPage offline', () => {
 
   afterEach(async () => {
     cancelScheduledRetry();
+    onlineManager.setOnline(true);
     vi.unstubAllGlobals();
     fetchMock.mockReset();
     clearTokens();
@@ -96,7 +97,10 @@ describe('BillingPage offline', () => {
     await offlineDb.variantCache.clear();
   });
 
-  it('queues the sale with the attempt’s Idempotency-Key and shows a provisional ref', async () => {
+  it.each([
+    ['the request fails', true],
+    ['the browser already knows it is offline', false],
+  ])('queues the sale under its own Idempotency-Key when %s', async (_, isOnline) => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: 0 } },
     });
@@ -113,6 +117,8 @@ describe('BillingPage offline', () => {
     // The label renders twice: the cart row and the last-scanned card.
     expect((await screen.findAllByText('T-Shirt — M / Black')).length).toBeGreaterThan(0);
 
+    // A paused sale would bill the customer later, behind the cashier's back.
+    act(() => onlineManager.setOnline(isOnline));
     fireEvent.click(screen.getByRole('button', { name: /complete sale/i }));
 
     // Offline receipt: provisional reference, never an invoice number.

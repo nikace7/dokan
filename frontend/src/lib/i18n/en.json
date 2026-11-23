@@ -135,6 +135,12 @@
     "cartEmpty": "Cart is empty — scan an item to start a bill.",
     "bill": "Bill",
     "billResumed": "Bill (resumed from held)",
+    "unconfirmed": {
+      "message": "The server did not confirm this bill, so it is locked. Try again — it cannot be billed twice.",
+      "retry": "Try again",
+      "discard": "Discard bill",
+      "discardConfirm": "This bill may already be saved. Check Sales before you discard it. Discard now?"
+    },
     "item": "Item",
     "qty": "Qty",
     "rate": "Rate",
