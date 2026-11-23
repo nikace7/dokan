@@ -26,10 +26,18 @@ interface DraftLine {
   unitCost: string;
 }
 
+/** One more of a variant already on the bill; unreadable input is left for the user. */
+function plusOne(qty: string): string {
+  const next = Number(qty) + 1;
+  return Number.isFinite(next) ? String(Number(next.toFixed(3))) : qty;
+}
+
 /** Display-only line total; the server computes the authoritative one. */
 export function draftLineTotalPaisa(line: DraftLine): Paisa {
   try {
-    return multiplyPaisa(toPaisa(line.unitCost), Number(line.qty));
+    // Quantities have up to three decimals: count in thousandths, stay integer.
+    const thousandths = Math.round(Number(line.qty) * 1000);
+    return Math.round(multiplyPaisa(toPaisa(line.unitCost), thousandths) / 1000);
   } catch (err) {
     if (err instanceof MoneyError) {
       return 0;
@@ -89,16 +97,22 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
   });
 
   const addVariant = (variant: PickedVariant) => {
-    setLines((current) => [
-      ...current,
-      {
-        variantId: variant.id,
-        label: `${variant.itemName} — ${variant.size} / ${variant.color}`,
-        sku: variant.sku,
-        qty: '1',
-        unitCost: '',
-      },
-    ]);
+    setLines((current) =>
+      current.some((line) => line.variantId === variant.id)
+        ? current.map((line) =>
+            line.variantId === variant.id ? { ...line, qty: plusOne(line.qty) } : line,
+          )
+        : [
+            ...current,
+            {
+              variantId: variant.id,
+              label: `${variant.itemName} — ${variant.size} / ${variant.color}`,
+              sku: variant.sku,
+              qty: '1',
+              unitCost: '',
+            },
+          ],
+    );
   };
 
   const updateLine = (variantId: string, patch: Partial<DraftLine>) =>
