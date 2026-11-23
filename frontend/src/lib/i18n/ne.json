@@ -1214,6 +1214,7 @@
       "success": "सामान \"{{name}}\" थपियो।",
       "successStock_one": "{{count}} स्टक प्रविष्टि भयो",
       "successStock_other": "{{count}} स्टक प्रविष्टि भयो",
+      "photoFailed": "फोटो अपलोड हुन सकेन। सामान खोलेर फोटो फेरि थप्नुहोस्।",
       "addAnother": "अर्को थप्नुहोस्",
       "viewProduct": "सामान हेर्नुहोस्"
     },
