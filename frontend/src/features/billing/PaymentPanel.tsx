@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { CustomerPicker } from '@/features/billing/CustomerPicker';
+import { paisaToApiString } from '@/features/billing/api';
 import type { PaymentMethod } from '@/features/billing/api';
-import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
+import { baseSymbol, formatBaseMoney, parseAmount, useMoneyDisplay } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
-import { cartTotalPaisa, useCartStore } from '@/stores/cartStore';
+import { billTotalPaisa, discountProblem, useCartStore, vatPaisa } from '@/stores/cartStore';
 
 const METHODS: Array<{ id: PaymentMethod; labelKey: string }> = [
   { id: 'CASH', labelKey: 'billing.tender.cash' },
@@ -18,7 +19,10 @@ const METHODS: Array<{ id: PaymentMethod; labelKey: string }> = [
 
 export interface Tender {
   method: PaymentMethod;
+  /** Recorded on the bill — never more than its total. */
   amountPaisa: Paisa;
+  /** Cash to hand back; not part of the sale. */
+  changePaisa: Paisa;
   isVatBill: boolean;
 }
 
@@ -26,73 +30,70 @@ interface PaymentPanelProps {
   busy: boolean;
   disabled?: boolean;
   allowVatBill: boolean;
+  /** A VAT bill adds 13% only in a VAT-registered shop. */
+  chargesVat?: boolean;
   onComplete: (tender: Tender) => void;
 }
 
 /**
- * Tender selection + amount. CREDIT (udharo) requires a customer — the
- * server rejects it otherwise (UDHARO_REQUIRES_CUSTOMER), so we block it
- * here first to save the round-trip.
+ * Tender selection + amount, always in the shop's own currency. Anything left
+ * due is udharo and requires a customer — the server rejects it otherwise
+ * (UDHARO_REQUIRES_CUSTOMER), so we block it here first to save the round-trip.
  */
 export function PaymentPanel({
   busy,
   disabled = false,
   allowVatBill,
+  chargesVat = false,
   onComplete,
 }: PaymentPanelProps) {
   const { t } = useTranslation();
   const lines = useCartStore((s) => s.lines);
   const customer = useCartStore((s) => s.customer);
+  const isHeld = useCartStore((s) => s.heldSaleId !== null);
+  const billPaisa = useCartStore(billTotalPaisa);
   const [method, setMethod] = useState<PaymentMethod>('CASH');
   const [amountRaw, setAmountRaw] = useState('');
   const [isVatBill, setIsVatBill] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
   useMoneyDisplay();
 
-  const totalPaisa = cartTotalPaisa(lines);
-  let tenderPaisa: Paisa | null = null;
-  if (amountRaw.trim() !== '') {
-    try {
-      tenderPaisa = toPaisa(amountRaw);
-    } catch {
-      // surfaced on submit; typing partial input must not blow up rendering
-    }
-  }
-  const effectiveTender = tenderPaisa ?? totalPaisa;
-  const paidPaisa = method === 'CREDIT' ? 0 : effectiveTender;
+  // A parked bill's VAT was fixed when it was parked.
+  const canPickVat = allowVatBill && !isHeld;
+  const vatAdded = canPickVat && isVatBill && chargesVat ? vatPaisa(lines) : 0;
+  const totalPaisa = billPaisa + vatAdded;
+
+  const isCredit = method === 'CREDIT';
+  const isBlank = isCredit || amountRaw.trim() === '';
+  const typedPaisa = isBlank ? totalPaisa : parseAmount(amountRaw);
+  let amountError: string | null = null;
+  if (typedPaisa === null) amountError = 'billing.errors.invalidAmount';
+  else if (!isBlank && typedPaisa === 0) amountError = 'billing.errors.amountPositive';
+  else if (method !== 'CASH' && typedPaisa > totalPaisa)
+    amountError = 'billing.errors.amountTooMuch';
+
+  const receivedPaisa = typedPaisa ?? 0;
+  const tenderPaisa = Math.min(receivedPaisa, totalPaisa);
+  const paidPaisa = isCredit ? 0 : tenderPaisa;
   const duePaisa = totalPaisa - paidPaisa;
+  const changePaisa = Math.max(0, receivedPaisa - totalPaisa);
+
+  let formError: string | null = null;
+  if (lines.some(discountProblem)) formError = 'billing.errors.fixDiscount';
+  else if (totalPaisa <= 0) formError = 'billing.errors.amountPositive';
+  else if (amountError === null && duePaisa > 0 && !customer)
+    formError = 'billing.errors.udharoCustomer';
 
   const submit = useCallback(() => {
-    setError(null);
-    if (lines.length === 0) {
-      setError(t('billing.errors.addItem'));
-      return;
-    }
-    if (tenderPaisa === null && amountRaw.trim() !== '') {
-      setError(t('billing.errors.invalidAmount'));
-      return;
-    }
-    if (effectiveTender <= 0) {
-      setError(t('billing.errors.amountPositive'));
-      return;
-    }
-    if (method === 'CREDIT' && !customer) {
-      setError(t('billing.errors.udharoCustomer'));
-      return;
-    }
-    onComplete({ method, amountPaisa: effectiveTender, isVatBill: allowVatBill && isVatBill });
-  }, [
-    allowVatBill,
-    amountRaw,
-    customer,
-    effectiveTender,
-    isVatBill,
-    lines.length,
-    method,
-    onComplete,
-    t,
-    tenderPaisa,
-  ]);
+    setAttempted(true);
+    if (amountError || formError) return;
+    onComplete({
+      method,
+      amountPaisa: tenderPaisa,
+      changePaisa,
+      isVatBill: canPickVat && isVatBill,
+    });
+  }, [amountError, canPickVat, changePaisa, formError, isVatBill, method, onComplete, tenderPaisa]);
 
   useEffect(() => {
     const completeWithF9 = (event: KeyboardEvent) => {
@@ -129,41 +130,56 @@ export function PaymentPanel({
         ))}
       </div>
 
-      {method === 'CREDIT' ? <CustomerPicker /> : null}
-
-      <div>
-        <label htmlFor="tender-amount" className="text-sm font-medium text-slate-700">
-          {t('billing.amountLabel')}
-        </label>
-        <input
-          id="tender-amount"
-          value={amountRaw}
-          onChange={(e) => setAmountRaw(e.target.value)}
-          placeholder={formatPaisa(totalPaisa, { symbol: '' })}
-          inputMode="decimal"
-          autoComplete="off"
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-right text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+      {isCredit ? null : (
+        <div>
+          <label htmlFor="tender-amount" className="text-sm font-medium text-slate-700">
+            {t(method === 'CASH' ? 'billing.cashReceived' : 'billing.amountLabel', {
+              symbol: baseSymbol(),
+            })}
+          </label>
+          <input
+            id="tender-amount"
+            value={amountRaw}
+            onChange={(e) => setAmountRaw(e.target.value)}
+            placeholder={paisaToApiString(totalPaisa)}
+            inputMode="decimal"
+            autoComplete="off"
+            aria-invalid={amountError !== null}
+            aria-describedby={amountError ? 'tender-amount-error' : undefined}
+            className={[
+              'mt-1 w-full rounded-md border px-3 py-2 text-right text-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+              amountError ? 'border-red-600' : 'border-slate-300',
+            ].join(' ')}
+          />
+          {amountError ? (
+            <p id="tender-amount-error" role="alert" className="mt-1 text-sm text-red-600">
+              {t(amountError)}
+            </p>
+          ) : null}
+        </div>
+      )}
 
       <dl className="space-y-1 rounded-md bg-slate-50 px-3 py-2 text-sm">
-        <div className="flex justify-between">
-          <dt className="text-slate-600">{t('billing.billTotal')}</dt>
-          <dd className="font-medium">{formatPaisa(totalPaisa, { symbol: 'auto' })}</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-slate-600">{t('billing.paid')}</dt>
-          <dd className="font-medium">{formatPaisa(Math.max(0, paidPaisa), { symbol: 'auto' })}</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-slate-600">{t('billing.dueUdharo')}</dt>
-          <dd className={duePaisa > 0 ? 'font-semibold text-red-600' : 'font-medium'}>
-            {formatPaisa(Math.max(0, duePaisa), { symbol: 'auto' })}
-          </dd>
-        </div>
+        {vatAdded > 0 ? <SummaryRow label={t('billing.vatAmount')} paisa={vatAdded} /> : null}
+        <SummaryRow label={t('billing.billTotal')} paisa={totalPaisa} />
+        <SummaryRow label={t('billing.paid')} paisa={paidPaisa} />
+        <SummaryRow
+          label={t('billing.dueUdharo')}
+          paisa={duePaisa}
+          className={duePaisa > 0 ? 'font-semibold text-red-600' : undefined}
+        />
+        {method === 'CASH' ? (
+          <SummaryRow
+            label={t('billing.changeDue')}
+            paisa={changePaisa}
+            className={changePaisa > 0 ? 'text-lg font-bold' : undefined}
+          />
+        ) : null}
       </dl>
 
-      {allowVatBill ? (
+      {duePaisa > 0 || customer ? <CustomerPicker /> : null}
+
+      {canPickVat ? (
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
             type="checkbox"
@@ -175,9 +191,9 @@ export function PaymentPanel({
         </label>
       ) : null}
 
-      {error ? (
+      {attempted && formError ? (
         <p role="alert" className="text-sm text-red-600">
-          {error}
+          {t(formError)}
         </p>
       ) : null}
 
@@ -189,6 +205,23 @@ export function PaymentPanel({
       >
         {busy ? t('billing.completing') : t('billing.completeSale')}
       </Button>
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  paisa,
+  className = 'font-medium',
+}: {
+  label: string;
+  paisa: Paisa;
+  className?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <dt className="text-slate-600">{label}</dt>
+      <dd className={className}>{formatBaseMoney(paisa)}</dd>
     </div>
   );
 }

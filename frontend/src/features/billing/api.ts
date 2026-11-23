@@ -267,11 +267,16 @@ export function recordReceiptPrint(id: string): Promise<{ id: string; print_coun
   return authedRequest(`/v1/sales/${id}/print`, { method: 'POST', body: {} });
 }
 
-/** Tender a parked bill — turns HELD into COMPLETED. */
-export function completeSale(id: string, payments: PaymentPayload[], idempotencyKey: string) {
+/** Tender a parked bill — turns HELD into COMPLETED. The customer replaces the parked one. */
+export function completeSale(
+  id: string,
+  payments: PaymentPayload[],
+  idempotencyKey: string,
+  customer?: string,
+) {
   return completeWithUsageWarning(`/v1/sales/${id}/complete`, {
     method: 'POST',
-    body: { payments },
+    body: { payments, customer },
     idempotencyKey,
   });
 }

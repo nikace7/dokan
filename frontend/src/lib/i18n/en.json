@@ -155,7 +155,13 @@
       "fonepay": "Fonepay",
       "udharo": "Udharo"
     },
-    "amountLabel": "Amount (रू) — blank = full total",
+    "amountLabel": "Amount ({{symbol}}) — blank = full total",
+    "cashReceived": "Cash received ({{symbol}}) — blank = exact amount",
+    "changeDue": "Change to return",
+    "vatAmount": "VAT 13%",
+    "repricing": "Updating prices for the selected rate…",
+    "heldLocked": "Parked bill: its items cannot be changed here. Take payment, or leave it parked.",
+    "heldLeave": "Leave it parked",
     "billTotal": "Bill total",
     "paid": "Paid",
     "dueUdharo": "Due (udharo)",
@@ -178,7 +184,11 @@
     "queuedBody": "The bill is stored on this device and syncs automatically when the connection returns. The invoice number is assigned by the server at sync time — quote this reference, never an invoice number.",
     "planWarning": "You have used {{usage}} of {{limit}} monthly bills. Billing remains available; contact support if you need a higher plan.",
     "errors": {
-      "addItem": "Add at least one item to the bill.",
+      "amountTooMuch": "This is more than the bill total.",
+      "discountInvalid": "Enter a valid discount.",
+      "discountTooLarge": "Discount is more than the line.",
+      "fixDiscount": "Fix the discount marked in red first.",
+      "repriceFailed": "Prices for the selected rate could not be loaded.",
       "invalidAmount": "Enter a valid amount (e.g. 1500.00).",
       "amountPositive": "Amount must be greater than zero.",
       "udharoCustomer": "Udharo requires a customer — search and pick one above."

@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@/lib/api/client';
 import { lookupVariant } from '@/features/billing/api';
+import { linePricing } from '@/features/billing/cartModel';
 import { ItemImage } from '@/features/catalog/ui';
-import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
+import { formatPaisa, useMoneyDisplay } from '@/lib/money';
 import { useCartStore } from '@/stores/cartStore';
 
 /** What the counter last scanned — drives the feedback card under the input. */
@@ -23,7 +24,7 @@ interface LastScan {
  * label, unit price, running quantity in the cart). It has no focusable
  * elements, so the scan → add → rescan keyboard flow is never interrupted.
  */
-export function ScanInput() {
+export function ScanInput({ rateTypeId }: { rateTypeId: string | null }) {
   const { t } = useTranslation();
   const addLine = useCartStore((s) => s.addLine);
   const [code, setCode] = useState('');
@@ -48,14 +49,14 @@ export function ScanInput() {
     setBusy(true);
     setError(null);
     try {
-      const variant = await lookupVariant(trimmed);
+      const variant = await lookupVariant(trimmed, rateTypeId);
       addLine({
         variantId: variant.id,
         sku: variant.sku,
         label: `${variant.item__name} — ${variant.size} / ${variant.color}`,
         quantity: 1,
-        unitPricePaisa: variant.mrp !== null ? toPaisa(variant.mrp) : 0,
         discountPaisa: 0,
+        ...linePricing(variant, rateTypeId),
       });
       setLastScan({ variantId: variant.id, imageUrl: variant.image_url ?? null });
       setCode('');
