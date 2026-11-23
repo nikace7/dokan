@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OnlineOrdersPage } from '@/features/storefrontOrders/OnlineOrdersPage';
 import { clearTokens, setTokens } from '@/lib/auth/tokens';
+import { useCartStore } from '@/stores/cartStore';
 
 vi.mock('@/features/auth/useAuth', () => ({
   useAuth: () => ({
@@ -128,5 +129,35 @@ describe('OnlineOrdersPage', () => {
       ).toBe(true),
     );
     expect(await screen.findByRole('button', { name: 'Open held bill' })).toBeInTheDocument();
+  });
+
+  it('asks before opening its bill over one in progress at the counter', async () => {
+    useCartStore.getState().addLine({
+      variantId: 'v-1',
+      sku: 'SKU-1',
+      label: 'T-Shirt',
+      quantity: 1,
+      unitPricePaisa: 100_000,
+      discountPaisa: 0,
+    });
+    fetchMock.mockImplementation((input) =>
+      String(input).includes('/v1/storefront/manage/orders')
+        ? Promise.resolve(
+            envelope([
+              {
+                ...ORDER,
+                status: 'CONFIRMED',
+                sales_invoice: { id: 'sale-1', status: 'HELD', invoice_no: null },
+              },
+            ]),
+          )
+        : Promise.reject(new Error(`Unexpected request: ${String(input)}`)),
+    );
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Open held bill' }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(useCartStore.getState().lines[0].sku).toBe('SKU-1');
+    useCartStore.getState().clear();
   });
 });
