@@ -6,6 +6,7 @@ import type { MeUser } from '@/features/auth/api';
 import { ApiError } from '@/lib/api/client';
 import { clearTokens, getRefreshToken, hasTokens, setTokens } from '@/lib/auth/tokens';
 import { useAuthSession } from '@/stores/authSession';
+import { useCartStore } from '@/stores/cartStore';
 
 const ME_QUERY_KEY = ['auth', 'me'] as const;
 
@@ -69,6 +70,8 @@ export function useAuth(): AuthState {
     const refresh = getRefreshToken();
     if (refresh) void logoutCurrentSession(refresh).catch(() => undefined);
     clearTokens();
+    // Shared counters: the next person must not inherit this person's bill.
+    useCartStore.getState().clear();
     // queryClient.clear() removes every query but active observers keep
     // their last result — the bump re-renders consumers so the route guard
     // sees the empty token store and redirects without a manual refresh.
