@@ -97,7 +97,11 @@ const INVOICE = {
 };
 
 /** Route mock responses by URL + method. */
-function installApiMock(saleResponse: Response, vatModule = true, printResponse?: Response) {
+function installApiMock(
+  saleResponse: Response | (() => Promise<Response>),
+  vatModule = true,
+  printResponse?: Response,
+) {
   fetchMock.mockImplementation((input, init) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
@@ -125,7 +129,7 @@ function installApiMock(saleResponse: Response, vatModule = true, printResponse?
       return Promise.resolve(envelope([]));
     }
     if (url.endsWith('/api/v1/sales') && method === 'POST') {
-      return Promise.resolve(saleResponse);
+      return typeof saleResponse === 'function' ? saleResponse() : Promise.resolve(saleResponse);
     }
     if (url.endsWith('/api/v1/sales/sale-1/print') && method === 'POST') {
       if (printResponse) return Promise.resolve(printResponse);
@@ -275,6 +279,35 @@ describe('BillingPage', () => {
     expect(await screen.findByText('Insufficient stock for T-Shirt — M.')).toBeInTheDocument();
     // No receipt; the cart survives so the counter can fix the bill.
     expect(useCartStore.getState().lines).toHaveLength(1);
+  });
+
+  it('locks the bill after a 504 and retries the same sale, even after leaving the page', async () => {
+    const replies = [
+      () => Promise.resolve(new Response('', { status: 504 })),
+      () => Promise.resolve(envelope(INVOICE, 200)),
+    ];
+    installApiMock(() => (replies.shift() as () => Promise<Response>)());
+    const { unmount } = renderBilling();
+    await scanAndAdd('8901234567890');
+    fireEvent.click(screen.getByRole('button', { name: /complete sale/i }));
+
+    expect(await screen.findByText(/did not confirm this bill/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/scan barcode or type sku/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /complete sale/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /hold|park/i })).toBeDisabled();
+
+    // The cart outlives the page, so the lock must too.
+    unmount();
+    renderBilling();
+    fireEvent.click(await screen.findByRole('button', { name: /try again/i }));
+    expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+
+    const posts = fetchMock.mock.calls
+      .filter(([url, init]) => String(url).endsWith('/api/v1/sales') && init?.method === 'POST')
+      .map(([, init]) => [(init?.headers as Headers).get('Idempotency-Key'), String(init?.body)]);
+    expect(posts).toHaveLength(2);
+    expect(posts[1]).toEqual(posts[0]);
+    expect(useCartStore.getState().unconfirmedSale).toBeNull();
   });
 
   it('hides the VAT bill option when the tenant plan disables VAT', async () => {
