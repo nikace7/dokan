@@ -2757,6 +2757,8 @@ export interface components {
         };
         /** @description POST /sales/<id>/complete payload. */
         CompleteBill: {
+            /** Format: uuid */
+            customer?: string | null;
             payments?: components["schemas"]["SalePayment"][];
             /** @default  */
             override_reason: string;
