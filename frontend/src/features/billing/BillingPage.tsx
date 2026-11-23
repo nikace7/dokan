@@ -83,6 +83,8 @@ export function BillingPage() {
   });
 
   const saleMutation = useMutation({
+    // Offline must fail now, not pause and bill later on reconnect.
+    networkMode: 'always',
     // One Idempotency-Key per bill attempt (per Complete click). A new sale is
     // recorded as unconfirmed BEFORE it is sent and stays locked until a
     // definite answer, so a retry always re-sends the same payload and key.

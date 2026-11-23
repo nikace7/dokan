@@ -98,6 +98,8 @@ export function SimpleSalePage() {
   const canSubmit = online && workspace.isReady && linesValid(lines) && total > 0;
 
   const saleMutation = useMutation({
+    // Offline must fail now, not pause and bill later on reconnect.
+    networkMode: 'always',
     mutationFn: ({ payload, key }: UnconfirmedSale) => createSale(payload, key),
     onMutate: (sale) => {
       setSaleError(null);
