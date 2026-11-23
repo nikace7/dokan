@@ -93,8 +93,7 @@
     "loading": "Loading online orders…",
     "empty": "No online orders match this filter.",
     "loadError": "Could not load online orders.",
-    "updateError": "Could not update this order.",
-    "openError": "Could not open the held bill."
+    "updateError": "Could not update this order."
   },
   "auth": {
     "title": "Sign in",
@@ -162,6 +161,14 @@
     "repricing": "Updating prices for the selected rate…",
     "heldLocked": "Parked bill: its items cannot be changed here. Take payment, or leave it parked.",
     "heldLeave": "Leave it parked",
+    "resumeGuard": {
+      "title": "A bill is already in progress",
+      "body": "Opening the parked bill replaces the one on screen. Park the current bill first to keep it.",
+      "park": "Park it and open",
+      "discard": "Discard it and open",
+      "unconfirmed": "The current bill is not confirmed yet. Finish it in Billing first.",
+      "openError": "Could not open the parked bill. Check the connection and try again."
+    },
     "billTotal": "Bill total",
     "paid": "Paid",
     "dueUdharo": "Due (udharo)",

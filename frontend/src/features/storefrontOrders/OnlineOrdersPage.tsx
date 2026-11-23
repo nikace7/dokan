@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/features/auth/useAuth';
-import { getSale } from '@/features/billing/api';
+import { useResumeHeldBill } from '@/features/billing/useResumeHeldBill';
 import {
   advanceOnlineOrder,
   cancelOnlineOrder,
@@ -17,9 +17,7 @@ import {
 } from '@/features/storefrontOrders/api';
 import type { OnlineOrder, OnlineOrderStatus } from '@/features/storefrontOrders/api';
 import { ApiError } from '@/lib/api/client';
-import { toPaisa } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
-import { useCartStore } from '@/stores/cartStore';
 
 const STATUS_VARIANTS: Record<
   OnlineOrderStatus,
@@ -54,7 +52,7 @@ function OrderCard({ order }: { order: OnlineOrder }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const resumeHeld = useCartStore((state) => state.resumeHeld);
+  const heldBill = useResumeHeldBill(() => navigate('/billing'));
   const [error, setError] = useState<string | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['storefront', 'orders'] });
   const action = useMutation({
@@ -71,32 +69,6 @@ function OrderCard({ order }: { order: OnlineOrder }) {
     onError: (reason) =>
       setError(reason instanceof ApiError ? reason.message : t('onlineOrders.updateError')),
   });
-
-  const openHeldBill = async () => {
-    if (!order.sales_invoice) return;
-    setError(null);
-    try {
-      const invoice = await getSale(order.sales_invoice.id);
-      resumeHeld(
-        invoice.id,
-        invoice.items.map((item) => ({
-          variantId: item.variant,
-          sku: item.variant_sku,
-          label: item.item_name,
-          quantity: Number(item.qty),
-          unitPricePaisa: toPaisa(item.unit_price),
-          discountPaisa: toPaisa(item.discount),
-        })),
-        invoice.customer && invoice.customer_name
-          ? { id: invoice.customer, name: invoice.customer_name, phone: '' }
-          : null,
-        toPaisa(invoice.total),
-      );
-      navigate('/billing');
-    } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : t('onlineOrders.openError'));
-    }
-  };
 
   const canCreate = hasPermission(user, 'sale.create');
   const canCancel = hasPermission(user, 'sale.void');
@@ -158,6 +130,7 @@ function OrderCard({ order }: { order: OnlineOrder }) {
           {error}
         </p>
       ) : null}
+      {heldBill.notice}
       <div className="flex flex-wrap gap-2">
         {order.status === 'PLACED' && canCreate ? (
           <Button loading={action.isPending} onClick={() => action.mutate('prepare')}>
@@ -165,7 +138,11 @@ function OrderCard({ order }: { order: OnlineOrder }) {
           </Button>
         ) : null}
         {order.sales_invoice?.status === 'HELD' && canCreate ? (
-          <Button variant="secondary" onClick={() => void openHeldBill()}>
+          <Button
+            variant="secondary"
+            disabled={heldBill.isBusy}
+            onClick={() => order.sales_invoice && heldBill.resume(order.sales_invoice.id)}
+          >
             {t('onlineOrders.openHeld')}
           </Button>
         ) : null}

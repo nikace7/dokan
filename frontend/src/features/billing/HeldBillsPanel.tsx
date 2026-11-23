@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { getSale, listHeldBills } from '@/features/billing/api';
-import type { SalesInvoice } from '@/features/billing/api';
-import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
+import { listHeldBills } from '@/features/billing/api';
+import { useResumeHeldBill } from '@/features/billing/useResumeHeldBill';
+import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { useCartStore } from '@/stores/cartStore';
 
 /**
@@ -15,7 +15,7 @@ import { useCartStore } from '@/stores/cartStore';
  */
 export function HeldBillsPanel() {
   const { t } = useTranslation();
-  const resumeHeld = useCartStore((s) => s.resumeHeld);
+  const { resume, isBusy, notice } = useResumeHeldBill();
   const currentHeldId = useCartStore((s) => s.heldSaleId);
   useMoneyDisplay();
 
@@ -23,25 +23,6 @@ export function HeldBillsPanel() {
     queryKey: ['sales', 'held'],
     queryFn: listHeldBills,
   });
-
-  const resume = async (id: string) => {
-    const invoice: SalesInvoice = await getSale(id);
-    resumeHeld(
-      invoice.id,
-      invoice.items.map((item) => ({
-        variantId: item.variant,
-        sku: item.variant_sku,
-        label: item.item_name,
-        quantity: Number(item.qty),
-        unitPricePaisa: toPaisa(item.unit_price),
-        discountPaisa: toPaisa(item.discount),
-      })),
-      invoice.customer && invoice.customer_name
-        ? { id: invoice.customer, name: invoice.customer_name, phone: '' }
-        : null,
-      toPaisa(invoice.total),
-    );
-  };
 
   const held = (query.data ?? []).filter((invoice) => invoice.id !== currentHeldId);
   if (held.length === 0) {
@@ -57,12 +38,18 @@ export function HeldBillsPanel() {
               <span className="font-medium">{invoice.customer_name ?? t('billing.walkIn')}</span>{' '}
               <span className="text-slate-500">{formatNpr(invoice.total)}</span>
             </div>
-            <Button variant="secondary" size="sm" onClick={() => void resume(invoice.id)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={isBusy}
+              onClick={() => resume(invoice.id)}
+            >
               {t('billing.resume')}
             </Button>
           </li>
         ))}
       </ul>
+      {notice}
     </Card>
   );
 }
