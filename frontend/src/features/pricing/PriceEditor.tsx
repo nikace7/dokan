@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
 import { listCategories, listItems, listVariants } from '@/features/catalog/api';
+import type { Item } from '@/features/catalog/api';
 import { setPrice, setPriceBounds } from '@/features/pricing/api';
 import type { PriceScope } from '@/features/pricing/api';
 import { selectClasses } from '@/features/pricing/ui';
@@ -81,16 +82,36 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
         min_selling_price: minimum || null,
         max_selling_price: maximum || null,
       }),
-    onSuccess: () => setStatus(t('pricing.editor.boundsSaved')),
+    onSuccess: async () => {
+      // The target lists carry the limits this form opens with.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['catalog', 'items'] }),
+        queryClient.invalidateQueries({ queryKey: ['catalog', 'variants'] }),
+      ]);
+      setStatus(t('pricing.editor.boundsSaved'));
+    },
   });
 
+  // Saving sends both limits, so they must start from what the target has now.
+  const loadBounds = (target?: Pick<Item, 'min_selling_price' | 'max_selling_price'>) => {
+    setMinimum(target?.min_selling_price ?? '');
+    setMaximum(target?.max_selling_price ?? '');
+    setStatus(null);
+  };
   const changeScope = (next: PriceScope) => {
     setScope(next);
     setItemId('');
     setTargetId('');
-    setMinimum('');
-    setMaximum('');
-    setStatus(null);
+    loadBounds();
+  };
+  const changeItem = (id: string) => {
+    setItemId(id);
+    setTargetId('');
+    loadBounds(scope === 'ITEM' ? items.data?.data.find((item) => item.id === id) : undefined);
+  };
+  const changeVariant = (id: string) => {
+    setTargetId(id);
+    loadBounds(variants.data?.data.find((variant) => variant.id === id));
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -161,10 +182,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
                 id="price-item-target"
                 required
                 value={itemId}
-                onChange={(event) => {
-                  setItemId(event.target.value);
-                  setTargetId('');
-                }}
+                onChange={(event) => changeItem(event.target.value)}
                 className={selectClasses}
               >
                 <option value="">{t('pricing.editor.selectItem')}</option>
@@ -182,7 +200,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
                   id="price-variant-target"
                   required
                   value={targetId}
-                  onChange={(event) => setTargetId(event.target.value)}
+                  onChange={(event) => changeVariant(event.target.value)}
                   disabled={!itemId}
                   className={selectClasses}
                 >
