@@ -23,6 +23,9 @@ export interface VariantLookup {
   color_hex: string;
   /** Money crosses the API as a string, e.g. "1500.00"; null when no MRP is set. */
   mrp: string | null;
+  /** What a sale at the requested rate charges; absent when no rate was asked for. */
+  price?: string | null;
+  item__is_vat_applicable?: boolean;
   /**
    * Item photo path (`/media/tenants/…`), null when the item has none.
    * Optional because the offline Dexie cache (`lib/offline/catalogCache.ts`)
@@ -178,17 +181,21 @@ async function completeWithUsageWarning(
  * previously fetched while online); every successful online lookup refreshes
  * that cache. A 404 stays a 404 — the server answered.
  */
-export async function lookupVariant(code: string): Promise<VariantLookup> {
+export async function lookupVariant(
+  code: string,
+  rateTypeId?: string | null,
+): Promise<VariantLookup> {
+  const rate: Record<string, string> = rateTypeId ? { rate_type: rateTypeId } : {};
   try {
-    const variant = await lookupVariantOnline(code);
-    void cacheVariant(variant).catch(() => {
+    const variant = await lookupVariantOnline(code, rate);
+    void cacheVariant(variant, rateTypeId).catch(() => {
       // Cache writes are best-effort; a full/blocked IndexedDB must never
       // break the hot path.
     });
     return variant;
   } catch (err) {
     if (isNetworkError(err)) {
-      const cached = await lookupCachedVariant(code);
+      const cached = await lookupCachedVariant(code, rateTypeId);
       if (cached) {
         return cached;
       }
@@ -197,14 +204,17 @@ export async function lookupVariant(code: string): Promise<VariantLookup> {
   }
 }
 
-async function lookupVariantOnline(code: string): Promise<VariantLookup> {
-  const params = new URLSearchParams({ barcode: code });
+async function lookupVariantOnline(
+  code: string,
+  rate: Record<string, string>,
+): Promise<VariantLookup> {
+  const params = new URLSearchParams({ barcode: code, ...rate });
   try {
     return await authedRequest<VariantLookup>(`/v1/catalog/variants/lookup?${params}`);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       return authedRequest<VariantLookup>(
-        `/v1/catalog/variants/lookup?${new URLSearchParams({ sku: code })}`,
+        `/v1/catalog/variants/lookup?${new URLSearchParams({ sku: code, ...rate })}`,
       );
     }
     throw err;

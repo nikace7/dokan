@@ -46,6 +46,9 @@ export interface CachedVariant {
   size: string;
   color: string;
   mrp: string | null;
+  /** Price per rate type id, as last seen online (rows cached earlier lack it). */
+  prices?: Record<string, string>;
+  vatApplicable?: boolean;
   itemName: string;
   cachedAt: string;
 }
