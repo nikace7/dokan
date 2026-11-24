@@ -57,8 +57,8 @@ describe('PaymentPanel', () => {
     renderPanel();
     pay(/cash received/i, '1500');
 
-    expect(row(/change to return/i)).toBe('रू 480.00');
-    expect(row(/^paid$/i)).toBe('रू 1,020.00');
+    expect(row(/change to return/i)).toBe('रू\u00a0480.00');
+    expect(row(/^paid$/i)).toBe('रू\u00a01,020.00');
     complete();
     expect(onComplete).toHaveBeenCalledWith(
       expect.objectContaining({ amountPaisa: 102_000, changePaisa: 48_000 }),
@@ -89,7 +89,7 @@ describe('PaymentPanel', () => {
     expect(screen.queryByLabelText(/search customers/i)).not.toBeInTheDocument();
     pay(/cash received/i, '500');
 
-    expect(row(/^due/i)).toBe('रू 520.00');
+    expect(row(/^due/i)).toBe('रू\u00a0520.00');
     expect(screen.getByLabelText(/search customers/i)).toBeInTheDocument();
     complete();
     expect(screen.getByRole('alert')).toHaveTextContent(/requires a customer/i);
@@ -130,7 +130,7 @@ describe('PaymentPanel', () => {
     renderPanel();
 
     expect(screen.getByLabelText(/cash received \(रू\)/i)).toBeInTheDocument();
-    expect(row(/bill total/i)).toBe('रू 1,020.00');
+    expect(row(/bill total/i)).toBe('रू\u00a01,020.00');
     expect(screen.queryByText(/₹/)).not.toBeInTheDocument();
   });
 
@@ -138,8 +138,8 @@ describe('PaymentPanel', () => {
     renderPanel({ allowVatBill: true, chargesVat: true });
     fireEvent.click(screen.getByRole('checkbox', { name: /vat bill/i }));
 
-    expect(row(/vat 13%/i)).toBe('रू 132.60');
-    expect(row(/bill total/i)).toBe('रू 1,152.60');
+    expect(row(/vat 13%/i)).toBe('रू\u00a0132.60');
+    expect(row(/bill total/i)).toBe('रू\u00a01,152.60');
     complete();
     expect(onComplete).toHaveBeenCalledWith(
       expect.objectContaining({ amountPaisa: 115_260, isVatBill: true }),
@@ -149,7 +149,7 @@ describe('PaymentPanel', () => {
   it('adds no VAT when the shop is not VAT registered', () => {
     renderPanel({ allowVatBill: true, chargesVat: false });
     fireEvent.click(screen.getByRole('checkbox', { name: /vat bill/i }));
-    expect(row(/bill total/i)).toBe('रू 1,020.00');
+    expect(row(/bill total/i)).toBe('रू\u00a01,020.00');
   });
 
   it('offers no VAT choice on a held bill, which the server already fixed', () => {

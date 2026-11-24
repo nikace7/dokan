@@ -13,9 +13,10 @@ export type Currency = 'NPR' | 'INR';
 
 export const NPR_PER_INR = 1.6;
 
+// No-break spaces, so an amount never splits from its symbol across two lines.
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  NPR: 'रू ',
-  INR: '₹ ',
+  NPR: 'रू ',
+  INR: '₹ ',
 };
 
 const STORAGE_KEY = 'dokan-currency';
