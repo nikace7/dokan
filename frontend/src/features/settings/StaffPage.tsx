@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/features/auth/useAuth';
 import {
@@ -240,23 +241,31 @@ export function StaffPage() {
                           className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
                         >
                           {role.code} @ {role.branch_code ?? t('settings.staff.allBranchesInline')}
-                          <button
-                            type="button"
-                            aria-label={t('settings.staff.revokeRole', {
-                              role: role.code,
-                              name: member.full_name,
-                            })}
-                            disabled={revokeMutation.isPending}
-                            onClick={() =>
+                          <ConfirmDialog
+                            danger
+                            trigger={
+                              <button
+                                type="button"
+                                aria-label={t('settings.staff.revokeRole', {
+                                  role: role.code,
+                                  name: member.full_name,
+                                })}
+                                disabled={revokeMutation.isPending}
+                                className="font-medium text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                              >
+                                ×
+                              </button>
+                            }
+                            title={t('settings.staff.revokeTitle', { role: role.code })}
+                            body={t('settings.staff.revokeBody', { name: member.full_name })}
+                            confirmLabel={t('settings.staff.revokeConfirm')}
+                            onConfirm={() =>
                               revokeMutation.mutate({
                                 userId: member.id,
                                 assignmentId: role.assignment_id,
                               })
                             }
-                            className="font-medium text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
-                          >
-                            ×
-                          </button>
+                          />
                         </span>
                       ))
                     ) : (

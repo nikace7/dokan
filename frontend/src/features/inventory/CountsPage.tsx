@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TableCell } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/useAuth';
 import {
@@ -137,8 +138,7 @@ function CountCard({
   );
   const [error, setError] = useState<string | null>(null);
   const mutation = useMutation({
-    mutationFn: ({ action }: { action: 'record' | 'finalize' | 'cancel' }) => {
-      if (action === 'finalize') return finalizeCount(count.id);
+    mutationFn: async ({ action }: { action: 'record' | 'finalize' | 'cancel' }) => {
       if (action === 'cancel')
         return cancelCount(count.id).then(() => ({ ...count, status: 'CANCELLED' as const }));
       const rows = count.items.flatMap((item) =>
@@ -153,7 +153,11 @@ function CountCard({
             ],
       );
       if (rows.length === 0) throw new Error(t('inventory.counts.needQty'));
-      return recordCounts(count.id, rows);
+      const recorded = await recordCounts(count.id, rows);
+      if (action === 'record') return recorded;
+      // Finalizing posts the saved quantities, so what is on screen goes first.
+      onUpdated(recorded);
+      return finalizeCount(count.id);
     },
     onSuccess: (updated) => {
       setError(null);
@@ -161,7 +165,10 @@ function CountCard({
     },
     onError: (reason) => setError(message(reason, t('inventory.counts.updateError'))),
   });
-  const complete = count.items.every((item) => item.counted_qty !== null);
+  const complete = count.items.every((item) => values[item.variant]?.trim());
+  const differing = count.items.filter(
+    (item) => Number(values[item.variant]) !== Number(item.system_qty),
+  ).length;
   const counting = count.status === 'OPEN' && canAdjust;
 
   const columns: readonly ReportColumn[] = [
@@ -264,20 +271,32 @@ function CountCard({
           >
             {t('inventory.counts.saveCounted')}
           </Button>
-          <Button
-            variant="secondary"
-            disabled={mutation.isPending || !complete}
-            onClick={() => mutation.mutate({ action: 'finalize' })}
-          >
-            {t('inventory.counts.finalize')}
-          </Button>
-          <Button
-            variant="danger"
-            disabled={mutation.isPending}
-            onClick={() => mutation.mutate({ action: 'cancel' })}
-          >
-            {t('inventory.counts.cancel')}
-          </Button>
+          <ConfirmDialog
+            trigger={
+              <Button variant="secondary" disabled={mutation.isPending || !complete}>
+                {t('inventory.counts.finalize')}
+              </Button>
+            }
+            title={t('inventory.counts.finalizeTitle')}
+            body={t('inventory.counts.finalizeBody', {
+              differing,
+              total: count.items.length,
+            })}
+            confirmLabel={t('inventory.counts.finalize')}
+            onConfirm={() => mutation.mutate({ action: 'finalize' })}
+          />
+          <ConfirmDialog
+            danger
+            trigger={
+              <Button variant="danger" disabled={mutation.isPending}>
+                {t('inventory.counts.cancel')}
+              </Button>
+            }
+            title={t('inventory.counts.cancelTitle')}
+            body={t('inventory.counts.cancelBody')}
+            confirmLabel={t('inventory.counts.cancel')}
+            onConfirm={() => mutation.mutate({ action: 'cancel' })}
+          />
         </div>
       ) : null}
     </Card>
