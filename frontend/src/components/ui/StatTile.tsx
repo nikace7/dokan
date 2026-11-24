@@ -77,6 +77,11 @@ function TrendBadge({ trend }: { trend: StatTileTrend }) {
   );
 }
 
+/** Glyphs average about 0.6em wide, so N of them fit at 165/N % of the width. */
+function fitFontSize(text: string): string {
+  return `min(1.5rem, ${(165 / text.length).toFixed(1)}cqi)`;
+}
+
 /**
  * Dashboard stat tile: pastel icon chip, small-caps label, big bold value,
  * optional trend badge and footer caption. Compose on a grid. The tile is a
@@ -125,7 +130,15 @@ export function StatTile({
           <Icon />
         </span>
       </div>
-      <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">{displayValue}</p>
+      {/* One line always: a long amount shrinks to the tile's own width. */}
+      <div className="mt-1 [container-type:inline-size]">
+        <p
+          className="whitespace-nowrap text-2xl font-bold tracking-tight text-foreground"
+          style={displayValue ? { fontSize: fitFontSize(displayValue) } : undefined}
+        >
+          {displayValue}
+        </p>
+      </div>
       {trend ? (
         <div className="mt-2">
           <TrendBadge trend={trend} />

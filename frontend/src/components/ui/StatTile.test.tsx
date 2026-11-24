@@ -13,6 +13,14 @@ describe('StatTile', () => {
     expect(screen.getByText('रू 1,23,456.00')).toBeInTheDocument();
   });
 
+  it('keeps a long amount on one line and shrinks it to fit the tile', () => {
+    render(<StatTile label="Stock value" valuePaisa={36_280_000_00} icon={Banknote} />);
+
+    const value = screen.getByText('रू 3,62,80,000.00');
+    expect(value).toHaveClass('whitespace-nowrap');
+    expect(value.style.fontSize).toMatch(/^min\(1\.5rem, [\d.]+cqi\)$/);
+  });
+
   it('renders a pre-formatted text value when valuePaisa is not given', () => {
     render(<StatTile label="Low stock" value="12 items" icon={Banknote} tint="amber" />);
 
