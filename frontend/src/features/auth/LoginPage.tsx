@@ -2,7 +2,8 @@ import { BarChart3, Boxes, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
+import type { Path } from 'react-router-dom';
 
 import brandMark from '@/assets/brand-mark.webp';
 import { LanguageToggle } from '@/components/layout/LanguageToggle';
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/features/auth/useAuth';
 
 interface LocationState {
-  from?: { pathname?: string };
+  from?: Path;
 }
 
 /** Left brand panel (desktop only): product pitch in primary tints. */
@@ -77,24 +78,22 @@ function BrandPanel() {
 export function LoginPage() {
   const { isAuthenticated, isRestoring, isLoggingIn, loginError, requiresOtp, signIn } = useAuth();
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const location = useLocation();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
 
   if (isAuthenticated) {
-    const from = (location.state as LocationState | null)?.from?.pathname ?? '/';
+    const from = (location.state as LocationState | null)?.from ?? '/';
     return <Navigate to={from} replace />;
   }
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    void signIn(phone.trim(), password, requiresOtp ? otp : undefined)
-      .then(() => navigate('/', { replace: true }))
-      .catch(() => {
-        // Failure is already surfaced via loginError from the mutation.
-      });
+    // Success re-renders into the redirect above.
+    void signIn(phone.trim(), password, requiresOtp ? otp : undefined).catch(() => {
+      // Failure is already surfaced via loginError from the mutation.
+    });
   };
 
   return (

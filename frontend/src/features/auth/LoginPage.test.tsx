@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -15,14 +15,20 @@ function envelope(data: unknown, status = 200): Response {
   });
 }
 
-function renderLogin() {
+function Where() {
+  const { pathname, search, hash } = useLocation();
+  return <p>{pathname + search + hash}</p>;
+}
+
+function renderLogin(from?: { pathname: string; search: string; hash: string }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/login']}>
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { from } }]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<p>home screen</p>} />
+          <Route path="/bills" element={<Where />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -76,6 +82,21 @@ describe('LoginPage', () => {
         device_name: expect.any(String),
       }),
     );
+  });
+
+  it('returns to the page that asked for the login, filters included', async () => {
+    fetchMock
+      .mockResolvedValueOnce(envelope({ access: 'access-1', refresh: 'refresh-1' }))
+      .mockResolvedValueOnce(
+        envelope({ id: 'u-1', full_name: 'Demo Owner', must_change_password: false }),
+      );
+
+    renderLogin({ pathname: '/bills', search: '?status=HELD', hash: '#top' });
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '9800000000' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'demo1234' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByText('/bills?status=HELD#top')).toBeInTheDocument();
   });
 
   it('shows the server error message on bad credentials', async () => {
