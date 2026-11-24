@@ -1,5 +1,5 @@
 import { LogOut, Menu, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
@@ -16,11 +16,13 @@ import {
 import type { NavItem } from '@/components/layout/appNavigation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/features/auth/useAuth';
+import { useWorkspace } from '@/features/settings/useWorkspace';
 import { WorkspaceSelector } from '@/features/settings/WorkspaceSelector';
 import { SupportAccessBanner } from '@/features/support/SupportAccessBanner';
 import { hasPermission } from '@/lib/permissions';
 import { billingPath } from '@/lib/plans';
 import { cn } from '@/lib/utils';
+import { openDrafts } from '@/stores/billDrafts';
 import { useCurrencyStore } from '@/stores/currency';
 
 function PoweredBy({ className }: { className?: string }) {
@@ -263,6 +265,10 @@ export function AppShell() {
       setBaseCurrency(user.currency);
     }
   }, [user?.currency, setBaseCurrency]);
+  const { branchId } = useWorkspace();
+  useLayoutEffect(() => {
+    if (user?.id) openDrafts(user.id, branchId);
+  }, [user?.id, branchId]);
   const tabsBeforeFab = items.filter((item) =>
     (MOBILE_TABS_BEFORE_FAB as readonly string[]).includes(item.to),
   );

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleSalePage } from '@/features/billing/SimpleSalePage';
 import { clearTokens, setTokens } from '@/lib/auth/tokens';
+import { useSimpleSaleStore } from '@/stores/simpleSaleStore';
 
 vi.mock('@/features/settings/useWorkspace', () => ({
   useWorkspace: () => ({
@@ -173,6 +174,7 @@ function salePosts() {
 
 describe('SimpleSalePage when the server does not answer', () => {
   beforeEach(() => {
+    useSimpleSaleStore.getState().clear();
     vi.stubGlobal('fetch', fetchMock);
     setTokens({ access: 'access-1', refresh: 'refresh-1' });
   });
@@ -206,6 +208,16 @@ describe('SimpleSalePage when the server does not answer', () => {
     expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
     const [first, second] = salePosts();
     expect(second).toEqual(first);
+  });
+
+  it('keeps the bill when the cashier looks at another screen', async () => {
+    installApiMock(() => Promise.resolve(envelope(INVOICE, 201)));
+    const { unmount } = renderPage();
+    await pickItem('T-Shirt');
+    unmount();
+    renderPage();
+
+    expect(screen.getByRole('region', { name: 'T-Shirt — M / Black' })).toBeInTheDocument();
   });
 
   it('unlocks the bill once the server gives a definite no', async () => {

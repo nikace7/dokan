@@ -1,4 +1,5 @@
 import { Check, ChevronsUpDown, Store, Tag } from 'lucide-react';
+import { useIsMutating } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,19 +17,26 @@ const summaryClasses = cn('flex min-w-0 flex-1 flex-col gap-0.5');
 
 const rowClasses = cn(
   'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors',
-  'hover:bg-accent focus-visible:bg-accent',
+  'hover:bg-accent focus-visible:bg-accent disabled:opacity-50',
 );
 
 interface OptionRowProps {
   selected: boolean;
   onSelect: () => void;
   label: string;
+  disabled?: boolean;
 }
 
 /** One selectable workspace option with a trailing check on the active one. */
-function OptionRow({ selected, onSelect, label }: OptionRowProps) {
+function OptionRow({ selected, onSelect, label, disabled }: OptionRowProps) {
   return (
-    <button type="button" aria-pressed={selected} onClick={onSelect} className={rowClasses}>
+    <button
+      type="button"
+      aria-pressed={selected}
+      disabled={disabled}
+      onClick={onSelect}
+      className={rowClasses}
+    >
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {selected ? <Check className="h-4 w-4 shrink-0 text-primary" /> : null}
     </button>
@@ -45,6 +53,8 @@ export function WorkspaceSelector() {
   const { t } = useTranslation();
   const workspace = useWorkspace();
   const [open, setOpen] = useState(false);
+  // The answer to a sale being sent must land on the bill it was sent from.
+  const isSaleInFlight = useIsMutating({ mutationKey: ['sale'] }) > 0;
 
   if (workspace.isLoading) {
     return <span className="text-xs text-muted-foreground">{t('settings.workspace.loading')}</span>;
@@ -108,6 +118,7 @@ export function WorkspaceSelector() {
                 key={b.id}
                 label={b.name}
                 selected={b.id === workspace.branchId}
+                disabled={isSaleInFlight}
                 onSelect={() => workspace.setBranchId(b.id)}
               />
             ))}

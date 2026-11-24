@@ -126,10 +126,12 @@ describe('sign out', () => {
       discountPaisa: 0,
     });
     useCartStore.getState().setCustomer({ id: 'c-1', name: 'Sita', phone: '9811111111' });
+    sessionStorage.setItem('dokan.draft.user-1.branch-2.billing', '{"lines":[]}');
     renderGuardedApp();
 
     fireEvent.click(await screen.findByRole('button', { name: 'sign out' }));
 
+    expect(sessionStorage).toHaveLength(0);
     expect(useCartStore.getState().lines).toEqual([]);
     expect(useCartStore.getState().customer).toBeNull();
   });
