@@ -4,14 +4,21 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import { closeCashSession, getCurrentCashSession, openCashSession } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatBaseMoney, formatNpr, parseAmount, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { useWorkspace } from '@/features/settings/useWorkspace';
+import { cn } from '@/lib/utils';
 
 function message(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
+}
+
+/** Base currency, like the amount typed next to it. */
+function money(paisa: number | null): string {
+  return paisa === null ? '—' : formatBaseMoney(paisa);
 }
 
 export function CashSessionPanel() {
@@ -21,6 +28,7 @@ export function CashSessionPanel() {
   const [openingFloat, setOpeningFloat] = useState('');
   const [openingNote, setOpeningNote] = useState('');
   const [countedCash, setCountedCash] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messageText, setMessageText] = useState<string | null>(null);
   useMoneyDisplay();
@@ -30,6 +38,10 @@ export function CashSessionPanel() {
     enabled: Boolean(workspace.branchId),
   });
   const session = query.data?.session ?? null;
+  const countedPaisa = parseAmount(countedCash);
+  const expectedPaisa = session?.expected_cash == null ? null : toPaisa(session.expected_cash);
+  const differencePaisa =
+    countedPaisa === null || expectedPaisa === null ? null : countedPaisa - expectedPaisa;
 
   const openMutation = useMutation({
     mutationFn: () =>
@@ -75,13 +87,16 @@ export function CashSessionPanel() {
     openMutation.mutate();
   }
 
-  function close(event: React.FormEvent<HTMLFormElement>) {
+  async function close(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!countedCash.trim()) {
+    if (countedPaisa === null) {
       setError(t('payments.cashSession.countedRequired'));
       return;
     }
-    closeMutation.mutate();
+    setError(null);
+    // Sales since the page opened change what the drawer should hold.
+    const latest = await query.refetch();
+    if (latest.isSuccess && latest.data.session) setIsConfirming(true);
   }
 
   return (
@@ -111,7 +126,7 @@ export function CashSessionPanel() {
               <dd>{session.expected_cash == null ? '—' : formatNpr(session.expected_cash)}</dd>
             </div>
           </dl>
-          <form onSubmit={close} className="flex flex-wrap items-end gap-2">
+          <form onSubmit={(event) => void close(event)} className="flex flex-wrap items-end gap-2">
             <Input
               label={t('payments.cashSession.countedCash')}
               type="number"
@@ -120,12 +135,32 @@ export function CashSessionPanel() {
               value={countedCash}
               onChange={(event) => setCountedCash(event.target.value)}
             />
-            <Button type="submit" disabled={closeMutation.isPending}>
+            <Button type="submit" disabled={closeMutation.isPending || query.isFetching}>
               {closeMutation.isPending
                 ? t('payments.cashSession.closing')
                 : t('payments.cashSession.close')}
             </Button>
           </form>
+          <ConfirmDialog
+            danger
+            open={isConfirming}
+            onOpenChange={setIsConfirming}
+            title={t('payments.cashSession.confirmTitle')}
+            body={t('payments.cashSession.confirmBody')}
+            confirmLabel={t('payments.cashSession.close')}
+            onConfirm={() => closeMutation.mutate()}
+          >
+            <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-sm tabular-nums">
+              <dt className="text-muted-foreground">{t('payments.cashSession.expectedCash')}</dt>
+              <dd className="text-right">{money(expectedPaisa)}</dd>
+              <dt className="text-muted-foreground">{t('payments.cashSession.countedCash')}</dt>
+              <dd className="text-right">{money(countedPaisa)}</dd>
+              <dt className="font-semibold">{t('payments.cashSession.difference')}</dt>
+              <dd className={cn('text-right font-semibold', differencePaisa && 'text-destructive')}>
+                {money(differencePaisa)}
+              </dd>
+            </dl>
+          </ConfirmDialog>
         </div>
       ) : (
         <form onSubmit={open} className="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
