@@ -5,7 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { adToBs, bsToAd, daysInBsMonth, parseBsString, toBsString } from '@/lib/bs';
+import {
+  adToBs,
+  bsToAd,
+  daysInBsMonth,
+  parseBsString,
+  SUPPORTED_RANGE,
+  toBsString,
+} from '@/lib/bs';
 import { cn } from '@/lib/utils';
 
 const MONTHS = [
@@ -22,6 +29,10 @@ const MONTHS = [
   'Falgun',
   'Chaitra',
 ] as const;
+
+// The date tables end here; a month outside them cannot be drawn.
+const FIRST_MONTH = SUPPORTED_RANGE.from.slice(0, 7);
+const LAST_MONTH = SUPPORTED_RANGE.to.slice(0, 7);
 
 function monthFromValue(value: string): { year: number; month: number } {
   try {
@@ -72,6 +83,7 @@ export function BsDatePicker({ id, label, value, onChange, className }: BsDatePi
 
   const navigate = (delta: number) =>
     setView((current) => moveMonth(current.year, current.month, delta));
+  const viewMonth = toBsString({ ...view, day: 1 }).slice(0, 7);
   const monthName = MONTHS[view.month - 1];
 
   return (
@@ -97,6 +109,7 @@ export function BsDatePicker({ id, label, value, onChange, className }: BsDatePi
               variant="ghost"
               size="icon"
               aria-label={t('reports.range.previousMonth', { defaultValue: 'Previous BS month' })}
+              disabled={viewMonth <= FIRST_MONTH}
               onClick={() => navigate(-1)}
             >
               <ChevronLeft aria-hidden="true" />
@@ -108,6 +121,7 @@ export function BsDatePicker({ id, label, value, onChange, className }: BsDatePi
               variant="ghost"
               size="icon"
               aria-label={t('reports.range.nextMonth', { defaultValue: 'Next BS month' })}
+              disabled={viewMonth >= LAST_MONTH}
               onClick={() => navigate(1)}
             >
               <ChevronRight aria-hidden="true" />
