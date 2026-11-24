@@ -8,12 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuth } from '@/features/auth/useAuth';
 import { isUnconfirmed } from '@/lib/api/client';
 import { createSale, currentSaleContext, paisaToApiString } from '@/features/billing/api';
-import type {
-  PaymentMethod,
-  PlanUsageWarning,
-  SalesInvoice,
-  VariantForSale,
-} from '@/features/billing/api';
+import type { PlanUsageWarning, SalesInvoice, VariantForSale } from '@/features/billing/api';
 import { ItemPickerDialog } from '@/features/billing/ItemPickerDialog';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { SaleErrorNotice } from '@/features/billing/SaleErrorNotice';
@@ -28,18 +23,14 @@ import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { useSyncStore } from '@/lib/offline/sync';
 import { hasPermission } from '@/lib/permissions';
 import type { UnconfirmedSale } from '@/stores/cartStore';
+import { useSimpleSaleStore } from '@/stores/simpleSaleStore';
 
-type TenderMethod = Extract<PaymentMethod, 'CASH' | 'QR'>;
-
-let lineCounter = 0;
 function newLine(variant: VariantForSale): SimpleLine {
-  lineCounter += 1;
-  return {
-    key: `line-${lineCounter}`,
-    variant,
-    qty: '1',
-    price: variant.mrp ?? '',
-  };
+  return { key: crypto.randomUUID(), variant, qty: '1', price: variant.mrp ?? '' };
+}
+
+function setLines(update: (current: SimpleLine[]) => SimpleLine[]) {
+  useSimpleSaleStore.setState((state) => ({ lines: update(state.lines) }));
 }
 
 /**
@@ -55,15 +46,11 @@ export function SimpleSalePage() {
   const online = useSyncStore((s) => s.online);
   useMoneyDisplay();
 
-  const [lines, setLines] = useState<SimpleLine[]>([]);
+  const { lines, tender, unconfirmedSale, clear } = useSimpleSaleStore();
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [tender, setTender] = useState<TenderMethod>('CASH');
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
   const [saleError, setSaleError] = useState<unknown>(null);
-  // Recorded BEFORE the sale is sent and kept until a definite answer, so a
-  // retry after a lost reply re-sends the same bill under the same key.
-  const [unconfirmedSale, setUnconfirmedSale] = useState<UnconfirmedSale | null>(null);
 
   // The tender bar is FIXED so it stays rigid at the viewport bottom while
   // scrolling (sticky visibly followed the scroll). An in-flow spacer of
@@ -85,23 +72,23 @@ export function SimpleSalePage() {
   const canSubmit = online && workspace.isReady && linesValid(lines) && total > 0;
 
   const saleMutation = useMutation({
+    mutationKey: ['sale'],
     // Offline must fail now, not pause and bill later on reconnect.
     networkMode: 'always',
     mutationFn: ({ payload, key }: UnconfirmedSale) => createSale(payload, key),
     onMutate: (sale) => {
       setSaleError(null);
-      setUnconfirmedSale(sale);
+      useSimpleSaleStore.setState({ unconfirmedSale: sale });
     },
     onSuccess: ({ invoice, planWarning: warning }) => {
       setReceipt(invoice);
       setPlanWarning(warning);
       setSaleError(null);
-      setLines([]);
-      setUnconfirmedSale(null);
+      clear();
     },
     onError: (err) => {
       if (isUnconfirmed(err)) return;
-      setUnconfirmedSale(null);
+      useSimpleSaleStore.setState({ unconfirmedSale: null });
       setSaleError(err);
     },
   });
@@ -263,7 +250,7 @@ export function SimpleSalePage() {
                 type="button"
                 aria-pressed={tender === method}
                 disabled={locked}
-                onClick={() => setTender(method)}
+                onClick={() => useSimpleSaleStore.setState({ tender: method })}
                 className={
                   tender === method
                     ? 'h-12 rounded-md bg-primary text-base font-semibold text-primary-foreground shadow-sm'
@@ -288,10 +275,7 @@ export function SimpleSalePage() {
             <UnconfirmedSaleNotice
               retryDisabled={!online}
               onRetry={() => saleMutation.mutate(unconfirmedSale)}
-              onDiscard={() => {
-                setUnconfirmedSale(null);
-                setLines([]);
-              }}
+              onDiscard={clear}
             />
           ) : null}
           <SaleErrorNotice error={saleError} />

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleSalePage } from '@/features/billing/SimpleSalePage';
 import { clearTokens, setTokens } from '@/lib/auth/tokens';
+import { useSimpleSaleStore } from '@/stores/simpleSaleStore';
 
 vi.mock('@/features/settings/useWorkspace', () => ({
   useWorkspace: () => ({
@@ -193,6 +194,7 @@ function completeButton() {
 
 describe('SimpleSalePage', () => {
   beforeEach(() => {
+    useSimpleSaleStore.getState().clear();
     vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(window, 'print').mockImplementation(printMock);
     clipboardWriteText.mockResolvedValue(undefined);

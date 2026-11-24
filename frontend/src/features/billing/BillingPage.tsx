@@ -60,6 +60,7 @@ export function BillingPage() {
   });
 
   const saleMutation = useMutation({
+    mutationKey: ['sale'],
     // Offline must fail now, not pause and bill later on reconnect.
     networkMode: 'always',
     // One Idempotency-Key per bill attempt (per Complete click). A new sale is
@@ -102,6 +103,7 @@ export function BillingPage() {
   });
 
   const holdMutation = useMutation({
+    mutationKey: ['sale'],
     networkMode: 'always',
     mutationFn: () =>
       holdSale(cartPayload(workspace.branchId, workspace.rateTypeId), crypto.randomUUID()),

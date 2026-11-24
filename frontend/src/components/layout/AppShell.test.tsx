@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppShell } from '@/components/layout/AppShell';
 import { clearTokens, setTokens } from '@/lib/auth/tokens';
+import { useCartStore } from '@/stores/cartStore';
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -108,6 +109,32 @@ describe('AppShell billing nav', () => {
         expect(link).toHaveAttribute('href', '/billing');
       }
     });
+  });
+
+  it('brings back the unfinished bill of this person and branch', async () => {
+    const line = { variantId: 'v-1', quantity: 1, unitPricePaisa: 100, discountPaisa: 0 };
+    sessionStorage.setItem(
+      'dokan.draft.user-1.branch-1.billing',
+      JSON.stringify({ lines: [line] }),
+    );
+    const onlyMe = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((input, init) =>
+      String(input).includes('/branches')
+        ? Promise.resolve(
+            new Response(
+              JSON.stringify({ data: [{ id: 'branch-1', name: 'Main' }], error: null }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              },
+            ),
+          )
+        : onlyMe(input, init),
+    );
+    renderShell();
+
+    await waitFor(() => expect(useCartStore.getState().lines).toEqual([line]));
+    useCartStore.getState().clear();
   });
 
   it('points Billing at the simple sale screen without advanced_pos', async () => {
