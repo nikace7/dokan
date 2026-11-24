@@ -45,6 +45,17 @@ class ResolvedLine:
     vat_applicable: bool
 
 
+def _is_shop_price(
+    tenant: "Tenant", *, line: SaleLineInput, rate_type: "RateType", user: "User", price: Decimal
+) -> bool:
+    """Whether ``price`` is what the shop itself charges at this rate today."""
+    try:
+        resolved = resolve_price(tenant, variant=line.variant, rate_type=rate_type, user=user)
+    except ServiceError:
+        return False
+    return quantize_money(resolved.price) == price
+
+
 def resolve_lines(
     tenant: "Tenant",
     *,
@@ -65,13 +76,22 @@ def resolve_lines(
             ).price
         else:
             unit_price = quantize_money(line.unit_price)
-            assert_price_within_bounds(
-                tenant,
-                variant=line.variant,
-                price=unit_price,
-                user=user,
-                reason=override_reason,
-            )
+            try:
+                assert_price_within_bounds(
+                    tenant,
+                    variant=line.variant,
+                    price=unit_price,
+                    user=user,
+                    reason=override_reason,
+                )
+            except ServiceError:
+                # The limits are for typed prices. The shop's own price sells
+                # unchecked when no price is sent, so sending it back (a parked
+                # bill, an online order) must not be refused either.
+                if not _is_shop_price(
+                    tenant, line=line, rate_type=rate_type, user=user, price=unit_price
+                ):
+                    raise
         discount = quantize_money(line.discount)
         gross = quantize_money(qty * unit_price)
         if discount < _ZERO or discount > gross:
