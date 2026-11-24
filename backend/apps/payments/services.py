@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.audit.services import audit
 from apps.payments.cash_sessions import close_session as close_session
+from apps.payments.cash_sessions import expected_cash as expected_cash
 from apps.payments.cash_sessions import get_open_session as get_open_session
 from apps.payments.cash_sessions import open_session as open_session
 from apps.payments.cash_sessions import require_open_session as require_open_session

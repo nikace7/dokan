@@ -25,4 +25,15 @@ describe('BsDatePicker', () => {
 
     expect(screen.getByText('Bhadra 2083')).toBeInTheDocument();
   });
+
+  it.each([
+    ['2090-12-15', 'Chaitra 2090', 'Next BS month'],
+    ['2000-01-15', 'Baisakh 2000', 'Previous BS month'],
+  ])('stops at the last supported month from %s', (value, monthTitle, button) => {
+    render(<BsDatePicker id="to-bs" label="To (BS)" value={value} onChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose To (BS)' }));
+    expect(screen.getByText(monthTitle)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: button })).toBeDisabled();
+  });
 });

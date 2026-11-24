@@ -148,6 +148,68 @@ class TestHeldBills:
         assert second.replayed is True
         assert second.invoice.pk == first.invoice.pk
 
+    @pytest.mark.parametrize(
+        "bounds",
+        [{"max_selling_price": Decimal("900.00")}, {"min_selling_price": Decimal("1100.00")}],
+        ids=["above-max", "below-min"],
+    )
+    def test_bill_parked_at_the_shop_price_completes(
+        self, shop: dict, bounds: dict[str, Decimal]
+    ) -> None:
+        """A quick sale accepts the shop's own price outside the limits; parking
+        the same bill first must not make it impossible to finish."""
+        for field, value in bounds.items():
+            setattr(shop["variant_a"], field, value)
+        shop["variant_a"].save()
+        held = services.hold_bill(
+            shop["tenant"],
+            branch=shop["branch"],
+            rate_type=shop["rate_type"],
+            lines=[
+                services.SaleLineInput(
+                    variant=shop["variant_a"],
+                    qty=Decimal("1"),
+                    unit_price=None,
+                    discount=Decimal("0"),
+                )
+            ],
+            idempotency_key="hold-shop-price",
+            created_by=shop["user"],
+        ).invoice
+
+        completed = services.complete_held_bill(
+            shop["tenant"],
+            invoice=held,
+            payments=[{"method": "CASH", "amount": Decimal("1000.00")}],
+            created_by=shop["user"],
+        )
+
+        assert completed.status == SalesInvoice.Status.COMPLETED
+        assert completed.total == Decimal("1000.00")
+
+    @pytest.mark.parametrize("variant", ["variant_a", "variant_b"])
+    def test_typed_price_above_max_still_rejected(self, shop: dict, variant: str) -> None:
+        """Not the shop's price (A), or the shop has no price at all (B)."""
+        shop[variant].max_selling_price = Decimal("900.00")
+        shop[variant].save()
+        with pytest.raises(ServiceError) as exc:
+            services.hold_bill(
+                shop["tenant"],
+                branch=shop["branch"],
+                rate_type=shop["rate_type"],
+                lines=[
+                    services.SaleLineInput(
+                        variant=shop[variant],
+                        qty=Decimal("1"),
+                        unit_price=Decimal("950.00"),
+                        discount=Decimal("0"),
+                    )
+                ],
+                idempotency_key="hold-typed",
+                created_by=shop["user"],
+            )
+        assert exc.value.code == "PRICE_ABOVE_MAX"
+
     def test_complete_held_bill_full_pipeline(self, shop: dict) -> None:
         held = services.hold_bill(
             shop["tenant"],

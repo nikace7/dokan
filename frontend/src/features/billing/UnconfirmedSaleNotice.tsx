@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
@@ -19,8 +20,12 @@ export function UnconfirmedSaleNotice({
   onDiscard,
 }: UnconfirmedSaleNoticeProps) {
   const { t } = useTranslation();
+  const ref = useRef<HTMLDivElement>(null);
+  // After a reload the page opens at the top, locked, with the reason below.
+  useEffect(() => ref.current?.scrollIntoView?.({ block: 'center' }), []);
   return (
     <div
+      ref={ref}
       role="alert"
       className="flex flex-col gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900"
     >

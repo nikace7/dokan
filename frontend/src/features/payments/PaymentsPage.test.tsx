@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -153,6 +153,10 @@ describe('PaymentsPage', () => {
         };
         return envelope(currentSession, 201);
       }
+      if (url.endsWith('/v1/cash-sessions/session-1/close')) {
+        currentSession = null;
+        return envelope({ id: 'session-1', variance: '-200.00' });
+      }
       if (url.includes('/v1/purchasing/suppliers?')) return page([supplier]);
       if (url.includes('/v1/sales?')) return page([allocationInvoice]);
       if (url.includes('customer=')) return page([priorAllocationPayment]);
@@ -270,6 +274,32 @@ describe('PaymentsPage', () => {
 
     expect(await screen.findByText('Cash session opened.')).toBeInTheDocument();
     expect(await screen.findByText('Owner')).toBeInTheDocument();
+  });
+
+  it('closes the drawer only after showing the difference', async () => {
+    renderPayments();
+    fireEvent.change(await screen.findByLabelText('Opening float (NPR)'), {
+      target: { value: '5000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Open session' }));
+    const counted = await screen.findByLabelText('Counted cash (NPR)');
+    const closes = () =>
+      fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/session-1/close'));
+    // Sold since the page loaded: the question must use today's figure.
+    currentSession = { ...currentSession, expected_cash: '6200.00' };
+
+    fireEvent.change(counted, { target: { value: '6000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Close session' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Expected cashरू 6,200.00');
+    expect(dialog).toHaveTextContent('Counted cash (NPR)रू 6,000.00');
+    expect(dialog).toHaveTextContent('Difference-रू 200.00');
+    expect(closes()).toHaveLength(0);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close session' }));
+    expect(await screen.findByText(/Cash session closed/)).toBeInTheDocument();
+    expect(JSON.parse(String(closes()[0][1]?.body))).toEqual({ counted_cash: '6000' });
   });
 
   it('records a supplier payment', async () => {

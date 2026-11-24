@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RequireAuth } from '@/features/auth/RequireAuth';
@@ -33,13 +33,23 @@ function SignOutButton() {
   );
 }
 
+function LoginStub() {
+  const state = useLocation().state as { from?: { pathname: string } } | null;
+  return (
+    <>
+      <p>login page</p>
+      <p>returns to {state?.from?.pathname ?? 'nowhere'}</p>
+    </>
+  );
+}
+
 function renderGuardedApp() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={['/']}>
         <Routes>
-          <Route path="/login" element={<p>login page</p>} />
+          <Route path="/login" element={<LoginStub />} />
           <Route
             path="/"
             element={
@@ -86,12 +96,20 @@ describe('sign out', () => {
     clearTokens();
   });
 
+  it('remembers the page a signed-out visitor asked for', () => {
+    clearTokens();
+    renderGuardedApp();
+    expect(screen.getByText('returns to /')).toBeInTheDocument();
+  });
+
   it('redirects to /login immediately — no manual refresh needed', async () => {
     renderGuardedApp();
 
     expect(await screen.findByText('protected page')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'sign out' }));
     expect(await screen.findByText('login page')).toBeInTheDocument();
+    // The next person starts at the dashboard, not where this one stopped.
+    expect(screen.getByText('returns to nowhere')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/v1/auth/logout'),
       expect.objectContaining({ method: 'POST' }),
@@ -108,10 +126,12 @@ describe('sign out', () => {
       discountPaisa: 0,
     });
     useCartStore.getState().setCustomer({ id: 'c-1', name: 'Sita', phone: '9811111111' });
+    sessionStorage.setItem('dokan.draft.user-1.branch-2.billing', '{"lines":[]}');
     renderGuardedApp();
 
     fireEvent.click(await screen.findByRole('button', { name: 'sign out' }));
 
+    expect(sessionStorage).toHaveLength(0);
     expect(useCartStore.getState().lines).toEqual([]);
     expect(useCartStore.getState().customer).toBeNull();
   });

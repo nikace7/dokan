@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -129,6 +129,24 @@ describe('OnlineOrdersPage', () => {
       ).toBe(true),
     );
     expect(await screen.findByRole('button', { name: 'Open held bill' })).toBeInTheDocument();
+  });
+
+  it('cancels an order only after confirming', async () => {
+    fetchMock.mockImplementation((_, init) =>
+      Promise.resolve(
+        envelope(init?.method === 'POST' ? { ...ORDER, status: 'CANCELLED' } : [ORDER]),
+      ),
+    );
+    const cancelled = () =>
+      fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/order-1/cancel')).length;
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('ORD-000001');
+    expect(cancelled()).toBe(0);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel order' }));
+    await waitFor(() => expect(cancelled()).toBe(1));
   });
 
   it('asks before opening its bill over one in progress at the counter', async () => {

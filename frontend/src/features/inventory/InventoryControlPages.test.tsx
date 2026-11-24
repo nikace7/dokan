@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -213,13 +213,7 @@ describe('TransfersPage', () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send transfer' }));
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/transfers/transfer-1/send'),
-        expect.objectContaining({ method: 'POST' }),
-      ),
-    );
+    await confirmAction('Send transfer', '/transfers/transfer-1/send');
   });
 
   it('explains when transfers are outside the tenant plan', async () => {
@@ -245,15 +239,22 @@ describe('TransfersPage', () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Complete transfer' }));
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/transfers/transfer-1/complete'),
-        expect.objectContaining({ method: 'POST' }),
-      ),
-    );
+    await confirmAction('Complete transfer', '/transfers/transfer-1/complete');
   });
 });
+
+/** Press a risky button, check nothing happened yet, then confirm. */
+async function confirmAction(button: string, path: string) {
+  const sent = () =>
+    fetchMock.mock.calls.filter(
+      ([url, init]) => String(url).includes(path) && init?.method === 'POST',
+    ).length;
+  fireEvent.click(screen.getByRole('button', { name: button }));
+  const dialog = await screen.findByRole('dialog');
+  expect(sent()).toBe(0);
+  fireEvent.click(within(dialog).getByRole('button', { name: button }));
+  await waitFor(() => expect(sent()).toBe(1));
+}
 
 describe('CountsPage', () => {
   beforeEach(() => {
@@ -265,6 +266,33 @@ describe('CountsPage', () => {
     fetchMock.mockReset();
     clearTokens();
     localStorage.clear();
+  });
+
+  it('saves the typed quantities before finalizing', async () => {
+    mockApi(['stock.view', 'stock.adjust']);
+    renderPage('counts');
+    const input = (await screen.findAllByLabelText('Counted quantity SHIRT-M'))[0];
+    expect(screen.getByRole('button', { name: 'Finalize count' })).toBeDisabled();
+
+    fireEvent.change(input, { target: { value: '9' } });
+    await confirmAction('Finalize count', '/counts/count-1/finalize');
+
+    const writes = fetchMock.mock.calls
+      .filter(([url, init]) => String(url).includes('/counts/count-1/') && init?.method === 'POST')
+      .map(([url, init]) => [String(url).split('/').pop(), String(init?.body ?? '')]);
+    expect(writes.map(([action]) => action)).toEqual(['record', 'finalize']);
+    expect(writes[0][1]).toContain('"counted_qty":"9"');
+  });
+
+  it('asks before throwing a count away', async () => {
+    mockApi(['stock.view', 'stock.adjust']);
+    renderPage('counts');
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel count' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Go back' }));
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).includes('/counts/count-1/cancel')),
+    ).toBe(false);
   });
 
   it('starts, records, and finalizes a physical count', async () => {
@@ -286,12 +314,6 @@ describe('CountsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save counted quantities' }));
     expect(await screen.findByText('-1.000')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Finalize count' }));
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/counts/count-1/finalize'),
-        expect.objectContaining({ method: 'POST' }),
-      ),
-    );
+    await confirmAction('Finalize count', '/counts/count-1/finalize');
   });
 });

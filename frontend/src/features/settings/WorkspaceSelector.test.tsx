@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -43,7 +44,17 @@ vi.mock('@/features/settings/useWorkspace', () => ({
 
 function renderSelector(workspace?: Partial<MockWorkspace>) {
   mockWorkspace = { ...BASE_WORKSPACE, ...workspace };
-  return render(<WorkspaceSelector />);
+  return render(
+    <QueryClientProvider client={new QueryClient()}>
+      <WorkspaceSelector />
+      <UnansweredSale />
+    </QueryClientProvider>,
+  );
+}
+
+function UnansweredSale() {
+  const sale = useMutation({ mutationKey: ['sale'], mutationFn: () => new Promise(() => {}) });
+  return <button onClick={() => sale.mutate()}>send sale</button>;
 }
 
 describe('WorkspaceSelector', () => {
@@ -52,6 +63,14 @@ describe('WorkspaceSelector', () => {
     const chip = screen.getByRole('button', { name: /switch branch or rate/i });
     expect(within(chip).getByText('Main Branch')).toBeInTheDocument();
     expect(within(chip).getByText('Retail')).toBeInTheDocument();
+  });
+
+  it('stays on the branch while a sale is being sent', async () => {
+    renderSelector();
+    fireEvent.click(screen.getByRole('button', { name: 'send sale' }));
+    fireEvent.click(screen.getByRole('button', { name: /switch branch or rate/i }));
+
+    expect(await screen.findByRole('button', { name: 'Lakeside' })).toBeDisabled();
   });
 
   it('opens a labeled popover and switches both values', () => {

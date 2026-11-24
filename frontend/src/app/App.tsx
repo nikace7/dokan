@@ -49,7 +49,8 @@ export default function App() {
     () =>
       platformHost
         ? onPlatformSignedOut(() => window.location.assign('/admin/login'))
-        : onSignedOut(() => window.location.assign('/login')),
+        : // Reloading signed out lands on /login and remembers this page.
+          onSignedOut(() => window.location.reload()),
     [platformHost],
   );
 

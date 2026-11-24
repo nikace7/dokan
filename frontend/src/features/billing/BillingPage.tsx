@@ -8,12 +8,13 @@ import { useAuth } from '@/features/auth/useAuth';
 import { ApiError, isNetworkError, isUnconfirmed } from '@/lib/api/client';
 import { completeSale, createSale, holdSale, paisaToApiString } from '@/features/billing/api';
 import type { CreateSalePayload, PlanUsageWarning, SalesInvoice } from '@/features/billing/api';
-import { cartPayload, serverMessage } from '@/features/billing/cartModel';
+import { cartPayload } from '@/features/billing/cartModel';
 import { CartTable } from '@/features/billing/CartTable';
 import { HeldBillsPanel } from '@/features/billing/HeldBillsPanel';
 import type { Tender } from '@/features/billing/PaymentPanel';
 import { PaymentPanel } from '@/features/billing/PaymentPanel';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
+import { SaleErrorNotice } from '@/features/billing/SaleErrorNotice';
 import { ScanInput } from '@/features/billing/ScanInput';
 import { SyncStatusBanner } from '@/features/billing/SyncStatusBanner';
 import { UnconfirmedSaleNotice } from '@/features/billing/UnconfirmedSaleNotice';
@@ -49,7 +50,7 @@ export function BillingPage() {
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [queuedRef, setQueuedRef] = useState<string | null>(null);
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
-  const [saleError, setSaleError] = useState<string | null>(null);
+  const [saleError, setSaleError] = useState<unknown>(null);
   const [changePaisa, setChangePaisa] = useState<Paisa>(0);
 
   const buildSalePayload = (tender: Tender): CreateSalePayload => ({
@@ -59,6 +60,7 @@ export function BillingPage() {
   });
 
   const saleMutation = useMutation({
+    mutationKey: ['sale'],
     // Offline must fail now, not pause and bill later on reconnect.
     networkMode: 'always',
     // One Idempotency-Key per bill attempt (per Complete click). A new sale is
@@ -96,11 +98,12 @@ export function BillingPage() {
       }
       if (!heldSaleId && isUnconfirmed(err)) return;
       setUnconfirmedSale(null);
-      setSaleError(serverMessage(err));
+      setSaleError(err);
     },
   });
 
   const holdMutation = useMutation({
+    mutationKey: ['sale'],
     networkMode: 'always',
     mutationFn: () =>
       holdSale(cartPayload(workspace.branchId, workspace.rateTypeId), crypto.randomUUID()),
@@ -109,7 +112,7 @@ export function BillingPage() {
       clear();
       void queryClient.invalidateQueries({ queryKey: ['sales', 'held'] });
     },
-    onError: (err) => setSaleError(serverMessage(err)),
+    onError: setSaleError,
   });
   const hold = () => {
     setSaleError(null);
@@ -272,9 +275,9 @@ export function BillingPage() {
             </div>
           ) : null}
           {saleError ? (
-            <p role="alert" className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-              {saleError}
-            </p>
+            <div className="mt-3">
+              <SaleErrorNotice error={saleError} />
+            </div>
           ) : null}
         </Card>
         <fieldset disabled={locked} className="min-w-0">

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TableCell } from '@/components/ui/table';
 import type { StockTransfer, TransferLinePayload } from '@/features/inventory/api';
 import { cellInputClasses } from '@/features/inventory/ui';
@@ -24,6 +25,10 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
     Number(receipts[item.variant]) > 0
       ? [{ variant: item.variant, qty: receipts[item.variant] }]
       : [],
+  );
+  const missing = transfer.items.reduce(
+    (sum, item) => sum + Number(item.qty_sent) - Number(item.qty_received ?? 0),
+    0,
   );
   const receiving = transfer.status === 'SENT' && canAdjust;
   const columns: readonly ReportColumn[] = [
@@ -92,12 +97,28 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {transfer.status === 'DRAFT' ? (
             <>
-              <Button disabled={pending} onClick={() => onAction('send')}>
-                {t('inventory.transfers.send')}
-              </Button>
-              <Button variant="danger" disabled={pending} onClick={() => onAction('cancel')}>
-                {t('inventory.transfers.cancelDraft')}
-              </Button>
+              <ConfirmDialog
+                trigger={<Button disabled={pending}>{t('inventory.transfers.send')}</Button>}
+                title={t('inventory.transfers.sendTitle')}
+                body={t('inventory.transfers.sendBody', {
+                  from: transfer.from_branch_code,
+                  to: transfer.to_branch_code,
+                })}
+                confirmLabel={t('inventory.transfers.send')}
+                onConfirm={() => onAction('send')}
+              />
+              <ConfirmDialog
+                danger
+                trigger={
+                  <Button variant="danger" disabled={pending}>
+                    {t('inventory.transfers.cancelDraft')}
+                  </Button>
+                }
+                title={t('inventory.transfers.cancelTitle')}
+                body={t('inventory.transfers.cancelBody')}
+                confirmLabel={t('inventory.transfers.cancelDraft')}
+                onConfirm={() => onAction('cancel')}
+              />
             </>
           ) : null}
           {transfer.status === 'SENT' ? (
@@ -108,9 +129,22 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
               >
                 {t('inventory.transfers.receiveEntered')}
               </Button>
-              <Button variant="secondary" disabled={pending} onClick={() => onAction('complete')}>
-                {t('inventory.transfers.complete')}
-              </Button>
+              <ConfirmDialog
+                danger={missing > 0}
+                trigger={
+                  <Button variant="secondary" disabled={pending}>
+                    {t('inventory.transfers.complete')}
+                  </Button>
+                }
+                title={t('inventory.transfers.completeTitle')}
+                body={
+                  missing > 0
+                    ? t('inventory.transfers.completeShort', { qty: Number(missing.toFixed(3)) })
+                    : t('inventory.transfers.completeBody')
+                }
+                confirmLabel={t('inventory.transfers.complete')}
+                onConfirm={() => onAction('complete')}
+              />
               <span className="text-xs text-warning">
                 {t('inventory.transfers.shortageWarning')}
               </span>

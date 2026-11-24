@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StaffPage } from '@/features/settings/StaffPage';
@@ -197,6 +197,9 @@ describe('StaffPage', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Remove role CASHIER from Existing Cashier' }),
     );
+    const dialog = await screen.findByRole('dialog');
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remove role' }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

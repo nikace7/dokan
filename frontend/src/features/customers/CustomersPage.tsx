@@ -21,6 +21,7 @@ import { deactivateCustomer, listCustomers } from '@/features/customers/api';
 import type { Customer } from '@/features/customers/api';
 import { CustomerForm, selectClasses } from '@/features/customers/CustomerForm';
 import { listPricingRateTypes } from '@/features/pricing/api';
+import { ApiError } from '@/lib/api/client';
 import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 
@@ -118,6 +119,16 @@ export function CustomersPage() {
         {customers.isError ? (
           <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {customers.error instanceof Error ? customers.error.message : t('customers.loadError')}
+          </p>
+        ) : null}
+        {deactivate.isError ? (
+          <p
+            role="alert"
+            className="mb-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+          >
+            {deactivate.error instanceof ApiError
+              ? deactivate.error.message
+              : t('customers.deactivateError')}
           </p>
         ) : null}
         {customers.data && rows.length === 0 ? (
