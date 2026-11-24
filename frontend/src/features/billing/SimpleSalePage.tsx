@@ -1,13 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuth } from '@/features/auth/useAuth';
-import { ApiError, isUnconfirmed } from '@/lib/api/client';
+import { isUnconfirmed } from '@/lib/api/client';
 import { createSale, currentSaleContext, paisaToApiString } from '@/features/billing/api';
 import type {
   PaymentMethod,
@@ -17,6 +16,7 @@ import type {
 } from '@/features/billing/api';
 import { ItemPickerDialog } from '@/features/billing/ItemPickerDialog';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
+import { SaleErrorNotice } from '@/features/billing/SaleErrorNotice';
 import { ShareBillPanel } from '@/features/billing/ShareBillPanel';
 import { SimpleSaleLineCard } from '@/features/billing/SimpleSaleLineCard';
 import { SimpleSaleQuickPick } from '@/features/billing/SimpleSaleQuickPick';
@@ -30,19 +30,6 @@ import { hasPermission } from '@/lib/permissions';
 import type { UnconfirmedSale } from '@/stores/cartStore';
 
 type TenderMethod = Extract<PaymentMethod, 'CASH' | 'QR'>;
-
-function saleErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.code === 'CASH_SESSION_REQUIRED') {
-      // Invariant 12: completion needs an open drawer. The cashier cannot
-      // open one, so point them at the person who can.
-      return i18n.t('simpleSale.cashSessionRequired');
-    }
-    // Bounds/stock rejections carry a counter-readable server message.
-    return err.message;
-  }
-  return i18n.t('common.networkError');
-}
 
 let lineCounter = 0;
 function newLine(variant: VariantForSale): SimpleLine {
@@ -73,7 +60,7 @@ export function SimpleSalePage() {
   const [tender, setTender] = useState<TenderMethod>('CASH');
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
-  const [saleError, setSaleError] = useState<string | null>(null);
+  const [saleError, setSaleError] = useState<unknown>(null);
   // Recorded BEFORE the sale is sent and kept until a definite answer, so a
   // retry after a lost reply re-sends the same bill under the same key.
   const [unconfirmedSale, setUnconfirmedSale] = useState<UnconfirmedSale | null>(null);
@@ -115,7 +102,7 @@ export function SimpleSalePage() {
     onError: (err) => {
       if (isUnconfirmed(err)) return;
       setUnconfirmedSale(null);
-      setSaleError(saleErrorMessage(err));
+      setSaleError(err);
     },
   });
   // Nothing on the bill may change while the server might already hold it.
@@ -307,14 +294,7 @@ export function SimpleSalePage() {
               }}
             />
           ) : null}
-          {saleError ? (
-            <p
-              role="alert"
-              className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {saleError}
-            </p>
-          ) : null}
+          <SaleErrorNotice error={saleError} />
         </div>
       </div>
     </main>

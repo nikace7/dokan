@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleSalePage } from '@/features/billing/SimpleSalePage';
@@ -119,7 +120,11 @@ const INVOICE = {
 };
 
 /** Route mock responses by URL + method; `saleResponse` is POST /v1/sales. */
-function installApiMock(saleResponse?: Response, forSaleRows: unknown[] = [TSHIRT, JEANS]) {
+function installApiMock(
+  saleResponse?: Response,
+  forSaleRows: unknown[] = [TSHIRT, JEANS],
+  permissions = ['sale.create', 'sale.view'],
+) {
   fetchMock.mockImplementation((input, init) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
@@ -131,7 +136,7 @@ function installApiMock(saleResponse?: Response, forSaleRows: unknown[] = [TSHIR
           full_name: 'Demo Cashier',
           email: null,
           must_change_password: false,
-          permissions: ['sale.create', 'sale.view'],
+          permissions,
           plan: { code: 'basic', name: 'Basic', features: {} },
         }),
       );
@@ -168,7 +173,9 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <SimpleSalePage />
+      <MemoryRouter>
+        <SimpleSalePage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -347,8 +354,26 @@ describe('SimpleSalePage', () => {
     expect(screen.getByText(/owner\/manager/)).toBeInTheDocument();
     // The raw server message is not what the cashier sees.
     expect(screen.queryByText('Open a cash session first.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open cash session' })).not.toBeInTheDocument();
     // No receipt; the bill stays editable.
     expect(screen.getByRole('region', { name: 'T-Shirt — M / Black' })).toBeInTheDocument();
+  });
+
+  it('links to the cash drawer for someone who can open it', async () => {
+    installApiMock(
+      apiError(409, 'CASH_SESSION_REQUIRED', 'Open a cash session first.'),
+      [TSHIRT],
+      ['sale.create', 'cash.manage'],
+    );
+    renderPage();
+    await pickItem('T-Shirt');
+    fireEvent.click(completeButton());
+
+    expect(await screen.findByRole('link', { name: 'Open cash session' })).toHaveAttribute(
+      'href',
+      '/payments',
+    );
+    expect(screen.queryByText(/owner\/manager/)).not.toBeInTheDocument();
   });
 
   it('copies the public bill link from the share panel', async () => {
