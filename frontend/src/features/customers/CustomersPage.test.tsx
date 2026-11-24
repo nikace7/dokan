@@ -169,6 +169,35 @@ describe('CustomersPage', () => {
     );
   });
 
+  it('says why a customer could not be deactivated', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fetchMock.mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.includes('/v1/auth/me')) {
+        return Promise.resolve(envelope(me(['customer.view', 'customer.manage'])));
+      }
+      if (init?.method === 'DELETE') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: null,
+              error: { code: 'CUSTOMER_HAS_DUES', message: 'This customer still owes Rs 500.' },
+            }),
+            { status: 409, headers: { 'Content-Type': 'application/json' } },
+          ),
+        );
+      }
+      if (url.includes('/v1/customers')) return Promise.resolve(envelope([customer]));
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+    renderPage();
+    await screen.findAllByText('Sita Rai');
+    const table = within(screen.getByRole('table'));
+    fireEvent.click(table.getByRole('button', { name: 'Deactivate' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('This customer still owes Rs 500.');
+  });
+
   it('loads the customer being edited when switching without closing the form', async () => {
     const other = { ...customer, id: 'customer-2', name: 'Hari Thapa', phone: '9800000001' };
     fetchMock.mockImplementation((input) => {
