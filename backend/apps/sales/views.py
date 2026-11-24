@@ -299,10 +299,14 @@ class CompleteBillView(_SalesAPIView):
         serializer = CompleteBillSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         invoice = get_or_404(tenant, SalesInvoice, pk, "Invoice")
+        customer_id = serializer.validated_data.get("customer")
         completed = services.complete_held_bill(
             tenant,
             invoice=invoice,
             payments=serializer.validated_data.get("payments", []),
+            customer=(
+                get_or_404(tenant, Customer, customer_id, "Customer") if customer_id else None
+            ),
             created_by=_user(request),
             override_reason=serializer.validated_data.get("override_reason", ""),
             require_open_cash_session=True,

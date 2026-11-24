@@ -11,7 +11,7 @@ import {
   stockQty,
 } from '@/features/billing/simpleSaleModel';
 import type { SimpleLine } from '@/features/billing/simpleSaleModel';
-import { formatPaisa, useMoneyDisplay } from '@/lib/money';
+import { baseSymbol, formatPaisa, useMoneyDisplay } from '@/lib/money';
 
 interface SimpleSaleLineCardProps {
   line: SimpleLine;
@@ -68,7 +68,7 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
           <Input
-            label={t('simpleSale.line.price')}
+            label={`${t('simpleSale.line.price')} (${baseSymbol()})`}
             inputMode="decimal"
             value={line.price}
             error={priceIssue ?? undefined}

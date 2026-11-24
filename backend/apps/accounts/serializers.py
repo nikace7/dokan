@@ -133,6 +133,7 @@ class MeSerializer(serializers.Serializer):
     shop_name = serializers.CharField()
     shop_name_np = serializers.CharField(allow_null=True)
     currency = serializers.CharField()
+    vat_registered = serializers.BooleanField()
 
     @classmethod
     def for_user(
@@ -145,6 +146,7 @@ class MeSerializer(serializers.Serializer):
         shop_name: str,
         shop_name_np: str | None,
         currency: str,
+        vat_registered: bool,
     ) -> dict[str, Any]:
         """Build the payload for a user (keeps the view thin)."""
         return cls(
@@ -161,5 +163,6 @@ class MeSerializer(serializers.Serializer):
                 "shop_name": shop_name,
                 "shop_name_np": shop_name_np,
                 "currency": currency,
+                "vat_registered": vat_registered,
             }
         ).data

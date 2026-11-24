@@ -141,13 +141,20 @@ def complete_held_bill(
     *,
     invoice: SalesInvoice,
     payments: list[dict[str, Any]],
+    customer: Any = None,
     created_by: "User",
     override_reason: str = "",
     business_date: date | None = None,
     require_open_cash_session: bool = False,
 ) -> SalesInvoice:
-    """Complete a held bill: stock, number, totals — one transaction."""
+    """Complete a held bill: stock, number, totals — one transaction.
+
+    A ``customer`` picked at payment replaces the one the bill was held for;
+    without one the bill keeps its customer.
+    """
     _assert_held(invoice)
+    if customer is not None:
+        invoice.customer = customer
     stored_lines = [
         SaleLineInput(
             variant=item.variant,

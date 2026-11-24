@@ -1,20 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/features/auth/useAuth';
 import { ApiError, isNetworkError, isUnconfirmed } from '@/lib/api/client';
-import {
-  completeSale,
-  createSale,
-  currentSaleContext,
-  holdSale,
-  paisaToApiString,
-} from '@/features/billing/api';
+import { completeSale, createSale, holdSale, paisaToApiString } from '@/features/billing/api';
 import type { CreateSalePayload, PlanUsageWarning, SalesInvoice } from '@/features/billing/api';
+import { cartPayload, serverMessage } from '@/features/billing/cartModel';
 import { CartTable } from '@/features/billing/CartTable';
 import { HeldBillsPanel } from '@/features/billing/HeldBillsPanel';
 import type { Tender } from '@/features/billing/PaymentPanel';
@@ -23,21 +17,15 @@ import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { ScanInput } from '@/features/billing/ScanInput';
 import { SyncStatusBanner } from '@/features/billing/SyncStatusBanner';
 import { UnconfirmedSaleNotice } from '@/features/billing/UnconfirmedSaleNotice';
+import { useRepriceCart } from '@/features/billing/useRepriceCart';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { enqueueSale } from '@/lib/offline/queue';
 import { refreshSyncState } from '@/lib/offline/sync';
+import { formatBaseMoney } from '@/lib/money';
+import type { Paisa } from '@/lib/money';
 import { hasPlanFeature } from '@/lib/plans';
-import { useCartStore } from '@/stores/cartStore';
+import { discountProblem, useCartStore } from '@/stores/cartStore';
 import type { UnconfirmedSale } from '@/stores/cartStore';
-
-function serverMessage(err: unknown): string {
-  // The server's error.message is shown verbatim — it carries codes like
-  // STOCK_INSUFFICIENT / CREDIT_LIMIT_EXCEEDED the counter must see.
-  if (err instanceof ApiError) {
-    return err.message;
-  }
-  return i18n.t('common.networkError');
-}
 
 /**
  * The billing screen — the product's flagship surface (§7.3). Scan-first,
@@ -46,7 +34,7 @@ function serverMessage(err: unknown): string {
  */
 export function BillingPage() {
   const lines = useCartStore((s) => s.lines);
-  const customer = useCartStore((s) => s.customer);
+  const billNo = useCartStore((s) => s.billNo);
   const heldSaleId = useCartStore((s) => s.heldSaleId);
   const clear = useCartStore((s) => s.clear);
   const unconfirmedSale = useCartStore((s) => s.unconfirmedSale);
@@ -56,28 +44,16 @@ export function BillingPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
+  const repricing = useRepriceCart(workspace.rateTypeId);
+
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [queuedRef, setQueuedRef] = useState<string | null>(null);
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
   const [saleError, setSaleError] = useState<string | null>(null);
-
-  const buildBasePayload = (): Omit<CreateSalePayload, 'payments' | 'is_vat_bill'> => {
-    if (!workspace.branchId || !workspace.rateTypeId) {
-      throw new Error('Select an active branch and rate type before billing.');
-    }
-    return {
-      ...currentSaleContext(workspace.branchId, workspace.rateTypeId),
-      customer: customer?.id,
-      lines: lines.map((line) => ({
-        variant: line.variantId,
-        qty: String(line.quantity),
-        discount: paisaToApiString(line.discountPaisa),
-      })),
-    };
-  };
+  const [changePaisa, setChangePaisa] = useState<Paisa>(0);
 
   const buildSalePayload = (tender: Tender): CreateSalePayload => ({
-    ...buildBasePayload(),
+    ...cartPayload(workspace.branchId, workspace.rateTypeId),
     payments: [{ method: tender.method, amount: paisaToApiString(tender.amountPaisa) }],
     is_vat_bill: tender.isVatBill,
   });
@@ -90,7 +66,9 @@ export function BillingPage() {
     // definite answer, so a retry always re-sends the same payload and key.
     // (A held bill needs none of this: the server completes its id only once.)
     mutationFn: ({ payload, key }: UnconfirmedSale) =>
-      heldSaleId ? completeSale(heldSaleId, payload.payments, key) : createSale(payload, key),
+      heldSaleId
+        ? completeSale(heldSaleId, payload.payments, key, payload.customer)
+        : createSale(payload, key),
     onMutate: (sale) => {
       setSaleError(null);
       if (!heldSaleId) setUnconfirmedSale(sale);
@@ -121,11 +99,11 @@ export function BillingPage() {
       setSaleError(serverMessage(err));
     },
   });
-  // Nothing on the bill may change while the server might already hold it.
-  const locked = saleMutation.isPending || unconfirmedSale !== null;
 
   const holdMutation = useMutation({
-    mutationFn: () => holdSale(buildBasePayload(), crypto.randomUUID()),
+    networkMode: 'always',
+    mutationFn: () =>
+      holdSale(cartPayload(workspace.branchId, workspace.rateTypeId), crypto.randomUUID()),
     onSuccess: () => {
       setSaleError(null);
       clear();
@@ -133,10 +111,27 @@ export function BillingPage() {
     },
     onError: (err) => setSaleError(serverMessage(err)),
   });
+  const hold = () => {
+    setSaleError(null);
+    if (lines.some(discountProblem)) setSaleError(t('billing.errors.fixDiscount'));
+    else holdMutation.mutate();
+  };
+  // Nothing on the bill may change while the server might already hold it.
+  const locked = saleMutation.isPending || holdMutation.isPending || unconfirmedSale !== null;
+  const changeNotice =
+    changePaisa > 0 ? (
+      <p
+        role="status"
+        className="receipt-screen-only mx-auto mb-4 max-w-lg rounded-md bg-green-50 px-3 py-2 text-center text-xl font-bold text-green-800"
+      >
+        {t('billing.changeDue')}: {formatBaseMoney(changePaisa)}
+      </p>
+    ) : null;
 
   if (queuedRef) {
     return (
       <main className="p-4 sm:p-6">
+        {changeNotice}
         <Card className="mx-auto max-w-lg text-center">
           <p className="text-sm font-medium text-blue-700">{t('billing.queuedTitle')}</p>
           <h2 className="mt-1 text-2xl font-bold">{t('billing.queuedRef', { ref: queuedRef })}</h2>
@@ -160,6 +155,7 @@ export function BillingPage() {
             })}
           </p>
         ) : null}
+        {changeNotice}
         <ReceiptPanel
           invoice={receipt}
           onNewBill={() => {
@@ -190,9 +186,9 @@ export function BillingPage() {
         </p>
       ) : null}
 
-      <fieldset disabled={locked} className="flex min-w-0 flex-col gap-4">
+      <fieldset disabled={locked || heldSaleId !== null} className="flex min-w-0 flex-col gap-4">
         <Card>
-          <ScanInput />
+          <ScanInput rateTypeId={workspace.rateTypeId} />
         </Card>
         <Card title={heldSaleId ? t('billing.billResumed') : t('billing.bill')}>
           <CartTable />
@@ -201,17 +197,55 @@ export function BillingPage() {
 
       <div>
         <Card title={t('billing.payment')}>
+          {heldSaleId ? (
+            <div className="mb-3 flex flex-col items-start gap-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-900">
+              <p>{t('billing.heldLocked')}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={locked}
+                onClick={() => {
+                  setSaleError(null);
+                  clear();
+                }}
+              >
+                {t('billing.heldLeave')}
+              </Button>
+            </div>
+          ) : null}
+          {repricing.error ? (
+            <div
+              role="alert"
+              className="mb-3 flex flex-col items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              <p>
+                {repricing.error instanceof ApiError
+                  ? repricing.error.message
+                  : t('billing.errors.repriceFailed')}
+              </p>
+              <Button variant="outline" size="sm" onClick={repricing.retry}>
+                {t('billing.unconfirmed.retry')}
+              </Button>
+            </div>
+          ) : repricing.isStale ? (
+            <p role="status" className="mb-3 text-sm text-slate-600">
+              {t('billing.repricing')}
+            </p>
+          ) : null}
           <fieldset disabled={locked} className="min-w-0">
             <PaymentPanel
+              key={billNo}
               busy={saleMutation.isPending}
-              disabled={!workspace.isReady || locked}
+              disabled={!workspace.isReady || locked || repricing.isStale}
               allowVatBill={hasPlanFeature(user, 'vat_module')}
-              onComplete={(tender) =>
+              chargesVat={user?.vat_registered}
+              onComplete={(tender) => {
+                setChangePaisa(tender.changePaisa);
                 saleMutation.mutate({
                   payload: buildSalePayload(tender),
                   key: crypto.randomUUID(),
-                })
-              }
+                });
+              }}
             />
             <div className="mt-3 border-t border-slate-200 pt-3">
               <button
@@ -222,7 +256,7 @@ export function BillingPage() {
                   heldSaleId !== null ||
                   !workspace.isReady
                 }
-                onClick={() => holdMutation.mutate()}
+                onClick={hold}
                 className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300"
               >
                 {holdMutation.isPending ? t('billing.parking') : t('billing.holdBill')}

@@ -170,6 +170,7 @@ class MeView(AuthServiceView):
                 shop_name=tenant.name,
                 shop_name_np=tenant.name_np,
                 currency=tenant.currency,
+                vat_registered=tenant.vat_registered,
             )
         )
 

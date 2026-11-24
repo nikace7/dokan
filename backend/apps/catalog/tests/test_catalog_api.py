@@ -6,6 +6,7 @@ with an explicit Host header; permissions are granted via roles BEFORE login
 so the 5-minute permission cache never sees a stale empty set.
 """
 
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -16,7 +17,9 @@ from tests.factories import (
     DEFAULT_PASSWORD,
     CategoryFactory,
     ItemFactory,
+    ItemPriceFactory,
     ItemVariantFactory,
+    RateTypeFactory,
     RoleFactory,
     RolePermissionFactory,
     TenantFactory,
@@ -228,6 +231,53 @@ class TestLookup:
         response = auth_client(user).get("/api/v1/catalog/variants/lookup", **host())
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "LOOKUP_PARAM_REQUIRED"
+
+    def test_lookup_at_a_rate_returns_what_the_sale_will_charge(
+        self, tenant: Any, user: Any
+    ) -> None:
+        grant(tenant, user, "catalog.view")
+        variant = ItemVariantFactory(tenant=tenant, sku="RATE-1", mrp=Decimal("1010.00"))
+        rate = RateTypeFactory(tenant=tenant)
+        ItemPriceFactory(tenant=tenant, variant=variant, rate_type=rate, price=Decimal("700.00"))
+
+        data = self._at_rate(user, "RATE-1", rate).json()["data"]
+
+        assert data["price"] == "700.00"
+        assert data["item__is_vat_applicable"] is variant.item.is_vat_applicable
+
+    def test_lookup_without_a_rate_has_no_price(self, tenant: Any, user: Any) -> None:
+        grant(tenant, user, "catalog.view")
+        ItemVariantFactory(tenant=tenant, sku="RATE-2")
+        response = auth_client(user).get("/api/v1/catalog/variants/lookup?sku=RATE-2", **host())
+        assert "price" not in response.json()["data"]
+
+    def test_lookup_at_a_rate_with_no_price_is_409(self, tenant: Any, user: Any) -> None:
+        grant(tenant, user, "catalog.view")
+        ItemVariantFactory(tenant=tenant, sku="RATE-3", mrp=None)
+        response = self._at_rate(user, "RATE-3", RateTypeFactory(tenant=tenant))
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "PRICE_NOT_SET"
+
+    def test_lookup_at_a_restricted_rate_is_403(self, tenant: Any, user: Any) -> None:
+        grant(tenant, user, "catalog.view")
+        ItemVariantFactory(tenant=tenant, sku="RATE-4")
+        rate = RateTypeFactory(
+            tenant=tenant, required_permission=Permission.objects.get(code="pricing.edit")
+        )
+        response = self._at_rate(user, "RATE-4", rate)
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "PRICING_RATE_FORBIDDEN"
+
+    def test_lookup_at_another_shops_rate_is_404(self, tenant: Any, user: Any) -> None:
+        grant(tenant, user, "catalog.view")
+        ItemVariantFactory(tenant=tenant, sku="RATE-5")
+        response = self._at_rate(user, "RATE-5", RateTypeFactory())
+        assert response.status_code == 404
+
+    def _at_rate(self, user: Any, sku: str, rate: Any) -> Any:
+        return auth_client(user).get(
+            f"/api/v1/catalog/variants/lookup?sku={sku}&rate_type={rate.pk}", **host()
+        )
 
 
 class TestCostVisibility:

@@ -85,6 +85,19 @@ describe('offline catalog cache', () => {
     expect((await lookupCachedVariant('8901234567890'))?.id).toBe('var-1');
   });
 
+  it('remembers the price of each rate for offline billing', async () => {
+    await cacheVariant({ ...VARIANT, price: '700.00', item__is_vat_applicable: true }, 'retail');
+    await cacheVariant({ ...VARIANT, price: '600.00', item__is_vat_applicable: true }, 'wholesale');
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    expect(await lookupVariant('TS-BLK-M', 'retail')).toMatchObject({
+      price: '700.00',
+      item__is_vat_applicable: true,
+    });
+    expect((await lookupVariant('TS-BLK-M', 'wholesale')).price).toBe('600.00');
+    expect((await lookupVariant('TS-BLK-M', 'staff')).price).toBeUndefined();
+  });
+
   it('a cache miss offline surfaces the network error, not a phantom 404', async () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
 

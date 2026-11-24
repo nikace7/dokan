@@ -2663,7 +2663,8 @@ paths:
   /api/v1/catalog/variants/lookup:
     get:
       operationId: catalog_variant_lookup_view_get
-      description: GET /catalog/variants/lookup?barcode=|sku= — the POS hot path.
+      description: GET /catalog/variants/lookup?barcode=|sku=&rate_type= — the POS
+        hot path.
       tags:
       - v1
       security:
@@ -8156,6 +8157,11 @@ components:
       type: object
       description: POST /sales/<id>/complete payload.
       properties:
+        customer:
+          type:
+          - string
+          - 'null'
+          format: uuid
         payments:
           type: array
           items:
@@ -8990,6 +8996,8 @@ components:
           - 'null'
         currency:
           type: string
+        vat_registered:
+          type: boolean
       required:
       - currency
       - email
@@ -9003,6 +9011,7 @@ components:
       - plan
       - shop_name
       - shop_name_np
+      - vat_registered
     NullEnum:
       type: 'null'
     OpeningStock:

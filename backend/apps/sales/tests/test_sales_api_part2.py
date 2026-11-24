@@ -14,6 +14,7 @@ from apps.payments import services as payment_services
 from tests.factories import (
     DEFAULT_PASSWORD,
     BranchFactory,
+    CustomerFactory,
     ItemFactory,
     ItemVariantFactory,
     RateTypeFactory,
@@ -146,6 +147,62 @@ class TestHoldCompleteCancelFlow:
         )
         assert cancelled.status_code == 200
         assert cancelled.json()["data"]["status"] == "CANCELLED"
+
+    def test_part_payment_of_a_held_bill_goes_to_the_customer_picked_at_payment(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        grant(tenant, user, "sale.create")
+        customer = CustomerFactory(tenant=tenant)
+        client = auth_client(user)
+        held = client.post(
+            f"{SALES_URL}/hold",
+            sale_payload(shop),
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="hold-part",
+        )
+        url = f"{SALES_URL}/{held.json()['data']['id']}/complete"
+        payments = [{"method": "CASH", "amount": "500.00"}]
+
+        refused = client.post(url, {"payments": payments}, **host(), format="json")
+        assert refused.json()["error"]["code"] == "UDHARO_REQUIRES_CUSTOMER"
+
+        foreign = client.post(
+            url,
+            {"payments": payments, "customer": str(CustomerFactory().pk)},
+            **host(),
+            format="json",
+        )
+        assert foreign.status_code == 404
+
+        completed = client.post(
+            url, {"payments": payments, "customer": str(customer.pk)}, **host(), format="json"
+        )
+        assert completed.status_code == 200
+        assert completed.json()["data"]["customer"] == str(customer.pk)
+        assert completed.json()["data"]["due_amount"] == "1500.00"
+
+    def test_complete_keeps_the_customer_the_bill_was_held_for(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        grant(tenant, user, "sale.create")
+        customer = CustomerFactory(tenant=tenant)
+        client = auth_client(user)
+        held = client.post(
+            f"{SALES_URL}/hold",
+            sale_payload(shop, customer=str(customer.pk)),
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="hold-keep",
+        )
+        completed = client.post(
+            f"{SALES_URL}/{held.json()['data']['id']}/complete",
+            {"payments": [{"method": "CREDIT", "amount": "2000.00"}]},
+            **host(),
+            format="json",
+        )
+        assert completed.status_code == 200
+        assert completed.json()["data"]["customer"] == str(customer.pk)
 
     def test_complete_completed_is_409(self, tenant: Any, user: Any) -> None:
         invoice = SalesInvoiceFactory(tenant=tenant, status="COMPLETED")

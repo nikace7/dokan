@@ -21,6 +21,7 @@ from apps.catalog.serializers import (
     VariantBulkSerializer,
 )
 from apps.catalog.views import _CatalogAPIView, _user, _uuid_param
+from apps.pricing.models import RateType
 from apps.tenants.models import Branch
 from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
@@ -183,7 +184,7 @@ class QuickCreateProductView(_CatalogAPIView):
 
 
 class VariantLookupView(_CatalogAPIView):
-    """GET /catalog/variants/lookup?barcode=|sku= — the POS hot path."""
+    """GET /catalog/variants/lookup?barcode=|sku=&rate_type= — the POS hot path."""
 
     method_permissions: ClassVar[dict[str, str]] = {"GET": "catalog.view"}
     schema_contract: ClassVar[dict[str, Any]] = {"GET": operation()}
@@ -194,7 +195,16 @@ class VariantLookupView(_CatalogAPIView):
         sku = request.query_params.get("sku", "").strip()
         if not barcode and not sku:
             return error(400, "LOOKUP_PARAM_REQUIRED", "Provide a barcode or sku query parameter.")
-        found = selectors.get_variant_for_lookup(tenant, _user(request), barcode=barcode, sku=sku)
+        rate_type_id = _uuid_param(request, "rate_type")
+        found = selectors.get_variant_for_lookup(
+            tenant,
+            _user(request),
+            barcode=barcode,
+            sku=sku,
+            rate_type=(
+                get_or_404(tenant, RateType, rate_type_id, "Rate type") if rate_type_id else None
+            ),
+        )
         if found is None:
             return error(404, "VARIANT_NOT_FOUND", "No variant matches that code.")
         return ok(found)

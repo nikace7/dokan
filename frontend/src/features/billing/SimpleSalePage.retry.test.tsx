@@ -198,7 +198,7 @@ describe('SimpleSalePage when the server does not answer', () => {
     // Nothing on the bill may change: the server may already hold it.
     expect(screen.getByRole('button', { name: /add item/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /remove t-shirt/i })).toBeDisabled();
-    expect(screen.getByLabelText(/^price$/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^price \(रू\)$/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: 'QR' })).toBeDisabled();
     expect(completeButton()).toBeDisabled();
 

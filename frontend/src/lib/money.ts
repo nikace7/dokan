@@ -55,6 +55,16 @@ export function toPaisa(amount: number | string): Paisa {
   return result;
 }
 
+/** A typed amount (zero or more) in paisa; null when it is not one. */
+export function parseAmount(raw: string): Paisa | null {
+  try {
+    const paisa = toPaisa(raw.trim().replace(/\.$/, ''));
+    return paisa < 0 ? null : paisa;
+  } catch {
+    return null;
+  }
+}
+
 function validateNumberAmount(amount: number): string {
   if (!Number.isFinite(amount)) {
     throw new MoneyError(`Invalid money amount: ${String(amount)}`);
@@ -136,6 +146,19 @@ export function formatPaisa(paisa: Paisa, options: FormatMoneyOptions = {}): str
 /** Convenience: format a rupee amount (`number | string`) for display. */
 export function formatNpr(amount: number | string, options: FormatMoneyOptions = {}): string {
   return formatPaisa(toPaisa(amount), { symbol: 'auto', ...options });
+}
+
+/**
+ * Format paisa in the shop's own currency, whatever the display toggle says.
+ * Use it next to anything the user types: typed amounts are always base currency.
+ */
+export function formatBaseMoney(paisa: Paisa): string {
+  return formatPaisa(paisa, { symbol: 'auto', currency: useCurrencyStore.getState().base });
+}
+
+/** Symbol of the shop's own currency, for input labels. */
+export function baseSymbol(): string {
+  return CURRENCY_SYMBOLS[useCurrencyStore.getState().base].trim();
 }
 
 /**
