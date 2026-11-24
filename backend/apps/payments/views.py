@@ -332,6 +332,8 @@ class CashSessionCurrentView(_PaymentsAPIView):
         session = services.get_open_session(tenant, branch)
         if session is None:
             return ok({"session": None})
+        # Live figure for the counter to check against; only closing stores it.
+        session.expected_cash = services.expected_cash(tenant, session)
         return ok({"session": CashSessionSerializer(session, context=self._context(request)).data})
 
 

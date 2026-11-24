@@ -425,7 +425,8 @@
       "genderOther": "Other",
       "saveError": "Could not save customer.",
       "save": "Save customer"
-    }
+    },
+    "deactivateError": "Could not deactivate the customer."
   },
   "payments": {
     "receiptTitle": "Collect customer receipt",
@@ -484,7 +485,10 @@
       "openError": "Could not open the cash session.",
       "closeError": "Could not close the cash session.",
       "floatRequired": "Opening float is required.",
-      "countedRequired": "Counted cash is required."
+      "countedRequired": "Counted cash is required.",
+      "difference": "Difference",
+      "confirmTitle": "Close the cash drawer?",
+      "confirmBody": "Check the difference first. A closed session can't be reopened."
     },
     "ledger": {
       "title": "Party ledgers",

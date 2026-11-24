@@ -64,7 +64,7 @@ def open_session(
     return session
 
 
-def _expected_cash(tenant: "Tenant", session: CashSession) -> Decimal:
+def expected_cash(tenant: "Tenant", session: CashSession) -> Decimal:
     """Derive the expected drawer total from persisted cash movements."""
     from apps.sales.models import SalesInvoice
 
@@ -139,7 +139,7 @@ def close_session(
     counted_cash = quantize_money(counted_cash)
     if counted_cash < _ZERO:
         raise ServiceError("COUNT_INVALID", "Counted cash cannot be negative.")
-    session.expected_cash = _expected_cash(tenant, session)
+    session.expected_cash = expected_cash(tenant, session)
     session.counted_cash = counted_cash
     session.variance = quantize_money(counted_cash - session.expected_cash)
     session.closed_by = closed_by

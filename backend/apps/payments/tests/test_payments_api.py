@@ -9,6 +9,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import Permission
 from apps.inventory.services import post_opening_stock
 from apps.payments import services
+from apps.payments.models import CashSession
 from apps.sales import services as sale_services
 from apps.sales.services import SaleLineInput
 from tests.factories import (
@@ -334,6 +335,9 @@ class TestCashSessionApi:
             "/api/v1/cash-sessions/current", {"branch": str(shop["branch"].pk)}, **host()
         )
         assert current.json()["data"]["session"]["id"] == session_id
+        # Live, so the counter can see the difference before closing for good.
+        assert current.json()["data"]["session"]["expected_cash"] == "1000.00"
+        assert CashSession.objects.get(pk=session_id).expected_cash is None
 
         closed = client.post(
             f"/api/v1/cash-sessions/{session_id}/close",
