@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { createBrowserRouter, Link, Navigate, RouterProvider } from 'react-router-dom';
 
+import { ErrorPage } from '@/app/ErrorPage';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { AdminLayout } from '@/features/admin/AdminLayout';
@@ -62,25 +63,30 @@ let router: ReturnType<typeof createBrowserRouter> | null = null;
 
 function getRouter() {
   router ??= createBrowserRouter([
-    { path: '/admin/login', element: <PlatformLoginPage /> },
     {
-      element: (
-        <RequirePlatformAuth>
-          <AdminLayout />
-        </RequirePlatformAuth>
-      ),
+      errorElement: <ErrorPage />,
       children: [
-        // Bare host root (admin.example.com/) lands here — send it to the
-        // tenant list instead of the 404 card; auth guard bounces to login.
-        { path: '/', element: <Navigate to="/admin/tenants" replace /> },
-        { path: '/admin', element: <Navigate to="/admin/tenants" replace /> },
-        { path: '/admin/tenants', element: <TenantsPage /> },
-        { path: '/admin/tenants/:id', element: <TenantDetailPage /> },
-        { path: '/admin/plans', element: <PlansPage /> },
-        { path: '/admin/audit', element: <PlatformAuditRoute /> },
+        { path: '/admin/login', element: <PlatformLoginPage /> },
+        {
+          element: (
+            <RequirePlatformAuth>
+              <AdminLayout />
+            </RequirePlatformAuth>
+          ),
+          children: [
+            // Bare host root (admin.example.com/) lands here — send it to the
+            // tenant list instead of the 404 card; auth guard bounces to login.
+            { path: '/', element: <Navigate to="/admin/tenants" replace /> },
+            { path: '/admin', element: <Navigate to="/admin/tenants" replace /> },
+            { path: '/admin/tenants', element: <TenantsPage /> },
+            { path: '/admin/tenants/:id', element: <TenantDetailPage /> },
+            { path: '/admin/plans', element: <PlansPage /> },
+            { path: '/admin/audit', element: <PlatformAuditRoute /> },
+          ],
+        },
+        { path: '*', element: <AdminNotFound /> },
       ],
     },
-    { path: '*', element: <AdminNotFound /> },
   ]);
   return router;
 }

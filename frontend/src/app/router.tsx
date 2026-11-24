@@ -2,6 +2,7 @@ import { lazy } from 'react';
 import type { ReactNode } from 'react';
 import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 
+import { ErrorPage } from '@/app/ErrorPage';
 import { AppShell } from '@/components/layout/AppShell';
 import { RequireAccess } from '@/features/auth/RequireAccess';
 import { RequireAuth } from '@/features/auth/RequireAuth';
@@ -216,55 +217,66 @@ let router: ReturnType<typeof createBrowserRouter> | null = null;
 
 function getRouter() {
   router ??= createBrowserRouter([
-    { path: '/login', element: <LoginPage /> },
-    { path: '/forgot-password', element: <PasswordResetPage /> },
-    { path: '/support-login', element: <SupportLoginPage /> },
-    // Public online bill: the share token is the capability, so this route
-    // deliberately sits OUTSIDE RequireAuth (no login redirect for customers).
-    { path: '/bill/:token', element: <SharedBillPage /> },
     {
-      element: (
-        <RequireAuth>
-          <AppShell />
-        </RequireAuth>
-      ),
+      errorElement: <ErrorPage />,
       children: [
-        page('/', <DashboardPage />),
-        page('/billing', <BillingPage />),
-        page('/billing/simple', <SimpleSalePage />),
-        page('/bills', <BillsPage />),
-        page('/bills/:id', <BillDetailPage />),
-        page('/online-orders', <OnlineOrdersPage />),
-        page('/catalog', <ItemsPage />),
-        page('/catalog/items/new', <QuickAddProductPage />),
-        page('/catalog/items/:id', <ItemDetailPage />),
-        page('/catalog/items/:id/edit', <ItemFormPage />),
-        page('/pricing', <PricingPage />),
-        page('/customers', <CustomersPage />),
-        page('/stock', <StockPage />),
-        page('/stock/transfers', <TransfersPage />),
-        page('/stock/counts', <CountsPage />),
-        page('/purchasing', <PurchasingPage />),
-        page('/expenses', <ExpensesPage />),
-        page('/payments', <PaymentsPage />),
-        page('/ledgers', <PartyLedgerPage />),
-        page('/returns', <ReturnsPage />),
-        page('/audit', <AuditPage />),
-        page('/settings', <SettingsPage />),
-        page('/settings/security', <SecurityPage />),
-        page('/settings/staff', <StaffPage />),
-        page('/settings/online-store', <OnlineStorePage />),
-        page('/settings/support-access', <SupportAccessPage />),
-        page('/exchanges', <ExchangePage />),
-        page('/reports', <ReportsHomePage />),
-        page('/reports/sales', <SalesReportPage />),
-        page('/reports/stock', <StockReportsPage />),
-        page('/reports/profit', <ProfitReportPage />),
-        page('/reports/dues', <DuesReportPage />),
-        page('/reports/vat', <VatRegisterPage />),
+        { path: '/login', element: <LoginPage /> },
+        { path: '/forgot-password', element: <PasswordResetPage /> },
+        { path: '/support-login', element: <SupportLoginPage /> },
+        // Public online bill: the share token is the capability, so this route
+        // deliberately sits OUTSIDE RequireAuth (no login redirect for customers).
+        { path: '/bill/:token', element: <SharedBillPage /> },
+        {
+          element: (
+            <RequireAuth>
+              <AppShell />
+            </RequireAuth>
+          ),
+          children: [
+            // Inside the shell, so the menu survives a screen that crashes.
+            {
+              errorElement: <ErrorPage />,
+              children: [
+                page('/', <DashboardPage />),
+                page('/billing', <BillingPage />),
+                page('/billing/simple', <SimpleSalePage />),
+                page('/bills', <BillsPage />),
+                page('/bills/:id', <BillDetailPage />),
+                page('/online-orders', <OnlineOrdersPage />),
+                page('/catalog', <ItemsPage />),
+                page('/catalog/items/new', <QuickAddProductPage />),
+                page('/catalog/items/:id', <ItemDetailPage />),
+                page('/catalog/items/:id/edit', <ItemFormPage />),
+                page('/pricing', <PricingPage />),
+                page('/customers', <CustomersPage />),
+                page('/stock', <StockPage />),
+                page('/stock/transfers', <TransfersPage />),
+                page('/stock/counts', <CountsPage />),
+                page('/purchasing', <PurchasingPage />),
+                page('/expenses', <ExpensesPage />),
+                page('/payments', <PaymentsPage />),
+                page('/ledgers', <PartyLedgerPage />),
+                page('/returns', <ReturnsPage />),
+                page('/audit', <AuditPage />),
+                page('/settings', <SettingsPage />),
+                page('/settings/security', <SecurityPage />),
+                page('/settings/staff', <StaffPage />),
+                page('/settings/online-store', <OnlineStorePage />),
+                page('/settings/support-access', <SupportAccessPage />),
+                page('/exchanges', <ExchangePage />),
+                page('/reports', <ReportsHomePage />),
+                page('/reports/sales', <SalesReportPage />),
+                page('/reports/stock', <StockReportsPage />),
+                page('/reports/profit', <ProfitReportPage />),
+                page('/reports/dues', <DuesReportPage />),
+                page('/reports/vat', <VatRegisterPage />),
+              ],
+            },
+          ],
+        },
+        { path: '*', element: <NotFound /> },
       ],
     },
-    { path: '*', element: <NotFound /> },
   ]);
   return router;
 }
