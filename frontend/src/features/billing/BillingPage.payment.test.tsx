@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BillingPage } from '@/features/billing/BillingPage';
@@ -97,7 +98,9 @@ function renderBilling() {
         new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: 0 } } })
       }
     >
-      <BillingPage />
+      <MemoryRouter>
+        <BillingPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -141,6 +144,24 @@ describe('BillingPage counter payment', () => {
 
     expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
     expect(sentBody('/sales').payments).toEqual([{ method: 'CASH', amount: '700.00' }]);
+  });
+
+  it('links to the cash drawer when a sale fails because it is closed', async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me'))
+        return reply({ id: 'user-1', permissions: ['sale.create', 'cash.manage'] });
+      if (url.endsWith('/sales')) return refusal('CASH_SESSION_REQUIRED', 'Drawer is closed.');
+      return route(input);
+    });
+    renderBilling();
+    await scan();
+    fireEvent.click(completeButton());
+
+    expect(await screen.findByRole('link', { name: 'Open cash session' })).toHaveAttribute(
+      'href',
+      '/payments',
+    );
   });
 
   it('keeps the change on screen after the sale is done', async () => {

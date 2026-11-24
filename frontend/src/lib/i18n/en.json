@@ -201,7 +201,9 @@
       "repriceFailed": "Prices for the selected rate could not be loaded.",
       "invalidAmount": "Enter a valid amount (e.g. 1500.00).",
       "amountPositive": "Amount must be greater than zero.",
-      "udharoCustomer": "Udharo requires a customer — search and pick one above."
+      "udharoCustomer": "Udharo requires a customer — search and pick one above.",
+      "drawerClosed": "The cash drawer is closed, so this bill was not saved.",
+      "openDrawer": "Open cash session"
     },
     "receipt": {
       "saleCompleted": "Sale completed",
