@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useAuth } from '@/features/auth/useAuth';
 import { useResumeHeldBill } from '@/features/billing/useResumeHeldBill';
 import {
@@ -156,13 +157,18 @@ function OrderCard({ order }: { order: OnlineOrder }) {
           </Button>
         ) : null}
         {!['DELIVERED', 'CANCELLED'].includes(order.status) && canCancel ? (
-          <Button
-            variant="ghost"
-            loading={action.isPending}
-            onClick={() => action.mutate('cancel')}
-          >
-            {t('onlineOrders.cancel')}
-          </Button>
+          <ConfirmDialog
+            danger
+            trigger={
+              <Button variant="ghost" loading={action.isPending}>
+                {t('onlineOrders.cancel')}
+              </Button>
+            }
+            title={t('onlineOrders.cancelTitle', { number: order.number_text })}
+            body={t('onlineOrders.cancelBody')}
+            confirmLabel={t('onlineOrders.cancel')}
+            onConfirm={() => action.mutate('cancel')}
+          />
         ) : null}
       </div>
     </Card>

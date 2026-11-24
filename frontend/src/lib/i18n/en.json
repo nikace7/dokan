@@ -20,7 +20,8 @@
     "walkIn": "Walk-in",
     "closeForm": "Close form",
     "close": "Close",
-    "pageOf": "Page {{page}} of {{total}}"
+    "pageOf": "Page {{page}} of {{total}}",
+    "goBack": "Go back"
   },
   "language": {
     "label": "Language",
@@ -93,7 +94,9 @@
     "loading": "Loading online orders…",
     "empty": "No online orders match this filter.",
     "loadError": "Could not load online orders.",
-    "updateError": "Could not update this order."
+    "updateError": "Could not update this order.",
+    "cancelTitle": "Cancel order {{number}}?",
+    "cancelBody": "The order and its held bill, if any, are cancelled. This can't be undone."
   },
   "auth": {
     "title": "Sign in",
@@ -844,7 +847,10 @@
       "revokeRole": "Remove role {{role}} from {{name}}",
       "rolesTitle": "Available roles",
       "noRoles": "No roles configured.",
-      "noPermissions": "No permissions"
+      "noPermissions": "No permissions",
+      "revokeTitle": "Remove role {{role}}?",
+      "revokeBody": "{{name}} loses everything this role allows.",
+      "revokeConfirm": "Remove role"
     },
     "roles": {
       "title": "Custom roles",
@@ -1380,7 +1386,14 @@
         "sent": "Sent",
         "received": "Received",
         "receiveNow": "Receive now"
-      }
+      },
+      "sendTitle": "Send this transfer?",
+      "sendBody": "The stock leaves {{from}} now and stays in transit until {{to}} receives it. A sent transfer can't be cancelled.",
+      "cancelTitle": "Cancel this draft?",
+      "cancelBody": "The draft can't be used again. No stock has moved.",
+      "completeTitle": "Complete this transfer?",
+      "completeBody": "Everything sent was received. A completed transfer can't be changed.",
+      "completeShort": "{{qty}} not received yet will be written off as a shortage. This can't be undone."
     },
     "counts": {
       "title": "Physical counts",
@@ -1410,7 +1423,11 @@
         "counted": "Counted",
         "variance": "Variance",
         "note": "Note"
-      }
+      },
+      "finalizeTitle": "Finalize this count?",
+      "finalizeBody": "The quantities on screen are saved and become the shop's stock. {{differing}} of {{total}} items differ from the system. This can't be undone.",
+      "cancelTitle": "Cancel this count?",
+      "cancelBody": "Everything counted so far is thrown away. Stock does not change."
     }
   },
   "pricing": {
