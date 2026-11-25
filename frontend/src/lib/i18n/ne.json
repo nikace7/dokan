@@ -212,7 +212,7 @@
     "paid": "भुक्तानी",
     "dueUdharo": "बाँकी (उधारो)",
     "vatBill": "भ्याट बिजक",
-    "completeSale": "F9 बिल सेभ + प्रिन्ट",
+    "completeSale": "F9 बिल सेभ",
     "completing": "सेभ हुँदैछ…",
     "holdBill": "बिल रोक्नुहोस् (होल्ड)",
     "parking": "रोकिँदैछ…",
@@ -273,7 +273,8 @@
       "increase": "{{name}} को परिमाण बढाउनुहोस्",
       "remove": "{{name}} हटाउनुहोस्",
       "discount": "{{name}} को छूट"
-    }
+    },
+    "completeAndPrint": "बिल सेभ + प्रिन्ट"
   },
   "simpleSale": {
     "title": "सरल बिक्री",

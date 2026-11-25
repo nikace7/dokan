@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -81,6 +81,7 @@ function route(input: RequestInfo | URL): Promise<Response> {
   const url = new URL(String(input), 'http://shop.test');
   const path = url.pathname;
   if (path.endsWith('/auth/me')) return reply({ permissions: ['sale.create'], plan: null });
+  if (path.endsWith('/print')) return reply({ id: 'sale-1', print_count: 1 });
   if (path.endsWith('/sales/held')) return reply([]);
   if (path.endsWith('/sales/hold')) return reply({ ...INVOICE, status: 'HELD' }, 201);
   if (path.endsWith('/sales') || path.endsWith('/complete')) return reply(INVOICE, 201);
@@ -162,6 +163,24 @@ describe('BillingPage counter payment', () => {
       'href',
       '/payments',
     );
+  });
+
+  it.each([
+    ['Complete and print', 1],
+    ['F9 Complete sale', 0],
+  ])('%s opens the print dialog %i times', async (name, times) => {
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    renderBilling();
+    await scan();
+    fireEvent.click(screen.getByRole('button', { name }));
+
+    expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+    if (times) await waitFor(() => expect(print).toHaveBeenCalled());
+    expect(print).toHaveBeenCalledTimes(times);
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/sales/sale-1/print')),
+    ).toHaveLength(times);
+    print.mockRestore();
   });
 
   it('keeps the change on screen after the sale is done', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -16,15 +16,18 @@ interface ReceiptPanelProps {
   invoice: SalesInvoice;
   /** Checkout flow only: shows "Sale completed" and the New bill button. */
   onNewBill?: () => void;
+  /** The counter asked for the receipt when completing the sale. */
+  printOnOpen?: boolean;
 }
 
 /**
  * Post-sale receipt. Every figure here comes from the server's response —
  * the client never re-derives invoice totals.
  *
- * Printing is always explicit: completing a sale never pops the print/PDF
- * dialog on its own — the counter presses Reprint (the print count and
- * "Copy N" marker only move on those deliberate prints).
+ * Printing is always explicit: completing a sale only pops the print/PDF
+ * dialog when the counter pressed "Complete and print" (`printOnOpen`);
+ * otherwise they press Reprint (the print count and "Copy N" marker only move
+ * on those deliberate prints).
  *
  * The receipt BODY is deliberately bilingual ("Invoice / बिल", fixed 80mm
  * print layout) and does NOT go through i18n — only the screen-only chrome
@@ -33,7 +36,7 @@ interface ReceiptPanelProps {
  * Amounts always print in the shop's BASE currency (`currency: base`):
  * a receipt is a legal document and never follows the display toggle.
  */
-export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
+export function ReceiptPanel({ invoice, onNewBill, printOnOpen = false }: ReceiptPanelProps) {
   const { t } = useTranslation();
   const base = useCurrencyStore((state) => state.base);
   const [printCount, setPrintCount] = useState(invoice.print_count);
@@ -63,6 +66,13 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
       setIsPrinting(false);
     }
   }, [invoice.id, t]);
+
+  const openedPrint = useRef(false);
+  useEffect(() => {
+    if (!printOnOpen || !canPrint || openedPrint.current) return;
+    openedPrint.current = true;
+    void printReceipt();
+  }, [canPrint, printOnOpen, printReceipt]);
 
   return (
     <Card id="sales-receipt" className="mx-auto max-w-lg">

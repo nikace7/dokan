@@ -32,7 +32,7 @@ export class BillingPage {
   /** Blank tender amount = full total; default method is CASH. */
   async completeCashSale() {
     await this.page
-      .getByRole('button', { name: 'F9 Complete sale + print' })
+      .getByRole('button', { name: 'F9 Complete sale' })
       .click();
   }
 

@@ -212,7 +212,7 @@
     "paid": "Paid",
     "dueUdharo": "Due (udharo)",
     "vatBill": "VAT bill",
-    "completeSale": "F9 Complete sale + print",
+    "completeSale": "F9 Complete sale",
     "completing": "Completing…",
     "holdBill": "Park this bill (hold)",
     "parking": "Parking…",
@@ -273,7 +273,8 @@
       "increase": "Increase quantity of {{name}}",
       "remove": "Remove {{name}}",
       "discount": "Discount for {{name}}"
-    }
+    },
+    "completeAndPrint": "Complete and print"
   },
   "simpleSale": {
     "title": "Simple sale",
