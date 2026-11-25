@@ -100,7 +100,7 @@ describe('ItemPickerDialog', () => {
 
     // MRP and the stock line render inside the cell.
     expect(within(tshirtCell).getByText('रू 1,500.00')).toBeInTheDocument();
-    expect(within(tshirtCell).getByText('Stock 5.000')).toBeInTheDocument();
+    expect(within(tshirtCell).getByText('Stock 5')).toBeInTheDocument();
     expect(
       within(within(dialog).getByRole('button', { name: /Jeans/ })).getByText('रू 2,500.00'),
     ).toBeInTheDocument();

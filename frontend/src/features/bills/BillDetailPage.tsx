@@ -14,6 +14,7 @@ import { BillStatusBadge, DocTypeBadge } from '@/features/bills/BillBadges';
 import { ReportError, TableSkeleton } from '@/features/reports/ui';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 import { usePageTitle } from '@/lib/usePageTitle';
 import { useCurrencyStore } from '@/stores/currency';
 
@@ -162,11 +163,11 @@ function BillCalculation({ bill }: { bill: SalesInvoice }) {
                   ) : null}
                   {!isZero(item.returned_qty) ? (
                     <span className="block text-xs text-amber-700">
-                      {t('bills.detail.returnedQty', { qty: Number(item.returned_qty) })}
+                      {t('bills.detail.returnedQty', { qty: formatQty(item.returned_qty) })}
                     </span>
                   ) : null}
                 </td>
-                <td className="py-2 text-right tabular-nums">{Number(item.qty)}</td>
+                <td className="py-2 text-right tabular-nums">{formatQty(item.qty)}</td>
                 <td className="py-2 text-right tabular-nums">{plain(item.unit_price)}</td>
                 <td className="py-2 text-right tabular-nums">
                   {isZero(item.discount) ? '—' : `-${plain(item.discount)}`}

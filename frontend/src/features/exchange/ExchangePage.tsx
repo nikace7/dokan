@@ -21,6 +21,7 @@ import type {
 import { ItemImage } from '@/features/catalog/ui';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 const PAYMENT_METHODS: ExchangePaymentMethod[] = [
   'CASH',
@@ -248,7 +249,7 @@ function LineList({
             <span className="font-medium">{line.item_name}</span>{' '}
             <span className="text-xs text-muted-foreground">{line.sku}</span>
             <span className="block text-xs text-muted-foreground">
-              {t('exchange.line.remaining', { remaining: line.remaining })}
+              {t('exchange.line.remaining', { remaining: formatQty(line.remaining) })}
             </span>
           </div>
           <div className="flex items-center gap-2">

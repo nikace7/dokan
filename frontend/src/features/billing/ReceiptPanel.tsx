@@ -9,6 +9,7 @@ import { billNumber, recordReceiptPrint } from '@/features/billing/api';
 import type { SalesInvoice } from '@/features/billing/api';
 import { formatNpr } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
+import { formatQty } from '@/lib/quantity';
 import { useCurrencyStore } from '@/stores/currency';
 
 interface ReceiptPanelProps {
@@ -108,7 +109,7 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
                   <span className="block text-xs">{item.item_name_np}</span>
                 ) : null}
               </td>
-              <td className="py-1.5 text-right">{item.qty}</td>
+              <td className="py-1.5 text-right">{formatQty(item.qty)}</td>
               <td className="py-1.5 text-right">
                 {formatNpr(item.unit_price, { symbol: '', currency: base })}
               </td>

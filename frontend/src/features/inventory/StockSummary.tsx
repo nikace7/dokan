@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { StatTile } from '@/components/ui/StatTile';
 import { getStockSummary } from '@/features/inventory/api';
 import { toPaisa } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 /** Current tenant-wide stock totals, independent of table search and pagination. */
 export function StockSummary() {
@@ -33,21 +34,21 @@ export function StockSummary() {
     >
       <StatTile
         label={t('inventory.stock.summary.onHand')}
-        value={totals ? formatQuantity(totals.total_qty_on_hand) : undefined}
+        value={totals ? formatQty(totals.total_qty_on_hand) : undefined}
         icon={Package}
         tint="blue"
         isLoading={query.isPending}
       />
       <StatTile
         label={t('inventory.stock.summary.reserved')}
-        value={totals ? formatQuantity(totals.total_qty_reserved) : undefined}
+        value={totals ? formatQty(totals.total_qty_reserved) : undefined}
         icon={Clock3}
         tint="amber"
         isLoading={query.isPending}
       />
       <StatTile
         label={t('inventory.stock.summary.available')}
-        value={totals ? formatQuantity(totals.total_qty_available) : undefined}
+        value={totals ? formatQty(totals.total_qty_available) : undefined}
         icon={PackageCheck}
         tint="green"
         isLoading={query.isPending}
@@ -62,10 +63,4 @@ export function StockSummary() {
       ) : null}
     </section>
   );
-}
-
-function formatQuantity(value: string): string {
-  const quantity = Number(value);
-  if (!Number.isFinite(quantity)) return value;
-  return quantity.toLocaleString(undefined, { maximumFractionDigits: 3 });
 }

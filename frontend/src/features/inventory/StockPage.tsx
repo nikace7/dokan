@@ -23,6 +23,7 @@ import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 import { hasPlanFeature } from '@/lib/plans';
+import { formatQty } from '@/lib/quantity';
 import { cn } from '@/lib/utils';
 
 type Dialog = 'opening' | 'adjustment' | 'write-off' | null;
@@ -173,9 +174,11 @@ export function StockPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{level.variant_sku}</TableCell>
                 <TableCell className="text-muted-foreground">{level.branch_code}</TableCell>
-                <TableCell className="text-right tabular-nums">{level.qty_on_hand}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatQty(level.qty_on_hand)}
+                </TableCell>
                 <TableCell className="text-right text-muted-foreground tabular-nums">
-                  {level.qty_reserved}
+                  {formatQty(level.qty_reserved)}
                 </TableCell>
                 {showCost ? (
                   <TableCell className="text-right tabular-nums">
@@ -213,9 +216,9 @@ export function StockPage() {
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-semibold tabular-nums">{level.qty_on_hand}</p>
+                  <p className="font-semibold tabular-nums">{formatQty(level.qty_on_hand)}</p>
                   <p className="text-xs text-muted-foreground tabular-nums">
-                    {t('inventory.stock.reserved', { qty: level.qty_reserved })}
+                    {t('inventory.stock.reserved', { qty: formatQty(level.qty_reserved) })}
                   </p>
                 </div>
               </button>
@@ -251,7 +254,7 @@ export function StockPage() {
                     Number(movement.qty_delta) < 0 ? 'text-destructive' : 'text-success',
                   )}
                 >
-                  {movement.qty_delta}
+                  {formatQty(movement.qty_delta)}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{movement.balance_after}</TableCell>
                 <TableCell>{movement.note || '—'}</TableCell>
@@ -268,7 +271,7 @@ export function StockPage() {
                       Number(movement.qty_delta) < 0 ? 'text-destructive' : 'text-success',
                     )}
                   >
-                    {movement.qty_delta}
+                    {formatQty(movement.qty_delta)}
                   </p>
                 </div>
                 <p className="text-muted-foreground">

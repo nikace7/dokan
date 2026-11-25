@@ -9,6 +9,7 @@ import type { StockTransfer, TransferLinePayload } from '@/features/inventory/ap
 import { cellInputClasses } from '@/features/inventory/ui';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
+import { formatQty } from '@/lib/quantity';
 import { cn } from '@/lib/utils';
 
 interface TransferCardProps {
@@ -67,8 +68,10 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
             <>
               <TableCell className="font-medium">{item.item_name}</TableCell>
               <TableCell className="text-muted-foreground">{item.variant_sku}</TableCell>
-              <TableCell className="text-right tabular-nums">{item.qty_sent}</TableCell>
-              <TableCell className="text-right tabular-nums">{item.qty_received ?? '0'}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatQty(item.qty_sent)}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {formatQty(item.qty_received ?? 0)}
+              </TableCell>
               {receiving ? (
                 <TableCell>{receiptInput(item.variant, item.variant_sku)}</TableCell>
               ) : null}
