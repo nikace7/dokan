@@ -61,7 +61,7 @@ describe('PartyLedgerPage', () => {
           {
             date: '2026-08-03',
             kind: 'RECEIPT',
-            ref: 'CASH receipt',
+            ref: 'CASH',
             debit: '0.00',
             credit: '500.00',
             balance: '2000.00',
@@ -101,7 +101,9 @@ describe('PartyLedgerPage', () => {
 
     // Rows render in both the mobile card list and the desktop table.
     expect((await screen.findAllByText('Bill 1001')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('CASH receipt').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Sale')).toHaveLength(2);
+    expect(screen.getAllByText('Payment received')).toHaveLength(2);
+    expect(screen.getAllByText('Cash')).toHaveLength(2);
     expect(screen.getAllByText('रू 2,000.00').length).toBeGreaterThan(0);
   });
 

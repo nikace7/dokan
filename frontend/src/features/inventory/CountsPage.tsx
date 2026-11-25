@@ -208,7 +208,7 @@ function CountCard({
 
   return (
     <Card
-      title={`${count.status} · ${count.branch_code}`}
+      title={`${t(`inventory.counts.status.${count.status}`)} · ${count.branch_code}`}
       actions={
         <Badge variant="secondary" className="font-medium">
           {t('inventory.counts.startedBy', {

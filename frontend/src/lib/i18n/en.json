@@ -21,7 +21,20 @@
     "closeForm": "Close form",
     "close": "Close",
     "pageOf": "Page {{page}} of {{total}}",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "methods": {
+      "CASH": "Cash",
+      "ESEWA": "eSewa",
+      "KHALTI": "Khalti",
+      "FONEPAY": "Fonepay",
+      "QR": "QR",
+      "CARD": "Card",
+      "BANK": "Bank",
+      "CREDIT": "Credit",
+      "POINTS": "Points",
+      "CREDIT_NOTE": "Credit note"
+    },
+    "actions": "Actions"
   },
   "language": {
     "label": "Language",
@@ -511,7 +524,15 @@
       "date": "Date",
       "type": "Type",
       "reference": "Reference",
-      "balance": "Balance"
+      "balance": "Balance",
+      "kinds": {
+        "OPENING": "Opening balance",
+        "SALE": "Sale",
+        "RECEIPT": "Payment received",
+        "CREDIT_NOTE": "Return",
+        "PURCHASE": "Purchase",
+        "PAYMENT": "Payment made"
+      }
     }
   },
   "purchasing": {
@@ -921,7 +942,12 @@
       "revokeNamed": "Revoke {{name}}",
       "revokeOthers": "Revoke other devices",
       "revoked": "Device access revoked.",
-      "othersRevoked": "All other devices were revoked."
+      "othersRevoked": "All other devices were revoked.",
+      "devices": {
+        "Mobile device": "Mobile device",
+        "Web browser": "Web browser",
+        "Unknown device": "Unknown device"
+      }
     }
   },
   "dashboard": {
@@ -1328,6 +1354,18 @@
         "balance": "Balance",
         "reasonNote": "Reason / note",
         "by": "By"
+      },
+      "types": {
+        "OPENING": "Opening stock",
+        "PURCHASE": "Purchase",
+        "SALE": "Sale",
+        "SALE_RETURN": "Sale return",
+        "PURCHASE_RETURN": "Purchase return",
+        "TRANSFER_IN": "Transfer in",
+        "TRANSFER_OUT": "Transfer out",
+        "ADJUSTMENT": "Adjustment",
+        "DAMAGE": "Damage",
+        "COUNT": "Physical count"
       }
     },
     "operation": {
@@ -1400,7 +1438,13 @@
       "cancelBody": "The draft can't be used again. No stock has moved.",
       "completeTitle": "Complete this transfer?",
       "completeBody": "Everything sent was received. A completed transfer can't be changed.",
-      "completeShort": "{{qty}} not received yet will be written off as a shortage. This can't be undone."
+      "completeShort": "{{qty}} not received yet will be written off as a shortage. This can't be undone.",
+      "status": {
+        "DRAFT": "Draft",
+        "SENT": "Sent",
+        "RECEIVED": "Received",
+        "CANCELLED": "Cancelled"
+      }
     },
     "counts": {
       "title": "Physical counts",
@@ -1434,7 +1478,12 @@
       "finalizeTitle": "Finalize this count?",
       "finalizeBody": "The quantities on screen are saved and become the shop's stock. {{differing}} of {{total}} items differ from the system. This can't be undone.",
       "cancelTitle": "Cancel this count?",
-      "cancelBody": "Everything counted so far is thrown away. Stock does not change."
+      "cancelBody": "Everything counted so far is thrown away. Stock does not change.",
+      "status": {
+        "OPEN": "Open",
+        "FINALIZED": "Finalized",
+        "CANCELLED": "Cancelled"
+      }
     }
   },
   "pricing": {
@@ -1586,6 +1635,8 @@
   },
   "errorPage": {
     "title": "Something went wrong on this page",
-    "body": "Reload the page to try again. If it keeps happening, tell your shop system provider which page you were on."
+    "body": "Reload the page to try again. If it keeps happening, tell your shop system provider which page you were on.",
+    "notFound": "Page not found",
+    "notFoundBody": "This page does not exist."
   }
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/features/auth/useAuth';
@@ -11,6 +12,7 @@ import { useAuthSession } from '@/stores/authSession';
  * neutral splash so protected screens never flash.
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { isAuthenticated, isRestoring } = useAuth();
   const location = useLocation();
   // After "Sign out" the next person starts at the dashboard, not on the page
@@ -24,7 +26,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (isRestoring) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-100">
-        <p className="text-sm text-slate-500">Loading…</p>
+        <p className="text-sm text-slate-500">{t('common.loading')}</p>
       </main>
     );
   }

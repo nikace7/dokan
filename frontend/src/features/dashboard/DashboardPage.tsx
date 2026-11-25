@@ -245,7 +245,7 @@ export function DashboardPage() {
             ) : collections.data ? (
               <ProgressDonut
                 data={collections.data.methods.map((m, i) => ({
-                  label: m.method,
+                  label: t(`common.methods.${m.method}`, { defaultValue: m.method }),
                   value: Number(m.amount),
                   tint: DONUT_TINTS[i % DONUT_TINTS.length],
                 }))}

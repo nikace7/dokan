@@ -37,6 +37,9 @@ function seenAt(value: string): string {
 export function SecurityPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  // The app stores these names in English; anything else is shown as stored.
+  const deviceName = (name: string) =>
+    t(`security.sessions.devices.${name}`, { defaultValue: name });
   const sessions = useQuery({ queryKey: SESSIONS_KEY, queryFn: listAuthSessions, retry: false });
   const otpStatus = useQuery({ queryKey: OTP_KEY, queryFn: getLoginOtpStatus, retry: false });
   const [currentPassword, setCurrentPassword] = useState('');
@@ -279,7 +282,7 @@ export function SecurityPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
-                      {session.device_name}{' '}
+                      {deviceName(session.device_name)}{' '}
                       {session.current ? (
                         <span className="text-xs text-primary">
                           ({t('security.sessions.current')})
@@ -294,7 +297,9 @@ export function SecurityPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      aria-label={t('security.sessions.revokeNamed', { name: session.device_name })}
+                      aria-label={t('security.sessions.revokeNamed', {
+                        name: deviceName(session.device_name),
+                      })}
                       onClick={() => revokeMutation.mutate(session.id)}
                       loading={revokeMutation.isPending && revokeMutation.variables === session.id}
                     >

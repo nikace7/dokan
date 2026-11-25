@@ -29,7 +29,7 @@ export function SharedBillPage() {
   if (query.isPending) {
     return (
       <Shell>
-        <div role="status" aria-label="Loading bill" className="space-y-3">
+        <div role="status" aria-label={t('common.loading')} className="space-y-3">
           <Skeleton className="mx-auto h-8 w-40" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
@@ -155,7 +155,7 @@ function BillCard({ bill }: { bill: SharedBill }) {
         {bill.tenders.map((tender, index) => (
           <Row
             key={`${tender.method}-${index}`}
-            label={`${t('sharedBill.tender')} · ${tender.method}`}
+            label={`${t('sharedBill.tender')} · ${t(`common.methods.${tender.method}`, { defaultValue: tender.method })}`}
             value={tender.amount}
           />
         ))}

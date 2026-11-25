@@ -39,7 +39,7 @@ export function CartTable() {
             <th className="py-2 pr-2 text-right font-medium">{t('billing.rate')}</th>
             <th className="py-2 pr-2 text-right font-medium">{discountLabel}</th>
             <th className="py-2 pr-2 text-right font-medium">{t('billing.total')}</th>
-            <th className="py-2 font-medium" aria-label="Actions" />
+            <th className="py-2 font-medium" aria-label={t('common.actions')} />
           </tr>
         </thead>
         <tbody className="max-sm:block">

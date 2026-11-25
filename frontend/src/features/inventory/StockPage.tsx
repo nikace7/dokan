@@ -245,7 +245,9 @@ export function StockPage() {
             renderCells={(movement) => (
               <>
                 <TableCell>{movement.business_date_bs}</TableCell>
-                <TableCell className="font-medium">{movement.type}</TableCell>
+                <TableCell className="font-medium">
+                  {t(`inventory.movements.types.${movement.type}`, { defaultValue: movement.type })}
+                </TableCell>
                 <TableCell className="text-muted-foreground">{movement.variant_sku}</TableCell>
                 <TableCell className="text-muted-foreground">{movement.branch_code}</TableCell>
                 <TableCell
@@ -256,7 +258,9 @@ export function StockPage() {
                 >
                   {formatQty(movement.qty_delta)}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{movement.balance_after}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatQty(movement.balance_after)}
+                </TableCell>
                 <TableCell>{movement.note || '—'}</TableCell>
                 <TableCell>{movement.created_by_name || t('inventory.system')}</TableCell>
               </>
@@ -264,7 +268,11 @@ export function StockPage() {
             renderCard={(movement) => (
               <div className="text-sm">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-medium">{movement.type}</p>
+                  <p className="font-medium">
+                    {t(`inventory.movements.types.${movement.type}`, {
+                      defaultValue: movement.type,
+                    })}
+                  </p>
                   <p
                     className={cn(
                       'shrink-0 font-medium tabular-nums',
@@ -278,7 +286,7 @@ export function StockPage() {
                   {movement.business_date_bs} · {movement.variant_sku} · {movement.branch_code}
                 </p>
                 <p className="text-muted-foreground">
-                  {t('inventory.movements.balance', { qty: movement.balance_after })} ·{' '}
+                  {t('inventory.movements.balance', { qty: formatQty(movement.balance_after) })} ·{' '}
                   {movement.note || '—'} · {movement.created_by_name || t('inventory.system')}
                 </p>
               </div>

@@ -241,8 +241,8 @@ describe('DashboardPage', () => {
 
     expect(screen.getByLabelText('Last 30 days sales')).toBeInTheDocument();
     expect(await screen.findByText('Collection by method')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /CASH 66\.4%/ })).toBeInTheDocument();
-    expect(screen.getByText('ESEWA')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Cash 66\.4%/ })).toBeInTheDocument();
+    expect(screen.getByText('eSewa')).toBeInTheDocument();
     expect(screen.getByText('रू 45,200')).toBeInTheDocument();
 
     expect(screen.getAllByRole('link', { name: 'New sale' }).length).toBeGreaterThan(0);
@@ -257,7 +257,7 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('link', { name: 'INV-1042' })).toHaveAttribute('href', '/bills/sale-1');
     expect(screen.getByRole('link', { name: 'All bills' })).toHaveAttribute('href', '/bills');
     expect(screen.getByText('Sita Rai')).toBeInTheDocument();
-    expect(screen.getAllByText('CASH').length).toBeGreaterThan(1);
+    expect(screen.getAllByText('Cash').length).toBeGreaterThan(1);
   });
 
   it('keeps a cashier home minimal: no sales figures, bills, donut, or reports shortcuts', async () => {

@@ -43,7 +43,7 @@ export function CustomerPicker() {
   return (
     <div>
       <input
-        aria-label="Search customers"
+        aria-label={t('customers.searchAria')}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={t('billing.customerSearchPlaceholder')}

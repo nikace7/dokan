@@ -110,7 +110,7 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
               >
                 {REFUND_METHODS.map((method) => (
                   <option key={method} value={method}>
-                    {method}
+                    {t(`common.methods.${method}`)}
                   </option>
                 ))}
               </select>

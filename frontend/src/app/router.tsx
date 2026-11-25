@@ -1,11 +1,13 @@
 import { lazy } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 
 import { ErrorPage } from '@/app/ErrorPage';
 import { AppShell } from '@/components/layout/AppShell';
 import { RequireAccess } from '@/features/auth/RequireAccess';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { usePageTitle } from '@/lib/usePageTitle';
 
 const AuditPage = lazy(() =>
   import('@/features/audit/AuditPage').then(({ AuditPage: Component }) => ({ default: Component })),
@@ -197,12 +199,15 @@ const SupportLoginPage = lazy(() =>
  * just saves the round-trip.
  */
 function NotFound() {
+  const { t } = useTranslation();
+  const title = t('errorPage.notFound');
+  usePageTitle(title);
   return (
     <main className="mx-auto max-w-sm p-6">
-      <h1 className="text-2xl font-semibold">404</h1>
-      <p className="mt-2 text-muted-foreground">This page does not exist.</p>
+      <h1 className="text-2xl font-semibold">{title}</h1>
+      <p className="mt-2 text-muted-foreground">{t('errorPage.notFoundBody')}</p>
       <Link className="mt-4 inline-block text-primary underline" to="/">
-        Back to dashboard
+        {t('access.home')}
       </Link>
     </main>
   );
