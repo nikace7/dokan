@@ -54,6 +54,7 @@ export function BillingPage() {
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
   const [saleError, setSaleError] = useState<unknown>(null);
   const [changePaisa, setChangePaisa] = useState<Paisa>(0);
+  const [printReceipt, setPrintReceipt] = useState(false);
 
   const buildSalePayload = (tender: Tender): CreateSalePayload => ({
     ...cartPayload(workspace.branchId, workspace.rateTypeId),
@@ -163,6 +164,7 @@ export function BillingPage() {
         {changeNotice}
         <ReceiptPanel
           invoice={receipt}
+          printOnOpen={printReceipt}
           onNewBill={() => {
             setReceipt(null);
             setPlanWarning(null);
@@ -248,6 +250,7 @@ export function BillingPage() {
               chargesVat={user?.vat_registered}
               onComplete={(tender) => {
                 setChangePaisa(tender.changePaisa);
+                setPrintReceipt(tender.print);
                 saleMutation.mutate({
                   payload: buildSalePayload(tender),
                   key: crypto.randomUUID(),
