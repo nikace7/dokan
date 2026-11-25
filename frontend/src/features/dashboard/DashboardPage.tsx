@@ -93,6 +93,10 @@ export function DashboardPage() {
 
   const data = dashboard.data;
   const branchName = workspace.branches.find((b) => b.id === workspace.branchId)?.name;
+  const hasSeveralBranches = workspace.branches.length > 1;
+  // The summary adds up every branch; only collections follow the chosen one.
+  const summaryScope = hasSeveralBranches ? t('dashboard.allBranches') : branchName;
+  const collectionsScope = hasSeveralBranches && branchName ? `${branchName} · ` : '';
 
   const isEmptyShop =
     data.sales !== undefined &&
@@ -108,7 +112,7 @@ export function DashboardPage() {
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {data.shop_name}
-            {branchName ? ` · ${branchName}` : ''} · BS {data.business_date_bs}
+            {summaryScope ? ` · ${summaryScope}` : ''} · BS {data.business_date_bs}
           </p>
         </div>
         <div className="flex gap-2">
@@ -223,7 +227,7 @@ export function DashboardPage() {
         {canViewSalesReport ? (
           <ChartCard
             title={t('dashboard.collectionsByMethod')}
-            subtitle={`${t('dashboard.currentBsMonth')} · BS ${range.dateFromBs} — ${range.dateToBs}`}
+            subtitle={`${collectionsScope}${t('dashboard.currentBsMonth')} · BS ${range.dateFromBs} — ${range.dateToBs}`}
           >
             {collections.isPending ? (
               <div className="flex items-center gap-5" aria-busy="true">

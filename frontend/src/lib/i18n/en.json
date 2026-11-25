@@ -1009,7 +1009,8 @@
       "title": "Last 30 days sales",
       "empty": "No completed sales in the last 30 days.",
       "netSales": "Net sales"
-    }
+    },
+    "allBranches": "All branches"
   },
   "reports": {
     "title": "Reports",
