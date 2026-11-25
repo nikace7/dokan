@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/Button';
+import { HeaderActions } from '@/components/ui/HeaderActions';
 import { downloadReport } from '@/features/reports/api';
 import type { ReportExportName } from '@/features/reports/api';
 
@@ -52,21 +53,28 @@ export function ReportActions({ canExport, report, params = {} }: ReportActionsP
   };
 
   return (
-    <div className="report-print-actions flex flex-wrap justify-end gap-1">
-      {canExport ? (
-        <Button variant="outline" size="sm" loading={downloading} onClick={download}>
-          <Download aria-hidden="true" />
-          {t('reports.actions.excel', { defaultValue: 'Download Excel' })}
-        </Button>
-      ) : null}
-      <Button variant="outline" size="sm" onClick={() => openPrintDialog('a4')}>
-        <Printer aria-hidden="true" />
-        {t('reports.actions.printA4', { defaultValue: 'Print A4' })}
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => openPrintDialog('thermal')}>
-        <Printer aria-hidden="true" />
-        {t('reports.actions.printThermal', { defaultValue: 'Print 80mm' })}
-      </Button>
+    <div className="report-print-actions">
+      <HeaderActions
+        actions={[
+          {
+            label: t('reports.actions.printA4', { defaultValue: 'Print A4' }),
+            icon: Printer,
+            onSelect: () => openPrintDialog('a4'),
+          },
+          {
+            label: t('reports.actions.printThermal', { defaultValue: 'Print 80mm' }),
+            icon: Printer,
+            onSelect: () => openPrintDialog('thermal'),
+          },
+        ]}
+      >
+        {canExport ? (
+          <Button variant="outline" size="sm" loading={downloading} onClick={download}>
+            <Download aria-hidden="true" />
+            {t('reports.actions.excel', { defaultValue: 'Download Excel' })}
+          </Button>
+        ) : null}
+      </HeaderActions>
     </div>
   );
 }
