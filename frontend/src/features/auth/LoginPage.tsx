@@ -61,7 +61,7 @@ function BrandPanel() {
           ))}
         </ul>
       </div>
-      <p className="relative text-xs text-primary-foreground/70">{t('auth.brandFooter')}</p>
+      <p className="relative text-xs text-primary-foreground">{t('auth.brandFooter')}</p>
     </div>
   );
 }
