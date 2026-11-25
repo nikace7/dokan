@@ -95,6 +95,9 @@ describe('ItemPickerDialog', () => {
       within(within(dialog).getByRole('button', { name: /Jeans/ })).queryByRole('img'),
     ).not.toBeInTheDocument();
 
+    // A long name may be cut short; the size and colour under it may not.
+    expect(within(tshirtCell).getByText('M / Black').closest('.line-clamp-2')).toBeNull();
+
     // MRP and the stock line render inside the cell.
     expect(within(tshirtCell).getByText('रू 1,500.00')).toBeInTheDocument();
     expect(within(tshirtCell).getByText('Stock 5.000')).toBeInTheDocument();

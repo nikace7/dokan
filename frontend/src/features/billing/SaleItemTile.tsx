@@ -32,13 +32,12 @@ export function SaleItemTile({ variant, onBill, onPick }: SaleItemTileProps) {
         <ItemImage imageUrl={variant.image_url} alt={variant.item_name} className="h-11 w-11" />
       ) : null}
       <span className="min-w-0 flex-1">
-        <span className="line-clamp-2 text-sm font-medium leading-tight">
-          {variant.item_name}
-          <span className="text-muted-foreground">
-            {' '}
-            — {variant.size} / {variant.color}
-          </span>
-        </span>
+        <span className="line-clamp-2 text-sm font-medium leading-tight">{variant.item_name}</span>{' '}
+        {/* Never cut short: it is all that tells two tiles of one item apart. */}
+        <span className="block text-sm leading-tight text-muted-foreground">
+          <span className="sr-only">— </span>
+          {variant.size} / {variant.color}
+        </span>{' '}
         <span className="flex flex-wrap items-baseline gap-x-2">
           {variant.mrp ? (
             <span className="text-sm font-bold tabular-nums">{formatNpr(variant.mrp)}</span>
