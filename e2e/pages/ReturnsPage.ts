@@ -15,7 +15,7 @@ export class ReturnsPage {
   /** Expand the row for a completed invoice (newest bills list first). */
   async openInvoice(invoiceNo: number) {
     await this.page
-      .getByRole('button', { name: new RegExp(`^Invoice ${invoiceNo}\\b`) })
+      .getByRole('button', { name: new RegExp(`^Invoice \\S+-${invoiceNo}\\b`) })
       .first()
       .click();
   }

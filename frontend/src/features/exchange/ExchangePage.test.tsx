@@ -38,6 +38,7 @@ const sale = {
   id: 'sale-1',
   branch: 'branch-1',
   branch_code: 'MAIN',
+  invoice_prefix: 'INV',
   invoice_no: 1,
   doc_type: 'SALE',
   customer: 'customer-1',
@@ -107,7 +108,7 @@ describe('ExchangePage', () => {
 
   it('adds a new item and records an atomic exchange', async () => {
     renderExchange();
-    fireEvent.click(await screen.findByRole('button', { name: /Invoice 1/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Invoice INV-1/ }));
     await screen.findByText('Basic T-shirt');
 
     fireEvent.change(screen.getByLabelText('Return quantity for Basic T-shirt'), {

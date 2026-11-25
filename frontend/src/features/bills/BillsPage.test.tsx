@@ -114,7 +114,7 @@ describe('BillsPage', () => {
     fireEvent.change(screen.getByLabelText('Bill no.'), { target: { value: 'abc' } });
     fireEvent.click(screen.getByRole('button', { name: 'Find' }));
 
-    expect(await screen.findByText('Enter a whole bill number.')).toBeInTheDocument();
+    expect(await screen.findByText('Enter a bill number, like INV-42.')).toBeInTheDocument();
     expect(fetchMock.mock.calls.length).toBe(calls);
   });
 

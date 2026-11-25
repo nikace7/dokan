@@ -142,7 +142,7 @@ function SalesRegister({ data }: { data: VatRegister<SalesVatRow> }) {
     <ReportTable
       columns={columns}
       rows={data.rows}
-      rowKey={(row) => `${row.doc_type}:${row.invoice_no}`}
+      rowKey={(row) => `${row.business_date_bs}:${row.invoice_no}`}
       empty={t('reports.vat.emptySales')}
       renderCells={(row) => (
         <>

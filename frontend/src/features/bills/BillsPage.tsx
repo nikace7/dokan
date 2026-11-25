@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { TableCell } from '@/components/ui/table';
-import { billNumber } from '@/features/billing/api';
+import { billNumber, parseBillNumber } from '@/features/billing/api';
 import { BillStatusBadge, DocTypeBadge, TenderBadges } from '@/features/bills/BillBadges';
 import { listBills } from '@/features/bills/api';
 import type { BillDocType, BillFilters, BillStatus, BillSummary } from '@/features/bills/api';
@@ -191,13 +191,13 @@ function BillNumberSearch({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const raw = text.trim();
-    if (!/^\d+$/.test(raw)) {
+    const number = parseBillNumber(text);
+    if (number === null) {
       setError(t('bills.search.invalid'));
       return;
     }
     setError(undefined);
-    onSearch(Number(raw));
+    onSearch(number);
   };
 
   return (

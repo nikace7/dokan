@@ -133,10 +133,16 @@ export interface SalesInvoice {
 
 /** Printed bill number (`MAIN-42`, `RET-7` for credit notes); null while a bill is held. */
 export function billNumber(
-  invoice: Pick<SalesInvoice, 'doc_type' | 'invoice_prefix' | 'invoice_no'>,
+  invoice: Pick<SalesInvoice, 'invoice_prefix' | 'invoice_no'> & { doc_type: string },
 ): string | null {
   if (invoice.invoice_no == null) return null;
   return `${invoice.doc_type === 'RETURN' ? 'RET' : invoice.invoice_prefix}-${invoice.invoice_no}`;
+}
+
+/** The number in a typed bill search: `7`, `INV-7`; null when there is none. */
+export function parseBillNumber(raw: string): number | null {
+  const match = /^(?:.*-)?(\d+)$/.exec(raw.trim());
+  return match ? Number(match[1]) : null;
 }
 
 export interface PlanUsageWarning {
