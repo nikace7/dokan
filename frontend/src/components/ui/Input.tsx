@@ -1,5 +1,5 @@
 import { forwardRef, useId } from 'react';
-import type { InputHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, ReactNode } from 'react';
 
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  /** Sits beside the box, above the error message. */
+  trailing?: ReactNode;
 }
 
 const inputClasses = [
@@ -18,27 +20,38 @@ const inputClasses = [
 
 /** Labeled text input with an inline error message slot. */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, id, className, ...props },
+  { label, error, trailing, id, className, ...props },
   ref,
 ) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
 
+  const box = (
+    <input
+      ref={ref}
+      id={inputId}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? `${inputId}-error` : undefined}
+      className={cn(
+        inputClasses,
+        error ? 'border-destructive focus-visible:ring-destructive' : 'border-input',
+        className,
+      )}
+      {...props}
+    />
+  );
+
   return (
     <div className="flex flex-col gap-1.5">
       {label ? <Label htmlFor={inputId}>{label}</Label> : null}
-      <input
-        ref={ref}
-        id={inputId}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${inputId}-error` : undefined}
-        className={cn(
-          inputClasses,
-          error ? 'border-destructive focus-visible:ring-destructive' : 'border-input',
-          className,
-        )}
-        {...props}
-      />
+      {trailing ? (
+        <div className="flex items-center gap-1">
+          {box}
+          {trailing}
+        </div>
+      ) : (
+        box
+      )}
       {error ? (
         <p id={`${inputId}-error`} className="text-sm text-destructive">
           {error}
