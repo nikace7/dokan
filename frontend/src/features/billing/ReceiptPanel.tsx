@@ -70,7 +70,7 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
         </div>
       ) : null}
       <div className="text-center">
-        <h1 className="text-xl font-bold">{invoice.tenant_name}</h1>
+        <p className="text-xl font-bold">{invoice.tenant_name}</p>
         {invoice.tenant_name_np ? <p className="font-medium">{invoice.tenant_name_np}</p> : null}
         {invoice.legal_name ? <p className="text-xs">{invoice.legal_name}</p> : null}
         <p className="text-xs">
