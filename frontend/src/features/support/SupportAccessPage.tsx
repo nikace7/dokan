@@ -3,10 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/Card';
 import { listSupportSessions } from '@/features/support/api';
-
-function local(value: string): string {
-  return new Date(value).toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' });
-}
+import { formatDateTime } from '@/lib/dateTime';
 
 export function SupportAccessPage() {
   const { t } = useTranslation();
@@ -39,8 +36,8 @@ export function SupportAccessPage() {
               </span>
               <span>{row.reason}</span>
               <span className="text-slate-500 sm:text-right">
-                {local(row.started_at)} –{' '}
-                {row.ended_at ? local(row.ended_at) : local(row.expires_at)}
+                {formatDateTime(row.started_at)} –{' '}
+                {row.ended_at ? formatDateTime(row.ended_at) : formatDateTime(row.expires_at)}
               </span>
             </article>
           ))}

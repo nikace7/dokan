@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatTile } from '@/components/ui/StatTile';
 import type { DashboardBill } from '@/features/dashboard/api';
+import { formatDateTime } from '@/lib/dateTime';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 export function DashboardSkeleton() {
@@ -96,9 +97,7 @@ export function RecentBills({
                 <div className="text-right">
                   <p className="font-medium">{formatNpr(bill.total).replace(/\.00$/, '')}</p>
                   <p className="text-xs text-muted-foreground">
-                    <time dateTime={bill.created_at}>
-                      {new Date(bill.created_at).toLocaleString()}
-                    </time>
+                    <time dateTime={bill.created_at}>{formatDateTime(bill.created_at)}</time>
                   </p>
                 </div>
               </div>

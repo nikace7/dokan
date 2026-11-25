@@ -19,18 +19,13 @@ import {
 } from '@/features/auth/api';
 import type { AuthSession, LoginOtpStatus } from '@/features/auth/api';
 import { ApiError } from '@/lib/api/client';
+import { formatDateTime } from '@/lib/dateTime';
 
 const SESSIONS_KEY = ['auth', 'sessions'] as const;
 const OTP_KEY = ['auth', 'login-otp'] as const;
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
-}
-
-function seenAt(value: string): string {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
-    new Date(value),
-  );
 }
 
 /** Self-service password, login-code, and registered-device controls. */
@@ -290,7 +285,9 @@ export function SecurityPage() {
                       ) : null}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t('security.sessions.lastSeen', { date: seenAt(session.last_seen_at) })}
+                      {t('security.sessions.lastSeen', {
+                        date: formatDateTime(session.last_seen_at),
+                      })}
                     </p>
                   </div>
                   {!session.current ? (

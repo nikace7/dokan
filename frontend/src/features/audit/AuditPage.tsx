@@ -7,14 +7,12 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { listAuditLogs } from '@/features/audit/api';
 import type { AuditLog } from '@/features/audit/api';
+import { BsDateField } from '@/features/reports/BsDateField';
 import { ApiError } from '@/lib/api/client';
+import { formatDateTime } from '@/lib/dateTime';
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
-}
-
-function formatCreatedAt(value: string): string {
-  return new Date(value).toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' });
 }
 
 function JsonBlock({ value }: { value: Record<string, unknown> | null }) {
@@ -103,17 +101,17 @@ export function AuditPage() {
             onChange={(event) => resetPage(setTargetType, event.target.value)}
             placeholder={t('audit.targetTypePlaceholder')}
           />
-          <Input
-            label={t('audit.fromAd')}
-            type="date"
+          <BsDateField
+            id="audit-from"
+            label={t('audit.from')}
             value={dateFrom}
-            onChange={(event) => resetPage(setDateFrom, event.target.value)}
+            onChange={(value) => resetPage(setDateFrom, value)}
           />
-          <Input
-            label={t('audit.toAd')}
-            type="date"
+          <BsDateField
+            id="audit-to"
+            label={t('audit.to')}
             value={dateTo}
-            onChange={(event) => resetPage(setDateTo, event.target.value)}
+            onChange={(value) => resetPage(setDateTo, value)}
           />
         </div>
         {query.isFetching ? (
@@ -139,7 +137,7 @@ export function AuditPage() {
               <span className="text-muted-foreground">{row.target_type}</span>
               <span className="text-muted-foreground">{row.actor_name || t('audit.system')}</span>
               <span className="ml-auto text-xs text-muted-foreground">
-                {formatCreatedAt(row.created_at)}
+                {formatDateTime(row.created_at)}
               </span>
             </button>
             {expandedId === row.id ? <AuditDetail row={row} /> : null}

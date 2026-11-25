@@ -64,6 +64,19 @@ describe('AuditPage', () => {
     expect(screen.getByText(/1200\.00/)).toBeInTheDocument();
   });
 
+  it('filters by BS dates and keeps the filter while one is half typed', async () => {
+    fetchMock.mockImplementation(async () => page([row]));
+    renderAudit();
+    await screen.findByText('price.set');
+    const from = screen.getByLabelText('From (BS)');
+    fireEvent.change(from, { target: { value: '2083-04-18' } });
+    await waitFor(() => expect(String(fetchMock.mock.calls.at(-1)?.[0])).toContain('2026-08-03'));
+    const calls = fetchMock.mock.calls.length;
+    fireEvent.change(from, { target: { value: '2083-04-1' } });
+    expect(fetchMock.mock.calls).toHaveLength(calls);
+    expect(await screen.findByText('2083-04-18, 3:45 PM')).toBeInTheDocument();
+  });
+
   it('sends the action filter to the server', async () => {
     renderAudit();
     await screen.findByText('price.set');

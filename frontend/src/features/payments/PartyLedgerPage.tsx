@@ -21,6 +21,7 @@ import type { LedgerRow } from '@/features/payments/api';
 import { listSuppliers } from '@/features/purchasing/api';
 import type { Supplier } from '@/features/purchasing/api';
 import { ApiError } from '@/lib/api/client';
+import { adToBsText } from '@/lib/dateTime';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 type Party = 'customer' | 'supplier';
@@ -253,7 +254,7 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
               <span className="font-semibold tabular-nums">{formatNpr(row.balance)}</span>
             </div>
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
-              <span>{row.date}</span>
+              <span>{adToBsText(row.date)}</span>
               <span>{refLabel(row)}</span>
             </div>
             <div className="mt-1 flex gap-4 text-xs text-muted-foreground tabular-nums">
@@ -282,7 +283,7 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
           <TableBody>
             {rows.map((row, index) => (
               <TableRow key={`${row.date}-${row.kind}-${row.ref}-${index}`}>
-                <TableCell className="whitespace-nowrap">{row.date}</TableCell>
+                <TableCell className="whitespace-nowrap">{adToBsText(row.date)}</TableCell>
                 <TableCell>{kindLabel(row)}</TableCell>
                 <TableCell>{refLabel(row) || '—'}</TableCell>
                 <TableCell className="text-right tabular-nums">

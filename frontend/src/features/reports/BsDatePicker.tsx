@@ -1,5 +1,5 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
@@ -13,22 +13,8 @@ import {
   SUPPORTED_RANGE,
   toBsString,
 } from '@/lib/bs';
+import { shopAdDate } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
-
-const MONTHS = [
-  'Baisakh',
-  'Jestha',
-  'Ashadh',
-  'Shrawan',
-  'Bhadra',
-  'Ashwin',
-  'Kartik',
-  'Mangsir',
-  'Poush',
-  'Magh',
-  'Falgun',
-  'Chaitra',
-] as const;
 
 // The date tables end here; a month outside them cannot be drawn.
 const FIRST_MONTH = SUPPORTED_RANGE.from.slice(0, 7);
@@ -39,8 +25,7 @@ function monthFromValue(value: string): { year: number; month: number } {
     const parsed = parseBsString(value);
     return { year: parsed.year, month: parsed.month };
   } catch {
-    const todayAd = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kathmandu' });
-    const today = adToBs(todayAd);
+    const today = adToBs(shopAdDate());
     return { year: today.year, month: today.month };
   }
 }
@@ -50,23 +35,40 @@ function moveMonth(year: number, month: number, delta: number) {
   return { year: Math.floor(index / 12), month: (index % 12) + 1 };
 }
 
-interface BsDatePickerProps {
+export interface BsDatePickerProps {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  required?: boolean;
+  /** Why the value cannot be used; blocks the form and shows on leaving the field. */
+  invalidMessage?: string;
 }
 
 /** Editable BS input paired with a calendar-native BS day grid. */
-export function BsDatePicker({ id, label, value, onChange, className }: BsDatePickerProps) {
+export function BsDatePicker({
+  id,
+  label,
+  value,
+  onChange,
+  className,
+  required,
+  invalidMessage,
+}: BsDatePickerProps) {
   const { t } = useTranslation();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [left, setLeft] = useState(false);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => monthFromValue(value));
 
   useEffect(() => {
     if (open) setView(monthFromValue(value));
   }, [open, value]);
+
+  useEffect(() => {
+    inputRef.current?.setCustomValidity(invalidMessage ?? '');
+  }, [invalidMessage]);
 
   const monthDays = useMemo(() => daysInBsMonth(view.year, view.month), [view]);
   const firstWeekday = useMemo(() => {
@@ -84,22 +86,29 @@ export function BsDatePicker({ id, label, value, onChange, className }: BsDatePi
   const navigate = (delta: number) =>
     setView((current) => moveMonth(current.year, current.month, delta));
   const viewMonth = toBsString({ ...view, day: 1 }).slice(0, 7);
-  const monthName = MONTHS[view.month - 1];
+  const monthName = t(`common.bsMonths.${view.month}`);
 
   return (
     <div className={cn('flex items-end gap-1', className)}>
       <Input
+        ref={inputRef}
         id={id}
         label={label}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        required={required}
+        error={left ? invalidMessage : undefined}
+        onBlur={() => setLeft(true)}
+        onChange={(event) => {
+          setLeft(false);
+          onChange(event.target.value);
+        }}
         placeholder="2083-04-01"
         inputMode="numeric"
         className="w-36"
       />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="icon" aria-label={`Choose ${label}`}>
+          <Button variant="outline" size="icon" aria-label={t('reports.range.choose', { label })}>
             <CalendarDays aria-hidden="true" />
           </Button>
         </PopoverTrigger>
@@ -108,7 +117,7 @@ export function BsDatePicker({ id, label, value, onChange, className }: BsDatePi
             <Button
               variant="ghost"
               size="icon"
-              aria-label={t('reports.range.previousMonth', { defaultValue: 'Previous BS month' })}
+              aria-label={t('reports.range.previousMonth')}
               disabled={viewMonth <= FIRST_MONTH}
               onClick={() => navigate(-1)}
             >
@@ -120,7 +129,7 @@ export function BsDatePicker({ id, label, value, onChange, className }: BsDatePi
             <Button
               variant="ghost"
               size="icon"
-              aria-label={t('reports.range.nextMonth', { defaultValue: 'Next BS month' })}
+              aria-label={t('reports.range.nextMonth')}
               disabled={viewMonth >= LAST_MONTH}
               onClick={() => navigate(1)}
             >
@@ -128,9 +137,9 @@ export function BsDatePicker({ id, label, value, onChange, className }: BsDatePi
             </Button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
-            {(['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const).map((day) => (
+            {[0, 1, 2, 3, 4, 5, 6].map((day) => (
               <span key={day} aria-hidden="true" className="py-1">
-                {day}
+                {t(`common.weekdays.${day}`)}
               </span>
             ))}
           </div>

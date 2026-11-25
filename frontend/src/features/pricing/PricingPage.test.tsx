@@ -249,8 +249,8 @@ describe('PricingPage', () => {
       target: { value: 'category-1' },
     });
     fireEvent.change(screen.getByLabelText('Selling price'), { target: { value: '950.00' } });
-    fireEvent.change(screen.getByLabelText('Effective from'), {
-      target: { value: '2026-08-05' },
+    fireEvent.change(screen.getByLabelText('Effective from (BS)'), {
+      target: { value: '2083-04-20' },
     });
     fireEvent.change(screen.getByLabelText('Change reason'), {
       target: { value: 'Wholesale launch price' },
