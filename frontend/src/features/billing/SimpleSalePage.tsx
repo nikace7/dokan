@@ -16,7 +16,7 @@ import { ShareBillPanel } from '@/features/billing/ShareBillPanel';
 import { SimpleSaleLineCard } from '@/features/billing/SimpleSaleLineCard';
 import { SimpleSaleQuickPick } from '@/features/billing/SimpleSaleQuickPick';
 import { UnconfirmedSaleNotice } from '@/features/billing/UnconfirmedSaleNotice';
-import { grandTotalPaisa, linesValid } from '@/features/billing/simpleSaleModel';
+import { addVariant, grandTotalPaisa, linesValid } from '@/features/billing/simpleSaleModel';
 import type { SimpleLine } from '@/features/billing/simpleSaleModel';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
@@ -25,12 +25,12 @@ import { hasPermission } from '@/lib/permissions';
 import type { UnconfirmedSale } from '@/stores/cartStore';
 import { useSimpleSaleStore } from '@/stores/simpleSaleStore';
 
-function newLine(variant: VariantForSale): SimpleLine {
-  return { key: crypto.randomUUID(), variant, qty: '1', price: variant.mrp ?? '' };
-}
-
 function setLines(update: (current: SimpleLine[]) => SimpleLine[]) {
   useSimpleSaleStore.setState((state) => ({ lines: update(state.lines) }));
+}
+
+function pick(variant: VariantForSale) {
+  setLines((current) => addVariant(current, variant));
 }
 
 /**
@@ -175,19 +175,6 @@ export function SimpleSalePage() {
         </p>
       ) : null}
 
-      <fieldset disabled={locked} className="flex min-w-0 flex-col gap-3">
-        {lines.map((line) => (
-          <SimpleSaleLineCard
-            key={line.key}
-            line={line}
-            onChange={(key, patch) =>
-              setLines((current) => current.map((l) => (l.key === key ? { ...l, ...patch } : l)))
-            }
-            onRemove={(key) => setLines((current) => current.filter((l) => l.key !== key))}
-          />
-        ))}
-      </fieldset>
-
       <Button
         variant="outline"
         size="lg"
@@ -203,22 +190,33 @@ export function SimpleSalePage() {
         branchId={workspace.branchId}
         onOpenChange={setPickerOpen}
         onPick={(variant) => {
-          setLines((current) => [...current, newLine(variant)]);
+          pick(variant);
           setPickerOpen(false);
         }}
       />
 
-      {/* Quick-pick photo grid fills the otherwise empty page and lets the
-          counter tap items straight onto the bill; hidden while offline or
-          before the workspace resolves (the banners above explain why). */}
+      {/* Quick-pick tiles let the counter tap items straight onto the bill;
+          hidden while offline or before the workspace resolves (the banners
+          above explain why). They come before the lines, so a new line never
+          moves the tile that is about to be tapped again. */}
       {online && workspace.isReady && workspace.branchId ? (
         <fieldset disabled={locked} className="min-w-0">
-          <SimpleSaleQuickPick
-            branchId={workspace.branchId}
-            onPick={(variant) => setLines((current) => [...current, newLine(variant)])}
-          />
+          <SimpleSaleQuickPick branchId={workspace.branchId} lines={lines} onPick={pick} />
         </fieldset>
       ) : null}
+
+      <fieldset disabled={locked} className="flex min-w-0 flex-col gap-3">
+        {lines.map((line) => (
+          <SimpleSaleLineCard
+            key={line.key}
+            line={line}
+            onChange={(key, patch) =>
+              setLines((current) => current.map((l) => (l.key === key ? { ...l, ...patch } : l)))
+            }
+            onRemove={(key) => setLines((current) => current.filter((l) => l.key !== key))}
+          />
+        ))}
+      </fieldset>
 
       {/* In-flow spacer exactly the bar's height, so the last line and any
           error message stay scrollable clear of the fixed bar. */}

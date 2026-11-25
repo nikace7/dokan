@@ -20,6 +20,16 @@ export interface SimpleLine {
   price: string;
 }
 
+/** Put one piece on the bill: one more of an item already there, else a new line. */
+export function addVariant(lines: SimpleLine[], variant: VariantForSale): SimpleLine[] {
+  if (lines.some((line) => line.variant.id === variant.id)) {
+    return lines.map((line) =>
+      line.variant.id === variant.id ? { ...line, qty: String((Number(line.qty) || 0) + 1) } : line,
+    );
+  }
+  return [...lines, { key: crypto.randomUUID(), variant, qty: '1', price: variant.mrp ?? '' }];
+}
+
 /** Whole pieces on hand (`qty_on_hand` arrives as a decimal string). */
 export function stockQty(variant: VariantForSale): number {
   return Math.floor(Number(variant.qty_on_hand));
