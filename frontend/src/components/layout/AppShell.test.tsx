@@ -54,11 +54,11 @@ function me(features: Record<string, unknown>, perms: string[] = OWNER_PERMISSIO
   };
 }
 
-function renderShell() {
+function renderShell(path = '/') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route element={<AppShell />}>
             <Route path="*" element={null} />
@@ -222,6 +222,17 @@ describe('AppShell new-sale FAB', () => {
       expect(fab).toHaveAttribute('href', '/billing/simple');
     });
   });
+
+  it.each(['/billing', '/billing/simple'])(
+    'leaves the sale screen %s free of the FAB that covered Complete',
+    async (path) => {
+      features = { simple_sale: true, advanced_pos: true };
+      renderShell(path);
+
+      await screen.findAllByRole('link', { name: /billing/i });
+      expect(screen.queryByRole('link', { name: 'New sale' })).not.toBeInTheDocument();
+    },
+  );
 });
 
 describe('AppShell permission-aware nav', () => {

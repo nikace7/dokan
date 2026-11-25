@@ -1,7 +1,7 @@
 import { LogOut, Menu, Plus } from 'lucide-react';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import brandMark from '@/assets/brand-mark.webp';
 import { CurrencyToggle } from '@/components/layout/CurrencyToggle';
@@ -219,15 +219,19 @@ function MobileTab({ item }: { item: NavItem }) {
   );
 }
 
+const SALE_PATHS = ['/billing', '/billing/simple'];
+
 /**
  * Raised center FAB in the mobile tab bar — the counter's "new sale" action.
  * Targets billingPath(user), so it follows the tenant's POS plan mode.
  * Hidden without sale.create: a viewer-only role gets no dead-end button.
+ * Hidden on the sale screens, where it covered the bottom of "Complete".
  */
 function NewSaleFab() {
   const { user } = useAuth();
   const { t } = useTranslation();
-  if (!hasPermission(user, 'sale.create')) {
+  const { pathname } = useLocation();
+  if (!hasPermission(user, 'sale.create') || SALE_PATHS.includes(pathname)) {
     return null;
   }
   return (
