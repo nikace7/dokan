@@ -267,6 +267,12 @@
       "queuedAt": "queued {{time}}",
       "serverSaid": "Server said: {{message}}",
       "failedExplain": "The sale never happened server-side. Discard it here and re-ring it at the counter if the customer still wants it."
+    },
+    "line": {
+      "decrease": "Decrease quantity of {{name}}",
+      "increase": "Increase quantity of {{name}}",
+      "remove": "Remove {{name}}",
+      "discount": "Discount for {{name}}"
     }
   },
   "simpleSale": {

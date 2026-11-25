@@ -59,7 +59,9 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
           variant="ghost"
           size="sm"
           className="text-destructive"
-          aria-label={`Remove ${variant.item_name} ${variant.size} ${variant.color}`}
+          aria-label={t('billing.line.remove', {
+            name: `${variant.item_name} ${variant.size} ${variant.color}`,
+          })}
           onClick={() => onRemove(line.key)}
         >
           {t('common.remove')}
