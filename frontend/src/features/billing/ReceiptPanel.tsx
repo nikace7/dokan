@@ -41,6 +41,8 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
   const [printError, setPrintError] = useState<string | null>(null);
   const printInFlight = useRef(false);
   const invoiceNumber = billNumber(invoice);
+  // After a sale the receipt is the whole screen; a bill's page has its own heading.
+  const ShopName = onNewBill ? 'h1' : 'p';
   // Every print is recorded for the "Copy N" marker, which needs sale.create;
   // a view-only role (accountant) reads the receipt but does not print it.
   const canPrint = hasPermission(useAuth().user, 'sale.create');
@@ -70,7 +72,7 @@ export function ReceiptPanel({ invoice, onNewBill }: ReceiptPanelProps) {
         </div>
       ) : null}
       <div className="text-center">
-        <p className="text-xl font-bold">{invoice.tenant_name}</p>
+        <ShopName className="text-xl font-bold">{invoice.tenant_name}</ShopName>
         {invoice.tenant_name_np ? <p className="font-medium">{invoice.tenant_name_np}</p> : null}
         {invoice.legal_name ? <p className="text-xs">{invoice.legal_name}</p> : null}
         <p className="text-xs">

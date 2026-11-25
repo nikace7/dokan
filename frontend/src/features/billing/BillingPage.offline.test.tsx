@@ -123,7 +123,9 @@ describe('BillingPage offline', () => {
 
     // Offline receipt: provisional reference, never an invoice number.
     expect(await screen.findByText('No connection — bill queued')).toBeInTheDocument();
-    expect(screen.getByText(/^Reference OFF-[0-9A-F]{8}$/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: /^Reference OFF-[0-9A-F]{8}$/ }),
+    ).toBeInTheDocument();
 
     // The queued op reuses the exact Idempotency-Key the failed attempt sent.
     const saleCall = fetchMock.mock.calls.find(
