@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getSharedBill } from '@/features/billing/api';
+import { billNumber, getSharedBill } from '@/features/billing/api';
 import type { SharedBill } from '@/features/billing/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
@@ -81,7 +81,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function BillCard({ bill }: { bill: SharedBill }) {
   const { t } = useTranslation();
-  const invoiceNumber = `${bill.doc_type === 'RETURN' ? 'RET' : bill.invoice_prefix}-${bill.invoice_no}`;
+  const invoiceNumber = billNumber(bill);
   return (
     <Card>
       <div className="text-center">

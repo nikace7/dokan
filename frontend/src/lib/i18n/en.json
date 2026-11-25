@@ -310,10 +310,10 @@
     },
     "search": {
       "label": "Bill no.",
-      "placeholder": "e.g. 42",
+      "placeholder": "e.g. INV-42",
       "button": "Find",
       "clear": "Clear",
-      "invalid": "Enter a whole bill number."
+      "invalid": "Enter a bill number, like INV-42."
     },
     "columns": {
       "number": "Bill no.",
@@ -626,11 +626,11 @@
     "recorded": "Return recorded.",
     "search": {
       "label": "Invoice no.",
-      "placeholder": "e.g. 42",
+      "placeholder": "e.g. INV-42",
       "button": "Find",
       "clear": "Show all",
       "empty": "No completed sale with invoice {{number}}.",
-      "invalid": "Enter a whole invoice number."
+      "invalid": "Enter a bill number, like INV-42."
     },
     "editor": {
       "loadingLines": "Loading returnable lines…",

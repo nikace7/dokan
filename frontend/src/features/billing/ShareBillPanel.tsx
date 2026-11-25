@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { toast } from '@/components/ui/sonner';
-import { shareSale } from '@/features/billing/api';
+import { billNumber, shareSale } from '@/features/billing/api';
 import type { SalesInvoice } from '@/features/billing/api';
 import { ApiError } from '@/lib/api/client';
 
@@ -53,7 +53,7 @@ export function ShareBillPanel({ invoice }: ShareBillPanelProps) {
       try {
         await navigator.share({
           title: t('share.billTitle', {
-            number: `${invoice.invoice_prefix}-${invoice.invoice_no}`,
+            number: billNumber(invoice),
           }),
           url: link,
         });

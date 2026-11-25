@@ -5,6 +5,7 @@ import type { SalesInvoice } from '@/features/billing/api';
 export interface SaleSummary {
   id: string;
   branch_code: string;
+  invoice_prefix: string;
   invoice_no: number | null;
   doc_type: 'SALE' | 'RETURN' | 'EXCHANGE_OUT';
   customer_name: string | null;

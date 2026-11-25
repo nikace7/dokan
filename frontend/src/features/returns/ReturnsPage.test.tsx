@@ -38,6 +38,7 @@ const sale = {
   id: 'sale-1',
   branch: 'branch-1',
   branch_code: 'MAIN',
+  invoice_prefix: 'INV',
   invoice_no: 1,
   doc_type: 'SALE',
   customer: 'customer-1',
@@ -92,7 +93,7 @@ describe('ReturnsPage', () => {
   it('loads a completed sale and its returnable lines', async () => {
     renderReturns();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Invoice 1/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Invoice INV-1/ }));
 
     expect(await screen.findByText('Basic T-shirt')).toBeInTheDocument();
     expect(screen.getByText('TSHIRT-M-BLK')).toBeInTheDocument();
@@ -100,7 +101,7 @@ describe('ReturnsPage', () => {
 
   it('records selected return lines with a required reason', async () => {
     renderReturns();
-    fireEvent.click(await screen.findByRole('button', { name: /Invoice 1/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Invoice INV-1/ }));
     await screen.findByText('Basic T-shirt');
 
     fireEvent.change(screen.getByLabelText('Return quantity for Basic T-shirt'), {
@@ -118,9 +119,23 @@ describe('ReturnsPage', () => {
     expect(await screen.findByText('Return recorded.')).toBeInTheDocument();
   });
 
+  it.each(['7', 'INV-7', ' inv-7 '])('finds the bill people read as %s', async (typed) => {
+    renderReturns();
+    await screen.findByRole('button', { name: /Invoice INV-1/ });
+    fireEvent.change(screen.getByLabelText('Invoice no.'), { target: { value: typed } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/invoice_no=7$/),
+        expect.anything(),
+      ),
+    );
+  });
+
   it('searches a completed sale by invoice number and clears back to the list', async () => {
     renderReturns();
-    await screen.findByRole('button', { name: /Invoice 1/ });
+    await screen.findByRole('button', { name: /Invoice INV-1/ });
 
     fireEvent.change(screen.getByLabelText('Invoice no.'), { target: { value: '7' } });
     fireEvent.click(screen.getByRole('button', { name: 'Find' }));
@@ -141,12 +156,13 @@ describe('ReturnsPage', () => {
     });
   });
 
-  it('rejects a non-numeric invoice search', async () => {
+  // RET-7 is a credit note: looking up bill 7 for it would return the wrong sale.
+  it.each(['abc', 'RET-7'])('rejects %s as a bill to return', async (typed) => {
     renderReturns();
-    fireEvent.change(screen.getByLabelText('Invoice no.'), { target: { value: 'abc' } });
+    fireEvent.change(screen.getByLabelText('Invoice no.'), { target: { value: typed } });
     fireEvent.click(screen.getByRole('button', { name: 'Find' }));
 
-    expect(await screen.findByText('Enter a whole invoice number.')).toBeInTheDocument();
+    expect(await screen.findByText('Enter a bill number, like INV-42.')).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringContaining('invoice_no'),
       expect.anything(),

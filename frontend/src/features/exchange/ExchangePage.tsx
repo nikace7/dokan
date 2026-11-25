@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
+import { billNumber } from '@/features/billing/api';
 import {
   createExchange,
   getReturnableLines,
@@ -315,7 +316,7 @@ export function ExchangePage() {
               className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
               <span className="font-medium">
-                {t('exchange.invoice', { number: sale.invoice_no ?? '—' })}
+                {t('exchange.invoice', { number: billNumber(sale) ?? '—' })}
               </span>
               <span className="text-muted-foreground">
                 {sale.customer_name || t('common.walkIn')}

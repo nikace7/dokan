@@ -112,6 +112,7 @@ const allocationInvoice = {
   id: 'invoice-1',
   branch: 'branch-1',
   branch_code: 'MAIN',
+  invoice_prefix: 'INV',
   invoice_no: 1001,
   customer: customer.id,
   customer_name: customer.name,
@@ -246,7 +247,7 @@ describe('PaymentsPage', () => {
     });
     fireEvent.click(await screen.findByRole('button', { name: /Sita Rai\s*9800000000/i }));
     fireEvent.change(screen.getAllByLabelText('Amount (NPR)')[0], { target: { value: '2500' } });
-    const allocation = await screen.findByLabelText('Allocation for invoice 1001');
+    const allocation = await screen.findByLabelText('Allocation for invoice INV-1001');
     expect(allocation).toHaveAttribute('max', '3000.00');
     fireEvent.change(allocation, {
       target: { value: '2500' },
