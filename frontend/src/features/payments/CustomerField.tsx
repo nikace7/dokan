@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import type { Customer } from '@/features/billing/api';
 import { searchCustomers } from '@/features/payments/api';
+import { useDebounced } from '@/lib/useDebounced';
 
 /** Customer autocomplete for the receipt form: search input, or the selected party chip. */
 export function CustomerField({
@@ -21,10 +22,11 @@ export function CustomerField({
   onClear: () => void;
 }) {
   const { t } = useTranslation();
+  const term = useDebounced(search);
   const query = useQuery({
-    queryKey: ['payments', 'customers', search],
-    queryFn: () => searchCustomers(search),
-    enabled: search.trim().length >= 2 && !customer,
+    queryKey: ['payments', 'customers', term],
+    queryFn: () => searchCustomers(term),
+    enabled: term.length >= 2 && !customer,
     staleTime: 30_000,
   });
 

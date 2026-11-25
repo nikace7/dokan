@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { searchCustomers } from '@/features/billing/api';
+import { useDebounced } from '@/lib/useDebounced';
 import { useCartStore } from '@/stores/cartStore';
 
 /**
@@ -14,11 +15,12 @@ export function CustomerPicker() {
   const customer = useCartStore((s) => s.customer);
   const setCustomer = useCartStore((s) => s.setCustomer);
   const [search, setSearch] = useState('');
+  const term = useDebounced(search);
 
   const query = useQuery({
-    queryKey: ['customers', 'search', search],
-    queryFn: () => searchCustomers(search),
-    enabled: search.trim().length >= 2,
+    queryKey: ['customers', 'search', term],
+    queryFn: () => searchCustomers(term),
+    enabled: term.length >= 2,
     staleTime: 30_000,
   });
 

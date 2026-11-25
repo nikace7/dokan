@@ -25,6 +25,7 @@ import { listPricingRateTypes } from '@/features/pricing/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
+import { useDebounced } from '@/lib/useDebounced';
 
 type StatusFilter = 'active' | 'inactive' | 'all';
 
@@ -37,15 +38,16 @@ export function CustomersPage() {
   const canViewPricing = hasPermission(user, 'pricing.view');
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const term = useDebounced(search);
   const [status, setStatus] = useState<StatusFilter>('active');
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Customer | 'new' | null>(null);
 
   const customers = useQuery({
-    queryKey: ['customers', 'list', search.trim(), status, page],
+    queryKey: ['customers', 'list', term, status, page],
     queryFn: () =>
       listCustomers({
-        search: search.trim() || undefined,
+        search: term || undefined,
         isActive: status === 'all' ? undefined : status === 'active',
         page,
       }),

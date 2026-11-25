@@ -7,6 +7,7 @@ import { listVariants, searchItems } from '@/features/catalog/api';
 import type { Item, ItemVariant } from '@/features/catalog/api';
 import { ItemImage } from '@/features/catalog/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { useDebounced } from '@/lib/useDebounced';
 
 export interface PickedVariant {
   id: string;
@@ -50,13 +51,14 @@ interface VariantPickerProps {
 export function VariantPicker({ onPick, placeholder }: VariantPickerProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
+  const term = useDebounced(search);
   const [item, setItem] = useState<Item | null>(null);
   useMoneyDisplay();
 
   const itemsQuery = useQuery({
-    queryKey: ['catalog', 'items', 'picker', search],
-    queryFn: () => searchItems(search),
-    enabled: !item && search.trim().length >= 2,
+    queryKey: ['catalog', 'items', 'picker', term],
+    queryFn: () => searchItems(term),
+    enabled: !item && term.length >= 2,
     staleTime: 30_000,
   });
 

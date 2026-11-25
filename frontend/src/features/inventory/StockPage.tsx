@@ -24,6 +24,7 @@ import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 import { hasPlanFeature } from '@/lib/plans';
 import { formatQty } from '@/lib/quantity';
+import { useDebounced } from '@/lib/useDebounced';
 import { cn } from '@/lib/utils';
 
 type Dialog = 'opening' | 'adjustment' | 'write-off' | null;
@@ -33,6 +34,7 @@ export function StockPage() {
   const { user, isRestoring } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const term = useDebounced(search);
   const [page, setPage] = useState(1);
   const [movementPage, setMovementPage] = useState(1);
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -41,10 +43,9 @@ export function StockPage() {
   const canView = hasPermission(user, 'stock.view');
   const canAdjust = hasPermission(user, 'stock.adjust');
   const canTransfer = hasPlanFeature(user, 'multi_branch');
-
   const levelsQuery = useQuery({
-    queryKey: ['inventory', 'levels', search, page],
-    queryFn: () => listLevels({ search: search.trim() || undefined, page }),
+    queryKey: ['inventory', 'levels', term, page],
+    queryFn: () => listLevels({ search: term || undefined, page }),
     enabled: canView,
   });
   const movementsQuery = useQuery({
