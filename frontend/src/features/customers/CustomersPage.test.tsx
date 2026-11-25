@@ -198,7 +198,7 @@ describe('CustomersPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('This customer still owes Rs 500.');
   });
 
-  it('loads the customer being edited when switching without closing the form', async () => {
+  it('opens the form over the list and keeps typed details on a tap outside', async () => {
     const other = { ...customer, id: 'customer-2', name: 'Hari Thapa', phone: '9800000001' };
     fetchMock.mockImplementation((input) => {
       const url = String(input);
@@ -213,13 +213,26 @@ describe('CustomersPage', () => {
     const [editSita, editHari] = within(screen.getByRole('table')).getAllByRole('button', {
       name: 'Edit',
     });
+    const name = () => screen.getByLabelText('Customer name');
 
     fireEvent.click(editSita);
-    expect(screen.getByLabelText('Customer name')).toHaveValue('Sita Rai');
+    const dialog = screen.getByRole('dialog', { name: 'Edit customer' });
+    expect(within(dialog).getByLabelText('Customer name')).toHaveValue('Sita Rai');
+    fireEvent.change(name(), { target: { value: 'Sita R.' } });
+    // Radix starts watching for outside taps a tick after the dialog opens.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fireEvent.pointerDown(document.body);
+    fireEvent.click(document.body);
+    expect(name()).toHaveValue('Sita R.');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     fireEvent.click(editHari);
-    expect(screen.getByLabelText('Customer name')).toHaveValue('Hari Thapa');
+    expect(name()).toHaveValue('Hari Thapa');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     fireEvent.click(screen.getByRole('button', { name: 'New customer' }));
-    expect(screen.getByLabelText('Customer name')).toHaveValue('');
+    expect(screen.getByRole('dialog', { name: 'New customer' })).toBeInTheDocument();
+    expect(name()).toHaveValue('');
   });
 
   it('renders khata quick actions for an active customer', async () => {

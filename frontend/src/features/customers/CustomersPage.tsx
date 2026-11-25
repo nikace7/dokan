@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/Input';
 import {
   Table,
@@ -78,16 +79,6 @@ export function CustomersPage() {
           canManage ? <Button onClick={() => setEditing('new')}>{t('customers.new')}</Button> : null
         }
       >
-        {editing && canManage ? (
-          <CustomerForm
-            key={editing === 'new' ? 'new' : editing.id}
-            customer={editing === 'new' ? undefined : editing}
-            canSetCredit={canSetCredit}
-            rates={rates.data?.data ?? []}
-            onDone={() => setEditing(null)}
-          />
-        ) : null}
-
         <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px]">
           <Input
             aria-label={t('customers.searchAria')}
@@ -149,6 +140,29 @@ export function CustomersPage() {
         ) : null}
         <Pager page={page} totalPages={customers.data?.meta?.total_pages ?? 1} onPage={setPage} />
       </Card>
+
+      {editing && canManage ? (
+        <Dialog open onOpenChange={() => setEditing(null)}>
+          <DialogContent
+            className="max-w-2xl"
+            aria-describedby={undefined}
+            // A stray tap beside the form must not throw away what was typed.
+            onInteractOutside={(event) => event.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle>
+                {editing === 'new' ? t('customers.new') : t('customers.editTitle')}
+              </DialogTitle>
+            </DialogHeader>
+            <CustomerForm
+              customer={editing === 'new' ? undefined : editing}
+              canSetCredit={canSetCredit}
+              rates={rates.data?.data ?? []}
+              onDone={() => setEditing(null)}
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </main>
   );
 }
