@@ -2,7 +2,12 @@
 
 from django.urls import path
 
-from apps.sales.return_views import ExchangeCreateView, ReturnableLinesView, ReturnCreateView
+from apps.sales.return_views import (
+    ExchangeCreateView,
+    ReturnableLinesView,
+    ReturnCreateView,
+    ReturnQuoteView,
+)
 from apps.sales.views import (
     CancelBillView,
     CompleteBillView,
@@ -29,5 +34,6 @@ urlpatterns = [
     path("sales/<uuid:pk>/cancel", CancelBillView.as_view(), name="sale-cancel"),
     path("sales/returns", ReturnCreateView.as_view(), name="sale-return"),
     path("sales/exchanges", ExchangeCreateView.as_view(), name="sale-exchange"),
+    path("sales/<uuid:pk>/return-quote", ReturnQuoteView.as_view(), name="sale-return-quote"),
     path("sales/<uuid:pk>/returnable", ReturnableLinesView.as_view(), name="sale-returnable"),
 ]
