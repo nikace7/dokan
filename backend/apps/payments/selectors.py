@@ -163,21 +163,24 @@ def customer_ledger(tenant: "Tenant", customer: "Customer") -> list[LedgerRow]:
     """Chronological running-balance khata for a customer.
 
     Debit = they owe more (sale), credit = they owe less (receipt,
-    credit note). Starts from the opening balance.
+    credit note). Starts from the opening balance. `ref` is the printed bill
+    number, or the method of a payment; the screen words the rest.
     """
     events: list[tuple[Any, str, str, Decimal, Decimal]] = [
-        (customer.created_at, "OPENING", "Opening balance", customer.opening_balance, _ZERO)
+        (customer.created_at, "OPENING", "", customer.opening_balance, _ZERO)
     ]
-    sales = SalesInvoice.objects.filter(
-        tenant=tenant,
-        customer=customer,
-        doc_type=SalesInvoice.DocType.SALE,
-        status=SalesInvoice.Status.COMPLETED,
-    ).exclude(due_amount=_ZERO)
-    for invoice in sales:
-        events.append(
-            (invoice.created_at, "SALE", f"Bill {invoice.invoice_no}", invoice.due_amount, _ZERO)
+    sales = (
+        SalesInvoice.objects.filter(
+            tenant=tenant,
+            customer=customer,
+            doc_type=SalesInvoice.DocType.SALE,
+            status=SalesInvoice.Status.COMPLETED,
         )
+        .exclude(due_amount=_ZERO)
+        .select_related("branch")
+    )
+    for invoice in sales:
+        events.append((invoice.created_at, "SALE", invoice.number, invoice.due_amount, _ZERO))
     returns = SalesInvoice.objects.filter(
         tenant=tenant, customer=customer, doc_type=SalesInvoice.DocType.RETURN
     )
@@ -191,16 +194,12 @@ def customer_ledger(tenant: "Tenant", customer: "Customer") -> list[LedgerRow]:
             _ZERO,
         )
         if credit > _ZERO:
-            events.append(
-                (invoice.created_at, "CREDIT_NOTE", f"Return {invoice.invoice_no}", _ZERO, credit)
-            )
+            events.append((invoice.created_at, "CREDIT_NOTE", invoice.number, _ZERO, credit))
     receipts = Payment.objects.filter(
         tenant=tenant, customer=customer, direction=Payment.Direction.RECEIPT
     )
     for payment in receipts:
-        events.append(
-            (payment.created_at, "RECEIPT", f"{payment.method} receipt", _ZERO, payment.amount)
-        )
+        events.append((payment.created_at, "RECEIPT", payment.method, _ZERO, payment.amount))
 
     events.sort(key=lambda e: (e[0], e[1]))
     rows: list[LedgerRow] = []
@@ -223,28 +222,20 @@ def customer_ledger(tenant: "Tenant", customer: "Customer") -> list[LedgerRow]:
 def supplier_ledger(tenant: "Tenant", supplier: "Supplier") -> list[LedgerRow]:
     """Chronological running-balance khata for a supplier."""
     events: list[tuple[Any, str, str, Decimal, Decimal]] = [
-        (supplier.created_at, "OPENING", "Opening balance", supplier.opening_balance, _ZERO)
+        (supplier.created_at, "OPENING", "", supplier.opening_balance, _ZERO)
     ]
     purchases = PurchaseInvoice.objects.filter(
         tenant=tenant, supplier=supplier, status=PurchaseInvoice.Status.CONFIRMED
     ).exclude(due_amount=_ZERO)
     for invoice in purchases:
         events.append(
-            (
-                invoice.created_at,
-                "PURCHASE",
-                f"Bill {invoice.invoice_no}",
-                invoice.due_amount,
-                _ZERO,
-            )
+            (invoice.created_at, "PURCHASE", str(invoice.invoice_no), invoice.due_amount, _ZERO)
         )
     payments = Payment.objects.filter(
         tenant=tenant, supplier=supplier, direction=Payment.Direction.PAYMENT
     )
     for payment in payments:
-        events.append(
-            (payment.created_at, "PAYMENT", f"{payment.method} payment", _ZERO, payment.amount)
-        )
+        events.append((payment.created_at, "PAYMENT", payment.method, _ZERO, payment.amount))
 
     events.sort(key=lambda e: (e[0], e[1]))
     rows: list[LedgerRow] = []

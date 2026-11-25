@@ -276,7 +276,7 @@ def _create_return_invoice(
             created_by=created_by,
             ref_type="sales_invoice",
             ref_id=invoice.pk,
-            note=f"Return of {original.invoice_no}: {reason}",
+            note=f"Return of {original.number}: {reason}",
             business_date=business_date,
         )
         SalesInvoiceItem.objects.create(
