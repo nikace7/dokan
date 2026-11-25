@@ -86,8 +86,42 @@ const newVariant = {
   image_url: '/media/tenants/t1/items/jeans.png',
 };
 
+let newPrice = 2000;
+
+function quote() {
+  const returned = 900;
+  return {
+    return_total: returned.toFixed(2),
+    new_total: newPrice.toFixed(2),
+    to_collect: Math.max(0, newPrice - returned).toFixed(2),
+    to_refund: Math.max(0, returned - newPrice).toFixed(2),
+    max_credit_note: '0.00',
+  };
+}
+
+async function swap() {
+  renderExchange();
+  fireEvent.click(await screen.findByRole('button', { name: /Invoice INV-1/ }));
+  await screen.findByText('Basic T-shirt');
+  fireEvent.change(screen.getByLabelText('Return quantity for Basic T-shirt'), {
+    target: { value: '1' },
+  });
+  fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Wrong size' } });
+  fireEvent.change(screen.getByLabelText('New item code'), { target: { value: '8902' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Add item' }));
+  await screen.findByText('Jeans');
+}
+
+async function recorded() {
+  fireEvent.click(screen.getByRole('button', { name: 'Record exchange' }));
+  await screen.findByText('Exchange recorded.');
+  const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/v1/sales/exchanges'));
+  return JSON.parse(String(call?.[1]?.body));
+}
+
 describe('ExchangePage', () => {
   beforeEach(() => {
+    newPrice = 2000;
     vi.stubGlobal('fetch', fetchMock);
     setTokens({ access: 'a', refresh: 'r' });
     fetchMock.mockImplementation(async (input, init) => {
@@ -95,6 +129,7 @@ describe('ExchangePage', () => {
       if (url.includes('/v1/sales?')) return page([sale]);
       if (url.endsWith('/v1/sales/sale-1/returnable')) return envelope([returnedLine]);
       if (url.includes('/v1/catalog/variants/lookup?')) return envelope(newVariant);
+      if (url.endsWith('/v1/sales/sale-1/return-quote')) return envelope(quote());
       if (url.endsWith('/v1/sales/exchanges')) return envelope({ sale_invoice: sale }, 201);
       throw new Error(`Unhandled request: ${url} ${init?.method ?? 'GET'}`);
     });
@@ -107,28 +142,42 @@ describe('ExchangePage', () => {
   });
 
   it('adds a new item and records an atomic exchange', async () => {
-    renderExchange();
-    fireEvent.click(await screen.findByRole('button', { name: /Invoice INV-1/ }));
-    await screen.findByText('Basic T-shirt');
-
-    fireEvent.change(screen.getByLabelText('Return quantity for Basic T-shirt'), {
-      target: { value: '1' },
-    });
-    fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Wrong size' } });
-    fireEvent.change(screen.getByLabelText('New item code'), { target: { value: '8902' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Add item' }));
-
-    expect(await screen.findByText('Jeans')).toBeInTheDocument();
+    await swap();
     const linePhoto = screen.getByRole('img', { name: 'Jeans' });
     expect(linePhoto).toHaveAttribute('src', '/media/tenants/t1/items/jeans.png');
-    fireEvent.click(screen.getByRole('button', { name: 'Record exchange' }));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/v1/sales/exchanges'),
-        expect.objectContaining({ method: 'POST' }),
-      );
-    });
-    expect(await screen.findByText('Exchange recorded.')).toBeInTheDocument();
+    expect(await screen.findByText('Customer pays रू 1,100.00')).toBeInTheDocument();
+    expect(screen.getByText('Returned: रू 900.00 · New items: रू 2,000.00')).toBeInTheDocument();
+    expect(screen.getByLabelText('Customer pays (रू)')).toHaveValue('1100.00');
+    expect((await recorded()).payments).toEqual([{ method: 'CASH', amount: '1100.00' }]);
+  });
+
+  it('says how much to give back, and takes no payment', async () => {
+    newPrice = 700;
+    await swap();
+
+    expect(await screen.findByText('Give back रू 200.00 in cash')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Customer pays (रू)')).not.toBeInTheDocument();
+    expect((await recorded()).payments).toEqual([]);
+  });
+
+  it('says when nothing changes hands', async () => {
+    newPrice = 900;
+    await swap();
+
+    expect(await screen.findByText('Nothing to pay or give back')).toBeInTheDocument();
+    expect((await recorded()).payments).toEqual([]);
+  });
+
+  it('cannot be recorded until the difference is known', async () => {
+    await swap();
+    await screen.findByText('Customer pays रू 1,100.00');
+
+    fireEvent.change(screen.getByLabelText('New quantity for Jeans'), { target: { value: '2' } });
+
+    expect(screen.getByRole('button', { name: 'Record exchange' })).toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Record exchange' })).toBeEnabled(),
+    );
   });
 });
