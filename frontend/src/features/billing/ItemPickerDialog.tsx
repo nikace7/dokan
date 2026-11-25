@@ -13,9 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { searchVariantsForSale } from '@/features/billing/api';
 import type { VariantForSale } from '@/features/billing/api';
-import { ItemImage } from '@/features/catalog/ui';
-import { formatNpr, useMoneyDisplay } from '@/lib/money';
-import { cn } from '@/lib/utils';
+import { SaleItemTile } from '@/features/billing/SaleItemTile';
 
 const DEBOUNCE_MS = 300;
 
@@ -27,8 +25,8 @@ interface ItemPickerDialogProps {
 }
 
 /**
- * Searchable in-stock item picker for the simple sale, rendered as a photo
- * grid. Only rows with stock on hand come back from
+ * Searchable in-stock item picker for the simple sale, rendered as a grid
+ * of tiles. Only rows with stock on hand come back from
  * `GET /catalog/variants/for-sale`; picking a cell hands the whole variant
  * (with its price bounds) to the caller.
  */
@@ -36,7 +34,6 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
-  useMoneyDisplay();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(search.trim()), DEBOUNCE_MS);
@@ -83,7 +80,6 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
             >
               {[0, 1, 2, 3, 4, 5].map((n) => (
                 <div key={n} className="flex flex-col gap-2 rounded-md border border-border p-2">
-                  <Skeleton className="aspect-square h-auto w-full" />
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-1/2" />
                 </div>
@@ -100,34 +96,7 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {rows.map((row) => (
-                <button
-                  key={row.id}
-                  type="button"
-                  className={cn(
-                    'flex flex-col gap-1 rounded-md border border-border p-2 text-left',
-                    'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  )}
-                  onClick={() => onPick(row)}
-                >
-                  <ItemImage
-                    imageUrl={row.image_url}
-                    alt={row.item_name}
-                    className="aspect-square h-auto w-full"
-                  />
-                  <span className="block truncate text-sm font-medium">
-                    {row.item_name}
-                    <span className="text-muted-foreground">
-                      {' '}
-                      — {row.size} / {row.color}
-                    </span>
-                  </span>
-                  {row.mrp ? (
-                    <span className="text-sm font-bold tabular-nums">{formatNpr(row.mrp)}</span>
-                  ) : null}
-                  <span className="text-xs text-muted-foreground">
-                    {t('common.stock', { qty: row.qty_on_hand })}
-                  </span>
-                </button>
+                <SaleItemTile key={row.id} variant={row} onPick={onPick} />
               ))}
             </div>
           )}
