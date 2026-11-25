@@ -37,7 +37,7 @@ export function TenderBadges({ bill }: { bill: Pick<BillSummary, 'tenders' | 'du
     <span className="inline-flex flex-wrap gap-1">
       {methods.map((method) => (
         <Badge key={method} variant="secondary">
-          {method}
+          {t(`common.methods.${method}`, { defaultValue: method })}
         </Badge>
       ))}
       {hasDue ? <Badge variant="outline">{t('bills.credit')}</Badge> : null}

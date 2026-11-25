@@ -186,7 +186,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
         >
           {METHODS.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {t(`common.methods.${option}`)}
             </option>
           ))}
         </select>

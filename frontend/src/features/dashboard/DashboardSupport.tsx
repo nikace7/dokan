@@ -87,7 +87,7 @@ export function RecentBills({
                 {bill.tender_methods.length > 0 ? (
                   bill.tender_methods.map((method) => (
                     <Badge key={method} variant="secondary">
-                      {method}
+                      {t(`common.methods.${method}`, { defaultValue: method })}
                     </Badge>
                   ))
                 ) : (

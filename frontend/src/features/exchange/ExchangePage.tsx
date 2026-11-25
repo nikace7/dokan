@@ -202,7 +202,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
           >
             {PAYMENT_METHODS.map((method) => (
               <option key={method} value={method}>
-                {method}
+                {t(`common.methods.${method}`)}
               </option>
             ))}
           </select>

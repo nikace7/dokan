@@ -202,7 +202,7 @@ describe('PaymentsPage', () => {
 
     await screen.findAllByText('Khata collection');
     const badges = screen
-      .getAllByText('CASH')
+      .getAllByText('Cash')
       .filter((element) => element.className.includes('rounded-full'));
     expect(badges.length).toBeGreaterThan(0);
   });

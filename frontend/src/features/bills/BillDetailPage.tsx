@@ -201,7 +201,7 @@ function BillCalculation({ bill }: { bill: SalesInvoice }) {
         {bill.tenders.map((tender, index) => (
           <Line
             key={`${tender.method}-${index}`}
-            label={`· ${tender.method}`}
+            label={`· ${t(`common.methods.${tender.method}`, { defaultValue: tender.method })}`}
             value={money(tender.amount)}
             muted
           />

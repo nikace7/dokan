@@ -157,7 +157,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         >
           {METHODS.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {t(`common.methods.${option}`)}
             </option>
           ))}
         </select>
@@ -201,7 +201,9 @@ function PaymentList({ payments }: { payments: Payment[] }) {
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground">
               <span>{payment.business_date_bs}</span>
-              <Badge variant="outline">{payment.method}</Badge>
+              <Badge variant="outline">
+                {t(`common.methods.${payment.method}`, { defaultValue: payment.method })}
+              </Badge>
               <span>{payment.note || '—'}</span>
             </div>
           </li>
@@ -224,7 +226,9 @@ function PaymentList({ payments }: { payments: Payment[] }) {
                 <TableCell className="whitespace-nowrap">{payment.business_date_bs}</TableCell>
                 <TableCell className="font-medium">{payment.customer_name || '—'}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{payment.method}</Badge>
+                  <Badge variant="outline">
+                    {t(`common.methods.${payment.method}`, { defaultValue: payment.method })}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{payment.note || '—'}</TableCell>
                 <TableCell className="text-right font-semibold tabular-nums">
@@ -302,7 +306,7 @@ export function PaymentsPage() {
                 <option value="">{t('payments.allMethods')}</option>
                 {METHODS.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {t(`common.methods.${option}`)}
                   </option>
                 ))}
               </select>

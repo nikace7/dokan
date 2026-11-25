@@ -53,7 +53,9 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
     />
   );
   return (
-    <Card title={`${transfer.status} · ${transfer.created_by_name ?? t('inventory.system')}`}>
+    <Card
+      title={`${t(`inventory.transfers.status.${transfer.status}`)} · ${transfer.created_by_name ?? t('inventory.system')}`}
+    >
       <h2 className="text-lg font-semibold">
         {transfer.from_branch_code} → {transfer.to_branch_code}
       </h2>
@@ -86,8 +88,8 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
               <div className="flex shrink-0 flex-col items-end gap-1 text-right">
                 <p className="tabular-nums">
                   {t('inventory.transfers.sentReceived', {
-                    sent: item.qty_sent,
-                    received: item.qty_received ?? '0',
+                    sent: formatQty(item.qty_sent),
+                    received: formatQty(item.qty_received ?? 0),
                   })}
                 </p>
                 {receiving ? receiptInput(item.variant, item.variant_sku) : null}

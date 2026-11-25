@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import i18n from 'i18next';
 import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -48,5 +49,20 @@ describe('AppRouter', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
     expect(reload).toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+
+  it('says a missing page is missing in the chosen language', async () => {
+    await i18n.changeLanguage('ne');
+    render(
+      <Suspense fallback={null}>
+        <AppRouter />
+      </Suspense>,
+    );
+    act(() => {
+      window.history.pushState({}, '', '/nope');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    expect(await screen.findByRole('heading', { name: 'पृष्ठ भेटिएन' })).toBeInTheDocument();
+    await i18n.changeLanguage('en');
   });
 });

@@ -227,6 +227,10 @@ function PartySearch({
 function LedgerTable({ rows }: { rows: LedgerRow[] }) {
   const { t } = useTranslation();
   useMoneyDisplay();
+  const kindLabel = (row: LedgerRow) =>
+    t(`payments.ledger.kinds.${row.kind}`, { defaultValue: row.kind });
+  // A bill number, or the method a payment was made by.
+  const refLabel = (row: LedgerRow) => t(`common.methods.${row.ref}`, { defaultValue: row.ref });
   if (rows.length === 0) {
     return (
       <p className="mt-4 py-8 text-center text-sm text-muted-foreground">
@@ -245,12 +249,12 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
         {rows.map((row, index) => (
           <li key={`${row.date}-${row.kind}-${row.ref}-${index}`} className="py-3 text-sm">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="font-medium">{row.ref}</span>
+              <span className="font-medium">{kindLabel(row)}</span>
               <span className="font-semibold tabular-nums">{formatNpr(row.balance)}</span>
             </div>
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
               <span>{row.date}</span>
-              <span>{row.kind}</span>
+              <span>{refLabel(row)}</span>
             </div>
             <div className="mt-1 flex gap-4 text-xs text-muted-foreground tabular-nums">
               <span>
@@ -279,8 +283,8 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
             {rows.map((row, index) => (
               <TableRow key={`${row.date}-${row.kind}-${row.ref}-${index}`}>
                 <TableCell className="whitespace-nowrap">{row.date}</TableCell>
-                <TableCell>{row.kind}</TableCell>
-                <TableCell>{row.ref}</TableCell>
+                <TableCell>{kindLabel(row)}</TableCell>
+                <TableCell>{refLabel(row) || '—'}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatNpr(row.debit, { symbol: '' })}
                 </TableCell>
