@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import i18n from 'i18next';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -306,6 +306,27 @@ describe('AppShell permission-aware nav', () => {
     expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument();
     // No dead-end FAB for someone who cannot create sales.
     expect(screen.queryByRole('link', { name: 'New sale' })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['/settings', 'Settings'],
+    ['/settings/security', 'Security'],
+    ['/settings/staff', 'Settings'],
+    ['/stock/transfers', 'Transfers'],
+    ['/stock/counts', 'Stock'],
+  ])('highlights one menu entry on %s', async (path, label) => {
+    features = { advanced_pos: true, multi_branch: true };
+    perms = OWNER_PERMISSIONS;
+    renderShell(path);
+
+    await screen.findByRole('link', { name: 'Transfers' });
+    const menu = screen.getAllByRole('navigation')[0];
+    const current = within(menu)
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('aria-current') === 'page');
+    expect(current.map((link) => link.textContent)).toEqual([label]);
+    // Every page brings its own <main>.
+    expect(screen.queryByRole('main')).not.toBeInTheDocument();
   });
 
   it('shows the full nav to an owner-role user', async () => {

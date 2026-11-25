@@ -336,9 +336,10 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="pb-24 md:pb-8 md:pl-60">
+      {/* Not <main>: every page renders its own. */}
+      <div className="pb-24 md:pb-8 md:pl-60">
         <Outlet />
-      </main>
+      </div>
 
       {/* Mobile bottom tab bar with center new-sale FAB */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background/85 backdrop-blur-md md:hidden">
