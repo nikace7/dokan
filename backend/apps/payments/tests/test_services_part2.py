@@ -188,6 +188,8 @@ class TestLedgers:
         rows = customer_ledger(shop["tenant"], shop["customer"])
         kinds = [row.kind for row in rows]
         assert kinds == ["OPENING", "SALE", "SALE", "CREDIT_NOTE", "RECEIPT"]
+        # Same numbers as on the printed bills; the screen words the kind.
+        assert [row.ref for row in rows] == ["", "INV-1", "INV-2", "RET-1", "CASH"]
         assert rows[-1].balance == Decimal("1500.00")  # 2000 dues − 100 − 400
         balances = [row.balance for row in rows]
         assert balances == sorted(balances) or balances[0] <= balances[-1]
@@ -231,6 +233,7 @@ class TestLedgers:
         )
         rows = supplier_ledger(shop["tenant"], supplier)
         assert [row.kind for row in rows] == ["OPENING", "PURCHASE", "PAYMENT"]
+        assert [row.ref for row in rows] == ["", str(invoice.invoice_no), "CASH"]
         assert rows[-1].balance == Decimal("500.00")
 
 

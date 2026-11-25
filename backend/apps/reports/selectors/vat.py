@@ -37,12 +37,12 @@ def sales_vat_register(
             business_date_bs__gte=from_bs,
             business_date_bs__lte=to_bs,
         )
-        .select_related("customer")
+        .select_related("customer", "branch")
         .order_by("business_date_bs", "invoice_no")
     )
     rows = [
         {
-            "invoice_no": invoice.invoice_no,
+            "invoice_no": invoice.number,
             "doc_type": invoice.doc_type,
             "business_date_bs": invoice.business_date_bs,
             "customer_name": invoice.customer.name if invoice.customer else None,

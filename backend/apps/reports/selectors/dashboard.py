@@ -71,7 +71,7 @@ def dashboard_summary(tenant: "Tenant", user: "User") -> dict[str, Any]:
         result["recent_bills"] = [
             {
                 "id": str(invoice.pk),
-                "invoice_no": invoice.invoice_no,
+                "invoice_no": invoice.number,
                 "customer_name": invoice.customer.name if invoice.customer else None,
                 "total": str(invoice.total),
                 "tender_methods": [

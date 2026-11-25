@@ -262,11 +262,13 @@ class TestVatRegisters:
         assert len(report["rows"]) == 2  # the SALE bill + its RETURN credit note
         sale_row, return_row = report["rows"]
         assert sale_row["doc_type"] == "SALE"
+        assert sale_row["invoice_no"] == f"INV-{graph['sale1'].invoice_no}"
         assert sale_row["taxable_amount"] == "2000.00"
         assert sale_row["vat_amount"] == "260.00"
         assert sale_row["customer_name"] == graph["customer"].name
         assert sale_row["customer_pan"] == "—"  # unset PAN falls back to dash
         assert return_row["doc_type"] == "RETURN"
+        assert return_row["invoice_no"] == "RET-1"
         assert return_row["vat_amount"] == "130.00"
         assert report["totals"]["vat_amount"] == "390.00"
 

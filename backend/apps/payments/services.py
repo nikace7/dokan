@@ -88,7 +88,7 @@ def _validate_sale_allocations(
         if allocated_amount > outstanding:
             raise ServiceError(
                 "ALLOCATION_EXCEEDS_OUTSTANDING",
-                f"Invoice {invoice.invoice_no} has only {outstanding} outstanding.",
+                f"Invoice {invoice.number} has only {outstanding} outstanding.",
             )
         total_allocated += allocated_amount
     if total_allocated > amount:
