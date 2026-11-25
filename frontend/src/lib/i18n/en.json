@@ -212,7 +212,7 @@
     "paid": "Paid",
     "dueUdharo": "Due (udharo)",
     "vatBill": "VAT bill",
-    "completeSale": "F9 Complete sale + print",
+    "completeSale": "F9 Complete sale",
     "completing": "Completing…",
     "holdBill": "Park this bill (hold)",
     "parking": "Parking…",
@@ -273,7 +273,8 @@
       "increase": "Increase quantity of {{name}}",
       "remove": "Remove {{name}}",
       "discount": "Discount for {{name}}"
-    }
+    },
+    "completeAndPrint": "Complete and print"
   },
   "simpleSale": {
     "title": "Simple sale",
@@ -687,12 +688,17 @@
       "loadLinesError": "Could not load returnable lines.",
       "allReturned": "All lines on this bill have already been returned.",
       "reason": "Reason",
-      "refundMethod": "Refund method (optional)",
-      "refundAmount": "Refund amount (NPR, optional)",
-      "serverNote": "The server calculates the return credit from the original bill and validates any refund.",
+      "refundMethod": "Give back by",
+      "refundAmount": "Give back ({{symbol}})",
       "saveError": "Could not record the return.",
       "submit": "Record return",
-      "required": "Select a return quantity and enter a reason."
+      "required": "Select a return quantity and enter a reason.",
+      "value": "Return value: {{amount}}",
+      "creditAmount": "Take off what they owe ({{symbol}})",
+      "notGivenBack": "{{amount}} of this is not given back.",
+      "tooMuch": "This is more than the return value of {{amount}}.",
+      "badAmount": "Enter an amount like 250 or 250.50.",
+      "quoteError": "Could not work out the amount."
     },
     "line": {
       "remaining": "Remaining: {{remaining}}",
@@ -721,17 +727,15 @@
       "qty": "Qty",
       "newQtyAria": "New quantity for {{name}}",
       "reason": "Reason",
-      "paymentMethod": "Extra payment method (optional)",
-      "paymentAmount": "Extra payment (NPR, optional)",
-      "serverNote": "Prices and the difference are calculated by the server. Add extra payment only when the new item total exceeds the return credit.",
+      "paymentMethod": "Customer pays by",
+      "paymentAmount": "Customer pays ({{symbol}})",
       "saveError": "Could not record the exchange.",
       "submit": "Record exchange",
-      "required": "Select a returned quantity, add a new item, and enter a reason."
-    },
-    "line": {
-      "remaining": "Remaining: {{remaining}}",
-      "returnQty": "Return qty",
-      "qtyAria": "Return quantity for {{name}}"
+      "required": "Select a returned quantity, add a new item, and enter a reason.",
+      "totals": "Returned: {{returned}} · New items: {{added}}",
+      "customerPays": "Customer pays {{amount}}",
+      "giveBack": "Give back {{amount}} in cash",
+      "even": "Nothing to pay or give back"
     }
   },
   "audit": {

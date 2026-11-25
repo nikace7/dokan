@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { Navigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -24,7 +25,7 @@ import { enqueueSale } from '@/lib/offline/queue';
 import { refreshSyncState } from '@/lib/offline/sync';
 import { formatBaseMoney } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
-import { hasPlanFeature } from '@/lib/plans';
+import { billingPath, hasPlanFeature } from '@/lib/plans';
 import { usePageTitle } from '@/lib/usePageTitle';
 import { discountProblem, useCartStore } from '@/stores/cartStore';
 import type { UnconfirmedSale } from '@/stores/cartStore';
@@ -54,6 +55,7 @@ export function BillingPage() {
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
   const [saleError, setSaleError] = useState<unknown>(null);
   const [changePaisa, setChangePaisa] = useState<Paisa>(0);
+  const [printReceipt, setPrintReceipt] = useState(false);
 
   const buildSalePayload = (tender: Tender): CreateSalePayload => ({
     ...cartPayload(workspace.branchId, workspace.rateTypeId),
@@ -123,6 +125,12 @@ export function BillingPage() {
   };
   // Nothing on the bill may change while the server might already hold it.
   const locked = saleMutation.isPending || holdMutation.isPending || unconfirmedSale !== null;
+  const startNewBill = () => {
+    setReceipt(null);
+    setPlanWarning(null);
+    setQueuedRef(null);
+    saleMutation.reset();
+  };
   const changeNotice =
     changePaisa > 0 ? (
       <p
@@ -141,7 +149,7 @@ export function BillingPage() {
           <p className="text-sm font-medium text-blue-700">{t('billing.queuedTitle')}</p>
           <h1 className="mt-1 text-2xl font-bold">{t('billing.queuedRef', { ref: queuedRef })}</h1>
           <p className="mt-2 text-sm text-slate-600">{t('billing.queuedBody')}</p>
-          <Button size="lg" className="mt-6 w-full" onClick={() => setQueuedRef(null)} autoFocus>
+          <Button size="lg" className="mt-6 w-full" onClick={startNewBill} autoFocus>
             {t('billing.receipt.newBill')}
           </Button>
         </Card>
@@ -161,15 +169,16 @@ export function BillingPage() {
           </p>
         ) : null}
         {changeNotice}
-        <ReceiptPanel
-          invoice={receipt}
-          onNewBill={() => {
-            setReceipt(null);
-            setPlanWarning(null);
-          }}
-        />
+        <ReceiptPanel invoice={receipt} printOnOpen={printReceipt} onNewBill={startNewBill} />
       </main>
     );
+  }
+
+  // The menu never links here without the plan; an online order or a parked bill
+  // still may. Idle: never leave between a sale clearing the bill and its receipt.
+  if (user && !heldSaleId && !unconfirmedSale && lines.length === 0 && saleMutation.isIdle) {
+    const path = billingPath(user);
+    if (path !== '/billing') return <Navigate to={path} replace />;
   }
 
   return (
@@ -248,6 +257,7 @@ export function BillingPage() {
               chargesVat={user?.vat_registered}
               onComplete={(tender) => {
                 setChangePaisa(tender.changePaisa);
+                setPrintReceipt(tender.print);
                 saleMutation.mutate({
                   payload: buildSalePayload(tender),
                   key: crypto.randomUUID(),
@@ -274,7 +284,10 @@ export function BillingPage() {
             <div className="mt-3">
               <UnconfirmedSaleNotice
                 onRetry={() => saleMutation.mutate(unconfirmedSale)}
-                onDiscard={clear}
+                onDiscard={() => {
+                  clear();
+                  saleMutation.reset();
+                }}
               />
             </div>
           ) : null}

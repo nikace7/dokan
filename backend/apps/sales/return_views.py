@@ -13,12 +13,23 @@ from apps.sales.models import SalesInvoice
 from apps.sales.serializers import (
     ExchangeCreateSerializer,
     ReturnCreateSerializer,
+    ReturnQuoteResultSerializer,
+    ReturnQuoteSerializer,
     SalesInvoiceDetailSerializer,
 )
 from apps.sales.views import _idempotency_key, _SalesAPIView, _user
 from core.middleware.tenant import require_request_tenant
 from core.openapi import operation
 from core.responses import error, get_or_404, ok
+
+
+def _return_lines(tenant: Any, raw_lines: list[dict[str, Any]]) -> list[services.ReturnLineInput]:
+    return [
+        services.ReturnLineInput(
+            variant=get_or_404(tenant, ItemVariant, raw["variant"], "Variant"), qty=raw["qty"]
+        )
+        for raw in raw_lines
+    ]
 
 
 class ReturnCreateView(_SalesAPIView):
@@ -39,13 +50,7 @@ class ReturnCreateView(_SalesAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         original = get_or_404(tenant, SalesInvoice, data["original_invoice"], "Invoice")
-        lines = [
-            services.ReturnLineInput(
-                variant=get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
-                qty=raw["qty"],
-            )
-            for raw in data["lines"]
-        ]
+        lines = _return_lines(tenant, data["lines"])
         result = services.create_return(
             tenant,
             original_invoice=original,
@@ -79,13 +84,7 @@ class ExchangeCreateView(_SalesAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         original = get_or_404(tenant, SalesInvoice, data["original_invoice"], "Invoice")
-        returned_lines = [
-            services.ReturnLineInput(
-                variant=get_or_404(tenant, ItemVariant, raw["variant"], "Variant"),
-                qty=raw["qty"],
-            )
-            for raw in data["returned_lines"]
-        ]
+        returned_lines = _return_lines(tenant, data["returned_lines"])
         result = services.create_exchange(
             tenant,
             original_invoice=original,
@@ -108,6 +107,29 @@ class ExchangeCreateView(_SalesAPIView):
             },
             http_status,
         )
+
+
+class ReturnQuoteView(_SalesAPIView):
+    """Read-only: POST because the question is a list of lines."""
+
+    method_permissions: ClassVar[dict[str, str]] = {"POST": "sale.return"}
+    schema_contract: ClassVar[dict[str, Any]] = {
+        "POST": operation(request=ReturnQuoteSerializer, response=ReturnQuoteResultSerializer),
+    }
+
+    def post(self, request: Request, pk: UUID) -> Response:
+        tenant = require_request_tenant(request)
+        serializer = ReturnQuoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        quote = services.quote_return(
+            tenant,
+            original=get_or_404(tenant, SalesInvoice, pk, "Invoice"),
+            returned_lines=_return_lines(tenant, data["returned_lines"]),
+            new_lines=self._build_lines(tenant, data["new_lines"]),
+            user=_user(request),
+        )
+        return ok(ReturnQuoteResultSerializer(quote).data)
 
 
 class ReturnableLinesView(_SalesAPIView):

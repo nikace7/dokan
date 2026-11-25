@@ -6,25 +6,30 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
-import { billNumber, parseBillNumber } from '@/features/billing/api';
+import { billNumber, paisaToApiString, parseBillNumber } from '@/features/billing/api';
 import { createReturn, getReturnableLines, listSales } from '@/features/returns/api';
-import type { RefundMethod, ReturnableLine, SaleSummary } from '@/features/returns/api';
+import type { RefundMethod, SaleSummary } from '@/features/returns/api';
+import { pickedLines, ReturnLineField } from '@/features/returns/ReturnLineField';
+import { useReturnQuote } from '@/features/returns/useReturnQuote';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr, useMoneyDisplay } from '@/lib/money';
-import { formatQty } from '@/lib/quantity';
+import {
+  baseSymbol,
+  formatBaseMoney,
+  formatNpr,
+  parseAmount,
+  toPaisa,
+  useMoneyDisplay,
+} from '@/lib/money';
 
-const REFUND_METHODS: RefundMethod[] = [
-  'CREDIT_NOTE',
-  'CASH',
-  'ESEWA',
-  'KHALTI',
-  'FONEPAY',
-  'CARD',
-  'BANK',
-];
+const REFUND_METHODS: RefundMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
+}
+
+/** Blank means nothing; null means it is not an amount. */
+function amountOrZero(text: string): number | null {
+  return text.trim() === '' ? 0 : parseAmount(text);
 }
 
 function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () => void }) {
@@ -35,22 +40,39 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
   });
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [reason, setReason] = useState('');
-  const [refundMethod, setRefundMethod] = useState<RefundMethod>('CREDIT_NOTE');
-  const [refundAmount, setRefundAmount] = useState('');
+  const [refundMethod, setRefundMethod] = useState<RefundMethod>('CASH');
+  // Amounts typed over the suggested ones, for the lines they were typed against.
+  const [typed, setTyped] = useState<{ key: string; credit?: string; money?: string }>({ key: '' });
   const [error, setError] = useState<string | null>(null);
+  useMoneyDisplay();
+
+  const lines = pickedLines(linesQuery.data ?? [], quantities);
+  const quoted = useReturnQuote(sale.id, lines.length ? { returned_lines: lines } : null);
+  const { quote } = quoted;
+  const edits = typed.key === quoted.key ? typed : { key: quoted.key };
+  const value = quote ? toPaisa(quote.return_total) : 0;
+  const maxCredit = quote ? toPaisa(quote.max_credit_note) : 0;
+  // Dues come off first; only what is left over is handed back.
+  const credit = edits.credit ?? paisaToApiString(maxCredit);
+  const creditPaisa = maxCredit > 0 ? amountOrZero(credit) : 0;
+  const money = edits.money ?? paisaToApiString(Math.max(0, value - (creditPaisa ?? 0)));
+  const moneyPaisa = amountOrZero(money);
+  const unreturned =
+    creditPaisa === null || moneyPaisa === null ? 0 : value - creditPaisa - moneyPaisa;
 
   const mutation = useMutation({
     mutationFn: () => {
-      const lines = (linesQuery.data ?? [])
-        .map((line) => ({ variant: line.variant, qty: quantities[line.variant] ?? '' }))
-        .filter((line) => line.qty.trim() !== '');
+      const refunds = [
+        { method: 'CREDIT_NOTE' as RefundMethod, paisa: creditPaisa ?? 0 },
+        { method: refundMethod, paisa: moneyPaisa ?? 0 },
+      ]
+        .filter((refund) => refund.paisa > 0)
+        .map(({ method, paisa }) => ({ method, amount: paisaToApiString(paisa) }));
       return createReturn({
         original_invoice: sale.id,
         lines,
         reason: reason.trim(),
-        refunds: refundAmount.trim()
-          ? [{ method: refundMethod, amount: refundAmount.trim() }]
-          : undefined,
+        refunds: refunds.length ? refunds : undefined,
       });
     },
     onSuccess: onRecorded,
@@ -59,11 +81,20 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const hasLine = Object.values(quantities).some((qty) => qty.trim() !== '');
-    if (!hasLine || !reason.trim()) {
+    if (lines.length === 0 || !reason.trim()) {
       setError(t('returns.editor.required'));
       return;
     }
+    if (!quote) return;
+    if (creditPaisa === null || moneyPaisa === null) {
+      setError(t('returns.editor.badAmount'));
+      return;
+    }
+    if (unreturned < 0) {
+      setError(t('returns.editor.tooMuch', { amount: formatBaseMoney(value) }));
+      return;
+    }
+    setError(null);
     mutation.mutate();
   }
 
@@ -94,12 +125,29 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
               />
             ))}
           </ul>
+          <p aria-live="polite" className="mt-3 min-h-6 font-semibold tabular-nums">
+            {quote ? t('returns.editor.value', { amount: formatBaseMoney(value) }) : null}
+            {lines.length && !quote && !quoted.error ? t('common.loading') : null}
+          </p>
+          {quoted.error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {errorMessage(quoted.error, t('returns.editor.quoteError'))}
+            </p>
+          ) : null}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <Input
               label={t('returns.editor.reason')}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
             />
+            {maxCredit > 0 ? (
+              <Input
+                label={t('returns.editor.creditAmount', { symbol: baseSymbol() })}
+                inputMode="decimal"
+                value={credit}
+                onChange={(event) => setTyped({ ...edits, credit: event.target.value })}
+              />
+            ) : null}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={`refund-method-${sale.id}`}>{t('returns.editor.refundMethod')}</Label>
               <select
@@ -116,62 +164,33 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
               </select>
             </div>
             <Input
-              label={t('returns.editor.refundAmount')}
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={refundAmount}
-              onChange={(event) => setRefundAmount(event.target.value)}
+              label={t('returns.editor.refundAmount', { symbol: baseSymbol() })}
+              inputMode="decimal"
+              disabled={!quote}
+              value={quote ? money : ''}
+              onChange={(event) => setTyped({ ...edits, money: event.target.value })}
             />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">{t('returns.editor.serverNote')}</p>
+          {unreturned > 0 ? (
+            <p className="mt-2 text-sm">
+              {t('returns.editor.notGivenBack', { amount: formatBaseMoney(unreturned) })}
+            </p>
+          ) : null}
           {error ? (
             <p role="alert" className="mt-2 text-sm text-destructive">
               {error}
             </p>
           ) : null}
-          <Button type="submit" className="mt-3" disabled={mutation.isPending}>
+          <Button
+            type="submit"
+            className="mt-3"
+            disabled={mutation.isPending || (lines.length > 0 && !quote)}
+          >
             {mutation.isPending ? t('common.saving') : t('returns.editor.submit')}
           </Button>
         </>
       ) : null}
     </form>
-  );
-}
-
-function ReturnLineField({
-  line,
-  value,
-  onChange,
-}: {
-  line: ReturnableLine;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-sm">
-      <div className="min-w-0">
-        <span className="font-medium">{line.item_name}</span>{' '}
-        <span className="text-xs text-muted-foreground">{line.sku}</span>
-        <span className="block text-xs text-muted-foreground">
-          {t('returns.line.remaining', { remaining: formatQty(line.remaining) })}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">{t('returns.line.returnQty')}</span>
-        <input
-          aria-label={t('returns.line.qtyAria', { name: line.item_name })}
-          type="number"
-          min="0"
-          max={line.remaining}
-          step="0.001"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
-    </li>
   );
 }
 

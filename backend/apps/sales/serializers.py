@@ -198,6 +198,23 @@ class ReturnCreateSerializer(serializers.Serializer):
     refunds = RefundSerializer(many=True, required=False, default=list)
 
 
+class ReturnQuoteSerializer(serializers.Serializer):
+    """POST /sales/{id}/return-quote payload; ``new_lines`` prices an exchange."""
+
+    returned_lines = ReturnLineSerializer(many=True, allow_empty=False)
+    new_lines = SaleLineSerializer(many=True, required=False, default=list)
+
+
+class ReturnQuoteResultSerializer(serializers.Serializer):
+    """What the return or exchange would come to."""
+
+    return_total = serializers.DecimalField(max_digits=14, decimal_places=2)
+    new_total = serializers.DecimalField(max_digits=14, decimal_places=2)
+    to_collect = serializers.DecimalField(max_digits=14, decimal_places=2)
+    to_refund = serializers.DecimalField(max_digits=14, decimal_places=2)
+    max_credit_note = serializers.DecimalField(max_digits=14, decimal_places=2)
+
+
 class ExchangeCreateSerializer(serializers.Serializer):
     """POST /sales/exchanges payload."""
 

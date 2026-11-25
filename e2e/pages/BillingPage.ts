@@ -14,6 +14,13 @@ export class BillingPage {
   }
 
   async goto() {
+    // The demo plan has only Simple Sale, and sends /billing there.
+    await this.page.route('**/v1/auth/me', async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      if (body.data?.plan) body.data.plan.features.advanced_pos = true;
+      await route.fulfill({ response, json: body });
+    });
     await this.page.goto('/billing');
     await expect(this.scanInput).toBeVisible();
   }
@@ -32,7 +39,7 @@ export class BillingPage {
   /** Blank tender amount = full total; default method is CASH. */
   async completeCashSale() {
     await this.page
-      .getByRole('button', { name: 'F9 Complete sale + print' })
+      .getByRole('button', { name: 'F9 Complete sale' })
       .click();
   }
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Printer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
@@ -24,6 +25,8 @@ export interface Tender {
   /** Cash to hand back; not part of the sale. */
   changePaisa: Paisa;
   isVatBill: boolean;
+  /** Open the print dialog once the sale is saved. */
+  print: boolean;
 }
 
 interface PaymentPanelProps {
@@ -84,22 +87,26 @@ export function PaymentPanel({
   else if (amountError === null && duePaisa > 0 && !customer)
     formError = 'billing.errors.udharoCustomer';
 
-  const submit = useCallback(() => {
-    setAttempted(true);
-    if (amountError || formError) return;
-    onComplete({
-      method,
-      amountPaisa: tenderPaisa,
-      changePaisa,
-      isVatBill: canPickVat && isVatBill,
-    });
-  }, [amountError, canPickVat, changePaisa, formError, isVatBill, method, onComplete, tenderPaisa]);
+  const submit = useCallback(
+    (print: boolean) => {
+      setAttempted(true);
+      if (amountError || formError) return;
+      onComplete({
+        method,
+        amountPaisa: tenderPaisa,
+        changePaisa,
+        isVatBill: canPickVat && isVatBill,
+        print,
+      });
+    },
+    [amountError, canPickVat, changePaisa, formError, isVatBill, method, onComplete, tenderPaisa],
+  );
 
   useEffect(() => {
     const completeWithF9 = (event: KeyboardEvent) => {
       if (event.key !== 'F9') return;
       event.preventDefault();
-      if (!busy && !disabled && lines.length > 0) submit();
+      if (!busy && !disabled && lines.length > 0) submit(false);
     };
     window.addEventListener('keydown', completeWithF9);
     return () => window.removeEventListener('keydown', completeWithF9);
@@ -197,14 +204,25 @@ export function PaymentPanel({
         </p>
       ) : null}
 
-      <Button
-        size="lg"
-        aria-keyshortcuts="F9"
-        disabled={busy || disabled || lines.length === 0}
-        onClick={submit}
-      >
-        {busy ? t('billing.completing') : t('billing.completeSale')}
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button
+          size="lg"
+          aria-keyshortcuts="F9"
+          disabled={busy || disabled || lines.length === 0}
+          onClick={() => submit(false)}
+        >
+          {busy ? t('billing.completing') : t('billing.completeSale')}
+        </Button>
+        <Button
+          variant="outline"
+          size="lg"
+          disabled={busy || disabled || lines.length === 0}
+          onClick={() => submit(true)}
+        >
+          <Printer className="mr-2 h-4 w-4" aria-hidden="true" />
+          {t('billing.completeAndPrint')}
+        </Button>
+      </div>
     </div>
   );
 }

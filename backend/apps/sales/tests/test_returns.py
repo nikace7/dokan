@@ -108,16 +108,16 @@ def _return(shop: dict, lines: list, key: str = "ret-1", **kwargs: Any) -> Any:
 
 class TestReturnMath:
     def test_partial_return_amounts(self, shop: dict) -> None:
-        """Return 1×A: gross 1000, line disc 50, bill share 41.30, VAT 123.50."""
+        """Return 1×A: gross 1000, line disc 50, bill share 39.58, VAT 123.50."""
         result = _return(shop, [ReturnLineInput(variant=shop["variant_a"], qty=Decimal("1"))])
         invoice = result.invoice
         assert invoice.doc_type == SalesInvoice.DocType.RETURN
         assert invoice.original_invoice_id == shop["original"].pk
         assert invoice.subtotal == Decimal("1000.00")
-        assert invoice.discount_amount == Decimal("91.30")  # 50 line + 41.30 bill share
-        assert invoice.taxable_amount == Decimal("908.70")
+        assert invoice.discount_amount == Decimal("89.58")  # 50 line + 100 x 950/2400
+        assert invoice.taxable_amount == Decimal("910.42")
         assert invoice.vat_amount == Decimal("123.50")  # 13% of 950
-        assert invoice.total == Decimal("1032.20")
+        assert invoice.total == Decimal("1033.92")
         assert invoice.status == SalesInvoice.Status.COMPLETED
 
     def test_return_gets_own_gapless_series(self, shop: dict) -> None:

@@ -6,23 +6,26 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
-import { billNumber } from '@/features/billing/api';
+import { billNumber, paisaToApiString } from '@/features/billing/api';
 import {
   createExchange,
   getReturnableLines,
   listSales,
   lookupVariant,
 } from '@/features/exchange/api';
-import type {
-  ExchangePaymentMethod,
-  ReturnableLine,
-  SaleSummary,
-  VariantLookup,
-} from '@/features/exchange/api';
+import type { ExchangePaymentMethod, SaleSummary, VariantLookup } from '@/features/exchange/api';
 import { ItemImage } from '@/features/catalog/ui';
+import { pickedLines, ReturnLineField } from '@/features/returns/ReturnLineField';
+import { useReturnQuote } from '@/features/returns/useReturnQuote';
 import { ApiError } from '@/lib/api/client';
-import { formatNpr, useMoneyDisplay } from '@/lib/money';
-import { formatQty } from '@/lib/quantity';
+import {
+  baseSymbol,
+  formatBaseMoney,
+  formatNpr,
+  parseAmount,
+  toPaisa,
+  useMoneyDisplay,
+} from '@/lib/money';
 
 const PAYMENT_METHODS: ExchangePaymentMethod[] = [
   'CASH',
@@ -57,8 +60,25 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
   const [code, setCode] = useState('');
   const [reason, setReason] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<ExchangePaymentMethod>('CASH');
-  const [paymentAmount, setPaymentAmount] = useState('');
+  // A payment typed over the suggested one, for the lines it was typed against.
+  const [typed, setTyped] = useState({ key: '', amount: '' });
   const [error, setError] = useState<string | null>(null);
+  useMoneyDisplay();
+
+  const returnedLines = pickedLines(linesQuery.data ?? [], returnQuantities);
+  const addedLines = newLines
+    .filter((line) => Number(line.qty) > 0)
+    .map((line) => ({ variant: line.variant.id, qty: line.qty, discount: '0.00' }));
+  const complete = returnedLines.length > 0 && addedLines.length > 0;
+  const quoted = useReturnQuote(
+    sale.id,
+    complete ? { returned_lines: returnedLines, new_lines: addedLines } : null,
+  );
+  const { quote } = quoted;
+  const toCollect = quote ? toPaisa(quote.to_collect) : 0;
+  const toRefund = quote ? toPaisa(quote.to_refund) : 0;
+  const payment = typed.key === quoted.key ? typed.amount : paisaToApiString(toCollect);
+  const paymentPaisa = toCollect > 0 && payment.trim() !== '' ? parseAmount(payment) : 0;
 
   const lookupMutation = useMutation({
     mutationFn: () => lookupVariant(code.trim()),
@@ -72,19 +92,12 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
 
   const exchangeMutation = useMutation({
     mutationFn: () => {
-      const returnedLines = (linesQuery.data ?? [])
-        .map((line) => ({ variant: line.variant, qty: returnQuantities[line.variant] ?? '' }))
-        .filter((line) => line.qty.trim() !== '');
       return createExchange({
         original_invoice: sale.id,
         returned_lines: returnedLines,
-        new_lines: newLines.map((line) => ({
-          variant: line.variant.id,
-          qty: line.qty,
-          discount: '0.00',
-        })),
-        payments: paymentAmount.trim()
-          ? [{ method: paymentMethod, amount: paymentAmount.trim() }]
+        new_lines: addedLines,
+        payments: paymentPaisa
+          ? [{ method: paymentMethod, amount: paisaToApiString(paymentPaisa) }]
           : [],
         reason: reason.trim(),
       });
@@ -99,11 +112,16 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const hasReturn = Object.values(returnQuantities).some((qty) => qty.trim() !== '');
-    if (!hasReturn || newLines.length === 0 || !reason.trim()) {
+    if (!complete || !reason.trim()) {
       setError(t('exchange.editor.required'));
       return;
     }
+    if (!quote) return;
+    if (paymentPaisa === null) {
+      setError(t('returns.editor.badAmount'));
+      return;
+    }
+    setError(null);
     exchangeMutation.mutate();
   }
 
@@ -118,13 +136,18 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
         </p>
       ) : null}
       {linesQuery.data && linesQuery.data.length > 0 ? (
-        <LineList
-          lines={linesQuery.data}
-          quantities={returnQuantities}
-          onChange={(variant, value) =>
-            setReturnQuantities((current) => ({ ...current, [variant]: value }))
-          }
-        />
+        <ul className="divide-y divide-border rounded-md border border-border px-3">
+          {linesQuery.data.map((line) => (
+            <ReturnLineField
+              key={line.variant}
+              line={line}
+              value={returnQuantities[line.variant] ?? ''}
+              onChange={(value) =>
+                setReturnQuantities((current) => ({ ...current, [line.variant]: value }))
+              }
+            />
+          ))}
+        </ul>
       ) : null}
 
       <div className="mt-4 rounded-md border border-border p-3">
@@ -184,91 +207,78 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
         ) : null}
       </div>
 
+      <div aria-live="polite" className="mt-3 min-h-6 tabular-nums">
+        {quote ? (
+          <>
+            <p className="text-sm">
+              {t('exchange.editor.totals', {
+                returned: formatBaseMoney(toPaisa(quote.return_total)),
+                added: formatBaseMoney(toPaisa(quote.new_total)),
+              })}
+            </p>
+            <p className="font-semibold">
+              {toCollect > 0
+                ? t('exchange.editor.customerPays', { amount: formatBaseMoney(toCollect) })
+                : toRefund > 0
+                  ? t('exchange.editor.giveBack', { amount: formatBaseMoney(toRefund) })
+                  : t('exchange.editor.even')}
+            </p>
+          </>
+        ) : null}
+        {complete && !quote && !quoted.error ? t('common.loading') : null}
+      </div>
+      {quoted.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(quoted.error, t('returns.editor.quoteError'))}
+        </p>
+      ) : null}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <Input
           label={t('exchange.editor.reason')}
           value={reason}
           onChange={(event) => setReason(event.target.value)}
         />
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`exchange-payment-method-${sale.id}`}>
-            {t('exchange.editor.paymentMethod')}
-          </Label>
-          <select
-            id={`exchange-payment-method-${sale.id}`}
-            value={paymentMethod}
-            onChange={(event) => setPaymentMethod(event.target.value as ExchangePaymentMethod)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            {PAYMENT_METHODS.map((method) => (
-              <option key={method} value={method}>
-                {t(`common.methods.${method}`)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Input
-          label={t('exchange.editor.paymentAmount')}
-          type="number"
-          min="0.01"
-          step="0.01"
-          value={paymentAmount}
-          onChange={(event) => setPaymentAmount(event.target.value)}
-        />
+        {toCollect > 0 ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`exchange-payment-method-${sale.id}`}>
+                {t('exchange.editor.paymentMethod')}
+              </Label>
+              <select
+                id={`exchange-payment-method-${sale.id}`}
+                value={paymentMethod}
+                onChange={(event) => setPaymentMethod(event.target.value as ExchangePaymentMethod)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {PAYMENT_METHODS.map((method) => (
+                  <option key={method} value={method}>
+                    {t(`common.methods.${method}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Input
+              label={t('exchange.editor.paymentAmount', { symbol: baseSymbol() })}
+              inputMode="decimal"
+              value={payment}
+              onChange={(event) => setTyped({ key: quoted.key, amount: event.target.value })}
+            />
+          </>
+        ) : null}
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{t('exchange.editor.serverNote')}</p>
       {error ? (
         <p role="alert" className="mt-2 text-sm text-destructive">
           {error}
         </p>
       ) : null}
-      <Button type="submit" className="mt-3" disabled={exchangeMutation.isPending}>
+      <Button
+        type="submit"
+        className="mt-3"
+        disabled={exchangeMutation.isPending || (complete && !quote)}
+      >
         {exchangeMutation.isPending ? t('common.saving') : t('exchange.editor.submit')}
       </Button>
     </form>
-  );
-}
-
-function LineList({
-  lines,
-  quantities,
-  onChange,
-}: {
-  lines: ReturnableLine[];
-  quantities: Record<string, string>;
-  onChange: (variant: string, value: string) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <ul className="divide-y divide-border rounded-md border border-border px-3">
-      {lines.map((line) => (
-        <li
-          key={line.variant}
-          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-sm"
-        >
-          <div className="min-w-0">
-            <span className="font-medium">{line.item_name}</span>{' '}
-            <span className="text-xs text-muted-foreground">{line.sku}</span>
-            <span className="block text-xs text-muted-foreground">
-              {t('exchange.line.remaining', { remaining: formatQty(line.remaining) })}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{t('exchange.line.returnQty')}</span>
-            <input
-              aria-label={t('exchange.line.qtyAria', { name: line.item_name })}
-              type="number"
-              min="0"
-              max={line.remaining}
-              step="0.001"
-              value={quantities[line.variant] ?? ''}
-              onChange={(event) => onChange(line.variant, event.target.value)}
-              className={lineInputClasses}
-            />
-          </div>
-        </li>
-      ))}
-    </ul>
   );
 }
 

@@ -63,24 +63,26 @@
   }
 }
 
+/* Only a page showing a receipt prints as an 80mm slip; others print as they look. */
 @media print {
-  @page {
+  @page receipt {
     size: 80mm auto;
     margin: 3mm;
   }
 
-  html,
-  body {
+  html:has(#sales-receipt),
+  html:has(#sales-receipt) body {
+    page: receipt;
     width: 80mm;
     background: white;
   }
 
-  body * {
+  html:has(#sales-receipt) body * {
     visibility: hidden;
   }
 
-  #sales-receipt,
-  #sales-receipt * {
+  html:has(#sales-receipt) #sales-receipt,
+  html:has(#sales-receipt) #sales-receipt * {
     visibility: visible;
   }
 

@@ -117,7 +117,7 @@ function installApiMock(
           plan: {
             code: 'basic',
             name: 'Basic',
-            features: { vat_module: vatModule },
+            features: { advanced_pos: true, vat_module: vatModule },
           },
         }),
       );
