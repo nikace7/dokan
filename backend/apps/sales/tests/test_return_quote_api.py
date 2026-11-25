@@ -233,3 +233,61 @@ def test_returning_a_whole_bill_gives_back_all_of_it(
     )
 
     assert quote.json()["data"]["return_total"] == str(sale.total)
+
+
+def test_a_walk_in_has_no_dues_to_take_the_return_off(
+    tenant: Any, user: Any, shop: dict[str, Any]
+) -> None:
+    sale = services.create_sale(
+        tenant,
+        branch=shop["branch"],
+        rate_type=shop["rate_type"],
+        customer=None,
+        is_vat_bill=False,
+        bill_discount=Decimal("0.00"),
+        lines=[
+            SaleLineInput(
+                variant=shop["variant"],
+                qty=Decimal("1"),
+                unit_price=None,
+                discount=Decimal("0.00"),
+            )
+        ],
+        payments=[{"method": "CASH", "amount": Decimal("1000.00")}],
+        idempotency_key="walk-in",
+        created_by=user,
+    ).invoice
+    grant(tenant, user, "sale.return")
+
+    response = auth_client(user).post(
+        quote_url(sale), {"returned_lines": returned(shop, "1")}, **host(), format="json"
+    )
+
+    assert response.json()["data"]["return_total"] == "1000.00"
+    assert response.json()["data"]["max_credit_note"] == "0.00"
+
+
+def test_a_return_cannot_itself_be_returned(tenant: Any, user: Any, shop: dict[str, Any]) -> None:
+    grant(tenant, user, "sale.return")
+    client = auth_client(user)
+    recorded = client.post(
+        RETURNS_URL,
+        {
+            "original_invoice": str(shop["original"].pk),
+            "lines": returned(shop, "1"),
+            "reason": "Wrong size",
+        },
+        **host(),
+        format="json",
+        HTTP_IDEMPOTENCY_KEY="r-first",
+    ).json()["data"]
+
+    response = client.post(
+        f"/api/v1/sales/{recorded['id']}/return-quote",
+        {"returned_lines": returned(shop, "1")},
+        **host(),
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "RETURN_NOT_ALLOWED"
