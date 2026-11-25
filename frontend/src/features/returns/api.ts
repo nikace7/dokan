@@ -33,6 +33,27 @@ export interface ReturnPayload {
   refunds?: Array<{ method: RefundMethod; amount: string }>;
 }
 
+export interface ReturnQuoteRequest {
+  returned_lines: Array<{ variant: string; qty: string }>;
+  new_lines?: Array<{ variant: string; qty: string; discount: string }>;
+}
+
+/** What a return or exchange would come to. The server works it out; nothing is saved. */
+export interface ReturnQuote {
+  return_total: string;
+  new_total: string;
+  to_collect: string;
+  to_refund: string;
+  max_credit_note: string;
+}
+
+export function quoteReturn(invoiceId: string, body: ReturnQuoteRequest): Promise<ReturnQuote> {
+  return authedRequest<ReturnQuote>(`/v1/sales/${invoiceId}/return-quote`, {
+    method: 'POST',
+    body,
+  });
+}
+
 export function listSales(page = 1, invoiceNo?: number): Promise<Page<SaleSummary>> {
   const invoice = invoiceNo != null ? `&invoice_no=${invoiceNo}` : '';
   return authedRequestPage<SaleSummary>(
