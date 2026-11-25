@@ -10,8 +10,7 @@ A RETURN is its own document (never an edit of the original):
   subtract RETURN docs by type. VAT uses the same 13% rule on the
   VAT-applicable returned portion when the original was a VAT bill.
 - Amount per line: ``original unit_price × qty − proportional line
-  discount``. The bill-level discount portion comes back proportionally
-  to the returned taxable share.
+  discount``, less the returned lines' share of the bill-level discount.
 - Stock returns via SALE_RETURN at the original ``cost_at_sale`` (#1, #2).
 
 Two sanctioned writes, documented:
@@ -124,14 +123,15 @@ def _compute_return_totals(
     subtotal = quantize_money(sum(line.gross for line in resolved))
     line_discounts = quantize_money(sum(line.discount for line in resolved))
 
-    # Bill-level discount portion comes back proportionally to the returned
-    # share of the original taxable amount.
+    # The bill discount was taken off the sum of the lines, so the returned
+    # lines carry their share of THAT sum. Dividing by what was left after the
+    # discount would take more than was ever given.
     original_line_discounts = sum(item.discount for item in original.items.all())
     bill_portion = original.discount_amount - original_line_discounts
-    returned_taxable = subtotal - line_discounts
+    original_lines = original.subtotal - original_line_discounts
     bill_credit = _ZERO
-    if bill_portion > _ZERO and original.taxable_amount > _ZERO:
-        bill_credit = quantize_money(bill_portion * returned_taxable / original.taxable_amount)
+    if bill_portion > _ZERO and original_lines > _ZERO:
+        bill_credit = quantize_money(bill_portion * (subtotal - line_discounts) / original_lines)
 
     discount_amount = quantize_money(line_discounts + bill_credit)
     taxable_amount = quantize_money(subtotal - discount_amount)

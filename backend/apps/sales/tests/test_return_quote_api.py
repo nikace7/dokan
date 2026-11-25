@@ -201,3 +201,35 @@ def test_another_shops_bill_is_not_found(tenant: Any, user: Any, shop: dict[str,
     )
 
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize("bill_discount", ["100.00", "1500.00", "2400.00"])
+def test_returning_a_whole_bill_gives_back_all_of_it(
+    tenant: Any, user: Any, shop: dict[str, Any], bill_discount: str
+) -> None:
+    sale = services.create_sale(
+        tenant,
+        branch=shop["branch"],
+        rate_type=shop["rate_type"],
+        customer=shop["customer"],
+        is_vat_bill=False,
+        bill_discount=Decimal(bill_discount),
+        lines=[
+            SaleLineInput(
+                variant=shop["variant"],
+                qty=Decimal("3"),
+                unit_price=None,
+                discount=Decimal("50.00"),
+            )
+        ],
+        payments=[],
+        idempotency_key="whole-bill",
+        created_by=user,
+    ).invoice
+    grant(tenant, user, "sale.return")
+
+    quote = auth_client(user).post(
+        quote_url(sale), {"returned_lines": returned(shop, "3")}, **host(), format="json"
+    )
+
+    assert quote.json()["data"]["return_total"] == str(sale.total)
