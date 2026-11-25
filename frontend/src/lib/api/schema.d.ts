@@ -2044,6 +2044,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sales/{id}/return-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Read-only: POST because the question is a list of lines. */
+        post: operations["sales_return_quote_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sales/{id}/returnable": {
         parameters: {
             query?: never;
@@ -3837,6 +3854,24 @@ export interface components {
             variant: string;
             /** Format: decimal */
             qty: string;
+        };
+        /** @description POST /sales/{id}/return-quote payload; ``new_lines`` prices an exchange. */
+        ReturnQuote: {
+            returned_lines: components["schemas"]["ReturnLine"][];
+            new_lines?: components["schemas"]["SaleLine"][];
+        };
+        /** @description What the return or exchange would come to. */
+        ReturnQuoteResult: {
+            /** Format: decimal */
+            return_total: string;
+            /** Format: decimal */
+            new_total: string;
+            /** Format: decimal */
+            to_collect: string;
+            /** Format: decimal */
+            to_refund: string;
+            /** Format: decimal */
+            max_credit_note: string;
         };
         /** @description Role metadata and granted permission codes for owner administration. */
         Role: {
@@ -10315,6 +10350,45 @@ export interface operations {
                         data: {
                             [key: string]: unknown;
                         };
+                        error: null;
+                    };
+                };
+            };
+            /** @description Machine-readable API error. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    sales_return_quote_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnQuote"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReturnQuote"];
+                "multipart/form-data": components["schemas"]["ReturnQuote"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReturnQuoteResult"];
                         error: null;
                     };
                 };

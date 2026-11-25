@@ -6112,6 +6112,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/sales/{id}/return-quote:
+    post:
+      operationId: sales_return_quote_view_post
+      description: 'Read-only: POST because the question is a list of lines.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnQuote'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReturnQuote'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReturnQuote'
+        required: true
+      security:
+      - TenantBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - error
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ReturnQuoteResult'
+                  error:
+                    type: 'null'
+          description: ''
+        default:
+          description: Machine-readable API error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/sales/{id}/returnable:
     get:
       operationId: sales_returnable_lines_view_get
@@ -10903,6 +10951,51 @@ components:
       required:
       - qty
       - variant
+    ReturnQuote:
+      type: object
+      description: POST /sales/{id}/return-quote payload; ``new_lines`` prices an
+        exchange.
+      properties:
+        returned_lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnLine'
+        new_lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleLine'
+      required:
+      - returned_lines
+    ReturnQuoteResult:
+      type: object
+      description: What the return or exchange would come to.
+      properties:
+        return_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        new_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        to_collect:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        to_refund:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        max_credit_note:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - max_credit_note
+      - new_total
+      - return_total
+      - to_collect
+      - to_refund
     Role:
       type: object
       description: Role metadata and granted permission codes for owner administration.
