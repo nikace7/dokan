@@ -260,7 +260,7 @@ export function BillingPage() {
                   !workspace.isReady
                 }
                 onClick={hold}
-                className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300"
+                className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300 max-md:min-h-11"
               >
                 {holdMutation.isPending ? t('billing.parking') : t('billing.holdBill')}
               </button>

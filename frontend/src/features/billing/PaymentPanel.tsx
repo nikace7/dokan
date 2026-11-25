@@ -180,7 +180,7 @@ export function PaymentPanel({
       {duePaisa > 0 || customer ? <CustomerPicker /> : null}
 
       {canPickVat ? (
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-slate-700 max-md:min-h-11">
           <input
             type="checkbox"
             checked={isVatBill}
