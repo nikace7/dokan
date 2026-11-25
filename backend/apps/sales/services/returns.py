@@ -40,6 +40,7 @@ from apps.sales.services.create_sale import VAT_RATE, SaleResult
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from core.money import quantize_money
 from core.numbering import allocate_number
+from core.quantity import format_qty
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -96,7 +97,7 @@ def _validate_return_lines(
         if qty > remaining:
             raise ServiceError(
                 "OVER_RETURN",
-                f"Only {remaining} of {item.variant.sku} can still be returned.",
+                f"Only {format_qty(remaining)} of {item.variant.sku} can still be returned.",
             )
         gross = quantize_money(item.unit_price * qty)
         discount = quantize_money(item.discount * qty / item.qty)

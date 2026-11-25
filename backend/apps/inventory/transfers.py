@@ -29,6 +29,7 @@ from apps.inventory.models import StockLevel, StockMovement, StockTransfer, Stoc
 from apps.inventory.receiving import apply_stock_in
 from apps.inventory.services import _lock_level, _write_movement
 from apps.tenants.services import require_plan_feature
+from core.quantity import format_qty
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -102,7 +103,7 @@ def send_transfer(
             if new_qty < _ZERO:
                 raise ServiceError(
                     "STOCK_INSUFFICIENT",
-                    f"Only {level.qty_on_hand} of {item.variant.sku} at "
+                    f"Only {format_qty(level.qty_on_hand)} of {item.variant.sku} at "
                     f"{transfer.from_branch.code}.",
                 )
             item.unit_cost = level.avg_cost
@@ -159,7 +160,8 @@ def receive_transfer(
             if already + qty > item.qty_sent:
                 raise ServiceError(
                     "OVER_RECEIVE",
-                    f"Only {item.qty_sent - already} of {item.variant.sku} is still in transit.",
+                    f"Only {format_qty(item.qty_sent - already)} of {item.variant.sku} "
+                    "is still in transit.",
                 )
             apply_stock_in(
                 tenant,
@@ -217,8 +219,8 @@ def complete_transfer(
                 balance_after=level.qty_on_hand,
                 created_by=created_by,
                 note=(
-                    f"Transfer shortage: sent {item.qty_sent}, "
-                    f"received {received} at {transfer.to_branch.code}"
+                    f"Transfer shortage: sent {format_qty(item.qty_sent)}, "
+                    f"received {format_qty(received)} at {transfer.to_branch.code}"
                 ),
                 business_date=None,
                 ref_type="stock_transfer",
