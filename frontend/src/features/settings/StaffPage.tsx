@@ -251,7 +251,7 @@ export function StaffPage() {
                                   name: member.full_name,
                                 })}
                                 disabled={revokeMutation.isPending}
-                                className="font-medium text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                                className="font-medium text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50 max-md:h-11 max-md:w-11"
                               >
                                 ×
                               </button>

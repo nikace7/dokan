@@ -128,7 +128,7 @@ export function VariantMatrix({
               <button
                 type="button"
                 aria-label={t('catalog.matrix.removeColour', { color })}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground max-md:min-h-11 max-md:min-w-11"
                 onClick={() => setColors((current) => current.filter((c) => c !== color))}
               >
                 ✕
@@ -140,7 +140,7 @@ export function VariantMatrix({
               key={color}
               type="button"
               onClick={() => addColor(color)}
-              className="rounded-md border border-input px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+              className="rounded-md border border-input px-2 py-1 text-xs text-muted-foreground hover:bg-accent max-md:min-h-11 max-md:px-3"
             >
               + {color}
             </button>

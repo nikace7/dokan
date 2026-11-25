@@ -12,6 +12,8 @@ const buttonVariants = cva(
     'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
     // Physical press feedback — the tap shrinks a touch, like native controls.
     'motion-safe:active:scale-[0.98]',
+    // Phones: 44px is the smallest comfortable tap target.
+    'max-md:min-h-11',
     'disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   ].join(' '),
   {
@@ -29,13 +31,13 @@ const buttonVariants = cva(
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        sm: 'h-8 rounded-md px-3 text-xs',
-        default: 'h-9 px-4 py-2 text-sm',
-        md: 'h-9 px-4 py-2 text-sm',
+        sm: 'h-8 rounded-md px-3 text-xs max-md:text-sm',
+        default: 'h-9 px-4 py-2 text-sm max-md:text-base',
+        md: 'h-9 px-4 py-2 text-sm max-md:text-base',
         // Counter hardware often means touch + distance: keep `lg` generously
         // sized (44px+ touch target, docs/SYSTEM_DESIGN.md §7.1).
         lg: 'h-11 rounded-md px-6 text-base',
-        icon: 'h-9 w-9',
+        icon: 'h-9 w-9 max-md:min-w-11',
       },
     },
     defaultVariants: {
