@@ -90,7 +90,7 @@ export function PartyLedgerPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
-      <Card title={t('payments.ledger.title')}>
+      <Card titleAs="h1" title={t('payments.ledger.title')}>
         <div role="tablist" aria-label={t('payments.ledger.typeAria')} className="mb-4 flex gap-2">
           <Button
             role="tab"

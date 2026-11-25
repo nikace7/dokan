@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -260,6 +261,7 @@ export function PaymentsPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
+      <PageHeader title={t('nav.payments')} />
       {statusMessage ? (
         <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}

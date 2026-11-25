@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -78,7 +79,7 @@ export function SettingsPage() {
   if (!canManage) {
     return (
       <main className="mx-auto max-w-3xl p-4">
-        <Card title={t('settings.title')}>
+        <Card titleAs="h1" title={t('settings.title')}>
           <p className="text-sm text-muted-foreground">{t('settings.ownerOnly')}</p>
         </Card>
       </main>
@@ -124,6 +125,7 @@ export function SettingsPage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4">
+      <PageHeader title={t('settings.title')} />
       {statusMessage ? (
         <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}

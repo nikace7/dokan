@@ -162,6 +162,7 @@ export function PurchasingPage() {
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       <Card
+        titleAs="h1"
         title={t('purchasing.title')}
         actions={
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>

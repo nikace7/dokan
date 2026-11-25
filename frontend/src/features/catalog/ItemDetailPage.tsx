@@ -168,6 +168,7 @@ export function ItemDetailPage() {
         </div>
 
         <Card
+          titleAs="h1"
           title={`${item.name} (${item.code})`}
           actions={
             canManage ? (

@@ -74,6 +74,7 @@ export function CustomersPage() {
   return (
     <main className="mx-auto max-w-6xl p-4">
       <Card
+        titleAs="h1"
         title={t('customers.title')}
         actions={
           canManage ? <Button onClick={() => setEditing('new')}>{t('customers.new')}</Button> : null

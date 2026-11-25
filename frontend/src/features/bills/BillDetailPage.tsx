@@ -14,6 +14,7 @@ import { BillStatusBadge, DocTypeBadge } from '@/features/bills/BillBadges';
 import { ReportError, TableSkeleton } from '@/features/reports/ui';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
+import { usePageTitle } from '@/lib/usePageTitle';
 import { useCurrencyStore } from '@/stores/currency';
 
 /**
@@ -59,13 +60,13 @@ function BillDetail({ bill }: { bill: SalesInvoice }) {
   const { t } = useTranslation();
   const number = billNumber(bill);
   const isCompleted = bill.status === 'COMPLETED';
+  const title = number ? t('bills.billTitle', { number }) : t(`bills.noNumber.${bill.status}`);
+  usePageTitle(title);
 
   return (
     <>
       <header className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold">
-          {number ? t('bills.billTitle', { number }) : t(`bills.noNumber.${bill.status}`)}
-        </h1>
+        <h1 className="text-2xl font-semibold">{title}</h1>
         <BillStatusBadge status={bill.status} />
         <DocTypeBadge docType={bill.doc_type} />
       </header>

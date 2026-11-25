@@ -33,6 +33,7 @@ import { useWorkspace } from '@/features/settings/useWorkspace';
 import { formatNpr, toPaisa, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 import { billingPath } from '@/lib/plans';
+import { usePageTitle } from '@/lib/usePageTitle';
 
 const money = (value: string) => formatNpr(value).replace(/\.00$/, '');
 
@@ -48,6 +49,7 @@ const DONUT_TINTS: DonutTint[] = ['green', 'blue', 'amber', 'violet', 'rose'];
  */
 export function DashboardPage() {
   const { t } = useTranslation();
+  usePageTitle(t('nav.dashboard'));
   const { user } = useAuth();
   const workspace = useWorkspace();
   const navigate = useNavigate();
