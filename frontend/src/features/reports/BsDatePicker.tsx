@@ -14,7 +14,6 @@ import {
   toBsString,
 } from '@/lib/bs';
 import { shopAdDate } from '@/lib/dateTime';
-import { cn } from '@/lib/utils';
 
 // The date tables end here; a month outside them cannot be drawn.
 const FIRST_MONTH = SUPPORTED_RANGE.from.slice(0, 7);
@@ -88,8 +87,75 @@ export function BsDatePicker({
   const viewMonth = toBsString({ ...view, day: 1 }).slice(0, 7);
   const monthName = t(`common.bsMonths.${view.month}`);
 
+  const calendar = (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="icon" aria-label={t('reports.range.choose', { label })}>
+          <CalendarDays aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 p-3">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('reports.range.previousMonth')}
+            disabled={viewMonth <= FIRST_MONTH}
+            onClick={() => navigate(-1)}
+          >
+            <ChevronLeft aria-hidden="true" />
+          </Button>
+          <p className="font-semibold" aria-live="polite">
+            {monthName} {view.year}
+          </p>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('reports.range.nextMonth')}
+            disabled={viewMonth >= LAST_MONTH}
+            onClick={() => navigate(1)}
+          >
+            <ChevronRight aria-hidden="true" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+          {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+            <span key={day} aria-hidden="true" className="py-1">
+              {t(`common.weekdays.${day}`)}
+            </span>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: firstWeekday }, (_, index) => (
+            <span key={`blank-${index}`} />
+          ))}
+          {Array.from({ length: monthDays }, (_, index) => index + 1).map((day) => {
+            const isSelected =
+              selected?.year === view.year && selected.month === view.month && selected.day === day;
+            return (
+              <Button
+                key={day}
+                variant={isSelected ? 'default' : 'ghost'}
+                size="icon"
+                className="h-9 w-9 text-xs"
+                aria-label={`${day} ${monthName} ${view.year}`}
+                aria-pressed={isSelected}
+                onClick={() => {
+                  onChange(toBsString({ ...view, day }));
+                  setOpen(false);
+                }}
+              >
+                {day}
+              </Button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
-    <div className={cn('flex items-end gap-1', className)}>
+    <div className={className}>
       <Input
         ref={inputRef}
         id={id}
@@ -105,73 +171,8 @@ export function BsDatePicker({
         placeholder="2083-04-01"
         inputMode="numeric"
         className="w-36"
+        trailing={calendar}
       />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="icon" aria-label={t('reports.range.choose', { label })}>
-            <CalendarDays aria-hidden="true" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-80 p-3">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t('reports.range.previousMonth')}
-              disabled={viewMonth <= FIRST_MONTH}
-              onClick={() => navigate(-1)}
-            >
-              <ChevronLeft aria-hidden="true" />
-            </Button>
-            <p className="font-semibold" aria-live="polite">
-              {monthName} {view.year}
-            </p>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t('reports.range.nextMonth')}
-              disabled={viewMonth >= LAST_MONTH}
-              onClick={() => navigate(1)}
-            >
-              <ChevronRight aria-hidden="true" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
-            {[0, 1, 2, 3, 4, 5, 6].map((day) => (
-              <span key={day} aria-hidden="true" className="py-1">
-                {t(`common.weekdays.${day}`)}
-              </span>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: firstWeekday }, (_, index) => (
-              <span key={`blank-${index}`} />
-            ))}
-            {Array.from({ length: monthDays }, (_, index) => index + 1).map((day) => {
-              const isSelected =
-                selected?.year === view.year &&
-                selected.month === view.month &&
-                selected.day === day;
-              return (
-                <Button
-                  key={day}
-                  variant={isSelected ? 'default' : 'ghost'}
-                  size="icon"
-                  className="h-9 w-9 text-xs"
-                  aria-label={`${day} ${monthName} ${view.year}`}
-                  aria-pressed={isSelected}
-                  onClick={() => {
-                    onChange(toBsString({ ...view, day }));
-                    setOpen(false);
-                  }}
-                >
-                  {day}
-                </Button>
-              );
-            })}
-          </div>
-        </PopoverContent>
-      </Popover>
     </div>
   );
 }
