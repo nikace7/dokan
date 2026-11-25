@@ -110,7 +110,7 @@ export function WorkspaceSelector() {
       <PopoverContent side="top" align="start" className="w-64 p-2">
         {canSwitchBranch ? (
           <div role="group" aria-label={t('settings.workspace.branch')}>
-            <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+            <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t('settings.workspace.branch')}
             </p>
             {workspace.branches.map((b) => (
@@ -127,7 +127,7 @@ export function WorkspaceSelector() {
         {canSwitchBranch && canSwitchRateType ? <div className="mx-1 my-1 h-px bg-muted" /> : null}
         {canSwitchRateType ? (
           <div role="group" aria-label={t('settings.workspace.rateType')}>
-            <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+            <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t('settings.workspace.rateType')}
             </p>
             {workspace.rateTypes.map((r) => (

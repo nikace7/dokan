@@ -13,6 +13,9 @@
  * Semantic token names are unchanged, so existing screens pick up the new
  * color with no class edits. Pastel `--tint-*` pairs for icon chips
  * (StatTile, quick actions) and a soft layered card shadow (`--shadow-card`).
+ *
+ * Text colors keep 4.5:1 on every surface they are used on; tokens.test.ts checks
+ * the pairs.
  */
 :root {
   --background: 0 0% 100%;
@@ -25,26 +28,26 @@
   --popover-foreground: 240 10% 3.9%;
 
   /* Brand blue (blue-600 family) — the ONE accent. */
-  --primary: 221 83% 53%;
+  --primary: 221 83% 51%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 240 5% 96%;
   --secondary-foreground: 240 6% 10%;
 
   --muted: 240 5% 96%;
-  --muted-foreground: 240 4% 46%;
+  --muted-foreground: 240 4% 42%;
 
   /* Soft primary tint — active nav pills, hover surfaces. */
   --accent: 214 95% 93%;
   --accent-foreground: 221 83% 30%;
 
-  --destructive: 0 72% 51%;
+  --destructive: 0 72% 47%;
   --destructive-foreground: 0 0% 100%;
 
-  --success: 142 71% 35%;
+  --success: 142 71% 28%;
   --success-foreground: 0 0% 100%;
 
-  --warning: 32 95% 44%;
+  --warning: 32 95% 32%;
   --warning-foreground: 0 0% 100%;
 
   --border: 240 6% 90%;

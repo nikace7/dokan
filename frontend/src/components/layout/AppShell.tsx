@@ -30,7 +30,7 @@ function PoweredBy({ className }: { className?: string }) {
   return (
     <p
       className={cn(
-        'flex items-center justify-center gap-1 text-[11px] text-muted-foreground/70',
+        'flex items-center justify-center gap-1 text-[11px] text-muted-foreground',
         className,
       )}
     >
@@ -69,7 +69,7 @@ function SideNavLink({ item }: { item: NavItem }) {
           <item.icon
             className={cn(
               'h-4 w-4 shrink-0 transition-colors',
-              isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-foreground',
+              isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
             )}
           />
           {t(`nav.${item.labelKey}`)}
@@ -99,7 +99,7 @@ function SideNav({ items }: { items: NavItem[] }) {
         }
         return (
           <div key={section}>
-            <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {t(`nav.sections.${section}`)}
             </p>
             <div className="space-y-0.5">
