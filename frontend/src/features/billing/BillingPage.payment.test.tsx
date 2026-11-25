@@ -35,6 +35,8 @@ const refusal = (code: string, message: string) =>
     }),
   );
 
+const PLAN = { code: 'pro', name: 'Pro', features: { advanced_pos: true } };
+
 const VARIANT = {
   id: 'var-1',
   sku: 'TS-BLK-M',
@@ -80,7 +82,7 @@ let prices: Record<string, string>;
 function route(input: RequestInfo | URL): Promise<Response> {
   const url = new URL(String(input), 'http://shop.test');
   const path = url.pathname;
-  if (path.endsWith('/auth/me')) return reply({ permissions: ['sale.create'], plan: null });
+  if (path.endsWith('/auth/me')) return reply({ permissions: ['sale.create'], plan: PLAN });
   if (path.endsWith('/print')) return reply({ id: 'sale-1', print_count: 1 });
   if (path.endsWith('/sales/held')) return reply([]);
   if (path.endsWith('/sales/hold')) return reply({ ...INVOICE, status: 'HELD' }, 201);
@@ -151,7 +153,11 @@ describe('BillingPage counter payment', () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.endsWith('/auth/me'))
-        return reply({ id: 'user-1', permissions: ['sale.create', 'cash.manage'] });
+        return reply({
+          id: 'user-1',
+          permissions: ['sale.create', 'cash.manage'],
+          plan: PLAN,
+        });
       if (url.endsWith('/sales')) return refusal('CASH_SESSION_REQUIRED', 'Drawer is closed.');
       return route(input);
     });
