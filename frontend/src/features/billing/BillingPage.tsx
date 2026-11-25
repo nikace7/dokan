@@ -139,7 +139,7 @@ export function BillingPage() {
         {changeNotice}
         <Card className="mx-auto max-w-lg text-center">
           <p className="text-sm font-medium text-blue-700">{t('billing.queuedTitle')}</p>
-          <h2 className="mt-1 text-2xl font-bold">{t('billing.queuedRef', { ref: queuedRef })}</h2>
+          <h1 className="mt-1 text-2xl font-bold">{t('billing.queuedRef', { ref: queuedRef })}</h1>
           <p className="mt-2 text-sm text-slate-600">{t('billing.queuedBody')}</p>
           <Button size="lg" className="mt-6 w-full" onClick={() => setQueuedRef(null)} autoFocus>
             {t('billing.receipt.newBill')}
