@@ -39,7 +39,7 @@ export function CartTable() {
             <th className="py-2 pr-2 text-right font-medium">{t('billing.rate')}</th>
             <th className="py-2 pr-2 text-right font-medium">{discountLabel}</th>
             <th className="py-2 pr-2 text-right font-medium">{t('billing.total')}</th>
-            <th className="py-2 font-medium" aria-label="Actions" />
+            <th className="py-2 font-medium" aria-label={t('common.actions')} />
           </tr>
         </thead>
         <tbody className="max-sm:block">
@@ -56,7 +56,7 @@ export function CartTable() {
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    aria-label={`Decrease quantity of ${line.label}`}
+                    aria-label={t('billing.line.decrease', { name: line.label })}
                     className="h-8 w-8 rounded border border-slate-300 max-md:h-11 max-md:w-11 text-lg leading-none hover:bg-slate-50 disabled:opacity-40"
                     onClick={() => setQuantity(line.variantId, line.quantity - 1)}
                   >
@@ -65,7 +65,7 @@ export function CartTable() {
                   <span className="w-8 text-center font-medium">{line.quantity}</span>
                   <button
                     type="button"
-                    aria-label={`Increase quantity of ${line.label}`}
+                    aria-label={t('billing.line.increase', { name: line.label })}
                     className="h-8 w-8 rounded border border-slate-300 max-md:h-11 max-md:w-11 text-lg leading-none hover:bg-slate-50 disabled:opacity-40"
                     onClick={() => setQuantity(line.variantId, line.quantity + 1)}
                   >
@@ -100,7 +100,7 @@ export function CartTable() {
               <td className="py-2 text-right max-sm:col-start-2 max-sm:row-start-1">
                 <button
                   type="button"
-                  aria-label={`Remove ${line.label}`}
+                  aria-label={t('billing.line.remove', { name: line.label })}
                   className="rounded px-2 py-1 text-red-600 hover:bg-red-50 disabled:opacity-40 max-md:h-11 max-md:w-11"
                   onClick={() => removeLine(line.variantId)}
                 >

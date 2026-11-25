@@ -15,6 +15,7 @@ import type { ItemListFilters } from '@/features/catalog/api';
 import { ItemCard } from '@/features/catalog/ItemCard';
 import { selectClasses } from '@/features/catalog/ui';
 import { hasPermission } from '@/lib/permissions';
+import { useDebounced } from '@/lib/useDebounced';
 
 /**
  * The catalog — a storefront-style photo grid (2-up on phones, up to 5-up on
@@ -27,12 +28,13 @@ export function ItemsPage() {
   const { user } = useAuth();
   const canManage = hasPermission(user, 'catalog.manage');
   const [search, setSearch] = useState('');
+  const term = useDebounced(search);
   const [category, setCategory] = useState('');
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('active');
   const [page, setPage] = useState(1);
 
   const filters: ItemListFilters = {
-    search: search.trim() || undefined,
+    search: term || undefined,
     category: category || undefined,
     isActive: status === 'all' ? undefined : status === 'active',
     page,

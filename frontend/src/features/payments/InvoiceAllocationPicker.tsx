@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/ui/Input';
+import { billNumber } from '@/features/billing/api';
 import {
   listCustomerAllocationInvoices,
   listSupplierAllocationInvoices,
@@ -89,7 +90,9 @@ function AllocationField({
 }) {
   const { t } = useTranslation();
   useMoneyDisplay();
-  const label = t('payments.allocation.fieldLabel', { invoice: invoice.invoice_no ?? '—' });
+  const { invoice_prefix, doc_type = 'SALE', invoice_no } = invoice;
+  const number = invoice_prefix ? billNumber({ invoice_prefix, doc_type, invoice_no }) : invoice_no;
+  const label = t('payments.allocation.fieldLabel', { invoice: number ?? '—' });
   return (
     <Input
       label={label}

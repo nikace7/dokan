@@ -11,6 +11,7 @@ import { recordSupplierPayment } from '@/features/payments/api';
 import { InvoiceAllocationPicker } from '@/features/payments/InvoiceAllocationPicker';
 import type { ReceiptMethod } from '@/features/payments/api';
 import { ApiError } from '@/lib/api/client';
+import { useDebounced } from '@/lib/useDebounced';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 
 const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
@@ -33,10 +34,11 @@ function SupplierField({
   onClear: () => void;
 }) {
   const { t } = useTranslation();
+  const term = useDebounced(search);
   const query = useQuery({
-    queryKey: ['payments', 'suppliers', search],
-    queryFn: () => listSuppliers(search),
-    enabled: search.trim().length >= 2 && !supplier,
+    queryKey: ['payments', 'suppliers', term],
+    queryFn: () => listSuppliers(term),
+    enabled: term.length >= 2 && !supplier,
     staleTime: 30_000,
   });
   const suppliers = (query.data?.data ?? []).filter((item) => item.is_active);
@@ -186,7 +188,7 @@ export function SupplierPaymentForm({ onRecorded }: { onRecorded: () => void }) 
         >
           {METHODS.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {t(`common.methods.${option}`)}
             </option>
           ))}
         </select>

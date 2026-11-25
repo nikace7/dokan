@@ -20,6 +20,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/features/auth/useAuth';
 import { hasPermission } from '@/lib/permissions';
@@ -99,7 +100,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/catalog', labelKey: 'catalog', icon: Package },
   { to: '/pricing', labelKey: 'pricing', icon: Tag },
   { to: '/customers', labelKey: 'customers', icon: Users },
-  { to: '/stock', labelKey: 'stock', icon: Boxes, end: true },
+  { to: '/stock', labelKey: 'stock', icon: Boxes },
   {
     to: '/stock/transfers',
     labelKey: 'transfers',
@@ -149,9 +150,17 @@ export const MOBILE_TABS_AFTER_FAB = ['/reports'] as const;
 
 export function useVisibleNavItems(): NavItem[] {
   const { user } = useAuth();
-  return NAV_ITEMS.filter(
+  const { pathname } = useLocation();
+  const allowed = NAV_ITEMS.filter(
     (item) => canOpen(user, item.to) && (!item.feature || hasPlanFeature(user, item.feature)),
-  ).map((item) => {
+  );
+  // /settings/security is under /settings but has its own entry: only the
+  // longer one is highlighted there.
+  const ownedBy = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+  return allowed.map((item) => {
+    if (allowed.some((other) => other.to.startsWith(`${item.to}/`) && ownedBy(other.to))) {
+      return { ...item, end: true };
+    }
     if (item.to === '/settings' && !hasPermission(user, 'settings.manage')) {
       return { ...item, to: '/settings/staff' };
     }

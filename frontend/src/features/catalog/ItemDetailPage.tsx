@@ -25,6 +25,7 @@ import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
+import { formatQty } from '@/lib/quantity';
 
 /** Item.gender codes → the shared genderOptions i18n keys. */
 const GENDER_LABEL_KEY = {
@@ -168,6 +169,7 @@ export function ItemDetailPage() {
         </div>
 
         <Card
+          titleAs="h1"
           title={`${item.name} (${item.code})`}
           actions={
             canManage ? (
@@ -229,7 +231,7 @@ export function ItemDetailPage() {
             </div>
             <div>
               <dt className="text-muted-foreground">{t('catalog.detail.reorderLevel')}</dt>
-              <dd>{item.reorder_level ?? '—'}</dd>
+              <dd>{formatQty(item.reorder_level)}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">{t('catalog.detail.mrpRange')}</dt>

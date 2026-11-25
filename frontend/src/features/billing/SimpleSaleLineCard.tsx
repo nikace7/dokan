@@ -12,6 +12,7 @@ import {
 } from '@/features/billing/simpleSaleModel';
 import type { SimpleLine } from '@/features/billing/simpleSaleModel';
 import { baseSymbol, formatPaisa, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 interface SimpleSaleLineCardProps {
   line: SimpleLine;
@@ -50,7 +51,7 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
               </span>
             </p>
             <p className="text-xs text-muted-foreground">
-              {variant.sku} · {t('common.stock', { qty: variant.qty_on_hand })}
+              {variant.sku} · {t('common.stock', { qty: formatQty(variant.qty_on_hand) })}
             </p>
           </div>
         </div>
@@ -58,7 +59,9 @@ export function SimpleSaleLineCard({ line, onChange, onRemove }: SimpleSaleLineC
           variant="ghost"
           size="sm"
           className="text-destructive"
-          aria-label={`Remove ${variant.item_name} ${variant.size} ${variant.color}`}
+          aria-label={t('billing.line.remove', {
+            name: `${variant.item_name} ${variant.size} ${variant.color}`,
+          })}
           onClick={() => onRemove(line.key)}
         >
           {t('common.remove')}

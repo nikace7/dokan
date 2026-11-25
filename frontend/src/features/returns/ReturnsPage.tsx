@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
+import { billNumber, parseBillNumber } from '@/features/billing/api';
 import { createReturn, getReturnableLines, listSales } from '@/features/returns/api';
 import type { RefundMethod, ReturnableLine, SaleSummary } from '@/features/returns/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 const REFUND_METHODS: RefundMethod[] = [
   'CREDIT_NOTE',
@@ -108,7 +110,7 @@ function ReturnEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: () 
               >
                 {REFUND_METHODS.map((method) => (
                   <option key={method} value={method}>
-                    {method}
+                    {t(`common.methods.${method}`)}
                   </option>
                 ))}
               </select>
@@ -153,7 +155,7 @@ function ReturnLineField({
         <span className="font-medium">{line.item_name}</span>{' '}
         <span className="text-xs text-muted-foreground">{line.sku}</span>
         <span className="block text-xs text-muted-foreground">
-          {t('returns.line.remaining', { remaining: line.remaining })}
+          {t('returns.line.remaining', { remaining: formatQty(line.remaining) })}
         </span>
       </div>
       <div className="flex items-center gap-2">
@@ -193,8 +195,9 @@ export function ReturnsPage() {
 
   function submitSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const raw = invoiceInput.trim();
-    if (!/^\d+$/.test(raw)) {
+    const number = parseBillNumber(invoiceInput);
+    // RET-7 is a credit note; bill 7 is a different sale.
+    if (number === null || /^\s*RET-/i.test(invoiceInput)) {
       setSearchError(t('returns.search.invalid'));
       return;
     }
@@ -202,7 +205,7 @@ export function ReturnsPage() {
     setStatusMessage(null);
     setExpandedId(null);
     setPage(1);
-    setSearchInvoice(Number(raw));
+    setSearchInvoice(number);
   }
 
   function clearSearch() {
@@ -220,7 +223,7 @@ export function ReturnsPage() {
           {statusMessage}
         </p>
       ) : null}
-      <Card title={t('returns.title')}>
+      <Card titleAs="h1" title={t('returns.title')}>
         <p className="mb-3 text-sm text-muted-foreground">{t('returns.help')}</p>
         <form onSubmit={submitSearch} className="mb-3 flex flex-wrap items-end gap-2">
           <Input
@@ -265,7 +268,7 @@ export function ReturnsPage() {
               className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
               <span className="font-medium">
-                {t('returns.invoice', { number: sale.invoice_no ?? '—' })}
+                {t('returns.invoice', { number: billNumber(sale) ?? '—' })}
               </span>
               <span className="text-muted-foreground">
                 {sale.customer_name || t('common.walkIn')}

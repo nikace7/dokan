@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { onPlatformSignedOut } from '@/features/admin/authed';
 import { isPlatformHost } from '@/features/admin/supportHandoff';
@@ -22,9 +23,10 @@ const LandingPage = lazy(() =>
 );
 
 function AppLoading() {
+  const { t } = useTranslation();
   return (
     <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-      Loading application…
+      {t('common.loading')}
     </main>
   );
 }

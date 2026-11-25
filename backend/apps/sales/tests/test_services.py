@@ -208,6 +208,7 @@ class TestStockRules:
                 payments=[{"method": "CASH", "amount": Decimal("49400.00")}],
             )
         assert exc.value.code == "STOCK_INSUFFICIENT"
+        assert ".000" not in str(exc.value.message)
         # Nothing was written: no invoice, no movement, number not burned.
         assert SalesInvoice.objects.filter(tenant=shop["tenant"]).count() == 0
         assert StockMovement.objects.filter(type=StockMovement.MovementType.SALE).count() == 0

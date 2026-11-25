@@ -23,6 +23,7 @@ from apps.audit.services import audit
 from apps.inventory.models import StockLevel, StockMovement
 from core.calendar.bs import ad_to_bs, fiscal_year_bs
 from core.money import quantize_money
+from core.quantity import format_qty
 from core.responses import ServiceError
 
 if TYPE_CHECKING:
@@ -124,7 +125,7 @@ def post_sale_movement(
     if new_qty < _ZERO:
         raise ServiceError(
             "STOCK_INSUFFICIENT",
-            f"Only {level.qty_on_hand} of {variant.sku} in stock.",
+            f"Only {format_qty(level.qty_on_hand)} of {variant.sku} in stock.",
         )
     unit_cost = level.avg_cost
     level.qty_on_hand = new_qty
@@ -223,7 +224,8 @@ def adjust_stock(
         if new_qty < _ZERO:
             raise ServiceError(
                 "STOCK_INSUFFICIENT",
-                f"Only {level.qty_on_hand} in stock; cannot adjust by {qty_delta}.",
+                f"Only {format_qty(level.qty_on_hand)} in stock; "
+                f"cannot adjust by {format_qty(qty_delta)}.",
             )
         level.qty_on_hand = new_qty
         level.save(update_fields=["qty_on_hand", "updated_at"])
@@ -275,7 +277,8 @@ def write_off_damage(
         if new_qty < _ZERO:
             raise ServiceError(
                 "STOCK_INSUFFICIENT",
-                f"Only {level.qty_on_hand} in stock; cannot write off {qty}.",
+                f"Only {format_qty(level.qty_on_hand)} in stock; "
+                f"cannot write off {format_qty(qty)}.",
             )
         level.qty_on_hand = new_qty
         level.save(update_fields=["qty_on_hand", "updated_at"])

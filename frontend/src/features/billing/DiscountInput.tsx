@@ -21,7 +21,7 @@ export function DiscountInput({ line }: { line: CartLine }) {
   return (
     <>
       <input
-        aria-label={`Discount for ${line.label}`}
+        aria-label={t('billing.line.discount', { name: line.label })}
         aria-invalid={problem !== null}
         aria-describedby={problem ? errorId : undefined}
         value={line.discountRaw ?? stored}

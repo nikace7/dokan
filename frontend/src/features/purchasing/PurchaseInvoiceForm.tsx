@@ -11,7 +11,9 @@ import { createInvoice, listSuppliers } from '@/features/purchasing/api';
 import type { PurchaseInvoice } from '@/features/purchasing/api';
 import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { VariantPicker } from '@/features/catalog/VariantPicker';
+import { BsDateField } from '@/features/reports/BsDateField';
 import { ApiError } from '@/lib/api/client';
+import { shopAdDate } from '@/lib/dateTime';
 import { MoneyError, multiplyPaisa, toPaisa } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 import { formatPaisa, useMoneyDisplay } from '@/lib/money';
@@ -51,12 +53,6 @@ interface PurchaseInvoiceFormProps {
   onCancel: () => void;
 }
 
-function todayIso(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
 const selectClasses =
   'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
@@ -72,7 +68,7 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
   const allowVatBill = hasPlanFeature(user, 'vat_module');
   const queryClient = useQueryClient();
   const [supplier, setSupplier] = useState('');
-  const [billDate, setBillDate] = useState(todayIso());
+  const [billDate, setBillDate] = useState(() => shopAdDate());
   const [isVatBill, setIsVatBill] = useState(false);
   const [otherCharges, setOtherCharges] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
@@ -175,12 +171,11 @@ export function PurchaseInvoiceForm({ onCreated, onCancel }: PurchaseInvoiceForm
               ))}
           </select>
         </div>
-        <Input
-          label={t('purchasing.form.billDate')}
+        <BsDateField
           id="purchase-date"
-          type="date"
+          label={t('purchasing.form.billDate')}
           value={billDate}
-          onChange={(e) => setBillDate(e.target.value)}
+          onChange={setBillDate}
           required
         />
         {allowVatBill ? (

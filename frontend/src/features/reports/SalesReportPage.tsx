@@ -21,6 +21,7 @@ import type { ReportColumn } from '@/features/reports/ui';
 import { addPaisa, formatNpr, formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 import { hasPlanFeature } from '@/lib/plans';
+import { formatQty } from '@/lib/quantity';
 
 type Tab = 'daily' | 'monthly' | 'items';
 type DailyView = 'table' | 'chart';
@@ -35,7 +36,7 @@ function money(amount: string): string {
 
 function qtyTotal(rows: readonly { qty: string }[]): string {
   const total = rows.reduce((sum, row) => sum + Number(row.qty), 0);
-  return Number.isInteger(total) ? String(total) : total.toFixed(2);
+  return formatQty(total);
 }
 
 /** Sales report — daily by BS date, monthly by fiscal year, top items. */
@@ -78,6 +79,7 @@ export function SalesReportPage() {
   return (
     <main className="report-print-area mx-auto w-full max-w-6xl p-4">
       <Card
+        titleAs="h1"
         title={t('reports.sales.title')}
         actions={
           <ReportActions
@@ -358,7 +360,7 @@ function ItemsTable({ rows }: { rows: ItemSalesRow[] }) {
           <TableCell className="text-muted-foreground">
             {row.size} / {row.color}
           </TableCell>
-          <TableCell className="text-right tabular-nums">{row.qty}</TableCell>
+          <TableCell className="text-right tabular-nums">{formatQty(row.qty)}</TableCell>
           <MoneyCell>{money(row.amount)}</MoneyCell>
         </>
       )}
@@ -368,7 +370,7 @@ function ItemsTable({ rows }: { rows: ItemSalesRow[] }) {
             <p className="font-medium">{row.item_name}</p>
             <p className="truncate text-muted-foreground">
               {row.sku} · {row.size} / {row.color} ·{' '}
-              {t('reports.sales.qtyShort', { count: row.qty })}
+              {t('reports.sales.qtyShort', { count: formatQty(row.qty) })}
             </p>
           </div>
           <p className="text-right font-semibold tabular-nums">{money(row.amount)}</p>

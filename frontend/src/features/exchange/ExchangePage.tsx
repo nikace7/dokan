@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
+import { billNumber } from '@/features/billing/api';
 import {
   createExchange,
   getReturnableLines,
@@ -21,6 +22,7 @@ import type {
 import { ItemImage } from '@/features/catalog/ui';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 const PAYMENT_METHODS: ExchangePaymentMethod[] = [
   'CASH',
@@ -200,7 +202,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
           >
             {PAYMENT_METHODS.map((method) => (
               <option key={method} value={method}>
-                {method}
+                {t(`common.methods.${method}`)}
               </option>
             ))}
           </select>
@@ -248,7 +250,7 @@ function LineList({
             <span className="font-medium">{line.item_name}</span>{' '}
             <span className="text-xs text-muted-foreground">{line.sku}</span>
             <span className="block text-xs text-muted-foreground">
-              {t('exchange.line.remaining', { remaining: line.remaining })}
+              {t('exchange.line.remaining', { remaining: formatQty(line.remaining) })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -292,7 +294,7 @@ export function ExchangePage() {
           {statusMessage}
         </p>
       ) : null}
-      <Card title={t('exchange.title')}>
+      <Card titleAs="h1" title={t('exchange.title')}>
         <p className="mb-3 text-sm text-muted-foreground">{t('exchange.help')}</p>
         {salesQuery.isFetching ? (
           <p className="py-4 text-sm text-muted-foreground">{t('exchange.loading')}</p>
@@ -314,7 +316,7 @@ export function ExchangePage() {
               className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
               <span className="font-medium">
-                {t('exchange.invoice', { number: sale.invoice_no ?? '—' })}
+                {t('exchange.invoice', { number: billNumber(sale) ?? '—' })}
               </span>
               <span className="text-muted-foreground">
                 {sale.customer_name || t('common.walkIn')}

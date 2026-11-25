@@ -21,7 +21,9 @@ import type { LedgerRow } from '@/features/payments/api';
 import { listSuppliers } from '@/features/purchasing/api';
 import type { Supplier } from '@/features/purchasing/api';
 import { ApiError } from '@/lib/api/client';
+import { adToBsText } from '@/lib/dateTime';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { useDebounced } from '@/lib/useDebounced';
 
 type Party = 'customer' | 'supplier';
 
@@ -59,15 +61,17 @@ export function PartyLedgerPage() {
     }
   }, [preselect.data, customer]);
 
+  const customerTerm = useDebounced(customerSearch);
+  const supplierTerm = useDebounced(supplierSearch);
   const customerQuery = useQuery({
-    queryKey: ['ledger', 'customers', customerSearch],
-    queryFn: () => searchCustomers(customerSearch),
-    enabled: party === 'customer' && customerSearch.trim().length >= 2 && !customer,
+    queryKey: ['ledger', 'customers', customerTerm],
+    queryFn: () => searchCustomers(customerTerm),
+    enabled: party === 'customer' && customerTerm.length >= 2 && !customer,
   });
   const supplierQuery = useQuery({
-    queryKey: ['ledger', 'suppliers', supplierSearch],
-    queryFn: () => listSuppliers(supplierSearch),
-    enabled: party === 'supplier' && supplierSearch.trim().length >= 2 && !supplier,
+    queryKey: ['ledger', 'suppliers', supplierTerm],
+    queryFn: () => listSuppliers(supplierTerm),
+    enabled: party === 'supplier' && supplierTerm.length >= 2 && !supplier,
   });
   const ledgerQuery = useQuery<LedgerRow[]>({
     queryKey: ['ledger', party, selectedId],
@@ -90,7 +94,7 @@ export function PartyLedgerPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
-      <Card title={t('payments.ledger.title')}>
+      <Card titleAs="h1" title={t('payments.ledger.title')}>
         <div role="tablist" aria-label={t('payments.ledger.typeAria')} className="mb-4 flex gap-2">
           <Button
             role="tab"
@@ -227,6 +231,10 @@ function PartySearch({
 function LedgerTable({ rows }: { rows: LedgerRow[] }) {
   const { t } = useTranslation();
   useMoneyDisplay();
+  const kindLabel = (row: LedgerRow) =>
+    t(`payments.ledger.kinds.${row.kind}`, { defaultValue: row.kind });
+  // A bill number, or the method a payment was made by.
+  const refLabel = (row: LedgerRow) => t(`common.methods.${row.ref}`, { defaultValue: row.ref });
   if (rows.length === 0) {
     return (
       <p className="mt-4 py-8 text-center text-sm text-muted-foreground">
@@ -245,12 +253,12 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
         {rows.map((row, index) => (
           <li key={`${row.date}-${row.kind}-${row.ref}-${index}`} className="py-3 text-sm">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="font-medium">{row.ref}</span>
+              <span className="font-medium">{kindLabel(row)}</span>
               <span className="font-semibold tabular-nums">{formatNpr(row.balance)}</span>
             </div>
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
-              <span>{row.date}</span>
-              <span>{row.kind}</span>
+              <span>{adToBsText(row.date)}</span>
+              <span>{refLabel(row)}</span>
             </div>
             <div className="mt-1 flex gap-4 text-xs text-muted-foreground tabular-nums">
               <span>
@@ -278,9 +286,9 @@ function LedgerTable({ rows }: { rows: LedgerRow[] }) {
           <TableBody>
             {rows.map((row, index) => (
               <TableRow key={`${row.date}-${row.kind}-${row.ref}-${index}`}>
-                <TableCell className="whitespace-nowrap">{row.date}</TableCell>
-                <TableCell>{row.kind}</TableCell>
-                <TableCell>{row.ref}</TableCell>
+                <TableCell className="whitespace-nowrap">{adToBsText(row.date)}</TableCell>
+                <TableCell>{kindLabel(row)}</TableCell>
+                <TableCell>{refLabel(row) || '—'}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatNpr(row.debit, { symbol: '' })}
                 </TableCell>

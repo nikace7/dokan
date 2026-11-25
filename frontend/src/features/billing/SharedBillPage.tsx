@@ -4,10 +4,11 @@ import { Link, useParams } from 'react-router-dom';
 
 import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getSharedBill } from '@/features/billing/api';
+import { billNumber, getSharedBill } from '@/features/billing/api';
 import type { SharedBill } from '@/features/billing/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 /**
  * The public online bill (`/bill/:token`) — no auth, no app shell. Anyone
@@ -28,7 +29,7 @@ export function SharedBillPage() {
   if (query.isPending) {
     return (
       <Shell>
-        <div role="status" aria-label="Loading bill" className="space-y-3">
+        <div role="status" aria-label={t('common.loading')} className="space-y-3">
           <Skeleton className="mx-auto h-8 w-40" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
@@ -80,7 +81,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function BillCard({ bill }: { bill: SharedBill }) {
   const { t } = useTranslation();
-  const invoiceNumber = `${bill.doc_type === 'RETURN' ? 'RET' : bill.invoice_prefix}-${bill.invoice_no}`;
+  const invoiceNumber = billNumber(bill);
   return (
     <Card>
       <div className="text-center">
@@ -129,7 +130,7 @@ function BillCard({ bill }: { bill: SharedBill }) {
                   <span className="block text-xs text-muted-foreground">{item.item_name_np}</span>
                 ) : null}
               </td>
-              <td className="py-1.5 text-right">{item.qty}</td>
+              <td className="py-1.5 text-right">{formatQty(item.qty)}</td>
               <td className="py-1.5 text-right">{formatNpr(item.unit_price, { symbol: '' })}</td>
               <td className="py-1.5 text-right">{formatNpr(item.line_total, { symbol: '' })}</td>
             </tr>
@@ -154,7 +155,7 @@ function BillCard({ bill }: { bill: SharedBill }) {
         {bill.tenders.map((tender, index) => (
           <Row
             key={`${tender.method}-${index}`}
-            label={`${t('sharedBill.tender')} · ${tender.method}`}
+            label={`${t('sharedBill.tender')} · ${t(`common.methods.${tender.method}`, { defaultValue: tender.method })}`}
             value={tender.amount}
           />
         ))}

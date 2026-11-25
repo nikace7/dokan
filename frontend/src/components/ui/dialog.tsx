@@ -2,6 +2,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ComponentPropsWithoutRef, ElementRef, HTMLAttributes } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 
@@ -32,6 +33,7 @@ const DialogContent = forwardRef<
   ElementRef<typeof DialogPrimitive.Content>,
   ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(function DialogContent({ className, children, ...props }, ref) {
+  const { t } = useTranslation();
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -53,7 +55,7 @@ const DialogContent = forwardRef<
             'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
             'disabled:pointer-events-none',
           )}
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <X className="h-4 w-4" />
         </DialogPrimitive.Close>

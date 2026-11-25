@@ -61,7 +61,7 @@ function BrandPanel() {
           ))}
         </ul>
       </div>
-      <p className="relative text-xs text-primary-foreground/70">{t('auth.brandFooter')}</p>
+      <p className="relative text-xs text-primary-foreground">{t('auth.brandFooter')}</p>
     </div>
   );
 }
@@ -115,7 +115,9 @@ export function LoginPage() {
 
           <Card className="w-full shadow-card">
             <CardHeader className="space-y-1 pb-4 text-center">
-              <CardTitle className="text-xl">{t('auth.title')}</CardTitle>
+              <CardTitle className="text-xl">
+                <h1>{t('auth.title')}</h1>
+              </CardTitle>
               <CardDescription>{t('auth.subtitle')}</CardDescription>
             </CardHeader>
             <CardContent>

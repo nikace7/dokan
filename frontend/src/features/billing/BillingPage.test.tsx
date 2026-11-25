@@ -188,6 +188,8 @@ describe('BillingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /complete sale/i }));
 
     expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+    // The receipt is the whole screen now, so the heading is on it.
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.getByText(/2083-04-15/)).toBeInTheDocument();
     expect(screen.getByText('Shree Ganesh')).toBeInTheDocument();
     expect(screen.getByText(/PAN\/VAT: 123456789/)).toBeInTheDocument();

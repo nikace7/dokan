@@ -73,7 +73,7 @@ export function PasswordResetPage() {
           </Link>
           <LanguageToggle />
         </div>
-        <Card title={t('auth.reset.title')}>
+        <Card titleAs="h1" title={t('auth.reset.title')}>
           {complete ? (
             <div className="space-y-4">
               <p role="status" className="rounded-md bg-accent p-3 text-sm text-accent-foreground">

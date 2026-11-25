@@ -26,6 +26,7 @@ import { ApiError } from '@/lib/api/client';
 import type { Page } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 import { hasPermission } from '@/lib/permissions';
+import { formatQty } from '@/lib/quantity';
 
 export function CountsPage() {
   const { t } = useTranslation();
@@ -131,7 +132,12 @@ function CountCard({
 }) {
   const { t } = useTranslation();
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(count.items.map((item) => [item.variant, item.counted_qty ?? ''])),
+    Object.fromEntries(
+      count.items.map((item) => [
+        item.variant,
+        item.counted_qty ? String(Number(item.counted_qty)) : '',
+      ]),
+    ),
   );
   const [notes, setNotes] = useState<Record<string, string>>(() =>
     Object.fromEntries(count.items.map((item) => [item.variant, item.note ?? ''])),
@@ -202,7 +208,7 @@ function CountCard({
 
   return (
     <Card
-      title={`${count.status} · ${count.branch_code}`}
+      title={`${t(`inventory.counts.status.${count.status}`)} · ${count.branch_code}`}
       actions={
         <Badge variant="secondary" className="font-medium">
           {t('inventory.counts.startedBy', {
@@ -220,11 +226,13 @@ function CountCard({
           <>
             <TableCell className="font-medium">{item.item_name}</TableCell>
             <TableCell className="text-muted-foreground">{item.variant_sku}</TableCell>
-            <TableCell className="text-right tabular-nums">{item.system_qty}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatQty(item.system_qty)}</TableCell>
             <TableCell className="text-right tabular-nums">
-              {counting ? countedInput(item.variant, item.variant_sku) : (item.counted_qty ?? '—')}
+              {counting
+                ? countedInput(item.variant, item.variant_sku)
+                : formatQty(item.counted_qty)}
             </TableCell>
-            <TableCell className="text-right tabular-nums">{item.variance ?? '—'}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatQty(item.variance)}</TableCell>
             <TableCell>
               {counting ? noteInput(item.variant, item.variant_sku) : (item.note ?? '—')}
             </TableCell>
@@ -239,8 +247,8 @@ function CountCard({
               </div>
               <p className="shrink-0 text-right tabular-nums">
                 {t('inventory.counts.systemVariance', {
-                  qty: item.system_qty,
-                  variance: item.variance ?? '—',
+                  qty: formatQty(item.system_qty),
+                  variance: formatQty(item.variance),
                 })}
               </p>
             </div>
@@ -251,7 +259,7 @@ function CountCard({
               </div>
             ) : (
               <p className="mt-1 text-muted-foreground">
-                {t('inventory.counts.counted', { qty: item.counted_qty ?? '—' })} ·{' '}
+                {t('inventory.counts.counted', { qty: formatQty(item.counted_qty) })} ·{' '}
                 {item.note ?? '—'}
               </p>
             )}

@@ -17,6 +17,7 @@ import { ReportActions } from '@/features/reports/ReportActions';
 import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { hasPlanFeature } from '@/lib/plans';
+import { formatQty } from '@/lib/quantity';
 
 type Tab = 'summary' | 'low' | 'dead';
 
@@ -59,6 +60,7 @@ export function StockReportsPage() {
   return (
     <main className="report-print-area mx-auto w-full max-w-6xl p-4">
       <Card
+        titleAs="h1"
         title={t('reports.stock.title')}
         actions={
           <ReportActions
@@ -179,7 +181,7 @@ function SummaryTable({ rows }: { rows: StockSummaryRow[] }) {
           <TableCell className="font-medium">{row.sku}</TableCell>
           <TableCell>{row.item_name}</TableCell>
           <TableCell className="text-muted-foreground">{row.branch_code}</TableCell>
-          <TableCell className="text-right tabular-nums">{row.qty_on_hand}</TableCell>
+          <TableCell className="text-right tabular-nums">{formatQty(row.qty_on_hand)}</TableCell>
           <MoneyCell>{money(row.mrp)}</MoneyCell>
           <MoneyCell>{money(row.mrp_valuation)}</MoneyCell>
           {showCost ? <MoneyCell>{money(row.avg_cost)}</MoneyCell> : null}
@@ -198,7 +200,7 @@ function SummaryTable({ rows }: { rows: StockSummaryRow[] }) {
             </p>
           </div>
           <div className="text-right">
-            <p className="font-semibold tabular-nums">{row.qty_on_hand}</p>
+            <p className="font-semibold tabular-nums">{formatQty(row.qty_on_hand)}</p>
             <p className="text-xs text-muted-foreground">MRP {money(row.mrp)}</p>
           </div>
         </div>
@@ -226,9 +228,9 @@ function LowTable({ rows }: { rows: LowStockRow[] }) {
           <TableCell className="font-medium">{row.sku}</TableCell>
           <TableCell>{row.item_name}</TableCell>
           <TableCell className="text-right tabular-nums">
-            <Badge variant="warning">{row.qty_on_hand}</Badge>
+            <Badge variant="warning">{formatQty(row.qty_on_hand)}</Badge>
           </TableCell>
-          <TableCell className="text-right tabular-nums">{row.reorder_level}</TableCell>
+          <TableCell className="text-right tabular-nums">{formatQty(row.reorder_level)}</TableCell>
         </>
       )}
       renderCard={(row) => (
@@ -236,10 +238,12 @@ function LowTable({ rows }: { rows: LowStockRow[] }) {
           <div className="min-w-0">
             <p className="font-medium">{row.item_name}</p>
             <p className="truncate text-muted-foreground">
-              {row.sku} · {t('reports.stock.reorderAt', { level: row.reorder_level })}
+              {row.sku} · {t('reports.stock.reorderAt', { level: formatQty(row.reorder_level) })}
             </p>
           </div>
-          <Badge variant="warning">{t('reports.stock.qtyLeft', { count: row.qty_on_hand })}</Badge>
+          <Badge variant="warning">
+            {t('reports.stock.qtyLeft', { count: formatQty(row.qty_on_hand) })}
+          </Badge>
         </div>
       )}
     />
@@ -263,7 +267,7 @@ function DeadTable({ rows }: { rows: DeadStockRow[] }) {
         <>
           <TableCell className="font-medium">{row.sku}</TableCell>
           <TableCell>{row.item_name}</TableCell>
-          <TableCell className="text-right tabular-nums">{row.qty_on_hand}</TableCell>
+          <TableCell className="text-right tabular-nums">{formatQty(row.qty_on_hand)}</TableCell>
         </>
       )}
       renderCard={(row) => (
@@ -273,7 +277,7 @@ function DeadTable({ rows }: { rows: DeadStockRow[] }) {
             <p className="truncate text-muted-foreground">{row.sku}</p>
           </div>
           <p className="font-semibold tabular-nums">
-            {t('reports.stock.qtyOnHand', { count: row.qty_on_hand })}
+            {t('reports.stock.qtyOnHand', { count: formatQty(row.qty_on_hand) })}
           </p>
         </div>
       )}

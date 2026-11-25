@@ -23,6 +23,8 @@ import type { ReportColumn } from '@/features/reports/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 import { hasPermission } from '@/lib/permissions';
 import { hasPlanFeature } from '@/lib/plans';
+import { formatQty } from '@/lib/quantity';
+import { useDebounced } from '@/lib/useDebounced';
 import { cn } from '@/lib/utils';
 
 type Dialog = 'opening' | 'adjustment' | 'write-off' | null;
@@ -32,6 +34,7 @@ export function StockPage() {
   const { user, isRestoring } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const term = useDebounced(search);
   const [page, setPage] = useState(1);
   const [movementPage, setMovementPage] = useState(1);
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -40,10 +43,9 @@ export function StockPage() {
   const canView = hasPermission(user, 'stock.view');
   const canAdjust = hasPermission(user, 'stock.adjust');
   const canTransfer = hasPlanFeature(user, 'multi_branch');
-
   const levelsQuery = useQuery({
-    queryKey: ['inventory', 'levels', search, page],
-    queryFn: () => listLevels({ search: search.trim() || undefined, page }),
+    queryKey: ['inventory', 'levels', term, page],
+    queryFn: () => listLevels({ search: term || undefined, page }),
     enabled: canView,
   });
   const movementsQuery = useQuery({
@@ -104,6 +106,7 @@ export function StockPage() {
   return (
     <main className="mx-auto max-w-6xl space-y-4 p-4">
       <Card
+        titleAs="h1"
         title={t('inventory.stock.title')}
         actions={
           <HeaderActions
@@ -172,9 +175,11 @@ export function StockPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{level.variant_sku}</TableCell>
                 <TableCell className="text-muted-foreground">{level.branch_code}</TableCell>
-                <TableCell className="text-right tabular-nums">{level.qty_on_hand}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatQty(level.qty_on_hand)}
+                </TableCell>
                 <TableCell className="text-right text-muted-foreground tabular-nums">
-                  {level.qty_reserved}
+                  {formatQty(level.qty_reserved)}
                 </TableCell>
                 {showCost ? (
                   <TableCell className="text-right tabular-nums">
@@ -212,9 +217,9 @@ export function StockPage() {
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-semibold tabular-nums">{level.qty_on_hand}</p>
+                  <p className="font-semibold tabular-nums">{formatQty(level.qty_on_hand)}</p>
                   <p className="text-xs text-muted-foreground tabular-nums">
-                    {t('inventory.stock.reserved', { qty: level.qty_reserved })}
+                    {t('inventory.stock.reserved', { qty: formatQty(level.qty_reserved) })}
                   </p>
                 </div>
               </button>
@@ -241,7 +246,9 @@ export function StockPage() {
             renderCells={(movement) => (
               <>
                 <TableCell>{movement.business_date_bs}</TableCell>
-                <TableCell className="font-medium">{movement.type}</TableCell>
+                <TableCell className="font-medium">
+                  {t(`inventory.movements.types.${movement.type}`, { defaultValue: movement.type })}
+                </TableCell>
                 <TableCell className="text-muted-foreground">{movement.variant_sku}</TableCell>
                 <TableCell className="text-muted-foreground">{movement.branch_code}</TableCell>
                 <TableCell
@@ -250,9 +257,11 @@ export function StockPage() {
                     Number(movement.qty_delta) < 0 ? 'text-destructive' : 'text-success',
                   )}
                 >
-                  {movement.qty_delta}
+                  {formatQty(movement.qty_delta)}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{movement.balance_after}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatQty(movement.balance_after)}
+                </TableCell>
                 <TableCell>{movement.note || '—'}</TableCell>
                 <TableCell>{movement.created_by_name || t('inventory.system')}</TableCell>
               </>
@@ -260,21 +269,25 @@ export function StockPage() {
             renderCard={(movement) => (
               <div className="text-sm">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-medium">{movement.type}</p>
+                  <p className="font-medium">
+                    {t(`inventory.movements.types.${movement.type}`, {
+                      defaultValue: movement.type,
+                    })}
+                  </p>
                   <p
                     className={cn(
                       'shrink-0 font-medium tabular-nums',
                       Number(movement.qty_delta) < 0 ? 'text-destructive' : 'text-success',
                     )}
                   >
-                    {movement.qty_delta}
+                    {formatQty(movement.qty_delta)}
                   </p>
                 </div>
                 <p className="text-muted-foreground">
                   {movement.business_date_bs} · {movement.variant_sku} · {movement.branch_code}
                 </p>
                 <p className="text-muted-foreground">
-                  {t('inventory.movements.balance', { qty: movement.balance_after })} ·{' '}
+                  {t('inventory.movements.balance', { qty: formatQty(movement.balance_after) })} ·{' '}
                   {movement.note || '—'} · {movement.created_by_name || t('inventory.system')}
                 </p>
               </div>

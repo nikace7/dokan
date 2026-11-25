@@ -156,6 +156,12 @@ class SalesInvoice(TenantScopedModel):
     def __str__(self) -> str:
         return f"{self.doc_type} {self.invoice_no or 'HELD'} ({self.status})"
 
+    @property
+    def number(self) -> str:
+        """The number printed on the bill: INV-7, or RET-7 for a credit note."""
+        prefix = "RET" if self.doc_type == self.DocType.RETURN else self.branch.invoice_prefix
+        return f"{prefix}-{self.invoice_no}"
+
 
 class SalesInvoiceItem(TenantScopedModel):
     """One bill line. cost_at_sale is a SNAPSHOT — never recomputed."""

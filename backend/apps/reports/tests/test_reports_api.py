@@ -208,7 +208,7 @@ class TestDashboardApi:
         data = response.json()["data"]
         assert data["sales"]["today_total"] == "2260.00"
         assert data["sales"]["bill_count"] == 1
-        assert data["recent_bills"][0]["invoice_no"] == shop["sale"].invoice_no
+        assert data["recent_bills"][0]["invoice_no"] == f"INV-{shop['sale'].invoice_no}"
         assert "low_stock" not in data
 
     def test_owner_gets_profit_and_dues_tiles(self, tenant: Any, user: Any, shop: dict) -> None:

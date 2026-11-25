@@ -25,6 +25,7 @@ import { refreshSyncState } from '@/lib/offline/sync';
 import { formatBaseMoney } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 import { hasPlanFeature } from '@/lib/plans';
+import { usePageTitle } from '@/lib/usePageTitle';
 import { discountProblem, useCartStore } from '@/stores/cartStore';
 import type { UnconfirmedSale } from '@/stores/cartStore';
 
@@ -44,6 +45,7 @@ export function BillingPage() {
   const workspace = useWorkspace();
   const { user } = useAuth();
   const { t } = useTranslation();
+  usePageTitle(t('nav.billing'));
 
   const repricing = useRepriceCart(workspace.rateTypeId);
 
@@ -137,7 +139,7 @@ export function BillingPage() {
         {changeNotice}
         <Card className="mx-auto max-w-lg text-center">
           <p className="text-sm font-medium text-blue-700">{t('billing.queuedTitle')}</p>
-          <h2 className="mt-1 text-2xl font-bold">{t('billing.queuedRef', { ref: queuedRef })}</h2>
+          <h1 className="mt-1 text-2xl font-bold">{t('billing.queuedRef', { ref: queuedRef })}</h1>
           <p className="mt-2 text-sm text-slate-600">{t('billing.queuedBody')}</p>
           <Button size="lg" className="mt-6 w-full" onClick={() => setQueuedRef(null)} autoFocus>
             {t('billing.receipt.newBill')}
@@ -172,6 +174,8 @@ export function BillingPage() {
 
   return (
     <main className="mx-auto grid max-w-6xl grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      {/* Hidden: the counter screen needs the height. */}
+      <h1 className="sr-only">{t('nav.billing')}</h1>
       <SyncStatusBanner />
       {workspace.isLoading ? (
         <p

@@ -30,6 +30,8 @@ import { useWorkspace } from '@/features/settings/useWorkspace';
 import { ApiError } from '@/lib/api/client';
 import { hasPermission } from '@/lib/permissions';
 import { hasPlanFeature } from '@/lib/plans';
+import { formatQty } from '@/lib/quantity';
+
 export function TransfersPage() {
   const { t } = useTranslation();
   const { user, isRestoring } = useAuth();
@@ -105,7 +107,7 @@ export function TransfersPage() {
         <div className="flex flex-wrap gap-2">
           {transitQuery.data?.map((row) => (
             <Badge key={row.variant_id} variant="warning" className="text-sm font-medium">
-              {row.sku}: {row.qty_in_transit}
+              {row.sku}: {formatQty(row.qty_in_transit)}
             </Badge>
           ))}
         </div>

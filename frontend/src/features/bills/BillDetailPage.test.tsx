@@ -111,6 +111,7 @@ describe('BillDetailPage', () => {
     expect(fetchMock.mock.calls.some(([input]) => /\/v1\/sales\/bill-1$/.test(String(input)))).toBe(
       true,
     );
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.getByText('Sita Cashier')).toBeInTheDocument();
     expect(screen.getByText('Festival offer')).toBeInTheDocument();
     expect(screen.getByText('VAT bill')).toBeInTheDocument();

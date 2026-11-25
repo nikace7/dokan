@@ -13,7 +13,10 @@ import { ShareBillPanel } from '@/features/billing/ShareBillPanel';
 import { BillStatusBadge, DocTypeBadge } from '@/features/bills/BillBadges';
 import { ReportError, TableSkeleton } from '@/features/reports/ui';
 import { ApiError } from '@/lib/api/client';
+import { formatTime } from '@/lib/dateTime';
 import { formatNpr } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
+import { usePageTitle } from '@/lib/usePageTitle';
 import { useCurrencyStore } from '@/stores/currency';
 
 /**
@@ -59,13 +62,13 @@ function BillDetail({ bill }: { bill: SalesInvoice }) {
   const { t } = useTranslation();
   const number = billNumber(bill);
   const isCompleted = bill.status === 'COMPLETED';
+  const title = number ? t('bills.billTitle', { number }) : t(`bills.noNumber.${bill.status}`);
+  usePageTitle(title);
 
   return (
     <>
       <header className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold">
-          {number ? t('bills.billTitle', { number }) : t(`bills.noNumber.${bill.status}`)}
-        </h1>
+        <h1 className="text-2xl font-semibold">{title}</h1>
         <BillStatusBadge status={bill.status} />
         <DocTypeBadge docType={bill.doc_type} />
       </header>
@@ -90,13 +93,12 @@ function BillDetail({ bill }: { bill: SalesInvoice }) {
 
 function BillFacts({ bill }: { bill: SalesInvoice }) {
   const { t } = useTranslation();
-  const createdAt = new Date(bill.created_at);
   return (
     <Card title={t('bills.detail.details')}>
       <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
         <Fact label={t('bills.detail.date')}>
           {t('bills.detail.bsDate', { date: bill.business_date_bs })} ·{' '}
-          <time dateTime={bill.created_at}>{createdAt.toLocaleString()}</time>
+          <time dateTime={bill.datetime_ad}>{formatTime(bill.datetime_ad)}</time>
         </Fact>
         <Fact label={t('bills.detail.customer')}>{bill.customer_name ?? t('billing.walkIn')}</Fact>
         <Fact label={t('bills.detail.branch')}>{bill.branch_name}</Fact>
@@ -161,11 +163,11 @@ function BillCalculation({ bill }: { bill: SalesInvoice }) {
                   ) : null}
                   {!isZero(item.returned_qty) ? (
                     <span className="block text-xs text-amber-700">
-                      {t('bills.detail.returnedQty', { qty: Number(item.returned_qty) })}
+                      {t('bills.detail.returnedQty', { qty: formatQty(item.returned_qty) })}
                     </span>
                   ) : null}
                 </td>
-                <td className="py-2 text-right tabular-nums">{Number(item.qty)}</td>
+                <td className="py-2 text-right tabular-nums">{formatQty(item.qty)}</td>
                 <td className="py-2 text-right tabular-nums">{plain(item.unit_price)}</td>
                 <td className="py-2 text-right tabular-nums">
                   {isZero(item.discount) ? '—' : `-${plain(item.discount)}`}
@@ -199,7 +201,7 @@ function BillCalculation({ bill }: { bill: SalesInvoice }) {
         {bill.tenders.map((tender, index) => (
           <Line
             key={`${tender.method}-${index}`}
-            label={`· ${tender.method}`}
+            label={`· ${t(`common.methods.${tender.method}`, { defaultValue: tender.method })}`}
             value={money(tender.amount)}
             muted
           />

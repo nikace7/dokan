@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -156,7 +157,7 @@ function ReceiptForm({ onRecorded }: { onRecorded: () => void }) {
         >
           {METHODS.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {t(`common.methods.${option}`)}
             </option>
           ))}
         </select>
@@ -200,7 +201,9 @@ function PaymentList({ payments }: { payments: Payment[] }) {
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground">
               <span>{payment.business_date_bs}</span>
-              <Badge variant="outline">{payment.method}</Badge>
+              <Badge variant="outline">
+                {t(`common.methods.${payment.method}`, { defaultValue: payment.method })}
+              </Badge>
               <span>{payment.note || '—'}</span>
             </div>
           </li>
@@ -223,7 +226,9 @@ function PaymentList({ payments }: { payments: Payment[] }) {
                 <TableCell className="whitespace-nowrap">{payment.business_date_bs}</TableCell>
                 <TableCell className="font-medium">{payment.customer_name || '—'}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{payment.method}</Badge>
+                  <Badge variant="outline">
+                    {t(`common.methods.${payment.method}`, { defaultValue: payment.method })}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{payment.note || '—'}</TableCell>
                 <TableCell className="text-right font-semibold tabular-nums">
@@ -260,6 +265,7 @@ export function PaymentsPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
+      <PageHeader title={t('nav.payments')} />
       {statusMessage ? (
         <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}
@@ -300,7 +306,7 @@ export function PaymentsPage() {
                 <option value="">{t('payments.allMethods')}</option>
                 {METHODS.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {t(`common.methods.${option}`)}
                   </option>
                 ))}
               </select>

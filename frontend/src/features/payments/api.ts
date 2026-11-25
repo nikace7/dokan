@@ -30,7 +30,10 @@ export interface LedgerRow {
 
 export interface AllocationInvoice {
   id: string;
-  invoice_no: string | number | null;
+  /** Sales only: a purchase is known by the supplier's own number. */
+  invoice_prefix?: string;
+  doc_type?: string;
+  invoice_no: number | null;
   due_amount: string;
   outstanding: string;
 }

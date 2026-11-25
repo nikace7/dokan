@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { usePageTitle } from '@/lib/usePageTitle';
 import { cn } from '@/lib/utils';
 
 /**
@@ -18,6 +19,7 @@ export function PageHeader({
   actions?: ReactNode;
   className?: string;
 }) {
+  usePageTitle(title);
   return (
     <div className={cn('flex flex-wrap items-start justify-between gap-3', className)}>
       <div className="min-w-0 space-y-1">

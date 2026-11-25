@@ -21,7 +21,43 @@
     "closeForm": "Close form",
     "close": "Close",
     "pageOf": "Page {{page}} of {{total}}",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "methods": {
+      "CASH": "Cash",
+      "ESEWA": "eSewa",
+      "KHALTI": "Khalti",
+      "FONEPAY": "Fonepay",
+      "QR": "QR",
+      "CARD": "Card",
+      "BANK": "Bank",
+      "CREDIT": "Credit",
+      "POINTS": "Points",
+      "CREDIT_NOTE": "Credit note"
+    },
+    "actions": "Actions",
+    "bsMonths": {
+      "1": "Baisakh",
+      "2": "Jestha",
+      "3": "Ashadh",
+      "4": "Shrawan",
+      "5": "Bhadra",
+      "6": "Ashwin",
+      "7": "Kartik",
+      "8": "Mangsir",
+      "9": "Poush",
+      "10": "Magh",
+      "11": "Falgun",
+      "12": "Chaitra"
+    },
+    "weekdays": {
+      "0": "Su",
+      "1": "Mo",
+      "2": "Tu",
+      "3": "We",
+      "4": "Th",
+      "5": "Fr",
+      "6": "Sa"
+    }
   },
   "language": {
     "label": "Language",
@@ -231,6 +267,12 @@
       "queuedAt": "queued {{time}}",
       "serverSaid": "Server said: {{message}}",
       "failedExplain": "The sale never happened server-side. Discard it here and re-ring it at the counter if the customer still wants it."
+    },
+    "line": {
+      "decrease": "Decrease quantity of {{name}}",
+      "increase": "Increase quantity of {{name}}",
+      "remove": "Remove {{name}}",
+      "discount": "Discount for {{name}}"
     }
   },
   "simpleSale": {
@@ -310,10 +352,10 @@
     },
     "search": {
       "label": "Bill no.",
-      "placeholder": "e.g. 42",
+      "placeholder": "e.g. INV-42",
       "button": "Find",
       "clear": "Clear",
-      "invalid": "Enter a whole bill number."
+      "invalid": "Enter a bill number, like INV-42."
     },
     "columns": {
       "number": "Bill no.",
@@ -511,7 +553,15 @@
       "date": "Date",
       "type": "Type",
       "reference": "Reference",
-      "balance": "Balance"
+      "balance": "Balance",
+      "kinds": {
+        "OPENING": "Opening balance",
+        "SALE": "Sale",
+        "RECEIPT": "Payment received",
+        "CREDIT_NOTE": "Return",
+        "PURCHASE": "Purchase",
+        "PAYMENT": "Payment made"
+      }
     }
   },
   "purchasing": {
@@ -543,7 +593,7 @@
     "form": {
       "supplier": "Supplier",
       "pickSupplier": "— pick —",
-      "billDate": "Bill date (AD)",
+      "billDate": "Bill date (BS)",
       "vatBill": "VAT bill",
       "addLinePlaceholder": "Add a line: search item…",
       "quantityFor": "Quantity for {{label}}",
@@ -626,11 +676,11 @@
     "recorded": "Return recorded.",
     "search": {
       "label": "Invoice no.",
-      "placeholder": "e.g. 42",
+      "placeholder": "e.g. INV-42",
       "button": "Find",
       "clear": "Show all",
       "empty": "No completed sale with invoice {{number}}.",
-      "invalid": "Enter a whole invoice number."
+      "invalid": "Enter a bill number, like INV-42."
     },
     "editor": {
       "loadingLines": "Loading returnable lines…",
@@ -692,8 +742,8 @@
     "actionPlaceholder": "e.g. price.set",
     "targetType": "Target type",
     "targetTypePlaceholder": "e.g. item_price",
-    "fromAd": "From AD",
-    "toAd": "To AD",
+    "from": "From (BS)",
+    "to": "To (BS)",
     "system": "System",
     "before": "Before",
     "after": "After",
@@ -921,7 +971,12 @@
       "revokeNamed": "Revoke {{name}}",
       "revokeOthers": "Revoke other devices",
       "revoked": "Device access revoked.",
-      "othersRevoked": "All other devices were revoked."
+      "othersRevoked": "All other devices were revoked.",
+      "devices": {
+        "Mobile device": "Mobile device",
+        "Web browser": "Web browser",
+        "Unknown device": "Unknown device"
+      }
     }
   },
   "dashboard": {
@@ -960,7 +1015,8 @@
       "title": "Last 30 days sales",
       "empty": "No completed sales in the last 30 days.",
       "netSales": "Net sales"
-    }
+    },
+    "allBranches": "All branches"
   },
   "reports": {
     "title": "Reports",
@@ -981,7 +1037,8 @@
       "today": "Today",
       "lastMonth": "Last month",
       "previousMonth": "Previous BS month",
-      "nextMonth": "Next BS month"
+      "nextMonth": "Next BS month",
+      "choose": "Choose {{label}}"
     },
     "actions": {
       "excel": "Download Excel",
@@ -1328,6 +1385,18 @@
         "balance": "Balance",
         "reasonNote": "Reason / note",
         "by": "By"
+      },
+      "types": {
+        "OPENING": "Opening stock",
+        "PURCHASE": "Purchase",
+        "SALE": "Sale",
+        "SALE_RETURN": "Sale return",
+        "PURCHASE_RETURN": "Purchase return",
+        "TRANSFER_IN": "Transfer in",
+        "TRANSFER_OUT": "Transfer out",
+        "ADJUSTMENT": "Adjustment",
+        "DAMAGE": "Damage",
+        "COUNT": "Physical count"
       }
     },
     "operation": {
@@ -1400,7 +1469,13 @@
       "cancelBody": "The draft can't be used again. No stock has moved.",
       "completeTitle": "Complete this transfer?",
       "completeBody": "Everything sent was received. A completed transfer can't be changed.",
-      "completeShort": "{{qty}} not received yet will be written off as a shortage. This can't be undone."
+      "completeShort": "{{qty}} not received yet will be written off as a shortage. This can't be undone.",
+      "status": {
+        "DRAFT": "Draft",
+        "SENT": "Sent",
+        "RECEIVED": "Received",
+        "CANCELLED": "Cancelled"
+      }
     },
     "counts": {
       "title": "Physical counts",
@@ -1434,7 +1509,12 @@
       "finalizeTitle": "Finalize this count?",
       "finalizeBody": "The quantities on screen are saved and become the shop's stock. {{differing}} of {{total}} items differ from the system. This can't be undone.",
       "cancelTitle": "Cancel this count?",
-      "cancelBody": "Everything counted so far is thrown away. Stock does not change."
+      "cancelBody": "Everything counted so far is thrown away. Stock does not change.",
+      "status": {
+        "OPEN": "Open",
+        "FINALIZED": "Finalized",
+        "CANCELLED": "Cancelled"
+      }
     }
   },
   "pricing": {
@@ -1479,8 +1559,8 @@
       "variantTarget": "Variant target",
       "selectVariant": "Select variant",
       "sellingPrice": "Selling price",
-      "effectiveFrom": "Effective from",
-      "effectiveTo": "Effective to",
+      "effectiveFrom": "Effective from (BS)",
+      "effectiveTo": "Effective to (BS)",
       "changeReason": "Change reason",
       "save": "Save price",
       "guardrails": "Optional selling-price guardrails",
@@ -1586,6 +1666,8 @@
   },
   "errorPage": {
     "title": "Something went wrong on this page",
-    "body": "Reload the page to try again. If it keeps happening, tell your shop system provider which page you were on."
+    "body": "Reload the page to try again. If it keeps happening, tell your shop system provider which page you were on.",
+    "notFound": "Page not found",
+    "notFoundBody": "This page does not exist."
   }
 }

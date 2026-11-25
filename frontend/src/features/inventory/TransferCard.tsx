@@ -9,6 +9,7 @@ import type { StockTransfer, TransferLinePayload } from '@/features/inventory/ap
 import { cellInputClasses } from '@/features/inventory/ui';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
+import { formatQty } from '@/lib/quantity';
 import { cn } from '@/lib/utils';
 
 interface TransferCardProps {
@@ -52,7 +53,9 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
     />
   );
   return (
-    <Card title={`${transfer.status} · ${transfer.created_by_name ?? t('inventory.system')}`}>
+    <Card
+      title={`${t(`inventory.transfers.status.${transfer.status}`)} · ${transfer.created_by_name ?? t('inventory.system')}`}
+    >
       <h2 className="text-lg font-semibold">
         {transfer.from_branch_code} → {transfer.to_branch_code}
       </h2>
@@ -67,8 +70,10 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
             <>
               <TableCell className="font-medium">{item.item_name}</TableCell>
               <TableCell className="text-muted-foreground">{item.variant_sku}</TableCell>
-              <TableCell className="text-right tabular-nums">{item.qty_sent}</TableCell>
-              <TableCell className="text-right tabular-nums">{item.qty_received ?? '0'}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatQty(item.qty_sent)}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {formatQty(item.qty_received ?? 0)}
+              </TableCell>
               {receiving ? (
                 <TableCell>{receiptInput(item.variant, item.variant_sku)}</TableCell>
               ) : null}
@@ -83,8 +88,8 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
               <div className="flex shrink-0 flex-col items-end gap-1 text-right">
                 <p className="tabular-nums">
                   {t('inventory.transfers.sentReceived', {
-                    sent: item.qty_sent,
-                    received: item.qty_received ?? '0',
+                    sent: formatQty(item.qty_sent),
+                    received: formatQty(item.qty_received ?? 0),
                   })}
                 </p>
                 {receiving ? receiptInput(item.variant, item.variant_sku) : null}

@@ -19,6 +19,7 @@ import {
 } from '@/features/auth/api';
 import type { AuthSession, LoginOtpStatus } from '@/features/auth/api';
 import { ApiError } from '@/lib/api/client';
+import { formatDateTime } from '@/lib/dateTime';
 
 const SESSIONS_KEY = ['auth', 'sessions'] as const;
 const OTP_KEY = ['auth', 'login-otp'] as const;
@@ -27,16 +28,13 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
 }
 
-function seenAt(value: string): string {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
-    new Date(value),
-  );
-}
-
 /** Self-service password, login-code, and registered-device controls. */
 export function SecurityPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  // The app stores these names in English; anything else is shown as stored.
+  const deviceName = (name: string) =>
+    t(`security.sessions.devices.${name}`, { defaultValue: name });
   const sessions = useQuery({ queryKey: SESSIONS_KEY, queryFn: listAuthSessions, retry: false });
   const otpStatus = useQuery({ queryKey: OTP_KEY, queryFn: getLoginOtpStatus, retry: false });
   const [currentPassword, setCurrentPassword] = useState('');
@@ -279,7 +277,7 @@ export function SecurityPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
-                      {session.device_name}{' '}
+                      {deviceName(session.device_name)}{' '}
                       {session.current ? (
                         <span className="text-xs text-primary">
                           ({t('security.sessions.current')})
@@ -287,14 +285,18 @@ export function SecurityPage() {
                       ) : null}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t('security.sessions.lastSeen', { date: seenAt(session.last_seen_at) })}
+                      {t('security.sessions.lastSeen', {
+                        date: formatDateTime(session.last_seen_at),
+                      })}
                     </p>
                   </div>
                   {!session.current ? (
                     <Button
                       size="sm"
                       variant="outline"
-                      aria-label={t('security.sessions.revokeNamed', { name: session.device_name })}
+                      aria-label={t('security.sessions.revokeNamed', {
+                        name: deviceName(session.device_name),
+                      })}
                       onClick={() => revokeMutation.mutate(session.id)}
                       loading={revokeMutation.isPending && revokeMutation.variables === session.id}
                     >

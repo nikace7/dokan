@@ -4,6 +4,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ComponentPropsWithoutRef, ElementRef, HTMLAttributes } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 
@@ -60,6 +61,7 @@ interface SheetContentProps
 
 const SheetContent = forwardRef<ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
   function SheetContent({ side = 'right', className, children, ...props }, ref) {
+    const { t } = useTranslation();
     return (
       <SheetPortal>
         <SheetOverlay />
@@ -75,7 +77,7 @@ const SheetContent = forwardRef<ElementRef<typeof SheetPrimitive.Content>, Sheet
               'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
               'disabled:pointer-events-none',
             )}
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </SheetPrimitive.Close>

@@ -46,6 +46,7 @@ export function VatRegisterPage() {
   return (
     <main className="report-print-area mx-auto w-full max-w-6xl p-4">
       <Card
+        titleAs="h1"
         title={t('reports.vat.title')}
         actions={
           <ReportActions
@@ -141,7 +142,7 @@ function SalesRegister({ data }: { data: VatRegister<SalesVatRow> }) {
     <ReportTable
       columns={columns}
       rows={data.rows}
-      rowKey={(row) => `${row.doc_type}:${row.invoice_no}`}
+      rowKey={(row) => `${row.business_date_bs}:${row.invoice_no}`}
       empty={t('reports.vat.emptySales')}
       renderCells={(row) => (
         <>
