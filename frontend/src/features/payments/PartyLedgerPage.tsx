@@ -23,6 +23,7 @@ import type { Supplier } from '@/features/purchasing/api';
 import { ApiError } from '@/lib/api/client';
 import { adToBsText } from '@/lib/dateTime';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { useDebounced } from '@/lib/useDebounced';
 
 type Party = 'customer' | 'supplier';
 
@@ -60,15 +61,17 @@ export function PartyLedgerPage() {
     }
   }, [preselect.data, customer]);
 
+  const customerTerm = useDebounced(customerSearch);
+  const supplierTerm = useDebounced(supplierSearch);
   const customerQuery = useQuery({
-    queryKey: ['ledger', 'customers', customerSearch],
-    queryFn: () => searchCustomers(customerSearch),
-    enabled: party === 'customer' && customerSearch.trim().length >= 2 && !customer,
+    queryKey: ['ledger', 'customers', customerTerm],
+    queryFn: () => searchCustomers(customerTerm),
+    enabled: party === 'customer' && customerTerm.length >= 2 && !customer,
   });
   const supplierQuery = useQuery({
-    queryKey: ['ledger', 'suppliers', supplierSearch],
-    queryFn: () => listSuppliers(supplierSearch),
-    enabled: party === 'supplier' && supplierSearch.trim().length >= 2 && !supplier,
+    queryKey: ['ledger', 'suppliers', supplierTerm],
+    queryFn: () => listSuppliers(supplierTerm),
+    enabled: party === 'supplier' && supplierTerm.length >= 2 && !supplier,
   });
   const ledgerQuery = useQuery<LedgerRow[]>({
     queryKey: ['ledger', party, selectedId],

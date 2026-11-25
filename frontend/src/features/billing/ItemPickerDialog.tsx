@@ -14,8 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { searchVariantsForSale } from '@/features/billing/api';
 import type { VariantForSale } from '@/features/billing/api';
 import { SaleItemTile } from '@/features/billing/SaleItemTile';
-
-const DEBOUNCE_MS = 300;
+import { useDebounced } from '@/lib/useDebounced';
 
 interface ItemPickerDialogProps {
   open: boolean;
@@ -33,24 +32,16 @@ interface ItemPickerDialogProps {
 export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemPickerDialogProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
-  const [debounced, setDebounced] = useState('');
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(search.trim()), DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const term = useDebounced(search);
 
   // Reset the search every time the picker is opened for a fresh line.
   useEffect(() => {
-    if (open) {
-      setSearch('');
-      setDebounced('');
-    }
+    if (open) setSearch('');
   }, [open]);
 
   const query = useQuery({
-    queryKey: ['catalog', 'for-sale', branchId, debounced],
-    queryFn: () => searchVariantsForSale(branchId as string, debounced),
+    queryKey: ['catalog', 'for-sale', branchId, term],
+    queryFn: () => searchVariantsForSale(branchId as string, term),
     enabled: open && branchId !== null,
     staleTime: 30_000,
   });

@@ -10,6 +10,7 @@ import type { AuditLog } from '@/features/audit/api';
 import { BsDateField } from '@/features/reports/BsDateField';
 import { ApiError } from '@/lib/api/client';
 import { formatDateTime } from '@/lib/dateTime';
+import { useDebounced } from '@/lib/useDebounced';
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
@@ -66,12 +67,14 @@ export function AuditPage() {
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const actionTerm = useDebounced(action);
+  const targetTerm = useDebounced(targetType);
   const query = useQuery({
-    queryKey: ['audit', 'list', action, targetType, dateFrom, dateTo, page],
+    queryKey: ['audit', 'list', actionTerm, targetTerm, dateFrom, dateTo, page],
     queryFn: () =>
       listAuditLogs({
-        action: action.trim() || undefined,
-        targetType: targetType.trim() || undefined,
+        action: actionTerm || undefined,
+        targetType: targetTerm || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
         page,
