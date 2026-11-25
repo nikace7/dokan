@@ -68,7 +68,11 @@ describe('BillingPage offline', () => {
             email: null,
             must_change_password: false,
             permissions: ['sale.create'],
-            plan: { code: 'basic', name: 'Basic', features: { vat_module: true } },
+            plan: {
+              code: 'basic',
+              name: 'Basic',
+              features: { advanced_pos: true, vat_module: true },
+            },
           }),
         );
       }
