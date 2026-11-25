@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import i18n from 'i18next';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { CartTable } from '@/features/billing/CartTable';
@@ -68,6 +69,19 @@ describe('CartTable', () => {
     ]);
     // One set of controls for both layouts, so nothing can be edited twice.
     expect(screen.getAllByLabelText('Discount for T-Shirt')).toHaveLength(1);
+  });
+
+  it('labels the controls in the shop language', async () => {
+    await i18n.changeLanguage('ne');
+    try {
+      render(<CartTable />);
+      const controls = [...screen.getAllByRole('button'), ...screen.getAllByRole('textbox')];
+      for (const control of controls) {
+        expect(control.getAttribute('aria-label')).toMatch(/^T-Shirt (को|हटाउ)/);
+      }
+    } finally {
+      await i18n.changeLanguage('en');
+    }
   });
 
   it('charges a held bill what was stored when it was parked', () => {
