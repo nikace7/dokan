@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/useAuth';
@@ -62,6 +63,7 @@ export function DuesReportPage() {
 
   return (
     <main className="report-print-area mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
+      <PageHeader title={t('reports.links.dues.title')} />
       <Card
         title={t('reports.dues.customerTitle')}
         actions={<ReportActions canExport={hasPlanFeature(user, 'export_excel')} report="dues" />}

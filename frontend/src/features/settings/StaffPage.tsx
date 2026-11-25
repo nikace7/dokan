@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -98,7 +99,7 @@ export function StaffPage() {
   if (!canManage) {
     return (
       <main className="mx-auto max-w-5xl p-4">
-        <Card title={t('settings.staff.title')}>
+        <Card titleAs="h1" title={t('settings.staff.title')}>
           <p className="text-sm text-muted-foreground">{t('settings.staff.ownerOnly')}</p>
         </Card>
       </main>
@@ -128,6 +129,7 @@ export function StaffPage() {
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
+      <PageHeader title={t('settings.staff.title')} />
       {statusMessage ? (
         <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}

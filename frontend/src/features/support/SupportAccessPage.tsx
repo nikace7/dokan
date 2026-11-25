@@ -18,7 +18,7 @@ export function SupportAccessPage() {
 
   return (
     <main className="mx-auto max-w-5xl p-4">
-      <Card title={t('support.page.title')}>
+      <Card titleAs="h1" title={t('support.page.title')}>
         {query.isPending ? <p className="text-sm text-slate-500">{t('common.loading')}</p> : null}
         {query.isError ? (
           <p role="alert" className="text-sm text-red-600">

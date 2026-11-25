@@ -41,7 +41,7 @@ export function ItemFormPage() {
 
   return (
     <main className="mx-auto max-w-3xl p-4">
-      <Card title={t('catalog.form.editTitle', { code: itemQuery.data.code })}>
+      <Card titleAs="h1" title={t('catalog.form.editTitle', { code: itemQuery.data.code })}>
         <ItemForm
           initial={itemQuery.data}
           onSaved={(item) => navigate(`/catalog/items/${item.id}`)}

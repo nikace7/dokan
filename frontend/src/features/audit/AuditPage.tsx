@@ -89,7 +89,7 @@ export function AuditPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
-      <Card title={t('audit.title')}>
+      <Card titleAs="h1" title={t('audit.title')}>
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Input
             label={t('audit.action')}

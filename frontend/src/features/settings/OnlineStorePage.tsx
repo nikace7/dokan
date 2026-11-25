@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -99,7 +100,7 @@ export function OnlineStorePage() {
   if (!canManage) {
     return (
       <main className="mx-auto max-w-3xl p-4">
-        <Card title={t('settings.store.title')}>
+        <Card titleAs="h1" title={t('settings.store.title')}>
           <p className="text-sm text-muted-foreground">{t('settings.ownerOnly')}</p>
         </Card>
       </main>
@@ -178,6 +179,7 @@ export function OnlineStorePage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4">
+      <PageHeader title={t('settings.store.title')} />
       {statusMessage ? (
         <p role="status" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
           {statusMessage}

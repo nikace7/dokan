@@ -104,6 +104,7 @@ export function StockPage() {
   return (
     <main className="mx-auto max-w-6xl space-y-4 p-4">
       <Card
+        titleAs="h1"
         title={t('inventory.stock.title')}
         actions={
           <HeaderActions

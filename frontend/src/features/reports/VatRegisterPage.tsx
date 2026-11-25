@@ -46,6 +46,7 @@ export function VatRegisterPage() {
   return (
     <main className="report-print-area mx-auto w-full max-w-6xl p-4">
       <Card
+        titleAs="h1"
         title={t('reports.vat.title')}
         actions={
           <ReportActions

@@ -220,7 +220,7 @@ export function ReturnsPage() {
           {statusMessage}
         </p>
       ) : null}
-      <Card title={t('returns.title')}>
+      <Card titleAs="h1" title={t('returns.title')}>
         <p className="mb-3 text-sm text-muted-foreground">{t('returns.help')}</p>
         <form onSubmit={submitSearch} className="mb-3 flex flex-wrap items-end gap-2">
           <Input

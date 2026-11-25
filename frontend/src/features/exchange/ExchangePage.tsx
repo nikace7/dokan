@@ -292,7 +292,7 @@ export function ExchangePage() {
           {statusMessage}
         </p>
       ) : null}
-      <Card title={t('exchange.title')}>
+      <Card titleAs="h1" title={t('exchange.title')}>
         <p className="mb-3 text-sm text-muted-foreground">{t('exchange.help')}</p>
         {salesQuery.isFetching ? (
           <p className="py-4 text-sm text-muted-foreground">{t('exchange.loading')}</p>

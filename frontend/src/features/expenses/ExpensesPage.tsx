@@ -122,6 +122,7 @@ export function ExpensesPage() {
       ) : null}
 
       <Card
+        titleAs="h1"
         title={t('expenses.title')}
         actions={
           <Button
