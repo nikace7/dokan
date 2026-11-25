@@ -80,7 +80,7 @@ export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit:
             {canEdit && rate.is_active && !rate.is_default ? (
               <button
                 type="button"
-                className="mt-3 text-xs text-destructive underline disabled:text-muted-foreground"
+                className="mt-3 text-xs text-destructive underline disabled:text-muted-foreground max-md:min-h-11"
                 disabled={deactivate.isPending}
                 onClick={() => deactivate.mutate(rate.id)}
               >

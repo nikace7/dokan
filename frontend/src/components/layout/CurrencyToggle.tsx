@@ -20,7 +20,7 @@ export function CurrencyToggle({ className }: { className?: string }) {
       aria-label={t('currency.label')}
       className={cn('flex items-center', className)}
     >
-      <Coins className="mr-1 h-4 w-4 text-muted-foreground" aria-hidden />
+      <Coins className="mr-1 h-4 w-4 text-muted-foreground max-sm:hidden" aria-hidden />
       {(['NPR', 'INR'] as const).map((code) => (
         <button
           key={code}
@@ -28,7 +28,7 @@ export function CurrencyToggle({ className }: { className?: string }) {
           aria-pressed={display === code}
           onClick={() => setDisplay(code)}
           className={cn(
-            'rounded-md px-2 py-1 text-xs font-semibold transition-colors',
+            'rounded-md px-2 py-1 text-xs font-semibold transition-colors max-md:min-h-11 max-md:min-w-10',
             display === code
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:bg-muted hover:text-foreground',

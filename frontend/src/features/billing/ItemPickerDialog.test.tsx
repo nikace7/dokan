@@ -87,13 +87,16 @@ describe('ItemPickerDialog', () => {
     expect(grid.className).toContain('grid-cols-2');
     expect(grid.className).toContain('sm:grid-cols-3');
 
-    // Square photo on top; Jeans (no photo) falls back to the placeholder tile.
+    // A small photo beside the text; Jeans has none, so its tile is only text.
     const photo = within(tshirtCell).getByRole('img', { name: 'T-Shirt' });
     expect(photo).toHaveAttribute('src', '/media/tenants/t1/items/tshirt.png');
-    expect(photo.className).toContain('aspect-square');
+    expect(photo.className).toContain('h-11');
     expect(
       within(within(dialog).getByRole('button', { name: /Jeans/ })).queryByRole('img'),
     ).not.toBeInTheDocument();
+
+    // A long name may be cut short; the size and colour under it may not.
+    expect(within(tshirtCell).getByText('M / Black').closest('.line-clamp-2')).toBeNull();
 
     // MRP and the stock line render inside the cell.
     expect(within(tshirtCell).getByText('रू 1,500.00')).toBeInTheDocument();
@@ -115,6 +118,6 @@ describe('ItemPickerDialog', () => {
     const dialog = await screen.findByRole('dialog');
     const status = within(dialog).getByRole('status');
     expect(status.className).toContain('grid-cols-2');
-    expect(status.querySelectorAll('.aspect-square').length).toBeGreaterThan(0);
+    expect(status.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
   });
 });

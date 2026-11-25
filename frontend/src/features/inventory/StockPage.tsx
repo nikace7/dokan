@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { HeaderActions } from '@/components/ui/HeaderActions';
 import { Input } from '@/components/ui/Input';
 import { TableCell } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/useAuth';
@@ -106,29 +106,27 @@ export function StockPage() {
       <Card
         title={t('inventory.stock.title')}
         actions={
-          <div className="flex flex-wrap gap-2">
-            {canTransfer ? (
-              <Button asChild variant="outline" size="sm">
-                <Link to="/stock/transfers">{t('nav.transfers')}</Link>
+          <HeaderActions
+            actions={[
+              ...(canTransfer ? [{ label: t('nav.transfers'), to: '/stock/transfers' }] : []),
+              { label: t('inventory.stock.physicalCounts'), to: '/stock/counts' },
+              ...(canAdjust
+                ? [
+                    { label: t('inventory.stock.adjust'), onSelect: () => setDialog('adjustment') },
+                    {
+                      label: t('inventory.stock.writeOff'),
+                      onSelect: () => setDialog('write-off'),
+                    },
+                  ]
+                : []),
+            ]}
+          >
+            {canAdjust ? (
+              <Button size="sm" onClick={() => setDialog('opening')}>
+                {t('inventory.stock.addOpening')}
               </Button>
             ) : null}
-            <Button asChild variant="outline" size="sm">
-              <Link to="/stock/counts">{t('inventory.stock.physicalCounts')}</Link>
-            </Button>
-            {canAdjust ? (
-              <>
-                <Button size="sm" variant="secondary" onClick={() => setDialog('adjustment')}>
-                  {t('inventory.stock.adjust')}
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => setDialog('write-off')}>
-                  {t('inventory.stock.writeOff')}
-                </Button>
-                <Button size="sm" onClick={() => setDialog('opening')}>
-                  {t('inventory.stock.addOpening')}
-                </Button>
-              </>
-            ) : null}
-          </div>
+          </HeaderActions>
         }
       >
         <StockSummary />

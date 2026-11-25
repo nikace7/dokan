@@ -5,7 +5,7 @@ const JACKET_TILE = /Denim Jacket/;
 
 /**
  * Layout regression coverage for /billing/simple:
- * - the quick-pick photo grid renders in-stock items and tap-adds lines;
+ * - the quick-pick grid renders in-stock items and tap-adds lines;
  * - the fixed Cash/QR tender bar stays rigid at the viewport bottom while
  *   scrolling (desktop flush, mobile riding above the h-14 tab bar).
  *
@@ -35,7 +35,7 @@ test.describe('simple sale layout', () => {
     const bar = page.getByTestId('tender-bar');
     await expect(bar).toBeVisible();
 
-    // Add a line so the page has content above the grid.
+    // Add a line so the page has content below the grid.
     await page
       .getByRole('region', { name: 'Quick pick' })
       .getByRole('button', { name: JACKET_TILE })

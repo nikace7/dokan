@@ -25,7 +25,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
       {...props}
     >
       {title || actions ? (
-        <div className="flex items-center justify-between border-b px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-3">
           {title ? <h2 className="text-base font-semibold">{title}</h2> : <span />}
           {actions}
         </div>

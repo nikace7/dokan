@@ -171,7 +171,7 @@ export function BillingPage() {
   }
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[1fr_360px]">
+    <main className="mx-auto grid max-w-6xl grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_360px]">
       <SyncStatusBanner />
       {workspace.isLoading ? (
         <p
@@ -260,7 +260,7 @@ export function BillingPage() {
                   !workspace.isReady
                 }
                 onClick={hold}
-                className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300"
+                className="text-sm text-slate-600 underline hover:text-slate-900 disabled:text-slate-300 max-md:min-h-11"
               >
                 {holdMutation.isPending ? t('billing.parking') : t('billing.holdBill')}
               </button>

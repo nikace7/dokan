@@ -63,10 +63,7 @@ export function CustomerForm({
   };
 
   return (
-    <form
-      onSubmit={submit}
-      className="mb-5 grid gap-3 rounded-md border border-border bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3"
-    >
+    <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
       <Input
         label={t('customers.form.name')}
         required
@@ -140,12 +137,12 @@ export function CustomerForm({
       {save.isError ? (
         <p
           role="alert"
-          className="rounded-md bg-destructive/10 p-3 text-sm text-destructive sm:col-span-2 lg:col-span-3"
+          className="rounded-md bg-destructive/10 p-3 text-sm text-destructive sm:col-span-2"
         >
           {save.error instanceof ApiError ? save.error.message : t('customers.form.saveError')}
         </p>
       ) : null}
-      <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
+      <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" disabled={save.isPending}>
           {t('customers.form.save')}
         </Button>

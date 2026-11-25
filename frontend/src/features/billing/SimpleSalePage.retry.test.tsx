@@ -210,6 +210,21 @@ describe('SimpleSalePage when the server does not answer', () => {
     expect(second).toEqual(first);
   });
 
+  it('adds one more on a second tap, on a tile that does not move', async () => {
+    installApiMock(() => Promise.resolve(envelope(INVOICE, 201)));
+    renderPage();
+    const tiles = screen.getByRole('region', { name: 'Quick pick' });
+    const tile = await within(tiles).findByRole('button', { name: /T-Shirt/ });
+
+    fireEvent.click(tile);
+    fireEvent.click(tile);
+
+    const line = screen.getByRole('region', { name: 'T-Shirt — M / Black' });
+    expect(within(line).getByLabelText('Qty')).toHaveValue(2);
+    expect(tile).toHaveTextContent('× 2');
+    expect(tiles.compareDocumentPosition(line)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
   it('keeps the bill when the cashier looks at another screen', async () => {
     installApiMock(() => Promise.resolve(envelope(INVOICE, 201)));
     const { unmount } = renderPage();

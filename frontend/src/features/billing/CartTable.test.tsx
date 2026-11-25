@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { CartTable } from '@/features/billing/CartTable';
@@ -53,6 +53,21 @@ describe('CartTable', () => {
     render(<CartTable />);
     expect(screen.getByRole('columnheader', { name: 'Discount (रू)' })).toBeInTheDocument();
     expect(discount()).toHaveValue('160');
+  });
+
+  it('names every amount for the phone, where the column headings are gone', () => {
+    render(<CartTable />);
+    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
+    expect(cells.map((cell) => cell.dataset.label)).toEqual([
+      undefined,
+      undefined,
+      'Rate',
+      'Discount (रू)',
+      'Total',
+      undefined,
+    ]);
+    // One set of controls for both layouts, so nothing can be edited twice.
+    expect(screen.getAllByLabelText('Discount for T-Shirt')).toHaveLength(1);
   });
 
   it('charges a held bill what was stored when it was parked', () => {

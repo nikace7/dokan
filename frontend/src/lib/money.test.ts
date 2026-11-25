@@ -66,11 +66,11 @@ describe('formatPaisa — Nepali lakh/crore grouping', () => {
 
 describe('formatNpr', () => {
   it('prefixes the NPR symbol by default', () => {
-    expect(formatNpr('123456')).toBe('रू 1,23,456.00');
+    expect(formatNpr('123456')).toBe('रू\u00a01,23,456.00');
   });
 
   it('supports Devanagari numerals', () => {
-    expect(formatNpr('1500.50', { devanagari: true })).toBe('रू १,५००.५०');
+    expect(formatNpr('1500.50', { devanagari: true })).toBe('रू\u00a0१,५००.५०');
   });
 
   // Currency-symbol rule (docs/NEPALI_LOCALIZATION.md §7): screens and the
@@ -79,7 +79,7 @@ describe('formatNpr', () => {
   // force UCS-2 and double the SMS segment count. No single artifact ever
   // mixes the two.
   it('pins the artifact symbol rule: रू by default, ASCII opt-out per channel', () => {
-    expect(formatNpr('1500.00')).toBe('रू 1,500.00');
+    expect(formatNpr('1500.00')).toBe('रू\u00a01,500.00');
     expect(formatNpr('1500.00', { symbol: 'NPR ' })).toBe('NPR 1,500.00');
     expect(formatNpr('1500.00', { symbol: '' })).toBe('1,500.00');
   });
@@ -98,23 +98,23 @@ describe('display-currency conversion (NPR/INR peg)', () => {
   });
 
   it('leaves amounts untouched when display matches base', () => {
-    expect(formatNpr('1600')).toBe('रू 1,600.00');
+    expect(formatNpr('1600')).toBe('रू\u00a01,600.00');
   });
 
   it('converts NPR base to INR display at the NRB peg, with the ₹ symbol', () => {
     useCurrencyStore.setState({ display: 'INR' });
-    expect(formatNpr('1600')).toBe('₹ 1,000.00');
-    expect(formatNpr('160')).toBe('₹ 100.00');
+    expect(formatNpr('1600')).toBe('₹\u00a01,000.00');
+    expect(formatNpr('160')).toBe('₹\u00a0100.00');
   });
 
   it('converts INR base to NPR display', () => {
     useCurrencyStore.setState({ base: 'INR', display: 'NPR' });
-    expect(formatNpr('1000')).toBe('रू 1,600.00');
+    expect(formatNpr('1000')).toBe('रू\u00a01,600.00');
   });
 
   it('pins documents to an explicit currency regardless of the toggle', () => {
     useCurrencyStore.setState({ base: 'NPR', display: 'INR' });
-    expect(formatNpr('1600', { currency: 'NPR' })).toBe('रू 1,600.00');
+    expect(formatNpr('1600', { currency: 'NPR' })).toBe('रू\u00a01,600.00');
   });
 
   it('converts integer paisa with half-up rounding, never floats', () => {

@@ -18,7 +18,7 @@ export function LanguageToggle({ className }: { className?: string }) {
       aria-label={t('language.label')}
       className={cn('flex items-center', className)}
     >
-      <Languages className="mr-1 h-4 w-4 text-muted-foreground" aria-hidden />
+      <Languages className="mr-1 h-4 w-4 text-muted-foreground max-sm:hidden" aria-hidden />
       {(
         [
           ['en', t('language.english')],
@@ -31,7 +31,7 @@ export function LanguageToggle({ className }: { className?: string }) {
           aria-pressed={current === lng}
           onClick={() => void i18n.changeLanguage(lng)}
           className={cn(
-            'rounded-md px-2 py-1 text-xs font-semibold transition-colors',
+            'rounded-md px-2 py-1 text-xs font-semibold transition-colors max-md:min-h-11 max-md:min-w-10',
             current === lng
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
