@@ -285,7 +285,7 @@ export function AppShell() {
       <SupportAccessBanner onEnded={signOut} />
 
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background md:flex print:hidden">
         <div className="flex h-16 items-center gap-2.5 border-b px-4">
           <img src={brandMark} alt="" className="h-9 w-9 shrink-0" />
           <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
@@ -322,7 +322,7 @@ export function AppShell() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/85 px-4 backdrop-blur-md md:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/85 px-4 backdrop-blur-md md:hidden print:hidden">
         <span className="flex min-w-0 max-w-32 items-center gap-2 sm:max-w-56">
           <img src={brandMark} alt="" className="h-7 w-7 shrink-0" />
           <span className="truncate text-base font-bold tracking-tight">{user?.shop_name}</span>
@@ -337,12 +337,12 @@ export function AppShell() {
       </header>
 
       {/* Not <main>: every page renders its own. */}
-      <div className="pb-24 md:pb-8 md:pl-60">
+      <div className="pb-24 md:pb-8 md:pl-60 print:p-0">
         <Outlet />
       </div>
 
       {/* Mobile bottom tab bar with center new-sale FAB */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background/85 backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background/85 backdrop-blur-md md:hidden print:hidden">
         {tabsBeforeFab.map((item) => (
           <MobileTab key={item.to} item={item} />
         ))}
