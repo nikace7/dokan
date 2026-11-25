@@ -13,6 +13,7 @@ import { ShareBillPanel } from '@/features/billing/ShareBillPanel';
 import { BillStatusBadge, DocTypeBadge } from '@/features/bills/BillBadges';
 import { ReportError, TableSkeleton } from '@/features/reports/ui';
 import { ApiError } from '@/lib/api/client';
+import { formatTime } from '@/lib/dateTime';
 import { formatNpr } from '@/lib/money';
 import { formatQty } from '@/lib/quantity';
 import { usePageTitle } from '@/lib/usePageTitle';
@@ -92,13 +93,12 @@ function BillDetail({ bill }: { bill: SalesInvoice }) {
 
 function BillFacts({ bill }: { bill: SalesInvoice }) {
   const { t } = useTranslation();
-  const createdAt = new Date(bill.created_at);
   return (
     <Card title={t('bills.detail.details')}>
       <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
         <Fact label={t('bills.detail.date')}>
           {t('bills.detail.bsDate', { date: bill.business_date_bs })} ·{' '}
-          <time dateTime={bill.created_at}>{createdAt.toLocaleString()}</time>
+          <time dateTime={bill.datetime_ad}>{formatTime(bill.datetime_ad)}</time>
         </Fact>
         <Fact label={t('bills.detail.customer')}>{bill.customer_name ?? t('billing.walkIn')}</Fact>
         <Fact label={t('bills.detail.branch')}>{bill.branch_name}</Fact>

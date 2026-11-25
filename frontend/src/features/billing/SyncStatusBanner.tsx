@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
+import { formatDateTime } from '@/lib/dateTime';
 import { discardException, summarizeOp } from '@/lib/offline/conflicts';
 import type { QueuedSaleOp } from '@/lib/offline/db';
 import { useSyncStore } from '@/lib/offline/sync';
@@ -72,7 +73,7 @@ function ExceptionRow({ op }: { op: QueuedSaleOp }) {
           <span className="font-medium">{op.localRef}</span>
           <span className="ml-2 text-slate-500">
             {summarizeOp(op)} ·{' '}
-            {t('billing.sync.queuedAt', { time: new Date(op.enqueuedAt).toLocaleString() })}
+            {t('billing.sync.queuedAt', { time: formatDateTime(op.enqueuedAt) })}
           </span>
         </div>
         {confirming ? (

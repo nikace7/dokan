@@ -34,7 +34,30 @@
       "POINTS": "Points",
       "CREDIT_NOTE": "Credit note"
     },
-    "actions": "Actions"
+    "actions": "Actions",
+    "bsMonths": {
+      "1": "Baisakh",
+      "2": "Jestha",
+      "3": "Ashadh",
+      "4": "Shrawan",
+      "5": "Bhadra",
+      "6": "Ashwin",
+      "7": "Kartik",
+      "8": "Mangsir",
+      "9": "Poush",
+      "10": "Magh",
+      "11": "Falgun",
+      "12": "Chaitra"
+    },
+    "weekdays": {
+      "0": "Su",
+      "1": "Mo",
+      "2": "Tu",
+      "3": "We",
+      "4": "Th",
+      "5": "Fr",
+      "6": "Sa"
+    }
   },
   "language": {
     "label": "Language",
@@ -564,7 +587,7 @@
     "form": {
       "supplier": "Supplier",
       "pickSupplier": "— pick —",
-      "billDate": "Bill date (AD)",
+      "billDate": "Bill date (BS)",
       "vatBill": "VAT bill",
       "addLinePlaceholder": "Add a line: search item…",
       "quantityFor": "Quantity for {{label}}",
@@ -713,8 +736,8 @@
     "actionPlaceholder": "e.g. price.set",
     "targetType": "Target type",
     "targetTypePlaceholder": "e.g. item_price",
-    "fromAd": "From AD",
-    "toAd": "To AD",
+    "from": "From (BS)",
+    "to": "To (BS)",
     "system": "System",
     "before": "Before",
     "after": "After",
@@ -1007,7 +1030,8 @@
       "today": "Today",
       "lastMonth": "Last month",
       "previousMonth": "Previous BS month",
-      "nextMonth": "Next BS month"
+      "nextMonth": "Next BS month",
+      "choose": "Choose {{label}}"
     },
     "actions": {
       "excel": "Download Excel",
@@ -1528,8 +1552,8 @@
       "variantTarget": "Variant target",
       "selectVariant": "Select variant",
       "sellingPrice": "Selling price",
-      "effectiveFrom": "Effective from",
-      "effectiveTo": "Effective to",
+      "effectiveFrom": "Effective from (BS)",
+      "effectiveTo": "Effective to (BS)",
       "changeReason": "Change reason",
       "save": "Save price",
       "guardrails": "Optional selling-price guardrails",

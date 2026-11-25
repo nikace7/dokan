@@ -101,6 +101,7 @@ describe('PartyLedgerPage', () => {
 
     // Rows render in both the mobile card list and the desktop table.
     expect((await screen.findAllByText('Bill 1001')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2083-04-18')).toHaveLength(4);
     expect(screen.getAllByText('Sale')).toHaveLength(2);
     expect(screen.getAllByText('Payment received')).toHaveLength(2);
     expect(screen.getAllByText('Cash')).toHaveLength(2);

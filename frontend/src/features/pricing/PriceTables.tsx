@@ -8,6 +8,7 @@ import { TableCell } from '@/components/ui/table';
 import { listPriceChanges, listPrices } from '@/features/pricing/api';
 import { ReportTable } from '@/features/reports/ui';
 import type { ReportColumn } from '@/features/reports/ui';
+import { adToBsText, formatDateTime } from '@/lib/dateTime';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
 
 function target(row: {
@@ -79,7 +80,8 @@ export function PriceTables() {
                   {formatNpr(row.price)}
                 </TableCell>
                 <TableCell>
-                  {row.effective_from} → {row.effective_to ?? t('pricing.tables.open')}
+                  {adToBsText(row.effective_from)} →{' '}
+                  {row.effective_to ? adToBsText(row.effective_to) : t('pricing.tables.open')}
                 </TableCell>
               </>
             )}
@@ -88,8 +90,8 @@ export function PriceTables() {
                 <div className="min-w-0">
                   <p className="font-mono text-xs">{target(row)}</p>
                   <p className="text-muted-foreground">
-                    {row.rate_type_code} · {row.effective_from} →{' '}
-                    {row.effective_to ?? t('pricing.tables.open')}
+                    {row.rate_type_code} · {adToBsText(row.effective_from)} →{' '}
+                    {row.effective_to ? adToBsText(row.effective_to) : t('pricing.tables.open')}
                   </p>
                 </div>
                 <p className="shrink-0 text-right font-medium tabular-nums">
@@ -133,7 +135,7 @@ export function PriceTables() {
                     {row.reason ?? t('pricing.tables.noReason')}
                   </span>
                 </TableCell>
-                <TableCell>{new Date(row.created_at).toLocaleString()}</TableCell>
+                <TableCell>{formatDateTime(row.created_at)}</TableCell>
               </>
             )}
             renderCard={(row) => (
@@ -147,7 +149,7 @@ export function PriceTables() {
                 </div>
                 <p className="text-muted-foreground">
                   {row.rate_type_code ?? '—'} · {row.changed_by_name ?? t('pricing.tables.system')}{' '}
-                  · {new Date(row.created_at).toLocaleString()}
+                  · {formatDateTime(row.created_at)}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {row.reason ?? t('pricing.tables.noReason')}

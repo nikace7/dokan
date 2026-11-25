@@ -12,13 +12,10 @@ import type { Item } from '@/features/catalog/api';
 import { setPrice, setPriceBounds } from '@/features/pricing/api';
 import type { PriceScope } from '@/features/pricing/api';
 import { selectClasses } from '@/features/pricing/ui';
+import { BsDateField } from '@/features/reports/BsDateField';
 import type { RateType } from '@/features/settings/api';
 import { ApiError } from '@/lib/api/client';
-
-const today = () => {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-};
+import { shopAdDate } from '@/lib/dateTime';
 
 export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSetBounds: boolean }) {
   const { t } = useTranslation();
@@ -28,7 +25,7 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
   const [itemId, setItemId] = useState('');
   const [targetId, setTargetId] = useState('');
   const [price, setPriceValue] = useState('');
-  const [effectiveFrom, setEffectiveFrom] = useState(today);
+  const [effectiveFrom, setEffectiveFrom] = useState(() => shopAdDate());
   const [effectiveTo, setEffectiveTo] = useState('');
   const [reason, setReason] = useState('');
   const [minimum, setMinimum] = useState('');
@@ -222,18 +219,18 @@ export function PriceEditor({ rates, canSetBounds }: { rates: RateType[]; canSet
           value={price}
           onChange={(event) => setPriceValue(event.target.value)}
         />
-        <Input
+        <BsDateField
+          id="price-effective-from"
           label={t('pricing.editor.effectiveFrom')}
-          type="date"
-          required
           value={effectiveFrom}
-          onChange={(event) => setEffectiveFrom(event.target.value)}
+          onChange={setEffectiveFrom}
+          required
         />
-        <Input
+        <BsDateField
+          id="price-effective-to"
           label={t('pricing.editor.effectiveTo')}
-          type="date"
           value={effectiveTo}
-          onChange={(event) => setEffectiveTo(event.target.value)}
+          onChange={setEffectiveTo}
         />
         <Input
           label={t('pricing.editor.changeReason')}
