@@ -171,7 +171,7 @@ export function BillingPage() {
   }
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[1fr_360px]">
+    <main className="mx-auto grid max-w-6xl grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_360px]">
       <SyncStatusBanner />
       {workspace.isLoading ? (
         <p

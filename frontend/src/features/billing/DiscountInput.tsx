@@ -35,7 +35,7 @@ export function DiscountInput({ line }: { line: CartLine }) {
         ].join(' ')}
       />
       {problem ? (
-        <p id={errorId} className="mt-1 ml-auto w-24 text-left text-xs text-red-600">
+        <p id={errorId} className="mt-1 w-24 text-left text-xs text-red-600 sm:ml-auto">
           {t(MESSAGES[problem])}
         </p>
       ) : null}
