@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { VariantForSale } from '@/features/billing/api';
 import { ItemImage } from '@/features/catalog/ui';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 import { cn } from '@/lib/utils';
 
 interface SaleItemTileProps {
@@ -43,7 +44,7 @@ export function SaleItemTile({ variant, onBill, onPick }: SaleItemTileProps) {
             <span className="text-sm font-bold tabular-nums">{formatNpr(variant.mrp)}</span>
           ) : null}
           <span className="text-xs text-muted-foreground">
-            {t('common.stock', { qty: variant.qty_on_hand })}
+            {t('common.stock', { qty: formatQty(variant.qty_on_hand) })}
           </span>
         </span>
       </span>

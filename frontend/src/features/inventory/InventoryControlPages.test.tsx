@@ -312,7 +312,7 @@ describe('CountsPage', () => {
       target: { value: '9' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save counted quantities' }));
-    expect(await screen.findByText('-1.000')).toBeInTheDocument();
+    expect(await screen.findByText('-1')).toBeInTheDocument();
 
     await confirmAction('Finalize count', '/counts/count-1/finalize');
   });

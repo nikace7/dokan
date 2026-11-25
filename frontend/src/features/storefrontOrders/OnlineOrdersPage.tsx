@@ -19,6 +19,7 @@ import {
 import type { OnlineOrder, OnlineOrderStatus } from '@/features/storefrontOrders/api';
 import { ApiError } from '@/lib/api/client';
 import { hasPermission } from '@/lib/permissions';
+import { formatQty } from '@/lib/quantity';
 
 const STATUS_VARIANTS: Record<
   OnlineOrderStatus,
@@ -108,7 +109,7 @@ function OrderCard({ order }: { order: OnlineOrder }) {
             className="flex justify-between gap-3 py-2 text-sm"
           >
             <span>
-              {item.name} · {item.size}/{item.color} × {Number(item.qty)}
+              {item.name} · {item.size}/{item.color} × {formatQty(item.qty)}
             </span>
             <span className="tabular-nums">
               {order.currency} {item.line_total}

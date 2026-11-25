@@ -67,7 +67,10 @@ export function ItemForm({ initial, onSaved }: ItemFormProps) {
   const [websiteDiscount, setWebsiteDiscount] = useState(initial?.website_discount_pct ?? '');
   const [websiteVisible, setWebsiteVisible] = useState(initial?.website_visible ?? true);
   const [websiteFeatured, setWebsiteFeatured] = useState(initial?.website_featured ?? false);
-  const [reorderLevel, setReorderLevel] = useState(initial?.reorder_level ?? '');
+  const [reorderLevel, setReorderLevel] = useState(() => {
+    const level = initial?.reorder_level;
+    return level ? String(Number(level)) : '';
+  });
   const [error, setError] = useState<string | null>(null);
   // Item photo: edit uploads immediately on select; create stashes the file
   // and uploads right after the item exists.

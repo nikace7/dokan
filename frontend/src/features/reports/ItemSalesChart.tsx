@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import type { ItemSalesRow } from '@/features/reports/api';
 import { formatPaisa, toPaisa, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 const TOP_N = 10;
 const MIN_CHART_HEIGHT = 260;
@@ -44,12 +45,6 @@ function truncateLabel(label: string): string {
     return label;
   }
   return `${label.slice(0, MAX_ITEM_LABEL_CHARS - 1).trimEnd()}…`;
-}
-
-function formatQuantity(value: number): string {
-  return Number.isInteger(value)
-    ? String(value)
-    : value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
 function ItemAxisTick({ x = 0, y = 0, payload, rows }: AxisTickProps) {
@@ -88,7 +83,7 @@ function ItemChartTooltip({ active, payload }: Partial<TooltipContentProps<numbe
       <p className="mt-0.5 text-xs text-muted-foreground">{row.variantLabel}</p>
       <dl className="mt-2 grid grid-cols-[auto_auto] gap-x-4 gap-y-1 text-xs">
         <dt className="text-muted-foreground">{t('reports.itemChart.qtySold')}</dt>
-        <dd className="text-right font-medium tabular-nums">{formatQuantity(row.qty)}</dd>
+        <dd className="text-right font-medium tabular-nums">{formatQty(row.qty)}</dd>
         <dt className="text-muted-foreground">{t('reports.itemChart.amount')}</dt>
         <dd className="text-right font-medium tabular-nums">
           {formatPaisa(row.amountPaisa, { symbol: 'auto' })}
@@ -125,7 +120,7 @@ export function ItemSalesChart({ rows }: { rows: ItemSalesRow[] }) {
     metric === 'qty' ? t('reports.itemChart.aria') : t('reports.itemChart.ariaAmount');
   const formatMetric = (value: number) =>
     metric === 'qty'
-      ? formatQuantity(value)
+      ? formatQty(value)
       : formatPaisa(value, { symbol: 'auto' }).replace(/\.00$/, '');
 
   return (

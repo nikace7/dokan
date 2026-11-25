@@ -10,6 +10,7 @@ import { createReturn, getReturnableLines, listSales } from '@/features/returns/
 import type { RefundMethod, ReturnableLine, SaleSummary } from '@/features/returns/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 const REFUND_METHODS: RefundMethod[] = [
   'CREDIT_NOTE',
@@ -153,7 +154,7 @@ function ReturnLineField({
         <span className="font-medium">{line.item_name}</span>{' '}
         <span className="text-xs text-muted-foreground">{line.sku}</span>
         <span className="block text-xs text-muted-foreground">
-          {t('returns.line.remaining', { remaining: line.remaining })}
+          {t('returns.line.remaining', { remaining: formatQty(line.remaining) })}
         </span>
       </div>
       <div className="flex items-center gap-2">

@@ -8,6 +8,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { fetchLowStock } from '@/features/reports/api';
 import type { LowStockRow } from '@/features/reports/api';
 import { hasPermission } from '@/lib/permissions';
+import { formatQty } from '@/lib/quantity';
 import { cn } from '@/lib/utils';
 
 /**
@@ -71,10 +72,10 @@ function LowStockChip({ row }: { row: LowStockRow }) {
       <span className="truncate text-sm font-medium text-foreground">{row.item_name}</span>
       <span className="flex items-center gap-1.5 text-xs">
         <Badge variant={isOut ? 'destructive' : 'warning'}>
-          {t('reports.stock.qtyLeft', { count: row.qty_on_hand })}
+          {t('reports.stock.qtyLeft', { count: formatQty(row.qty_on_hand) })}
         </Badge>
         <span className="truncate text-muted-foreground">
-          {t('reports.stock.reorderAt', { level: row.reorder_level })}
+          {t('reports.stock.reorderAt', { level: formatQty(row.reorder_level) })}
         </span>
       </span>
     </Link>

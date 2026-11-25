@@ -8,6 +8,7 @@ import { getSharedBill } from '@/features/billing/api';
 import type { SharedBill } from '@/features/billing/api';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 /**
  * The public online bill (`/bill/:token`) — no auth, no app shell. Anyone
@@ -129,7 +130,7 @@ function BillCard({ bill }: { bill: SharedBill }) {
                   <span className="block text-xs text-muted-foreground">{item.item_name_np}</span>
                 ) : null}
               </td>
-              <td className="py-1.5 text-right">{item.qty}</td>
+              <td className="py-1.5 text-right">{formatQty(item.qty)}</td>
               <td className="py-1.5 text-right">{formatNpr(item.unit_price, { symbol: '' })}</td>
               <td className="py-1.5 text-right">{formatNpr(item.line_total, { symbol: '' })}</td>
             </tr>

@@ -12,6 +12,7 @@ import { StatusStepper } from '@/features/purchasing/StatusStepper';
 import { SuppliersPanel } from '@/features/purchasing/SuppliersPanel';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 const STATUS_VARIANTS: Record<PurchaseInvoiceStatus, 'warning' | 'success' | 'secondary'> = {
   DRAFT: 'warning',
@@ -71,7 +72,7 @@ function InvoiceDetail({ invoice }: { invoice: PurchaseInvoice }) {
                 <span className="text-xs text-muted-foreground">{item.variant_sku}</span>
               </p>
               <p className="text-xs text-muted-foreground tabular-nums">
-                {item.qty} × {formatNpr(item.unit_cost, { symbol: '' })}
+                {formatQty(item.qty)} × {formatNpr(item.unit_cost, { symbol: '' })}
               </p>
             </div>
             <p className="tabular-nums">{formatNpr(item.line_total, { symbol: '' })}</p>

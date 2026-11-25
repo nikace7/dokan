@@ -5,15 +5,11 @@ import type { PickedVariant } from '@/features/catalog/VariantPicker';
 import { ItemImage } from '@/features/catalog/ui';
 import { listLevels } from '@/features/inventory/api';
 import { formatNpr, useMoneyDisplay } from '@/lib/money';
+import { formatQty } from '@/lib/quantity';
 
 interface VariantStockInfoProps {
   variant: PickedVariant;
   branchId: string | null;
-}
-
-/** Trim `8.000` → `8`, keep real fractions like `2.5`. */
-function qtyDisplay(raw: string): string {
-  return raw.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
 }
 
 /**
@@ -66,7 +62,7 @@ export function VariantStockInfo({ variant, branchId }: VariantStockInfoProps) {
         <div>
           <dt className="text-muted-foreground">{t('inventory.variantInfo.onHand')}</dt>
           <dd className="font-medium tabular-nums">
-            {levelQuery.isFetching ? '…' : qty === null ? '0' : qtyDisplay(qty)}
+            {levelQuery.isFetching ? '…' : qty === null ? '0' : formatQty(qty)}
           </dd>
         </div>
       </dl>
