@@ -4,8 +4,8 @@ Rules (design §7.3 + task slice):
 - A HELD invoice takes NO stock movement and consumes NO invoice number
   (``invoice_no`` stays NULL; the gapless series only advances at
   completion, so a discarded held bill never leaves a hole).
-- Lines are priced at hold time; completion re-validates guardrails,
-  re-snapshots costs, posts stock, allocates the number, and recomputes
+- Lines are priced and checked against the limits at hold time; completion
+  keeps those prices, re-snapshots costs, posts stock, allocates the number, and recomputes
   totals with the payments given at completion.
 - Only HELD bills can change. COMPLETED is terminal (#3); CANCELLED is the
   same-day void state for held bills — a status, never a DELETE.
@@ -161,6 +161,9 @@ def complete_held_bill(
             qty=item.qty,
             unit_price=item.unit_price,  # explicit: no re-resolution
             discount=item.discount,
+            # The customer keeps the price they were quoted when it was parked,
+            # even if the shop has changed its price or limits since.
+            price_checked=True,
         )
         for item in invoice.items.all()
     ]

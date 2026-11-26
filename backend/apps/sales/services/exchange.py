@@ -9,8 +9,9 @@ commits or rolls back together.
 Settlement (documented): the return credit is consumed by the new sale
 first (``applied_credit`` in finalize_invoice, so the udharo check runs
 on the NET due). If the credit exceeds the new sale's total, the excess
-is refunded and recorded on the return's refunds list as CASH. The
-return's refunds list records EXCHANGE_APPLIED for the consumed amount.
+is given back: first off what the customer owes (CREDIT_NOTE), the rest as
+CASH, so cash only goes back for what was actually paid. The return's
+refunds list records EXCHANGE_APPLIED for the consumed amount.
 
 Idempotency: the exchange key is stored on the SALE doc; the RETURN doc
 carries ``<key>:return`` (unique constraint is per key). A replay looks
@@ -49,6 +50,16 @@ class ExchangeResult:
     sale_invoice: SalesInvoice
     refund_amount: Decimal
     replayed: bool
+
+
+def _off_dues(tenant: "Tenant", original: SalesInvoice, excess: Decimal) -> Decimal:
+    """How much of the excess comes off what the customer still owes."""
+    if excess <= _ZERO or original.customer is None:
+        return _ZERO
+    from apps.customers.selectors import get_customer_outstanding
+
+    outstanding = get_customer_outstanding(tenant, original.customer)
+    return quantize_money(max(_ZERO, min(excess, outstanding)))
 
 
 def create_exchange(
@@ -138,10 +149,14 @@ def create_exchange(
             # Settlement record on the return doc — written inside the same
             # transaction, before commit, so it is part of its creation.
             credit_applied = min(credit, sale_invoice.total)
-            refund_amount = quantize_money(credit - credit_applied)
+            excess = quantize_money(credit - credit_applied)
+            off_dues = _off_dues(tenant, original_invoice, excess)
+            refund_amount = quantize_money(excess - off_dues)
             refunds: list[dict[str, str]] = [
                 {"method": "EXCHANGE_APPLIED", "amount": str(credit_applied)}
             ]
+            if off_dues > _ZERO:
+                refunds.append({"method": "CREDIT_NOTE", "amount": str(off_dues)})
             if refund_amount > _ZERO:
                 refunds.append({"method": "CASH", "amount": str(refund_amount)})
             return_invoice.refunds = refunds

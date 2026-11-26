@@ -92,6 +92,22 @@ class TestBounds:
         assert response.status_code == 200
         assert response.json()["data"]["min_selling_price"] == "800.00"
 
+    def test_changing_one_bound_keeps_the_other(self, tenant: Any, user: Any, variant: Any) -> None:
+        grant(tenant, user, "pricing.set_bounds")
+        client = auth_client(user)
+        url = f"/api/v1/pricing/bounds/variant/{variant.pk}"
+        both = {"min_selling_price": "800.00", "max_selling_price": "2000.00"}
+        client.patch(url, both, **host(), format="json")
+
+        raised = client.patch(url, {"min_selling_price": "900.00"}, **host(), format="json")
+        above = client.patch(url, {"min_selling_price": "2500.00"}, **host(), format="json")
+        cleared = client.patch(url, {"max_selling_price": None}, **host(), format="json")
+
+        assert raised.json()["data"]["max_selling_price"] == "2000.00"
+        assert above.json()["error"]["code"] == "PRICE_BOUNDS_INVALID"
+        assert cleared.json()["data"]["min_selling_price"] == "900.00"
+        assert cleared.json()["data"]["max_selling_price"] is None
+
     def test_bounds_on_item(self, tenant: Any, user: Any) -> None:
         item = ItemFactory(tenant=tenant)
         grant(tenant, user, "pricing.set_bounds")

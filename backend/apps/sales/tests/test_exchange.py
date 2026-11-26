@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 from django.db import IntegrityError
 
+from apps.customers.selectors import get_customer_outstanding
 from apps.inventory.models import StockLevel, StockMovement
 from apps.inventory.services import post_opening_stock
 from apps.sales import services
@@ -134,6 +135,34 @@ class TestExchangeHappyPath:
             {"method": "EXCHANGE_APPLIED", "amount": "600.00"},
             {"method": "CASH", "amount": "400.00"},
         ]
+
+    def test_refund_difference_comes_off_the_dues_first(self, shop: dict) -> None:
+        """Owes 300 on another bill; credit 1000, new item 600 → 300 off the dues, 100 cash."""
+        services.create_sale(
+            shop["tenant"],
+            branch=shop["branch"],
+            rate_type=shop["rate_type"],
+            customer=shop["customer"],
+            lines=[
+                SaleLineInput(
+                    variant=shop["variant_b"],
+                    qty=Decimal("1"),
+                    unit_price=Decimal("300.00"),
+                    discount=Decimal("0"),
+                )
+            ],
+            payments=[{"method": "CREDIT", "amount": Decimal("300.00")}],
+            idempotency_key="sale-udharo",
+            created_by=shop["user"],
+        )
+        result = _exchange(shop, new_price="600.00", tender="0")
+        assert result.refund_amount == Decimal("100.00")
+        assert result.return_invoice.refunds == [
+            {"method": "EXCHANGE_APPLIED", "amount": "600.00"},
+            {"method": "CREDIT_NOTE", "amount": "300.00"},
+            {"method": "CASH", "amount": "100.00"},
+        ]
+        assert get_customer_outstanding(shop["tenant"], shop["customer"]) == Decimal("0.00")
 
     def test_due_difference_goes_udharo(self, shop: dict) -> None:
         """Credit 1000, new item 1500, no tender → 500 on the khata."""

@@ -77,6 +77,9 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
   const { quote } = quoted;
   const toCollect = quote ? toPaisa(quote.to_collect) : 0;
   const toRefund = quote ? toPaisa(quote.to_refund) : 0;
+  // What comes back goes off the customer's dues first; cash only for the rest.
+  const offDues = quote ? Math.min(toPaisa(quote.max_credit_note), toRefund) : 0;
+  const cashBack = toRefund - offDues;
   const payment = typed.key === quoted.key ? typed.amount : paisaToApiString(toCollect);
   const paymentPaisa = toCollect > 0 && payment.trim() !== '' ? parseAmount(payment) : 0;
 
@@ -219,9 +222,16 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
             <p className="font-semibold">
               {toCollect > 0
                 ? t('exchange.editor.customerPays', { amount: formatBaseMoney(toCollect) })
-                : toRefund > 0
-                  ? t('exchange.editor.giveBack', { amount: formatBaseMoney(toRefund) })
-                  : t('exchange.editor.even')}
+                : offDues > 0 && cashBack > 0
+                  ? t('exchange.editor.offDuesAndCash', {
+                      dues: formatBaseMoney(offDues),
+                      cash: formatBaseMoney(cashBack),
+                    })
+                  : offDues > 0
+                    ? t('exchange.editor.offDues', { amount: formatBaseMoney(offDues) })
+                    : cashBack > 0
+                      ? t('exchange.editor.giveBack', { amount: formatBaseMoney(cashBack) })
+                      : t('exchange.editor.even')}
             </p>
           </>
         ) : null}

@@ -31,6 +31,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from django.db import IntegrityError, connection, transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from apps.inventory.services import post_sale_return_movement
@@ -47,6 +48,7 @@ if TYPE_CHECKING:
     from apps.tenants.models import Tenant
 
 _ZERO = Decimal("0")
+_ONE = Decimal("1.00")
 
 #: Refund settlement methods for the refunds JSON list.
 REFUND_METHODS = frozenset(
@@ -140,13 +142,38 @@ def _compute_return_totals(
         vat_base = sum(line.credit for line in resolved if line.vat_applicable)
         vat_amount = quantize_money(vat_base * VAT_RATE)
     total = quantize_money(taxable_amount + vat_amount)
+    round_off = _closing_round_off(original, resolved, total)
     return {
         "subtotal": subtotal,
         "discount_amount": discount_amount,
         "taxable_amount": taxable_amount,
         "vat_amount": vat_amount,
-        "total": total,
+        "round_off": round_off,
+        "total": quantize_money(total + round_off),
     }
+
+
+def _closing_round_off(
+    original: SalesInvoice, resolved: list[_ReturnLine], total: Decimal
+) -> Decimal:
+    """When the last items of a bill come back, give back what is left of
+    what it came to: the bill's round-off and any paisa left over from
+    sharing out its discount. Partial returns carry none."""
+    coming_back = {line.original_item.pk: line.qty for line in resolved}
+    items = SalesInvoiceItem.objects.filter(invoice=original)  # locked by the caller
+    if any(item.returned_qty + coming_back.get(item.pk, _ZERO) < item.qty for item in items):
+        return _ZERO
+    earlier = (
+        SalesInvoice.objects.filter(
+            original_invoice=original,
+            doc_type=SalesInvoice.DocType.RETURN,
+            status=SalesInvoice.Status.COMPLETED,
+        ).aggregate(total=Sum("total"))["total"]
+        or _ZERO
+    )
+    rest = quantize_money(original.total - earlier - total)
+    # ponytail: more than a rupee apart is not rounding; keep the bill's own figure.
+    return rest if abs(rest) <= _ONE else quantize_money(original.round_off)
 
 
 def _validate_refunds(*, refunds: list[dict[str, Any]], total: Decimal) -> None:
@@ -205,10 +232,13 @@ def _create_return_invoice(
     exchange_group_id: Any = None,
 ) -> SalesInvoice:
     """Build and complete a RETURN document inside the caller's transaction."""
-    if original.status != SalesInvoice.Status.COMPLETED:
+    if (
+        original.doc_type != SalesInvoice.DocType.SALE
+        or original.status != SalesInvoice.Status.COMPLETED
+    ):
         raise ServiceError(
             "RETURN_NOT_ALLOWED",
-            "Only completed bills can be returned.",
+            "Only completed sale bills can be returned.",
             http_status=409,
         )
     if not reason.strip():
@@ -243,7 +273,7 @@ def _create_return_invoice(
         discount_reason=reason,
         taxable_amount=totals["taxable_amount"],
         vat_amount=totals["vat_amount"],
-        round_off=_ZERO,
+        round_off=totals["round_off"],
         total=totals["total"],
         paid_amount=_ZERO,
         due_amount=_ZERO,
