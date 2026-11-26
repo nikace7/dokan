@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { cartPayload } from '@/features/billing/cartModel';
 import type { CartLine } from '@/stores/cartStore';
 import {
   billTotalPaisa,
   cartTotalPaisa,
   discountProblem,
   lineTotalPaisa,
+  priceProblem,
   useCartStore,
   vatPaisa,
 } from '@/stores/cartStore';
@@ -151,5 +153,24 @@ describe('cartStore', () => {
 
   it('floors a line total at zero when the discount exceeds the line', () => {
     expect(lineTotalPaisa(line({ discountPaisa: 999_999 }))).toBe(0);
+  });
+
+  it('asks for a price the shop has not set, and keeps a typed one', () => {
+    useCartStore.getState().addLine(line({ unitPricePaisa: 0 }));
+    expect(priceProblem(useCartStore.getState().lines[0])).toBe('missing');
+
+    useCartStore.getState().setPrice('v-1', '2500');
+    useCartStore.getState().addLine(line({ unitPricePaisa: 0 }));
+    useCartStore.getState().reprice({ 'v-1': { unitPricePaisa: 0, rateTypeId: 'r-2' } });
+
+    const [typed] = useCartStore.getState().lines;
+    expect(typed.quantity).toBe(2);
+    expect(typed.unitPricePaisa).toBe(250_000);
+    expect(priceProblem(typed)).toBeNull();
+    expect(cartPayload('b-1', 'r-1').lines[0].unit_price).toBe('2500.00');
+  });
+
+  it('marks a price that is not a number', () => {
+    expect(priceProblem(line({ priceRaw: '25x' }))).toBe('invalid');
   });
 });

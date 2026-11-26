@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { DiscountInput } from '@/features/billing/DiscountInput';
+import { DiscountInput, PriceInput } from '@/features/billing/DiscountInput';
 import { baseSymbol, formatPaisa, useMoneyDisplay } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { billTotalPaisa, lineTotalPaisa, useCartStore } from '@/stores/cartStore';
@@ -26,6 +26,7 @@ export function CartTable() {
   }
 
   const discountLabel = `${t('billing.discount')} (${baseSymbol()})`;
+  const rateLabel = `${t('billing.rate')} (${baseSymbol()})`;
 
   return (
     // A table from `sm` up (scrolling inside the card when it is narrower than
@@ -36,7 +37,7 @@ export function CartTable() {
           <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
             <th className="py-2 pr-2 font-medium">{t('billing.item')}</th>
             <th className="py-2 pr-2 font-medium">{t('billing.qty')}</th>
-            <th className="py-2 pr-2 text-right font-medium">{t('billing.rate')}</th>
+            <th className="py-2 pr-2 text-right font-medium">{rateLabel}</th>
             <th className="py-2 pr-2 text-right font-medium">{discountLabel}</th>
             <th className="py-2 pr-2 text-right font-medium">{t('billing.total')}</th>
             <th className="py-2 font-medium" aria-label={t('common.actions')} />
@@ -74,10 +75,13 @@ export function CartTable() {
                 </div>
               </td>
               <td
-                data-label={t('billing.rate')}
-                className={cn('py-2 pr-2 text-right whitespace-nowrap', phoneLabel)}
+                data-label={rateLabel}
+                className={cn(
+                  'py-2 pr-2 text-right max-sm:self-start max-sm:text-left',
+                  phoneLabel,
+                )}
               >
-                {formatPaisa(line.unitPricePaisa, { symbol: 'auto' })}
+                <PriceInput line={line} />
               </td>
               <td
                 data-label={discountLabel}

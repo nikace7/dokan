@@ -27,7 +27,7 @@ import { formatBaseMoney } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
 import { billingPath, hasPlanFeature } from '@/lib/plans';
 import { usePageTitle } from '@/lib/usePageTitle';
-import { discountProblem, useCartStore } from '@/stores/cartStore';
+import { discountProblem, priceProblem, useCartStore } from '@/stores/cartStore';
 import type { UnconfirmedSale } from '@/stores/cartStore';
 
 /**
@@ -129,7 +129,8 @@ export function BillingPage() {
   });
   const hold = () => {
     setSaleError(null);
-    if (lines.some(discountProblem)) setSaleError(t('billing.errors.fixDiscount'));
+    if (lines.some(priceProblem)) setSaleError(t('billing.errors.fixPrice'));
+    else if (lines.some(discountProblem)) setSaleError(t('billing.errors.fixDiscount'));
     else holdMutation.mutate();
   };
   // Nothing on the bill may change while the server might already hold it.
