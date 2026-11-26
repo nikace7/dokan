@@ -238,6 +238,8 @@ describe('TransfersPage', () => {
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"qty":"2"') }),
       ),
     );
+    // What was received is not left typed in, to be received again.
+    await waitFor(() => expect(screen.getAllByLabelText('Receive SHIRT-M')[0]).toHaveValue(null));
 
     await confirmAction('Complete transfer', '/transfers/transfer-1/complete');
   });
