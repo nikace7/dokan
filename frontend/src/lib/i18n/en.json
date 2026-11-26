@@ -237,7 +237,10 @@
       "amountPositive": "Amount must be greater than zero.",
       "udharoCustomer": "Udharo requires a customer — search and pick one above.",
       "drawerClosed": "The cash drawer is closed, so this bill was not saved.",
-      "openDrawer": "Open cash session"
+      "openDrawer": "Open cash session",
+      "priceInvalid": "Enter a valid price.",
+      "priceMissing": "Type the price.",
+      "fixPrice": "Fix the price marked in red first."
     },
     "receipt": {
       "saleCompleted": "Sale completed",
@@ -270,7 +273,8 @@
       "decrease": "Decrease quantity of {{name}}",
       "increase": "Increase quantity of {{name}}",
       "remove": "Remove {{name}}",
-      "discount": "Discount for {{name}}"
+      "discount": "Discount for {{name}}",
+      "price": "Price of {{name}}"
     },
     "completeAndPrint": "Complete and print"
   },
