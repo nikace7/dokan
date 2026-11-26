@@ -31,6 +31,8 @@ class SaleLineInput:
     qty: Decimal
     unit_price: Decimal | None
     discount: Decimal
+    # A parked bill's price was checked against the limits when it was parked.
+    price_checked: bool = False
 
 
 @dataclass(frozen=True)
@@ -74,6 +76,8 @@ def resolve_lines(
             unit_price = resolve_price(
                 tenant, variant=line.variant, rate_type=rate_type, user=user
             ).price
+        elif line.price_checked:
+            unit_price = quantize_money(line.unit_price)
         else:
             unit_price = quantize_money(line.unit_price)
             try:

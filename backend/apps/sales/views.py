@@ -229,6 +229,10 @@ class ReceiptPrintView(_SalesAPIView):
 class HoldBillView(_SalesAPIView):
     """POST /sales/hold — park a bill (no stock, no invoice number)."""
 
+    # Parking is part of the full counter. Finishing or cancelling a parked
+    # bill stays open, so a shop that drops the full counter keeps its bills.
+    plan_features_by_method: ClassVar[dict[str, str]] = {"POST": "advanced_pos"}
+
     schema_contract: ClassVar[dict[str, Any]] = {
         "POST": operation(
             request=HoldBillSerializer,

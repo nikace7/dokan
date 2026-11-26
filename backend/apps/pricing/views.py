@@ -282,8 +282,9 @@ class BoundsView(_PricingAPIView):
         data = serializer.validated_data
         services.set_price_bounds(
             target=target,
-            min_selling_price=data.get("min_selling_price"),
-            max_selling_price=data.get("max_selling_price"),
+            # A bound left out of the request keeps its value; only null clears.
+            min_selling_price=data.get("min_selling_price", target.min_selling_price),
+            max_selling_price=data.get("max_selling_price", target.max_selling_price),
             user=_user(request),
         )
         return ok({"id": str(pk), **BoundsSerializer(target).data})

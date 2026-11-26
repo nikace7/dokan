@@ -735,7 +735,9 @@
       "totals": "Returned: {{returned}} · New items: {{added}}",
       "customerPays": "Customer pays {{amount}}",
       "giveBack": "Give back {{amount}} in cash",
-      "even": "Nothing to pay or give back"
+      "even": "Nothing to pay or give back",
+      "offDues": "Take {{amount}} off what they owe",
+      "offDuesAndCash": "Take {{dues}} off what they owe and give back {{cash}} in cash"
     }
   },
   "audit": {

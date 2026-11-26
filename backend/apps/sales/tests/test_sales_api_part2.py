@@ -182,6 +182,25 @@ class TestHoldCompleteCancelFlow:
         assert completed.json()["data"]["customer"] == str(customer.pk)
         assert completed.json()["data"]["due_amount"] == "1500.00"
 
+    def test_parking_a_bill_needs_the_full_counter(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        from apps.tenants.models import TenantFeatureOverride
+
+        grant(tenant, user, "sale.create")
+        TenantFeatureOverride.objects.create(
+            tenant=tenant, key="features.advanced_pos", value=False
+        )
+        response = auth_client(user).post(
+            f"{SALES_URL}/hold",
+            sale_payload(shop),
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="hold-plan",
+        )
+        assert response.status_code == 402
+        assert response.json()["error"]["code"] == "PLAN_FEATURE_REQUIRED"
+
     def test_complete_keeps_the_customer_the_bill_was_held_for(
         self, tenant: Any, user: Any, shop: dict
     ) -> None:

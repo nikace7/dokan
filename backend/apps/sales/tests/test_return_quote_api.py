@@ -82,11 +82,23 @@ def test_quote_matches_the_return_of_a_discounted_vat_bill(
 
 
 @pytest.mark.parametrize(
-    ("new_price", "collect", "refund"),
-    [("1200.00", "200.00", "0.00"), ("1000.00", "0.00", "0.00"), ("700.00", "0.00", "300.00")],
+    ("new_price", "collect", "credit", "cash"),
+    [
+        ("1200.00", "200.00", "0.00", "0.00"),
+        ("1000.00", "0.00", "0.00", "0.00"),
+        # The customer owes 500: the difference comes off that first.
+        ("700.00", "0.00", "300.00", "0.00"),
+        ("400.00", "0.00", "500.00", "100.00"),
+    ],
 )
 def test_quote_matches_the_exchange(
-    tenant: Any, user: Any, shop: dict[str, Any], new_price: str, collect: str, refund: str
+    tenant: Any,
+    user: Any,
+    shop: dict[str, Any],
+    new_price: str,
+    collect: str,
+    credit: str,
+    cash: str,
 ) -> None:
     from apps.inventory.services import post_opening_stock
 
@@ -111,7 +123,8 @@ def test_quote_matches_the_exchange(
     assert quote["return_total"] == "1000.00"
     assert quote["new_total"] == new_price
     assert quote["to_collect"] == collect
-    assert quote["to_refund"] == refund
+    assert Decimal(quote["to_refund"]) == Decimal(credit) + Decimal(cash)
+    assert quote["max_credit_note"] == credit
     recorded = client.post(
         EXCHANGES_URL,
         {
@@ -125,7 +138,7 @@ def test_quote_matches_the_exchange(
         HTTP_IDEMPOTENCY_KEY="ex-quote",
     )
     assert recorded.status_code == 201
-    assert recorded.json()["data"]["refund_amount"] == refund
+    assert recorded.json()["data"]["refund_amount"] == cash
     assert recorded.json()["data"]["sale_invoice"]["due_amount"] == "0.00"
 
 

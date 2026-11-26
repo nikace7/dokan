@@ -35,13 +35,13 @@ class ReturnQuote:
     max_credit_note: Decimal
 
 
-def _max_credit_note(tenant: "Tenant", original: SalesInvoice, return_total: Decimal) -> Decimal:
+def _max_credit_note(tenant: "Tenant", original: SalesInvoice, to_refund: Decimal) -> Decimal:
     if original.customer is None:
         return _ZERO
     from apps.customers.selectors import get_customer_outstanding
 
     outstanding = get_customer_outstanding(tenant, original.customer)
-    return max(_ZERO, min(outstanding, return_total))
+    return max(_ZERO, min(outstanding, to_refund))
 
 
 def quote_return(
@@ -78,10 +78,11 @@ def quote_return(
             bill_discount=_ZERO,
             round_off=_ZERO,
         )["total"]
+    to_refund = max(_ZERO, return_total - new_total)
     return ReturnQuote(
         return_total=return_total,
         new_total=new_total,
         to_collect=max(_ZERO, new_total - return_total),
-        to_refund=max(_ZERO, return_total - new_total),
-        max_credit_note=_max_credit_note(tenant, original, return_total),
+        to_refund=to_refund,
+        max_credit_note=_max_credit_note(tenant, original, to_refund),
     )
