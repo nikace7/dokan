@@ -41,7 +41,13 @@ describe('paisa arithmetic', () => {
 
   it('rejects non-integer paisa (float leakage guard)', () => {
     expect(() => addPaisa(10.5)).toThrow('Paisa must be a safe integer');
-    expect(() => multiplyPaisa(100, 1.5)).toThrow('Quantity must be a safe integer');
+    expect(() => multiplyPaisa(100, 0.0001)).toThrow('at most three decimals');
+  });
+
+  it('multiplies by a quantity with decimals, rounding half up to the paisa', () => {
+    // 1.5 m at रू 333.33 is 499.995: रू 500.00, as the server rounds it.
+    expect(multiplyPaisa(33333, 1.5)).toBe(50000);
+    expect(multiplyPaisa(1000, 0.333)).toBe(333);
   });
 });
 

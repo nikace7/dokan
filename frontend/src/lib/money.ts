@@ -80,10 +80,13 @@ export function addPaisa(...amounts: Paisa[]): Paisa {
 }
 
 export function multiplyPaisa(paisa: Paisa, quantity: number): Paisa {
-  if (!Number.isSafeInteger(quantity)) {
-    throw new MoneyError(`Quantity must be a safe integer, got ${String(quantity)}`);
+  // Quantities carry up to three decimals (1.5 m of cloth): count in
+  // thousandths to stay integer, then round half up to the paisa like the server.
+  const thousandths = Math.round(quantity * 1000);
+  if (!Number.isSafeInteger(thousandths) || Math.abs(quantity * 1000 - thousandths) > 1e-6) {
+    throw new MoneyError(`Quantity must have at most three decimals, got ${String(quantity)}`);
   }
-  return assertIntegerPaisa(paisa) * quantity;
+  return Math.round((assertIntegerPaisa(paisa) * thousandths) / 1000);
 }
 
 function assertIntegerPaisa(paisa: Paisa): Paisa {
