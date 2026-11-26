@@ -87,6 +87,7 @@ const newVariant = {
 };
 
 let newPrice = 2000;
+let owed = 0;
 
 function quote() {
   const returned = 900;
@@ -95,7 +96,7 @@ function quote() {
     new_total: newPrice.toFixed(2),
     to_collect: Math.max(0, newPrice - returned).toFixed(2),
     to_refund: Math.max(0, returned - newPrice).toFixed(2),
-    max_credit_note: '0.00',
+    max_credit_note: Math.min(owed, Math.max(0, returned - newPrice)).toFixed(2),
   };
 }
 
@@ -122,6 +123,7 @@ async function recorded() {
 describe('ExchangePage', () => {
   beforeEach(() => {
     newPrice = 2000;
+    owed = 0;
     vi.stubGlobal('fetch', fetchMock);
     setTokens({ access: 'a', refresh: 'r' });
     fetchMock.mockImplementation(async (input, init) => {
@@ -159,6 +161,24 @@ describe('ExchangePage', () => {
     expect(await screen.findByText('Give back रू 200.00 in cash')).toBeInTheDocument();
     expect(screen.queryByLabelText('Customer pays (रू)')).not.toBeInTheDocument();
     expect((await recorded()).payments).toEqual([]);
+  });
+
+  it('takes the difference off what the customer owes first', async () => {
+    newPrice = 700;
+    owed = 500;
+    await swap();
+
+    expect(await screen.findByText('Take रू 200.00 off what they owe')).toBeInTheDocument();
+  });
+
+  it('gives back in cash only what the dues do not cover', async () => {
+    newPrice = 700;
+    owed = 150;
+    await swap();
+
+    expect(
+      await screen.findByText('Take रू 150.00 off what they owe and give back रू 50.00 in cash'),
+    ).toBeInTheDocument();
   });
 
   it('says when nothing changes hands', async () => {
