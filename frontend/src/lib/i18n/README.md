@@ -24,6 +24,15 @@ not go through i18n.
   `@/lib/i18n` (it initializes the app config incl. the Nepali default);
   tests initialize the same global instance in `src/test/setup.ts`.
 
+## Codes from the server
+
+- `serverErrors.<CODE>` and `permissionNames.<code_with_underscores>` live
+  **only in `ne.json`**: English shows the server's own text, which is more
+  specific. `ApiError.message` and `permissionName()` (`lib/codeLabels.ts`)
+  look them up; an unlisted code shows the server's English. Put
+  `{{message}}` in a translation to keep figures from the server's text.
+- `audit.actions.*` is in both files (codes are not words in either language).
+
 ## Tests
 
 `src/test/setup.ts` initializes the same instance with `lng: 'en'`, so tests

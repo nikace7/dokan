@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { BsDateField } from '@/features/reports/BsDateField';
 import { getStoreSettings, updateStoreSettings } from '@/features/settings/api';
 import type { StoreSettings } from '@/features/settings/api';
 import { StorePromotionsCard } from '@/features/settings/StorePromotionsCard';
@@ -275,15 +276,12 @@ export function OnlineStorePage() {
             />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5 text-sm font-medium">
-              {t('settings.store.offer.endsAt')}
-              <input
-                type="date"
-                value={form.offer_ends_at}
-                onChange={(event) => setForm({ ...form, offer_ends_at: event.target.value })}
-                className={`${selectClasses} font-normal`}
-              />
-            </label>
+            <BsDateField
+              id="store-offer-ends"
+              label={t('settings.store.offer.endsAt')}
+              value={form.offer_ends_at}
+              onChange={(ad) => setForm({ ...form, offer_ends_at: ad })}
+            />
           </div>
           <p className="text-xs text-muted-foreground">{t('settings.store.offer.help')}</p>
 

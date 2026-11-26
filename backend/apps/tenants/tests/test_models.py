@@ -69,6 +69,13 @@ class TestBranchConstraints:
         with pytest.raises(IntegrityError):
             BranchFactory(tenant=tenant, is_default=True)
 
+    def test_invoice_prefix_unique_per_tenant(self) -> None:
+        tenant = TenantFactory()
+        BranchFactory(tenant=tenant, invoice_prefix="INV")
+        BranchFactory(invoice_prefix="INV")  # another shop may use it
+        with pytest.raises(IntegrityError):
+            BranchFactory(tenant=tenant, invoice_prefix="INV")
+
     def test_plan_is_required(self) -> None:
         with pytest.raises(IntegrityError):
             TenantFactory(plan=None)

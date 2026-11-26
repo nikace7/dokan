@@ -221,6 +221,11 @@ class Branch(TenantScopedModel):
         db_table = "branch"
         constraints = [
             models.UniqueConstraint(fields=["tenant", "code"], name="branch_tenant_code_uniq"),
+            # Bills are numbered per branch, so a shared prefix gives two
+            # different bills the same number.
+            models.UniqueConstraint(
+                fields=["tenant", "invoice_prefix"], name="branch_tenant_invoice_prefix_uniq"
+            ),
             # Exactly one default branch per tenant.
             models.UniqueConstraint(
                 fields=["tenant"],

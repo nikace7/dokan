@@ -55,7 +55,7 @@ function BrandPanel() {
           ))}
         </ul>
       </div>
-      <p className="relative text-xs text-primary-foreground/70">
+      <p className="relative text-xs text-primary-foreground">
         Authorized platform staff only. Every action here is audited.
       </p>
     </div>

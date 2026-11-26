@@ -93,7 +93,6 @@ describe('CustomersPage', () => {
 
   it('creates, edits, and deactivates a customer with credit permission', async () => {
     const customers = [{ ...customer }];
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
       if (url.includes('/v1/auth/me')) {
@@ -161,6 +160,9 @@ describe('CustomersPage', () => {
     );
 
     fireEvent.click(within(row!).getByRole('button', { name: 'Deactivate' }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Deactivate' }),
+    );
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/v1/customers/customer-1'),
@@ -170,7 +172,6 @@ describe('CustomersPage', () => {
   });
 
   it('says why a customer could not be deactivated', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     fetchMock.mockImplementation((input, init) => {
       const url = String(input);
       if (url.includes('/v1/auth/me')) {
@@ -194,6 +195,9 @@ describe('CustomersPage', () => {
     await screen.findAllByText('Sita Rai');
     const table = within(screen.getByRole('table'));
     fireEvent.click(table.getByRole('button', { name: 'Deactivate' }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Deactivate' }),
+    );
 
     expect(await screen.findByRole('alert')).toHaveTextContent('This customer still owes Rs 500.');
   });

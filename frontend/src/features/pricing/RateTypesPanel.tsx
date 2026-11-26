@@ -13,6 +13,7 @@ import { selectClasses } from '@/features/pricing/ui';
 import { listPermissions } from '@/features/settings/api';
 import type { RateType } from '@/features/settings/api';
 import { ApiError } from '@/lib/api/client';
+import { permissionName } from '@/lib/codeLabels';
 
 export function RateTypesPanel({ rates, canEdit }: { rates: RateType[]; canEdit: boolean }) {
   const { t } = useTranslation();
@@ -195,7 +196,7 @@ function RateTypeForm({ rate, onDone }: { rate?: RateType; onDone: () => void })
           <option value="">{t('pricing.rateTypes.anyoneBilling')}</option>
           {permissions.data?.map((permission) => (
             <option key={permission.code} value={permission.code}>
-              {permission.code} — {permission.name}
+              {permission.code} — {permissionName(permission.code, permission.name)}
             </option>
           ))}
         </select>

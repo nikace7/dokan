@@ -148,12 +148,19 @@
     print-color-adjust: exact;
   }
 
-  html[data-report-print='a4'] .report-print-area {
+  /* Named pages are ignored on absolutely positioned boxes, so the page
+     size goes on html and body, as for the receipt. */
+  html[data-report-print='a4'],
+  html[data-report-print='a4'] body {
     page: report-a4;
   }
 
-  html[data-report-print='thermal'] .report-print-area {
+  html[data-report-print='thermal'],
+  html[data-report-print='thermal'] body {
     page: report-thermal;
+  }
+
+  html[data-report-print='thermal'] .report-print-area {
     width: 74mm;
     font-size: 9px;
   }

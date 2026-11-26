@@ -100,8 +100,8 @@ describe('ExpensesPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Add expense' }));
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: category.id } });
     fireEvent.change(screen.getByLabelText('Amount (NPR)'), { target: { value: '2500' } });
-    fireEvent.change(screen.getByLabelText('Business date (AD)'), {
-      target: { value: '2026-08-03' },
+    fireEvent.change(screen.getByLabelText('Business date'), {
+      target: { value: '2083-04-18' },
     });
     fireEvent.change(screen.getByLabelText('Payee'), { target: { value: 'Electricity board' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save expense' }));

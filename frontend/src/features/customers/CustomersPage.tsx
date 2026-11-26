@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/Input';
 import {
@@ -42,6 +43,7 @@ export function CustomersPage() {
   const [status, setStatus] = useState<StatusFilter>('active');
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Customer | 'new' | null>(null);
+  const [deactivating, setDeactivating] = useState<Customer | null>(null);
 
   const customers = useQuery({
     queryKey: ['customers', 'list', term, status, page],
@@ -70,7 +72,6 @@ export function CustomersPage() {
   if (!canView) {
     return <main className="p-6 text-sm text-warning">{t('customers.noViewPermission')}</main>;
   }
-
   const rows = customers.data?.data ?? [];
 
   return (
@@ -133,17 +134,21 @@ export function CustomersPage() {
             customers={rows}
             canManage={canManage}
             onEdit={setEditing}
-            onDeactivate={(customer) => {
-              if (window.confirm(t('customers.deactivateConfirm', { name: customer.name }))) {
-                deactivate.mutate(customer.id);
-              }
-            }}
+            onDeactivate={setDeactivating}
             deactivatePending={deactivate.isPending}
           />
         ) : null}
         <Pager page={page} totalPages={customers.data?.meta?.total_pages ?? 1} onPage={setPage} />
       </Card>
-
+      <ConfirmDialog
+        danger
+        open={deactivating !== null}
+        onOpenChange={(open) => !open && setDeactivating(null)}
+        title={t('customers.deactivateConfirm', { name: deactivating?.name ?? '' })}
+        body={t('customers.deactivateBody')}
+        confirmLabel={t('customers.deactivate')}
+        onConfirm={() => deactivating && deactivate.mutate(deactivating.id)}
+      />
       {editing && canManage ? (
         <Dialog open onOpenChange={() => setEditing(null)}>
           <DialogContent

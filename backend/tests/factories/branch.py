@@ -1,6 +1,6 @@
 """Factory for tenant-scoped Branch rows."""
 
-from factory import Sequence, SubFactory
+from factory import LazyAttribute, Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
 from apps.tenants.models import Branch
@@ -16,5 +16,10 @@ class BranchFactory(DjangoModelFactory):
     tenant = SubFactory(TenantFactory)
     code = Sequence(lambda n: f"BR{n:03d}")
     name = Sequence(lambda n: f"Branch {n}")
-    invoice_prefix = "INV"
+    # A shop's first branch bills as INV; later ones need their own prefix.
+    invoice_prefix = LazyAttribute(
+        lambda branch: (
+            branch.code if Branch.objects.filter(tenant=branch.tenant).exists() else "INV"
+        )
+    )
     is_default = False
