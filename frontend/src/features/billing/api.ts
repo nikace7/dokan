@@ -61,8 +61,8 @@ export interface SaleLinePayload {
   qty: string;
   discount: string;
   /**
-   * Explicit sell price (the simple-sale flow sends the counter's price).
-   * Omitted on the classic POS, where the server resolves the rate.
+   * Explicit sell price: Simple Sale always sends it; the full counter only
+   * when the cashier typed one. Omitted, the server charges the rate's price.
    */
   unit_price?: string;
 }

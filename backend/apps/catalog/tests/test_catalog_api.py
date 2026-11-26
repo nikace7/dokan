@@ -251,12 +251,14 @@ class TestLookup:
         response = auth_client(user).get("/api/v1/catalog/variants/lookup?sku=RATE-2", **host())
         assert "price" not in response.json()["data"]
 
-    def test_lookup_at_a_rate_with_no_price_is_409(self, tenant: Any, user: Any) -> None:
+    def test_lookup_at_a_rate_with_no_price_still_finds_the_item(
+        self, tenant: Any, user: Any
+    ) -> None:
         grant(tenant, user, "catalog.view")
         ItemVariantFactory(tenant=tenant, sku="RATE-3", mrp=None)
         response = self._at_rate(user, "RATE-3", RateTypeFactory(tenant=tenant))
-        assert response.status_code == 409
-        assert response.json()["error"]["code"] == "PRICE_NOT_SET"
+        assert response.status_code == 200
+        assert response.json()["data"]["price"] is None
 
     def test_lookup_at_a_restricted_rate_is_403(self, tenant: Any, user: Any) -> None:
         grant(tenant, user, "catalog.view")

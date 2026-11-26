@@ -62,13 +62,14 @@ describe('CartTable', () => {
     expect(cells.map((cell) => cell.dataset.label)).toEqual([
       undefined,
       undefined,
-      'Rate',
+      'Rate (रू)',
       'Discount (रू)',
       'Total',
       undefined,
     ]);
     // One set of controls for both layouts, so nothing can be edited twice.
     expect(screen.getAllByLabelText('Discount for T-Shirt')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Price of T-Shirt')).toHaveLength(1);
   });
 
   it('labels the controls in the shop language', async () => {

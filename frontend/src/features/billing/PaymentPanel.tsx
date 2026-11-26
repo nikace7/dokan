@@ -8,7 +8,13 @@ import { paisaToApiString } from '@/features/billing/api';
 import type { PaymentMethod } from '@/features/billing/api';
 import { baseSymbol, formatBaseMoney, parseAmount, useMoneyDisplay } from '@/lib/money';
 import type { Paisa } from '@/lib/money';
-import { billTotalPaisa, discountProblem, useCartStore, vatPaisa } from '@/stores/cartStore';
+import {
+  billTotalPaisa,
+  discountProblem,
+  priceProblem,
+  useCartStore,
+  vatPaisa,
+} from '@/stores/cartStore';
 
 const METHODS: Array<{ id: PaymentMethod; labelKey: string }> = [
   { id: 'CASH', labelKey: 'billing.tender.cash' },
@@ -82,7 +88,8 @@ export function PaymentPanel({
   const changePaisa = totalPaisa > 0 ? Math.max(0, receivedPaisa - totalPaisa) : 0;
 
   let formError: string | null = null;
-  if (lines.some(discountProblem)) formError = 'billing.errors.fixDiscount';
+  if (lines.some(priceProblem)) formError = 'billing.errors.fixPrice';
+  else if (lines.some(discountProblem)) formError = 'billing.errors.fixDiscount';
   else if (totalPaisa <= 0) formError = 'billing.errors.amountPositive';
   else if (amountError === null && duePaisa > 0 && !customer)
     formError = 'billing.errors.udharoCustomer';

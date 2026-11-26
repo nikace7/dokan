@@ -155,8 +155,16 @@ def get_variant_for_lookup(
         variant = ItemVariant.objects.select_related("item__category").get(
             tenant=tenant, pk=row["id"]
         )
-        resolved = resolve_price(tenant, variant=variant, rate_type=rate_type, user=user)
-        row["price"] = str(resolved.price)
+        try:
+            resolved = resolve_price(tenant, variant=variant, rate_type=rate_type, user=user)
+        except ServiceError as exc:
+            if exc.code != "PRICE_NOT_SET":
+                raise
+            # No price at this rate: the item still goes on the bill and the
+            # cashier types its price there.
+            row["price"] = None
+        else:
+            row["price"] = str(resolved.price)
     return row
 
 

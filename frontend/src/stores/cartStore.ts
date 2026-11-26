@@ -24,6 +24,8 @@ export interface CartLine {
   discountPaisa: Paisa;
   /** The discount as typed, so a wrong one stays on screen to be fixed. */
   discountRaw?: string;
+  /** The price as typed at the counter; sent with the sale, which checks its limits. */
+  priceRaw?: string;
   /** Rate the price belongs to; a different selected rate makes it stale. */
   rateTypeId?: string | null;
   vatApplicable?: boolean;
@@ -61,6 +63,7 @@ export interface CartState {
   removeLine: (variantId: string) => void;
   setQuantity: (variantId: string, quantity: number) => void;
   setDiscount: (variantId: string, raw: string) => void;
+  setPrice: (variantId: string, raw: string) => void;
   /** Apply the prices of a newly selected rate, by variant id. */
   reprice: (pricing: Record<string, LinePricing>) => void;
   setCustomer: (customer: CartCustomer | null) => void;
@@ -108,6 +111,12 @@ export function discountProblem(line: CartLine): 'invalid' | 'tooLarge' | null {
   return line.discountPaisa > multiplyPaisa(line.unitPricePaisa, line.quantity) ? 'tooLarge' : null;
 }
 
+/** A line needs a price: the shop may have none set for this item at this rate. */
+export function priceProblem(line: CartLine): 'invalid' | 'missing' | null {
+  if (line.priceRaw?.trim() && parseAmount(line.priceRaw) === null) return 'invalid';
+  return line.unitPricePaisa > 0 ? null : 'missing';
+}
+
 export const useCartStore = create<CartState>()((set) => ({
   ...initialState,
   billNo: 0,
@@ -123,6 +132,10 @@ export const useCartStore = create<CartState>()((set) => ({
           quantity: existing.quantity + line.quantity,
           discountPaisa: existing.discountPaisa,
           discountRaw: existing.discountRaw,
+          // Nor a price the counter typed.
+          ...(existing.priceRaw === undefined
+            ? {}
+            : { priceRaw: existing.priceRaw, unitPricePaisa: existing.unitPricePaisa }),
         };
         return { lines: state.lines.map((l) => (l === existing ? merged : l)) };
       }
@@ -145,11 +158,24 @@ export const useCartStore = create<CartState>()((set) => ({
           : l,
       ),
     })),
+  setPrice: (variantId, raw) =>
+    set((state) => ({
+      lines: state.lines.map((l) =>
+        l.variantId === variantId
+          ? { ...l, priceRaw: raw, unitPricePaisa: parseAmount(raw) ?? 0 }
+          : l,
+      ),
+    })),
   reprice: (pricing) =>
     set((state) =>
       state.heldSaleId || state.unconfirmedSale
         ? state
-        : { lines: state.lines.map((l) => ({ ...l, ...pricing[l.variantId] })) },
+        : {
+            // A typed price stays when the rate changes.
+            lines: state.lines.map((l) =>
+              l.priceRaw === undefined ? { ...l, ...pricing[l.variantId] } : l,
+            ),
+          },
     ),
   setCustomer: (customer) => set({ customer }),
   setUnconfirmedSale: (unconfirmedSale) => set({ unconfirmedSale }),

@@ -23,6 +23,8 @@ export function cartPayload(
       variant: line.variantId,
       qty: String(line.quantity),
       discount: paisaToApiString(line.discountPaisa),
+      // A typed price is sent; otherwise the server charges the rate's price.
+      ...(line.priceRaw === undefined ? {} : { unit_price: paisaToApiString(line.unitPricePaisa) }),
     })),
   };
 }
