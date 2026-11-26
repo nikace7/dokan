@@ -4,8 +4,9 @@ import { Link, useParams } from 'react-router-dom';
 
 import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { billNumber, getSharedBill } from '@/features/billing/api';
-import type { SharedBill } from '@/features/billing/api';
+import { billNumber } from '@/features/billing/api';
+import { getSharedBill } from '@/features/billing/shareApi';
+import type { SharedBill } from '@/features/billing/shareApi';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
 import { formatQty } from '@/lib/quantity';
