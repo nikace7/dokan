@@ -30,7 +30,9 @@ import {
 } from '@/features/admin/api';
 import type { PlatformRole, Subscription } from '@/features/admin/api';
 import { AdminCard, EmptyState, Field, LoadingRows } from '@/features/admin/components';
+import { BsDateField } from '@/features/reports/BsDateField';
 import { ApiError } from '@/lib/api/client';
+import { adToBsText } from '@/lib/dateTime';
 import { formatNpr } from '@/lib/money';
 
 const SUB_STATUS_VARIANT: Record<Subscription['status'], BadgeProps['variant']> = {
@@ -153,7 +155,7 @@ function SubscriptionRow({
   return (
     <TableRow>
       <TableCell>
-        {row.period_start} – {row.period_end}
+        {adToBsText(row.period_start)} – {adToBsText(row.period_end)}
       </TableCell>
       <TableCell>{row.plan_code}</TableCell>
       <TableCell className="text-right">{formatNpr(row.amount_npr)}</TableCell>
@@ -260,19 +262,19 @@ function SubscriptionForm({ tenantId, onDone }: { tenantId: string; onDone: () =
           <option value="FAILED">Failed</option>
         </select>
       </Field>
-      <Input
-        label="Period start"
-        type="date"
+      <BsDateField
+        id="sub-period-start"
+        label="Period start (BS)"
         required
         value={periodStart}
-        onChange={(event) => setPeriodStart(event.target.value)}
+        onChange={setPeriodStart}
       />
-      <Input
-        label="Period end"
-        type="date"
+      <BsDateField
+        id="sub-period-end"
+        label="Period end (BS)"
         required
         value={periodEnd}
-        onChange={(event) => setPeriodEnd(event.target.value)}
+        onChange={setPeriodEnd}
       />
       <Input
         label="Amount (NPR)"

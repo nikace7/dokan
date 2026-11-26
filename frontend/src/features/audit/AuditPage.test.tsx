@@ -57,8 +57,8 @@ describe('AuditPage', () => {
   it('renders an audit row and expands before/after details', async () => {
     renderAudit();
 
-    expect(await screen.findByText('price.set')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /price\.set.*item_price/i }));
+    expect(await screen.findByText('Price set')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /price set.*item_price/i }));
 
     expect(screen.getByText(/1500\.00/)).toBeInTheDocument();
     expect(screen.getByText(/1200\.00/)).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe('AuditPage', () => {
   it('filters by BS dates and keeps the filter while one is half typed', async () => {
     fetchMock.mockImplementation(async () => page([row]));
     renderAudit();
-    await screen.findByText('price.set');
+    await screen.findByText('Price set');
     const from = screen.getByLabelText('From (BS)');
     fireEvent.change(from, { target: { value: '2083-04-18' } });
     await waitFor(() => expect(String(fetchMock.mock.calls.at(-1)?.[0])).toContain('2026-08-03'));
@@ -79,7 +79,7 @@ describe('AuditPage', () => {
 
   it('sends the action filter to the server', async () => {
     renderAudit();
-    await screen.findByText('price.set');
+    await screen.findByText('Price set');
     fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'stock.adjust' } });
 
     await waitFor(() => {

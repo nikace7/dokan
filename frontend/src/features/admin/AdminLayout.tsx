@@ -46,7 +46,7 @@ function AdminNavLink({ item }: { item: AdminNavItem }) {
           <item.icon
             className={cn(
               'h-4 w-4 shrink-0 transition-colors',
-              isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-foreground',
+              isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
             )}
           />
           {item.label}

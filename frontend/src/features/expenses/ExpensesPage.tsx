@@ -16,6 +16,7 @@ import {
 import type { ExpensePayload } from '@/features/expenses/api';
 import { ExpenseList, SummaryGroups } from '@/features/expenses/ExpenseTables';
 import { currentBsMonthRange } from '@/features/reports/api';
+import { BsDateField } from '@/features/reports/BsDateField';
 import { BsRangeControls } from '@/features/reports/BsRangeControls';
 import { ApiError } from '@/lib/api/client';
 import { formatNpr } from '@/lib/money';
@@ -165,11 +166,12 @@ export function ExpensesPage() {
                 value={form.amount}
                 onChange={(event) => setForm({ ...form, amount: event.target.value })}
               />
-              <Input
+              <BsDateField
+                id="expense-date"
                 label={t('expenses.businessDate')}
-                type="date"
+                required
                 value={form.business_date_ad}
-                onChange={(event) => setForm({ ...form, business_date_ad: event.target.value })}
+                onChange={(ad) => setForm({ ...form, business_date_ad: ad })}
               />
               <Input
                 label={t('expenses.payee')}

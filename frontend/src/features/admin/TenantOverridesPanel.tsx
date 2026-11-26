@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   Dialog,
   DialogContent,
@@ -109,22 +110,18 @@ export function TenantOverridesPanel({
                 <TableCell>{override.note ?? '—'}</TableCell>
                 {canWrite ? (
                   <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      disabled={remove.isPending}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `Remove override ${override.key}? The plan default applies again.`,
-                          )
-                        ) {
-                          remove.mutate(override.id);
-                        }
-                      }}
-                    >
-                      Remove
-                    </Button>
+                    <ConfirmDialog
+                      danger
+                      trigger={
+                        <Button size="sm" variant="danger" disabled={remove.isPending}>
+                          Remove
+                        </Button>
+                      }
+                      title={`Remove override ${override.key}?`}
+                      body="The plan default applies again."
+                      confirmLabel="Remove"
+                      onConfirm={() => remove.mutate(override.id)}
+                    />
                   </TableCell>
                 ) : null}
               </TableRow>

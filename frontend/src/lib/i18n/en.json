@@ -472,7 +472,8 @@
       "save": "Save customer"
     },
     "deactivateError": "Could not deactivate the customer.",
-    "editTitle": "Edit customer"
+    "editTitle": "Edit customer",
+    "deactivateBody": "They move to the inactive list. Their past sales and dues stay."
   },
   "payments": {
     "receiptTitle": "Collect customer receipt",
@@ -639,7 +640,7 @@
     "required": "Category, amount, and business date are required.",
     "category": "Category",
     "selectCategory": "Select a category",
-    "businessDate": "Business date (AD)",
+    "businessDate": "Business date",
     "payee": "Payee",
     "save": "Save expense",
     "filterCategory": "Filter category",
@@ -756,7 +757,36 @@
     "targetId": "Target ID",
     "ip": "IP",
     "impersonatedBy": "Impersonated by",
-    "count": "{{count}} events"
+    "count": "{{count}} events",
+    "actions": {
+      "auth_login": "Logged in",
+      "auth_login_failed": "Login failed",
+      "auth_login_otp_disable": "Login code turned off",
+      "auth_login_otp_enable": "Login code turned on",
+      "auth_logout": "Logged out",
+      "auth_password_change": "Password changed",
+      "auth_password_reset": "Password reset",
+      "auth_session_revoke_others": "Other devices logged out",
+      "payment_reverse": "Payment reversed",
+      "price_set": "Price set",
+      "price_set_bounds": "Price limits set",
+      "role_create": "Role created",
+      "role_delete": "Role deleted",
+      "role_update": "Role changed",
+      "sale_cancel_held": "Held bill cancelled",
+      "sale_receipt_print": "Receipt printed",
+      "sale_share": "Bill shared",
+      "stock_adjust": "Stock adjusted",
+      "stock_write_off": "Stock written off",
+      "store_order_advance": "Online order moved on",
+      "store_order_cancel": "Online order cancelled",
+      "store_order_prepare": "Online order prepared",
+      "store_settings_update": "Online store settings changed",
+      "tenant_settings_update": "Shop settings changed",
+      "user_create": "Staff added",
+      "user_role_assign": "Role given",
+      "user_role_revoke": "Role removed"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -937,7 +967,8 @@
       "systemRole": "System role",
       "edit": "Edit",
       "delete": "Delete",
-      "deleteConfirm": "Delete the {{name}} role?"
+      "deleteConfirm": "Delete the {{name}} role?",
+      "deleteBody": "Staff with only this role lose its permissions. This cannot be undone."
     },
     "workspace": {
       "loading": "Loading shop…",
