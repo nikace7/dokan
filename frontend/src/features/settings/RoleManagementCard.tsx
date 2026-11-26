@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { createRole, deleteRole, listPermissions, updateRole } from '@/features/settings/api';
 import type { Permission, Role } from '@/features/settings/api';
 import { ApiError } from '@/lib/api/client';
+import { permissionName } from '@/lib/codeLabels';
 
 type RoleForm = {
   code: string;
@@ -158,7 +159,9 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
                   className="mt-0.5 accent-primary"
                 />
                 <span>
-                  <span className="block font-medium">{permission.name}</span>
+                  <span className="block font-medium">
+                    {permissionName(permission.code, permission.name)}
+                  </span>
                   <span className="text-xs text-muted-foreground">{permission.code}</span>
                 </span>
               </label>

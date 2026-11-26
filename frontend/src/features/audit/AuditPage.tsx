@@ -9,6 +9,7 @@ import { listAuditLogs } from '@/features/audit/api';
 import type { AuditLog } from '@/features/audit/api';
 import { BsDateField } from '@/features/reports/BsDateField';
 import { ApiError } from '@/lib/api/client';
+import { auditActionLabel } from '@/lib/codeLabels';
 import { formatDateTime } from '@/lib/dateTime';
 import { useDebounced } from '@/lib/useDebounced';
 
@@ -136,7 +137,9 @@ export function AuditPage() {
               onClick={() => setExpandedId((current) => (current === row.id ? null : row.id))}
               className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-2 py-3 text-left text-sm hover:bg-muted/50"
             >
-              <span className="font-medium">{row.action}</span>
+              <span className="font-medium" title={row.action}>
+                {auditActionLabel(row.action)}
+              </span>
               <span className="text-muted-foreground">{row.target_type}</span>
               <span className="text-muted-foreground">{row.actor_name || t('audit.system')}</span>
               <span className="ml-auto text-xs text-muted-foreground">

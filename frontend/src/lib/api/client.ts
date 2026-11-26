@@ -7,6 +7,8 @@
  * (docs/SYSTEM_DESIGN.md §8.4).
  */
 
+import i18n from 'i18next';
+
 import type { components } from './schema';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -17,12 +19,25 @@ const IDEMPOTENT_POST_PATHS = ['/v1/sales', '/v1/payments'] as const;
 /** Matches the API error envelope: `{ data: null, error: {...} }`. */
 export type ApiErrorBody = components['schemas']['ApiError'];
 
+/**
+ * The server's message in the shop's language: `serverErrors.<CODE>` in
+ * ne.json, else the server's own English. `{{message}}` in a translation
+ * keeps the server's text where it carries figures.
+ */
+function localMessage(body: ApiErrorBody | null): string | undefined {
+  if (!body?.code || !i18n.isInitialized) return body?.message;
+  return i18n.t(`serverErrors.${body.code}`, {
+    message: body.message,
+    defaultValue: body.message,
+  });
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly body: ApiErrorBody | null;
 
   constructor(status: number, body: ApiErrorBody | null) {
-    super(body?.message ?? `Request failed with status ${status}`);
+    super(localMessage(body) ?? `Request failed with status ${status}`);
     this.name = 'ApiError';
     this.status = status;
     this.body = body;
