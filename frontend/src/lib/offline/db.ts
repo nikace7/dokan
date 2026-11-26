@@ -48,6 +48,8 @@ export interface CachedVariant {
   mrp: string | null;
   /** Price per rate type id, as last seen online (rows cached earlier lack it). */
   prices?: Record<string, string>;
+  /** The price last seen online at any rate: offline, a closer guess than MRP. */
+  lastPrice?: string;
   vatApplicable?: boolean;
   itemName: string;
   cachedAt: string;

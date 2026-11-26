@@ -320,6 +320,7 @@ class CompleteBillView(_SalesAPIView):
             ),
             created_by=_user(request),
             override_reason=serializer.validated_data.get("override_reason", ""),
+            is_vat_bill=serializer.validated_data.get("is_vat_bill"),
             require_open_cash_session=True,
         )
         return ok(self._detail(request, completed))

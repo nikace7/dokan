@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from apps.catalog.models import Brand, Category, Item, ItemVariant, SizeChart
 from core.calendar.bs import ad_to_bs
+from core.responses import ServiceError
 
 if TYPE_CHECKING:
     from apps.accounts.models import User
@@ -250,3 +251,29 @@ def _sort_best_sellers_first(rows: list[dict[str, Any]], tenant: "Tenant", branc
     )
     net_by_variant = {str(row["variant_id"]): row["net_qty"] for row in sold}
     rows.sort(key=lambda row: net_by_variant.get(row["id"], Decimal("0")))
+
+
+def add_sale_prices(
+    tenant: "Tenant", user: "User", rows: list[dict[str, Any]], *, rate_type: "RateType"
+) -> None:
+    """Give each dropdown row ``price``: what a sale at ``rate_type`` charges,
+    or None when the shop has no price for it (the cashier types one)."""
+    from apps.pricing.services import resolve_price
+
+    variants = {
+        str(variant.pk): variant
+        for variant in ItemVariant.objects.select_related("item__category").filter(
+            tenant=tenant, pk__in=[row["id"] for row in rows]
+        )
+    }
+    for row in rows:
+        try:
+            resolved = resolve_price(
+                tenant, variant=variants[row["id"]], rate_type=rate_type, user=user
+            )
+        except ServiceError as exc:
+            if exc.code != "PRICE_NOT_SET":
+                raise
+            row["price"] = None
+        else:
+            row["price"] = str(resolved.price)

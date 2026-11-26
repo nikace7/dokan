@@ -31,6 +31,7 @@ export async function cacheVariant(
         ...known?.prices,
         ...(rateTypeId && variant.price ? { [rateTypeId]: variant.price } : {}),
       },
+      lastPrice: (rateTypeId && variant.price) || known?.lastPrice,
       vatApplicable: variant.item__is_vat_applicable,
       itemName: variant.item__name,
       cachedAt: new Date().toISOString(),
@@ -59,7 +60,8 @@ export async function lookupCachedVariant(
     color: row.color,
     color_hex: '',
     mrp: row.mrp,
-    price: rateTypeId ? row.prices?.[rateTypeId] : undefined,
+    // A rate never looked up online takes the last price seen, not the MRP.
+    price: rateTypeId ? (row.prices?.[rateTypeId] ?? row.lastPrice) : undefined,
     item__is_vat_applicable: row.vatApplicable,
     is_active: true,
     item__name: row.itemName,

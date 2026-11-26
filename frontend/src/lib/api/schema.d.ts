@@ -2779,6 +2779,7 @@ export interface components {
             payments?: components["schemas"]["SalePayment"][];
             /** @default  */
             override_reason: string;
+            is_vat_bill?: boolean;
         };
         /** @description POST /inventory/counts payload. */
         CountCreate: {

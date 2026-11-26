@@ -57,7 +57,13 @@ function renderDialog() {
   });
   render(
     <QueryClientProvider client={queryClient}>
-      <ItemPickerDialog open branchId="branch-1" onOpenChange={onOpenChange} onPick={onPick} />
+      <ItemPickerDialog
+        open
+        branchId="branch-1"
+        rateTypeId="rate-1"
+        onOpenChange={onOpenChange}
+        onPick={onPick}
+      />
     </QueryClientProvider>,
   );
   return { onPick, onOpenChange };
@@ -73,6 +79,16 @@ describe('ItemPickerDialog', () => {
     vi.unstubAllGlobals();
     fetchMock.mockReset();
     clearTokens();
+  });
+
+  it('shows the price at the selected rate, not the MRP', async () => {
+    fetchMock.mockResolvedValue(pageEnvelope([{ ...TSHIRT, price: '1200.00' }]));
+    renderDialog();
+
+    const cell = await screen.findByRole('button', { name: /T-Shirt/ });
+
+    expect(within(cell).getByText('रू 1,200.00')).toBeInTheDocument();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('rate_type=rate-1');
   });
 
   it('renders a photo grid with MRP and stock, and picking a cell hands over the row', async () => {

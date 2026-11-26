@@ -12,6 +12,7 @@ const TILE_COUNT = 8;
 
 interface SimpleSaleQuickPickProps {
   branchId: string;
+  rateTypeId: string | null;
   /** The bill so far, to show on each tile how many are on it. */
   lines: SimpleLine[];
   onPick: (variant: VariantForSale) => void;
@@ -24,12 +25,17 @@ interface SimpleSaleQuickPickProps {
  * cache. Load failures render nothing: the Add-item dialog carries the
  * error/empty messaging.
  */
-export function SimpleSaleQuickPick({ branchId, lines, onPick }: SimpleSaleQuickPickProps) {
+export function SimpleSaleQuickPick({
+  branchId,
+  rateTypeId,
+  lines,
+  onPick,
+}: SimpleSaleQuickPickProps) {
   const { t } = useTranslation();
 
   const query = useQuery({
-    queryKey: ['catalog', 'for-sale', branchId, ''],
-    queryFn: () => searchVariantsForSale(branchId, ''),
+    queryKey: ['catalog', 'for-sale', branchId, rateTypeId, ''],
+    queryFn: () => searchVariantsForSale(branchId, '', rateTypeId),
     staleTime: 30_000,
   });
 

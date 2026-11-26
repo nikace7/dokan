@@ -133,7 +133,9 @@ export function TransfersPage() {
           transfer={transfer}
           canAdjust={canAdjust}
           pending={transition.isPending}
-          onAction={(action, lines) => transition.mutate({ id: transfer.id, action, lines })}
+          onAction={(action, lines, done) =>
+            transition.mutate({ id: transfer.id, action, lines }, { onSuccess: done })
+          }
         />
       ))}
     </main>

@@ -223,6 +223,30 @@ class TestHoldCompleteCancelFlow:
         assert completed.status_code == 200
         assert completed.json()["data"]["customer"] == str(customer.pk)
 
+    def test_complete_makes_a_parked_bill_a_vat_bill_when_asked(
+        self, tenant: Any, user: Any, shop: dict
+    ) -> None:
+        grant(tenant, user, "sale.create")
+        client = auth_client(user)
+        held = client.post(
+            f"{SALES_URL}/hold",
+            sale_payload(shop),
+            **host(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="hold-vat",
+        )
+        assert held.json()["data"]["is_vat_bill"] is False
+
+        completed = client.post(
+            f"{SALES_URL}/{held.json()['data']['id']}/complete",
+            {"payments": [{"method": "CASH", "amount": "2000.00"}], "is_vat_bill": True},
+            **host(),
+            format="json",
+        )
+
+        assert completed.status_code == 200
+        assert completed.json()["data"]["is_vat_bill"] is True
+
     def test_complete_completed_is_409(self, tenant: Any, user: Any) -> None:
         invoice = SalesInvoiceFactory(tenant=tenant, status="COMPLETED")
         grant(tenant, user, "sale.create")

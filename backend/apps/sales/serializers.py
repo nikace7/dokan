@@ -55,6 +55,8 @@ class CompleteBillSerializer(serializers.Serializer):
     customer = serializers.UUIDField(required=False, allow_null=True)
     payments = SalePaymentSerializer(many=True, required=False, default=list)
     override_reason = serializers.CharField(required=False, allow_blank=True, default="")
+    # Left out: the bill keeps what it was parked with.
+    is_vat_bill = serializers.BooleanField(required=False)
 
 
 class SalesInvoiceItemSerializer(serializers.ModelSerializer):

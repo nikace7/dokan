@@ -42,6 +42,8 @@ export interface CartCustomer {
 export interface UnconfirmedSale {
   payload: CreateSalePayload;
   key: string;
+  /** Change to hand back, kept so a retry after a reload still shows it. */
+  changePaisa?: Paisa;
 }
 
 export interface CartState {
