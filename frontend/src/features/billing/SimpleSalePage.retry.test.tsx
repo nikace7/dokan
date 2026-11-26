@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -265,7 +265,6 @@ describe('SimpleSalePage when the server does not answer', () => {
   });
 
   it('discards a locked bill only after confirmation', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     installApiMock(() => Promise.resolve(new Response('', { status: 502 })));
     renderPage();
     await pickItem('T-Shirt');
@@ -273,11 +272,19 @@ describe('SimpleSalePage when the server does not answer', () => {
     const discard = await screen.findByRole('button', { name: /discard/i });
 
     fireEvent.click(discard);
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: /go back/i }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('region', { name: 'T-Shirt — M / Black' })).toBeInTheDocument();
 
-    confirm.mockReturnValue(true);
     fireEvent.click(discard);
-    expect(screen.queryByRole('region', { name: /T-Shirt/ })).not.toBeInTheDocument();
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: /discard/i }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: /T-Shirt/ })).not.toBeInTheDocument(),
+    );
     expect(screen.getByRole('button', { name: /add item/i })).toBeEnabled();
   });
 });

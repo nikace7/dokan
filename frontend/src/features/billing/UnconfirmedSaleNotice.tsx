@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface UnconfirmedSaleNoticeProps {
   retryDisabled?: boolean;
@@ -34,15 +35,18 @@ export function UnconfirmedSaleNotice({
         <Button size="lg" className="flex-1" disabled={retryDisabled} onClick={onRetry}>
           {t('billing.unconfirmed.retry')}
         </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={() => {
-            if (window.confirm(t('billing.unconfirmed.discardConfirm'))) onDiscard();
-          }}
-        >
-          {t('billing.unconfirmed.discard')}
-        </Button>
+        <ConfirmDialog
+          danger
+          trigger={
+            <Button variant="outline" size="lg">
+              {t('billing.unconfirmed.discard')}
+            </Button>
+          }
+          title={t('billing.unconfirmed.discard')}
+          body={t('billing.unconfirmed.discardConfirm')}
+          confirmLabel={t('billing.unconfirmed.discard')}
+          onConfirm={onDiscard}
+        />
       </div>
     </div>
   );

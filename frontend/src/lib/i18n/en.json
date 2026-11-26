@@ -472,7 +472,8 @@
       "save": "Save customer"
     },
     "deactivateError": "Could not deactivate the customer.",
-    "editTitle": "Edit customer"
+    "editTitle": "Edit customer",
+    "deactivateBody": "They move to the inactive list. Their past sales and dues stay."
   },
   "payments": {
     "receiptTitle": "Collect customer receipt",
@@ -937,7 +938,8 @@
       "systemRole": "System role",
       "edit": "Edit",
       "delete": "Delete",
-      "deleteConfirm": "Delete the {{name}} role?"
+      "deleteConfirm": "Delete the {{name}} role?",
+      "deleteBody": "Staff with only this role lose its permissions. This cannot be undone."
     },
     "workspace": {
       "loading": "Loading shop…",

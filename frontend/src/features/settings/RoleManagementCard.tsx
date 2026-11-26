@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
 import { createRole, deleteRole, listPermissions, updateRole } from '@/features/settings/api';
@@ -225,20 +226,18 @@ export function RoleManagementCard({ roles }: { roles: Role[] }) {
                     >
                       {t('settings.roles.edit')}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      disabled={deleteMutation.isPending}
-                      onClick={() => {
-                        if (
-                          window.confirm(t('settings.roles.deleteConfirm', { name: role.name }))
-                        ) {
-                          deleteMutation.mutate(role.id);
-                        }
-                      }}
-                    >
-                      {t('settings.roles.delete')}
-                    </Button>
+                    <ConfirmDialog
+                      danger
+                      trigger={
+                        <Button size="sm" variant="danger" disabled={deleteMutation.isPending}>
+                          {t('settings.roles.delete')}
+                        </Button>
+                      }
+                      title={t('settings.roles.deleteConfirm', { name: role.name })}
+                      body={t('settings.roles.deleteBody')}
+                      confirmLabel={t('settings.roles.delete')}
+                      onConfirm={() => deleteMutation.mutate(role.id)}
+                    />
                   </div>
                 )}
               </div>
