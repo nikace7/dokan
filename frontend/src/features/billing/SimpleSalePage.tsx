@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useBeforeUnload, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -9,6 +10,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { isUnconfirmed } from '@/lib/api/client';
 import { createSale, currentSaleContext, paisaToApiString } from '@/features/billing/api';
 import type { PlanUsageWarning, SalesInvoice, VariantForSale } from '@/features/billing/api';
+import { HeldBillsPanel } from '@/features/billing/HeldBillsPanel';
 import { ItemPickerDialog } from '@/features/billing/ItemPickerDialog';
 import { ReceiptPanel } from '@/features/billing/ReceiptPanel';
 import { SaleErrorNotice } from '@/features/billing/SaleErrorNotice';
@@ -47,6 +49,11 @@ export function SimpleSalePage() {
   useMoneyDisplay();
 
   const { lines, tender, unconfirmedSale, clear } = useSimpleSaleStore();
+  const navigate = useNavigate();
+  // A closed tab loses the bill (it lives in sessionStorage): ask first.
+  useBeforeUnload((event) => {
+    if (lines.length > 0 || unconfirmedSale) event.preventDefault();
+  });
   const [pickerOpen, setPickerOpen] = useState(false);
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);
@@ -188,6 +195,7 @@ export function SimpleSalePage() {
       <ItemPickerDialog
         open={pickerOpen}
         branchId={workspace.branchId}
+        rateTypeId={workspace.rateTypeId}
         onOpenChange={setPickerOpen}
         onPick={(variant) => {
           pick(variant);
@@ -201,7 +209,12 @@ export function SimpleSalePage() {
           moves the tile that is about to be tapped again. */}
       {online && workspace.isReady && workspace.branchId ? (
         <fieldset disabled={locked} className="min-w-0">
-          <SimpleSaleQuickPick branchId={workspace.branchId} lines={lines} onPick={pick} />
+          <SimpleSaleQuickPick
+            branchId={workspace.branchId}
+            rateTypeId={workspace.rateTypeId}
+            lines={lines}
+            onPick={pick}
+          />
         </fieldset>
       ) : null}
 
@@ -217,6 +230,10 @@ export function SimpleSalePage() {
           />
         ))}
       </fieldset>
+
+      {/* Bills parked on the full counter stay reachable here, even once the
+          plan no longer has it: opening one finishes it on the full counter. */}
+      <HeldBillsPanel onResumed={() => void navigate('/billing')} />
 
       {/* In-flow spacer exactly the bar's height, so the last line and any
           error message stay scrollable clear of the fixed bar. */}

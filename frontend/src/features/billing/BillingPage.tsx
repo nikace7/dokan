@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useBeforeUnload } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/features/auth/useAuth';
-import { ApiError, isNetworkError, isUnconfirmed } from '@/lib/api/client';
+import { ApiError, attemptDone, attemptKey, isNetworkError, isUnconfirmed } from '@/lib/api/client';
 import { completeSale, createSale, holdSale, paisaToApiString } from '@/features/billing/api';
 import type { CreateSalePayload, PlanUsageWarning, SalesInvoice } from '@/features/billing/api';
 import { cartPayload } from '@/features/billing/cartModel';
@@ -42,6 +42,10 @@ export function BillingPage() {
   const clear = useCartStore((s) => s.clear);
   const unconfirmedSale = useCartStore((s) => s.unconfirmedSale);
   const setUnconfirmedSale = useCartStore((s) => s.setUnconfirmedSale);
+  // A closed tab loses the bill (it lives in sessionStorage): ask first.
+  useBeforeUnload((event) => {
+    if (lines.length > 0 || unconfirmedSale) event.preventDefault();
+  });
   const queryClient = useQueryClient();
   const workspace = useWorkspace();
   const { user } = useAuth();
@@ -73,9 +77,10 @@ export function BillingPage() {
     // (A held bill needs none of this: the server completes its id only once.)
     mutationFn: ({ payload, key }: UnconfirmedSale) =>
       heldSaleId
-        ? completeSale(heldSaleId, payload.payments, key, payload.customer)
+        ? completeSale(heldSaleId, payload.payments, key, payload.customer, payload.is_vat_bill)
         : createSale(payload, key),
     onMutate: (sale) => {
+      setChangePaisa(sale.changePaisa ?? 0);
       setSaleError(null);
       if (!heldSaleId) setUnconfirmedSale(sale);
     },
@@ -109,9 +114,13 @@ export function BillingPage() {
   const holdMutation = useMutation({
     mutationKey: ['sale'],
     networkMode: 'always',
-    mutationFn: () =>
-      holdSale(cartPayload(workspace.branchId, workspace.rateTypeId), crypto.randomUUID()),
+    mutationFn: () => {
+      const payload = cartPayload(workspace.branchId, workspace.rateTypeId);
+      // A retry after a lost reply must not park the bill twice.
+      return holdSale(payload, attemptKey('hold', payload));
+    },
     onSuccess: () => {
+      attemptDone('hold');
       setSaleError(null);
       clear();
       void queryClient.invalidateQueries({ queryKey: ['sales', 'held'] });
@@ -256,11 +265,11 @@ export function BillingPage() {
               allowVatBill={hasPlanFeature(user, 'vat_module')}
               chargesVat={user?.vat_registered}
               onComplete={(tender) => {
-                setChangePaisa(tender.changePaisa);
                 setPrintReceipt(tender.print);
                 saleMutation.mutate({
                   payload: buildSalePayload(tender),
                   key: crypto.randomUUID(),
+                  changePaisa: tender.changePaisa,
                 });
               }}
             />

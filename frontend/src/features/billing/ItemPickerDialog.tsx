@@ -19,6 +19,8 @@ import { useDebounced } from '@/lib/useDebounced';
 interface ItemPickerDialogProps {
   open: boolean;
   branchId: string | null;
+  /** The rate the bill is at: rows come priced at it. */
+  rateTypeId: string | null;
   onOpenChange: (open: boolean) => void;
   onPick: (variant: VariantForSale) => void;
 }
@@ -29,7 +31,13 @@ interface ItemPickerDialogProps {
  * `GET /catalog/variants/for-sale`; picking a cell hands the whole variant
  * (with its price bounds) to the caller.
  */
-export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemPickerDialogProps) {
+export function ItemPickerDialog({
+  open,
+  branchId,
+  rateTypeId,
+  onOpenChange,
+  onPick,
+}: ItemPickerDialogProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const term = useDebounced(search);
@@ -40,8 +48,8 @@ export function ItemPickerDialog({ open, branchId, onOpenChange, onPick }: ItemP
   }, [open]);
 
   const query = useQuery({
-    queryKey: ['catalog', 'for-sale', branchId, term],
-    queryFn: () => searchVariantsForSale(branchId as string, term),
+    queryKey: ['catalog', 'for-sale', branchId, rateTypeId, term],
+    queryFn: () => searchVariantsForSale(branchId as string, term, rateTypeId),
     enabled: open && branchId !== null,
     staleTime: 30_000,
   });

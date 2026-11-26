@@ -13,9 +13,9 @@ import { useCartStore } from '@/stores/cartStore';
  * completing then tenders the SAME invoice (POST /sales/<id>/complete), so
  * no stock or numbering moves twice.
  */
-export function HeldBillsPanel() {
+export function HeldBillsPanel({ onResumed }: { onResumed?: () => void }) {
   const { t } = useTranslation();
-  const { resume, isBusy, notice } = useResumeHeldBill();
+  const { resume, isBusy, notice } = useResumeHeldBill(onResumed);
   const currentHeldId = useCartStore((s) => s.heldSaleId);
   useMoneyDisplay();
 

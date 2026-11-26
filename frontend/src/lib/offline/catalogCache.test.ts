@@ -95,7 +95,8 @@ describe('offline catalog cache', () => {
       item__is_vat_applicable: true,
     });
     expect((await lookupVariant('TS-BLK-M', 'wholesale')).price).toBe('600.00');
-    expect((await lookupVariant('TS-BLK-M', 'staff')).price).toBeUndefined();
+    // A rate never seen online takes the last price seen, not the MRP.
+    expect((await lookupVariant('TS-BLK-M', 'staff')).price).toBe('600.00');
   });
 
   it('a cache miss offline surfaces the network error, not a phantom 404', async () => {

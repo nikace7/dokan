@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { toast } from '@/components/ui/sonner';
-import { billNumber, shareSale } from '@/features/billing/api';
+import { billNumber } from '@/features/billing/api';
+import { shareSale } from '@/features/billing/shareApi';
 import type { SalesInvoice } from '@/features/billing/api';
 import { ApiError } from '@/lib/api/client';
 

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleSalePage } from '@/features/billing/SimpleSalePage';
@@ -136,6 +137,9 @@ function installApiMock(saleResponse: () => Promise<Response>) {
     if (url.endsWith('/api/v1/sales') && method === 'POST') {
       return saleResponse();
     }
+    if (url.endsWith('/api/v1/sales/held')) {
+      return Promise.resolve(envelope([{ ...INVOICE, id: 'held-1', status: 'HELD' }]));
+    }
     return Promise.reject(new Error(`Unexpected request: ${method} ${url}`));
   });
 }
@@ -146,7 +150,9 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <SimpleSalePage />
+      <MemoryRouter>
+        <SimpleSalePage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -223,6 +229,13 @@ describe('SimpleSalePage when the server does not answer', () => {
     expect(within(line).getByLabelText('Qty')).toHaveValue(2);
     expect(tile).toHaveTextContent('× 2');
     expect(tiles.compareDocumentPosition(line)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('lists parked bills, so they can be finished without the full counter', async () => {
+    installApiMock(() => Promise.resolve(envelope(INVOICE, 201)));
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: /resume/i })).toBeInTheDocument();
   });
 
   it('keeps the bill when the cashier looks at another screen', async () => {

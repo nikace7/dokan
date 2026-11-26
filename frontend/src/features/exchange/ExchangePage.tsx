@@ -17,7 +17,7 @@ import type { ExchangePaymentMethod, SaleSummary, VariantLookup } from '@/featur
 import { ItemImage } from '@/features/catalog/ui';
 import { pickedLines, ReturnLineField } from '@/features/returns/ReturnLineField';
 import { useReturnQuote } from '@/features/returns/useReturnQuote';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, attemptDone, attemptKey } from '@/lib/api/client';
 import {
   baseSymbol,
   formatBaseMoney,
@@ -95,7 +95,7 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
 
   const exchangeMutation = useMutation({
     mutationFn: () => {
-      return createExchange({
+      const payload = {
         original_invoice: sale.id,
         returned_lines: returnedLines,
         new_lines: addedLines,
@@ -103,9 +103,14 @@ function ExchangeEditor({ sale, onRecorded }: { sale: SaleSummary; onRecorded: (
           ? [{ method: paymentMethod, amount: paisaToApiString(paymentPaisa) }]
           : [],
         reason: reason.trim(),
-      });
+      };
+      // A retry after a lost reply must not record the exchange twice.
+      return createExchange(payload, attemptKey('exchange', payload));
     },
-    onSuccess: onRecorded,
+    onSuccess: () => {
+      attemptDone('exchange');
+      onRecorded();
+    },
     onError: (err) => setError(errorMessage(err, t('exchange.editor.saveError'))),
   });
 

@@ -16,7 +16,8 @@ interface TransferCardProps {
   transfer: StockTransfer;
   canAdjust: boolean;
   pending: boolean;
-  onAction: (action: string, lines?: TransferLinePayload[]) => void;
+  /** `done` runs once the server has taken the action. */
+  onAction: (action: string, lines?: TransferLinePayload[], done?: () => void) => void;
 }
 
 export function TransferCard({ transfer, canAdjust, pending, onAction }: TransferCardProps) {
@@ -130,7 +131,7 @@ export function TransferCard({ transfer, canAdjust, pending, onAction }: Transfe
             <>
               <Button
                 disabled={pending || receivedLines.length === 0}
-                onClick={() => onAction('receive', receivedLines)}
+                onClick={() => onAction('receive', receivedLines, () => setReceipts({}))}
               >
                 {t('inventory.transfers.receiveEntered')}
               </Button>

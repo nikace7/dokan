@@ -22,8 +22,15 @@ export interface ExchangeResult {
   refund_amount: string;
 }
 
-export function createExchange(payload: ExchangePayload): Promise<ExchangeResult> {
-  return authedRequest<ExchangeResult>('/v1/sales/exchanges', { method: 'POST', body: payload });
+export function createExchange(
+  payload: ExchangePayload,
+  idempotencyKey: string,
+): Promise<ExchangeResult> {
+  return authedRequest<ExchangeResult>('/v1/sales/exchanges', {
+    method: 'POST',
+    body: payload,
+    idempotencyKey,
+  });
 }
 
 export { getReturnableLines, listSales, lookupVariant };

@@ -27,7 +27,8 @@ export function addVariant(lines: SimpleLine[], variant: VariantForSale): Simple
       line.variant.id === variant.id ? { ...line, qty: String((Number(line.qty) || 0) + 1) } : line,
     );
   }
-  return [...lines, { key: crypto.randomUUID(), variant, qty: '1', price: variant.mrp ?? '' }];
+  const price = variant.price ?? variant.mrp ?? '';
+  return [...lines, { key: crypto.randomUUID(), variant, qty: '1', price }];
 }
 
 /** Whole pieces on hand (`qty_on_hand` arrives as a decimal string). */

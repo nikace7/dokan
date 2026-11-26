@@ -200,6 +200,32 @@ describe('BillingPage counter payment', () => {
     expect(sentBody('/sales').payments).toEqual([{ method: 'CASH', amount: '700.00' }]);
   });
 
+  it('still shows the change after a reload and a retry', async () => {
+    useCartStore.getState().setUnconfirmedSale({
+      payload: { payments: [{ method: 'CASH', amount: '700.00' }] } as never,
+      key: 'k-1',
+      changePaisa: 30_000,
+    });
+    renderBilling();
+    fireEvent.click(await screen.findByRole('button', { name: /try again/i }));
+
+    expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+    expect(screen.getByText(/change to return/i)).toHaveTextContent('रू 300.00');
+  });
+
+  it('asks before the tab is closed on a bill with items', async () => {
+    const closing = () => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    renderBilling();
+    expect(closing()).toBe(false);
+
+    await scan();
+    expect(closing()).toBe(true);
+  });
+
   it('starts the next bill with an empty amount after parking one', async () => {
     renderBilling();
     await scan();
@@ -231,6 +257,31 @@ describe('BillingPage counter payment', () => {
     expect(await screen.findByText(/parking/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/scan barcode or type sku/i)).toBeDisabled();
     expect(completeButton()).toBeDisabled();
+  });
+
+  it('retries a park whose reply was lost with the same key, so it is parked once', async () => {
+    let lost = true;
+    fetchMock.mockImplementation((input) => {
+      if (!String(input).endsWith('/sales/hold')) return route(input);
+      if (lost) {
+        lost = false;
+        return Promise.reject(new TypeError('Failed to fetch'));
+      }
+      return reply(INVOICE);
+    });
+    renderBilling();
+    await scan();
+    fireEvent.click(screen.getByRole('button', { name: /park this bill/i }));
+    await waitFor(() => expect(lost).toBe(false));
+    fireEvent.click(await screen.findByRole('button', { name: /park this bill/i }));
+
+    expect(await screen.findByText(/cart is empty/i)).toBeInTheDocument();
+    const keys = fetchMock.mock.calls
+      .filter(([url]) => String(url).endsWith('/sales/hold'))
+      .map(([, init]) => new Headers(init?.headers).get('Idempotency-Key'));
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[0]).toBe(keys[1]);
   });
 
   it('reprices the bill when the rate is changed', async () => {
@@ -291,7 +342,23 @@ describe('BillingPage counter payment', () => {
       expect(sentBody('/sales/held-1/complete')).toEqual({
         payments: [{ method: 'CASH', amount: '500.00' }],
         customer: 'c-1',
+        is_vat_bill: false,
       });
+    });
+
+    it('shows the receipt when a retry finds the bill already finished', async () => {
+      fetchMock.mockImplementation((input) => {
+        const path = String(input);
+        if (path.endsWith('/complete')) return refusal('INVOICE_NOT_EDITABLE', 'Only held.');
+        if (path.endsWith('/sales/held-1')) return reply(INVOICE);
+        return route(input);
+      });
+      renderBilling();
+      fireEvent.change(cashField(), { target: { value: '700' } });
+      fireEvent.click(completeButton());
+
+      expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+      expect(screen.queryByText('Only held.')).not.toBeInTheDocument();
     });
 
     it('locks the items, because the server keeps what was parked', () => {

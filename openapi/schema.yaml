@@ -8217,6 +8217,8 @@ components:
         override_reason:
           type: string
           default: ''
+        is_vat_bill:
+          type: boolean
     CountCreate:
       type: object
       description: POST /inventory/counts payload.

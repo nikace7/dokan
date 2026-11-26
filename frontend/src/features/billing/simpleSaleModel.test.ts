@@ -37,6 +37,11 @@ it('adds one to the line of an item that is already on the bill', () => {
   expect(addVariant([{ ...once[0], qty: '' }], shirt)[0].qty).toBe('1');
 });
 
+it("starts a line at the selected rate's price, else the MRP", () => {
+  expect(addVariant([], { ...VARIANT, id: 'a', price: '1200.00' })[0].price).toBe('1200.00');
+  expect(addVariant([], { ...VARIANT, id: 'b', price: null })[0].price).toBe('1600.00');
+});
+
 it('names the limit a price breaks in the shop currency', () => {
   const line = (price: string) => ({ key: 'k', variant: VARIANT, qty: '1', price });
   expect(priceError(line('700'))).toContain('रू\u00a0800.00');

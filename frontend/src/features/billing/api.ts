@@ -7,7 +7,7 @@
  * drop these local types.
  */
 
-import { ApiError, apiRequest, isNetworkError } from '@/lib/api/client';
+import { ApiError, isNetworkError } from '@/lib/api/client';
 import type { Page, RequestOptions } from '@/lib/api/client';
 import { authedRequest, authedRequestPage } from '@/lib/api/authed';
 import { cacheVariant, lookupCachedVariant } from '@/lib/offline/catalogCache';
@@ -274,17 +274,28 @@ export function recordReceiptPrint(id: string): Promise<{ id: string; print_coun
 }
 
 /** Tender a parked bill — turns HELD into COMPLETED. The customer replaces the parked one. */
-export function completeSale(
+export async function completeSale(
   id: string,
   payments: PaymentPayload[],
   idempotencyKey: string,
   customer?: string,
-) {
-  return completeWithUsageWarning(`/v1/sales/${id}/complete`, {
-    method: 'POST',
-    body: { payments, customer },
-    idempotencyKey,
-  });
+  isVatBill?: boolean,
+): Promise<SaleCompletion> {
+  try {
+    return await completeWithUsageWarning(`/v1/sales/${id}/complete`, {
+      method: 'POST',
+      body: { payments, customer, is_vat_bill: isVatBill },
+      idempotencyKey,
+    });
+  } catch (err) {
+    // The reply to an earlier try was lost and the bill is already finished:
+    // show its receipt rather than "only held bills can be changed".
+    if (err instanceof ApiError && err.code === 'INVOICE_NOT_EDITABLE') {
+      const invoice = await getSale(id);
+      if (invoice.status === 'COMPLETED') return { invoice, planWarning: null };
+    }
+    throw err;
+  }
 }
 
 /** Branch/rate-type selected in the authenticated workspace shell. */
@@ -309,6 +320,8 @@ export interface VariantForSale {
   sku: string;
   barcode: string;
   mrp: string | null;
+  /** What a sale at the asked rate charges; null when the shop set none. */
+  price?: string | null;
   /** Item photo path (`/media/tenants/…`), null when the item has none. */
   image_url: string | null;
   qty_on_hand: string;
@@ -320,71 +333,10 @@ export interface VariantForSale {
 export function searchVariantsForSale(
   branchId: string,
   search: string,
+  rateTypeId: string | null,
 ): Promise<Page<VariantForSale>> {
   const params = new URLSearchParams({ branch_id: branchId });
   if (search) params.set('search', search);
+  if (rateTypeId) params.set('rate_type', rateTypeId);
   return authedRequestPage<VariantForSale>(`/v1/catalog/variants/for-sale?${params}`);
-}
-
-/** `POST /sales/<id>/share` response — the public-bill capability token. */
-export interface ShareResult {
-  share_token: string;
-  share_url_path: string;
-}
-
-export function shareSale(id: string): Promise<ShareResult> {
-  return authedRequest<ShareResult>(`/v1/sales/${id}/share`, { method: 'POST', body: {} });
-}
-
-/**
- * Public receipt payload (`apps/sales/serializers.py::SharedBillSerializer`).
- * Served without auth at `GET /sales/shared/<token>` — the token is the
- * capability. A subset of `SalesInvoice` (no customer PAN, no staff fields).
- */
-export interface SharedBill {
-  id: string;
-  tenant_name: string;
-  tenant_name_np: string | null;
-  legal_name: string | null;
-  pan_vat_no: string | null;
-  vat_registered: boolean;
-  invoice_prefix: string;
-  branch_name: string;
-  branch_name_np: string | null;
-  branch_address: string | null;
-  branch_phone: string | null;
-  invoice_no: number | null;
-  doc_type: string;
-  customer_name: string | null;
-  subtotal: string;
-  discount_amount: string;
-  taxable_amount: string;
-  vat_amount: string;
-  round_off: string;
-  total: string;
-  paid_amount: string;
-  due_amount: string;
-  status: string;
-  is_vat_bill: boolean;
-  tenders: Array<{ method: PaymentMethod; amount: string }>;
-  datetime_ad: string;
-  business_date_ad: string;
-  business_date_bs: string;
-  fiscal_year_bs: string;
-  items: Array<{
-    id: string;
-    variant: string;
-    variant_sku: string;
-    item_name: string;
-    item_name_np: string | null;
-    qty: string;
-    unit_price: string;
-    discount: string;
-    line_total: string;
-  }>;
-}
-
-/** Public online bill — deliberately NOT authedRequest: anyone with the link reads it. */
-export function getSharedBill(token: string): Promise<SharedBill> {
-  return apiRequest<SharedBill>(`/v1/sales/shared/${token}`);
 }

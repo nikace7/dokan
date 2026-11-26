@@ -144,17 +144,21 @@ def complete_held_bill(
     customer: Any = None,
     created_by: "User",
     override_reason: str = "",
+    is_vat_bill: bool | None = None,
     business_date: date | None = None,
     require_open_cash_session: bool = False,
 ) -> SalesInvoice:
     """Complete a held bill: stock, number, totals — one transaction.
 
     A ``customer`` picked at payment replaces the one the bill was held for;
-    without one the bill keeps its customer.
+    without one the bill keeps its customer. ``is_vat_bill`` likewise: the
+    cashier decides at payment whether it is a VAT bill.
     """
     _assert_held(invoice)
     if customer is not None:
         invoice.customer = customer
+    if is_vat_bill is not None:
+        invoice.is_vat_bill = is_vat_bill
     stored_lines = [
         SaleLineInput(
             variant=item.variant,
