@@ -329,6 +329,7 @@ describe('BillingPage counter payment', () => {
       expect(sentBody('/sales/held-1/complete')).toEqual({
         payments: [{ method: 'CASH', amount: '500.00' }],
         customer: 'c-1',
+        is_vat_bill: false,
       });
     });
 

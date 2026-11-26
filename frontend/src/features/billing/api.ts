@@ -279,11 +279,12 @@ export async function completeSale(
   payments: PaymentPayload[],
   idempotencyKey: string,
   customer?: string,
+  isVatBill?: boolean,
 ): Promise<SaleCompletion> {
   try {
     return await completeWithUsageWarning(`/v1/sales/${id}/complete`, {
       method: 'POST',
-      body: { payments, customer },
+      body: { payments, customer, is_vat_bill: isVatBill },
       idempotencyKey,
     });
   } catch (err) {

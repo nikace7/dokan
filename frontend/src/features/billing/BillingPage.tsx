@@ -73,7 +73,7 @@ export function BillingPage() {
     // (A held bill needs none of this: the server completes its id only once.)
     mutationFn: ({ payload, key }: UnconfirmedSale) =>
       heldSaleId
-        ? completeSale(heldSaleId, payload.payments, key, payload.customer)
+        ? completeSale(heldSaleId, payload.payments, key, payload.customer, payload.is_vat_bill)
         : createSale(payload, key),
     onMutate: (sale) => {
       setChangePaisa(sale.changePaisa ?? 0);
