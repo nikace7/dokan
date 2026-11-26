@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useBeforeUnload } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -47,6 +48,10 @@ export function SimpleSalePage() {
   useMoneyDisplay();
 
   const { lines, tender, unconfirmedSale, clear } = useSimpleSaleStore();
+  // A closed tab loses the bill (it lives in sessionStorage): ask first.
+  useBeforeUnload((event) => {
+    if (lines.length > 0 || unconfirmedSale) event.preventDefault();
+  });
   const [pickerOpen, setPickerOpen] = useState(false);
   const [receipt, setReceipt] = useState<SalesInvoice | null>(null);
   const [planWarning, setPlanWarning] = useState<PlanUsageWarning | null>(null);

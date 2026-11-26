@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useBeforeUnload } from 'react-router-dom';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -42,6 +42,10 @@ export function BillingPage() {
   const clear = useCartStore((s) => s.clear);
   const unconfirmedSale = useCartStore((s) => s.unconfirmedSale);
   const setUnconfirmedSale = useCartStore((s) => s.setUnconfirmedSale);
+  // A closed tab loses the bill (it lives in sessionStorage): ask first.
+  useBeforeUnload((event) => {
+    if (lines.length > 0 || unconfirmedSale) event.preventDefault();
+  });
   const queryClient = useQueryClient();
   const workspace = useWorkspace();
   const { user } = useAuth();

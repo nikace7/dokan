@@ -213,6 +213,19 @@ describe('BillingPage counter payment', () => {
     expect(screen.getByText(/change to return/i)).toHaveTextContent('रू 300.00');
   });
 
+  it('asks before the tab is closed on a bill with items', async () => {
+    const closing = () => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    renderBilling();
+    expect(closing()).toBe(false);
+
+    await scan();
+    expect(closing()).toBe(true);
+  });
+
   it('starts the next bill with an empty amount after parking one', async () => {
     renderBilling();
     await scan();
