@@ -213,7 +213,7 @@ export function BillingPage() {
 
       <fieldset disabled={locked || heldSaleId !== null} className="flex min-w-0 flex-col gap-4">
         <Card>
-          <ScanInput rateTypeId={workspace.rateTypeId} />
+          <ScanInput branchId={workspace.branchId} rateTypeId={workspace.rateTypeId} />
         </Card>
         <Card title={heldSaleId ? t('billing.billResumed') : t('billing.bill')}>
           <CartTable />

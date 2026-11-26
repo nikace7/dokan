@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -53,7 +54,7 @@ describe('ScanInput', () => {
   it('shows the last-scanned card with photo, price, and running quantity', async () => {
     // Fresh Response per call — a body can only be read once.
     fetchMock.mockImplementation(() => Promise.resolve(envelope(VARIANT)));
-    render(<ScanInput rateTypeId={null} />);
+    render(<ScanInput branchId={null} rateTypeId={null} />);
 
     // Hidden until the first successful scan of the session.
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -81,6 +82,39 @@ describe('ScanInput', () => {
     ).toBeInTheDocument();
   });
 
+  it('opens the item picker with a typed name and adds the picked item', async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('/for-sale')) {
+        expect(url).toContain('search=Down+jacket');
+        return Promise.resolve(
+          envelope([{ ...VARIANT, item: 'item-1', item_name: 'Down jacket', qty_on_hand: '3' }]),
+        );
+      }
+      if (url.includes('sku=TS-BLK-M')) return Promise.resolve(envelope(VARIANT));
+      return Promise.resolve(
+        new Response(JSON.stringify({ data: null, error: { code: 'NOT_FOUND', message: 'x' } }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ScanInput branchId="br-1" rateTypeId={null} />
+      </QueryClientProvider>,
+    );
+
+    scan('Down jacket');
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('textbox')).toHaveValue('Down jacket');
+    fireEvent.click(await within(dialog).findByRole('button', { name: /down jacket/i }));
+
+    await screen.findByRole('status', { name: /last scanned item/i });
+    expect(useCartStore.getState().lines).toHaveLength(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('keeps the card hidden after a failed lookup and shows the error', async () => {
     // 404 on both the barcode attempt and the SKU fallback.
     fetchMock.mockImplementation(() =>
@@ -91,7 +125,7 @@ describe('ScanInput', () => {
         }),
       ),
     );
-    render(<ScanInput rateTypeId={null} />);
+    render(<ScanInput branchId={null} rateTypeId={null} />);
 
     scan('0000000000000');
 
@@ -102,7 +136,7 @@ describe('ScanInput', () => {
 
   it('falls back to the placeholder tile when the variant has no photo', async () => {
     fetchMock.mockImplementation(() => Promise.resolve(envelope({ ...VARIANT, image_url: null })));
-    render(<ScanInput rateTypeId={null} />);
+    render(<ScanInput branchId={null} rateTypeId={null} />);
 
     scan('8901234567890');
     const card = await screen.findByRole('status', { name: /last scanned item/i });
@@ -113,7 +147,7 @@ describe('ScanInput', () => {
 
   it('adds the item at the price of the selected rate, not its MRP', async () => {
     fetchMock.mockImplementation(() => Promise.resolve(envelope({ ...VARIANT, price: '700.00' })));
-    render(<ScanInput rateTypeId="rate-1" />);
+    render(<ScanInput branchId={null} rateTypeId="rate-1" />);
 
     scan('8901234567890');
     const card = await screen.findByRole('status', { name: /last scanned item/i });
@@ -132,7 +166,7 @@ describe('ScanInput', () => {
         ),
       ),
     );
-    render(<ScanInput rateTypeId="rate-1" />);
+    render(<ScanInput branchId={null} rateTypeId="rate-1" />);
 
     scan('8901234567890');
 

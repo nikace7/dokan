@@ -21,6 +21,8 @@ interface ItemPickerDialogProps {
   branchId: string | null;
   /** The rate the bill is at: rows come priced at it. */
   rateTypeId: string | null;
+  /** Text the search box starts with, e.g. a name typed at the scan box. */
+  initialSearch?: string;
   onOpenChange: (open: boolean) => void;
   onPick: (variant: VariantForSale) => void;
 }
@@ -35,6 +37,7 @@ export function ItemPickerDialog({
   open,
   branchId,
   rateTypeId,
+  initialSearch = '',
   onOpenChange,
   onPick,
 }: ItemPickerDialogProps) {
@@ -44,8 +47,8 @@ export function ItemPickerDialog({
 
   // Reset the search every time the picker is opened for a fresh line.
   useEffect(() => {
-    if (open) setSearch('');
-  }, [open]);
+    if (open) setSearch(initialSearch);
+  }, [open, initialSearch]);
 
   const query = useQuery({
     queryKey: ['catalog', 'for-sale', branchId, rateTypeId, term],
