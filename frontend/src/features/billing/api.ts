@@ -309,6 +309,8 @@ export interface VariantForSale {
   sku: string;
   barcode: string;
   mrp: string | null;
+  /** What a sale at the asked rate charges; null when the shop set none. */
+  price?: string | null;
   /** Item photo path (`/media/tenants/…`), null when the item has none. */
   image_url: string | null;
   qty_on_hand: string;
@@ -320,9 +322,11 @@ export interface VariantForSale {
 export function searchVariantsForSale(
   branchId: string,
   search: string,
+  rateTypeId: string | null,
 ): Promise<Page<VariantForSale>> {
   const params = new URLSearchParams({ branch_id: branchId });
   if (search) params.set('search', search);
+  if (rateTypeId) params.set('rate_type', rateTypeId);
   return authedRequestPage<VariantForSale>(`/v1/catalog/variants/for-sale?${params}`);
 }
 

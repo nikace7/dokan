@@ -40,8 +40,10 @@ export function SaleItemTile({ variant, onBill, onPick }: SaleItemTileProps) {
           {variant.size} / {variant.color}
         </span>{' '}
         <span className="flex flex-wrap items-baseline gap-x-2">
-          {variant.mrp ? (
-            <span className="text-sm font-bold tabular-nums">{formatNpr(variant.mrp)}</span>
+          {(variant.price ?? variant.mrp) ? (
+            <span className="text-sm font-bold tabular-nums">
+              {formatNpr(variant.price ?? variant.mrp ?? '')}
+            </span>
           ) : null}
           <span className="text-xs text-muted-foreground">
             {t('common.stock', { qty: formatQty(variant.qty_on_hand) })}

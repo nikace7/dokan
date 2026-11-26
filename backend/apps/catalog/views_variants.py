@@ -237,4 +237,13 @@ class VariantForSaleView(_CatalogAPIView):
         )
         paginator = EnvelopePageNumberPagination()
         page = cast("list[Any]", paginator.paginate_queryset(rows, request, view=self))
+        rate_type_id = _uuid_param(request, "rate_type")
+        if rate_type_id:
+            # Priced per page, not per stocked variant: the list can be long.
+            selectors.add_sale_prices(
+                tenant,
+                _user(request),
+                page,
+                rate_type=get_or_404(tenant, RateType, rate_type_id, "Rate type"),
+            )
         return paginator.get_paginated_response(page)

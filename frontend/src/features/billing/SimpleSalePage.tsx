@@ -188,6 +188,7 @@ export function SimpleSalePage() {
       <ItemPickerDialog
         open={pickerOpen}
         branchId={workspace.branchId}
+        rateTypeId={workspace.rateTypeId}
         onOpenChange={setPickerOpen}
         onPick={(variant) => {
           pick(variant);
@@ -201,7 +202,12 @@ export function SimpleSalePage() {
           moves the tile that is about to be tapped again. */}
       {online && workspace.isReady && workspace.branchId ? (
         <fieldset disabled={locked} className="min-w-0">
-          <SimpleSaleQuickPick branchId={workspace.branchId} lines={lines} onPick={pick} />
+          <SimpleSaleQuickPick
+            branchId={workspace.branchId}
+            rateTypeId={workspace.rateTypeId}
+            lines={lines}
+            onPick={pick}
+          />
         </fieldset>
       ) : null}
 
