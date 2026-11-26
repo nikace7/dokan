@@ -233,6 +233,31 @@ describe('BillingPage counter payment', () => {
     expect(completeButton()).toBeDisabled();
   });
 
+  it('retries a park whose reply was lost with the same key, so it is parked once', async () => {
+    let lost = true;
+    fetchMock.mockImplementation((input) => {
+      if (!String(input).endsWith('/sales/hold')) return route(input);
+      if (lost) {
+        lost = false;
+        return Promise.reject(new TypeError('Failed to fetch'));
+      }
+      return reply(INVOICE);
+    });
+    renderBilling();
+    await scan();
+    fireEvent.click(screen.getByRole('button', { name: /park this bill/i }));
+    await waitFor(() => expect(lost).toBe(false));
+    fireEvent.click(await screen.findByRole('button', { name: /park this bill/i }));
+
+    expect(await screen.findByText(/cart is empty/i)).toBeInTheDocument();
+    const keys = fetchMock.mock.calls
+      .filter(([url]) => String(url).endsWith('/sales/hold'))
+      .map(([, init]) => new Headers(init?.headers).get('Idempotency-Key'));
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[0]).toBe(keys[1]);
+  });
+
   it('reprices the bill when the rate is changed', async () => {
     const { unmount } = renderBilling();
     await scan();

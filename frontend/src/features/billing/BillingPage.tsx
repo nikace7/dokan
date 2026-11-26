@@ -6,7 +6,7 @@ import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/features/auth/useAuth';
-import { ApiError, isNetworkError, isUnconfirmed } from '@/lib/api/client';
+import { ApiError, attemptDone, attemptKey, isNetworkError, isUnconfirmed } from '@/lib/api/client';
 import { completeSale, createSale, holdSale, paisaToApiString } from '@/features/billing/api';
 import type { CreateSalePayload, PlanUsageWarning, SalesInvoice } from '@/features/billing/api';
 import { cartPayload } from '@/features/billing/cartModel';
@@ -109,9 +109,13 @@ export function BillingPage() {
   const holdMutation = useMutation({
     mutationKey: ['sale'],
     networkMode: 'always',
-    mutationFn: () =>
-      holdSale(cartPayload(workspace.branchId, workspace.rateTypeId), crypto.randomUUID()),
+    mutationFn: () => {
+      const payload = cartPayload(workspace.branchId, workspace.rateTypeId);
+      // A retry after a lost reply must not park the bill twice.
+      return holdSale(payload, attemptKey('hold', payload));
+    },
     onSuccess: () => {
+      attemptDone('hold');
       setSaleError(null);
       clear();
       void queryClient.invalidateQueries({ queryKey: ['sales', 'held'] });

@@ -85,6 +85,27 @@ function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
+const attempts = new Map<string, { body: string; key: string }>();
+
+/**
+ * The key for one write the cashier may retry: the same body gets the same
+ * key until `attemptDone`, so a retry after a lost reply replays the first
+ * write instead of making a second one. A changed body gets a new key.
+ */
+export function attemptKey(scope: string, body: unknown): string {
+  const text = JSON.stringify(body);
+  const known = attempts.get(scope);
+  if (known?.body === text) return known.key;
+  const key = newIdempotencyKey();
+  attempts.set(scope, { body: text, key });
+  return key;
+}
+
+/** The write went through: the next one, even with the same body, is new. */
+export function attemptDone(scope: string): void {
+  attempts.delete(scope);
+}
+
 function isEnvelope(value: unknown): value is ApiEnvelope<unknown> {
   return typeof value === 'object' && value !== null && ('data' in value || 'error' in value);
 }

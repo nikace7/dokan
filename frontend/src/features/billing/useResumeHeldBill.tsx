@@ -14,7 +14,7 @@ import {
 import { getSale, holdSale } from '@/features/billing/api';
 import { cartPayload, serverMessage } from '@/features/billing/cartModel';
 import { useWorkspace } from '@/features/settings/useWorkspace';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, attemptDone, attemptKey } from '@/lib/api/client';
 import { toPaisa } from '@/lib/money';
 import { discountProblem, useCartStore } from '@/stores/cartStore';
 
@@ -94,11 +94,13 @@ export function useResumeHeldBill(onResumed?: () => void) {
       return;
     }
     try {
-      await holdSale(cartPayload(workspace.branchId, workspace.rateTypeId), crypto.randomUUID());
+      const payload = cartPayload(workspace.branchId, workspace.rateTypeId);
+      await holdSale(payload, attemptKey('hold', payload));
     } catch (err) {
       setError(serverMessage(err));
       return;
     }
+    attemptDone('hold');
     clear();
     void queryClient.invalidateQueries({ queryKey: ['sales', 'held'] });
     setAskingFor(null);
