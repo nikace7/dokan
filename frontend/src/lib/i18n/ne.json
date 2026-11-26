@@ -640,7 +640,7 @@
     "required": "कोटा, रकम र मिति अनिवार्य छ।",
     "category": "कोटा",
     "selectCategory": "कोटा छान्नुहोस्",
-    "businessDate": "मिति (इ.सं.)",
+    "businessDate": "मिति",
     "payee": "पाउने व्यक्ति",
     "save": "खर्च सेभ गर्नुहोस्",
     "filterCategory": "कोटा फिल्टर",

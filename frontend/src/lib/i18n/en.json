@@ -640,7 +640,7 @@
     "required": "Category, amount, and business date are required.",
     "category": "Category",
     "selectCategory": "Select a category",
-    "businessDate": "Business date (AD)",
+    "businessDate": "Business date",
     "payee": "Payee",
     "save": "Save expense",
     "filterCategory": "Filter category",
