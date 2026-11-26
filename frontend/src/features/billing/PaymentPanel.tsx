@@ -12,9 +12,8 @@ import { billTotalPaisa, discountProblem, useCartStore, vatPaisa } from '@/store
 
 const METHODS: Array<{ id: PaymentMethod; labelKey: string }> = [
   { id: 'CASH', labelKey: 'billing.tender.cash' },
-  { id: 'ESEWA', labelKey: 'billing.tender.esewa' },
-  { id: 'KHALTI', labelKey: 'billing.tender.khalti' },
-  { id: 'FONEPAY', labelKey: 'billing.tender.fonepay' },
+  // ponytail: one QR button covers eSewa, Khalti, Fonepay and bank QR.
+  { id: 'QR', labelKey: 'billing.tender.qr' },
   { id: 'CREDIT', labelKey: 'billing.tender.udharo' },
 ];
 
@@ -79,7 +78,8 @@ export function PaymentPanel({
   const tenderPaisa = Math.min(receivedPaisa, totalPaisa);
   const paidPaisa = isCredit ? 0 : tenderPaisa;
   const duePaisa = totalPaisa - paidPaisa;
-  const changePaisa = Math.max(0, receivedPaisa - totalPaisa);
+  // No bill, no change: a typed amount on an empty cart is not change.
+  const changePaisa = totalPaisa > 0 ? Math.max(0, receivedPaisa - totalPaisa) : 0;
 
   let formError: string | null = null;
   if (lines.some(discountProblem)) formError = 'billing.errors.fixDiscount';
