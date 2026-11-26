@@ -188,10 +188,8 @@
     "payment": "भुक्तानी",
     "tender": {
       "cash": "नगद",
-      "esewa": "eSewa",
-      "khalti": "Khalti",
-      "fonepay": "Fonepay",
-      "udharo": "उधारो"
+      "udharo": "उधारो",
+      "qr": "QR"
     },
     "amountLabel": "रकम ({{symbol}}) — खाली छोडे पूरै जम्मा",
     "cashReceived": "पाएको नगद ({{symbol}}) — खाली छोडे ठीक जम्मा",

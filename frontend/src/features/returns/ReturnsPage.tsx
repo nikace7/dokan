@@ -21,7 +21,7 @@ import {
   useMoneyDisplay,
 } from '@/lib/money';
 
-const REFUND_METHODS: RefundMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
+const REFUND_METHODS: RefundMethod[] = ['CASH', 'QR', 'CARD', 'BANK'];
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;

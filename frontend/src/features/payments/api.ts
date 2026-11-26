@@ -5,7 +5,7 @@ import type { Page } from '@/lib/api/client';
 import { addPaisa, toPaisa } from '@/lib/money';
 
 export type PaymentDirection = 'RECEIPT' | 'PAYMENT';
-export type ReceiptMethod = 'CASH' | 'ESEWA' | 'KHALTI' | 'FONEPAY' | 'CARD' | 'BANK';
+export type ReceiptMethod = 'CASH' | 'ESEWA' | 'KHALTI' | 'FONEPAY' | 'QR' | 'CARD' | 'BANK';
 
 export interface PaymentAllocation {
   id: string;

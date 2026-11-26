@@ -5,7 +5,7 @@ import type { ReturnableLine, SaleSummary } from '@/features/returns/api';
 import { getReturnableLines, listSales } from '@/features/returns/api';
 
 export type ExchangePaymentMethod =
-  'CASH' | 'ESEWA' | 'KHALTI' | 'FONEPAY' | 'CARD' | 'BANK' | 'CREDIT';
+  'CASH' | 'ESEWA' | 'KHALTI' | 'FONEPAY' | 'QR' | 'CARD' | 'BANK' | 'CREDIT';
 
 export interface ExchangePayload {
   original_invoice: string;

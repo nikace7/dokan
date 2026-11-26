@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@/lib/api/client';
 import { lookupVariant } from '@/features/billing/api';
+import { ItemPickerDialog } from '@/features/billing/ItemPickerDialog';
 import { linePricing } from '@/features/billing/cartModel';
 import { ItemImage } from '@/features/catalog/ui';
 import { formatPaisa, useMoneyDisplay } from '@/lib/money';
@@ -24,13 +25,21 @@ interface LastScan {
  * label, unit price, running quantity in the cart). It has no focusable
  * elements, so the scan → add → rescan keyboard flow is never interrupted.
  */
-export function ScanInput({ rateTypeId }: { rateTypeId: string | null }) {
+export function ScanInput({
+  branchId,
+  rateTypeId,
+}: {
+  branchId: string | null;
+  rateTypeId: string | null;
+}) {
   const { t } = useTranslation();
   const addLine = useCartStore((s) => s.addLine);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [lastScan, setLastScan] = useState<LastScan | null>(null);
+  // A typed name (no barcode/SKU match) opens the item picker with it.
+  const [nameSearch, setNameSearch] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   useMoneyDisplay();
 
@@ -40,12 +49,13 @@ export function ScanInput({ rateTypeId }: { rateTypeId: string | null }) {
     lastScan ? s.lines.find((l) => l.variantId === lastScan.variantId) : undefined,
   );
 
-  const onSubmit = async (event: FormEvent) => {
+  const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = code.trim();
-    if (!trimmed || busy) {
-      return;
-    }
+    if (trimmed && !busy) void addByCode(trimmed);
+  };
+
+  const addByCode = async (trimmed: string) => {
     setBusy(true);
     setError(null);
     try {
@@ -61,8 +71,13 @@ export function ScanInput({ rateTypeId }: { rateTypeId: string | null }) {
       setLastScan({ variantId: variant.id, imageUrl: variant.image_url ?? null });
       setCode('');
     } catch (err) {
+      const notFound = err instanceof ApiError && err.status === 404;
+      if (notFound && branchId) {
+        setNameSearch(trimmed);
+        return;
+      }
       setError(
-        err instanceof ApiError && err.status === 404
+        notFound
           ? t('billing.noItemMatches', { code: trimmed })
           : err instanceof Error
             ? err.message
@@ -76,7 +91,7 @@ export function ScanInput({ rateTypeId }: { rateTypeId: string | null }) {
 
   return (
     <div>
-      <form onSubmit={(e) => void onSubmit(e)}>
+      <form onSubmit={onSubmit}>
         <label htmlFor="scan-input" className="text-sm font-medium">
           {t('billing.scanLabel')}
         </label>
@@ -116,6 +131,19 @@ export function ScanInput({ rateTypeId }: { rateTypeId: string | null }) {
             {formatPaisa(lastLine.unitPricePaisa, { symbol: 'auto' })}
           </p>
         </div>
+      ) : null}
+      {nameSearch !== null ? (
+        <ItemPickerDialog
+          open
+          branchId={branchId}
+          rateTypeId={rateTypeId}
+          initialSearch={nameSearch}
+          onOpenChange={() => setNameSearch(null)}
+          onPick={(variant) => {
+            setNameSearch(null);
+            void addByCode(variant.sku);
+          }}
+        />
       ) : null}
     </div>
   );

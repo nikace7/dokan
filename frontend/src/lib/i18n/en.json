@@ -188,10 +188,8 @@
     "payment": "Payment",
     "tender": {
       "cash": "Cash",
-      "esewa": "eSewa",
-      "khalti": "Khalti",
-      "fonepay": "Fonepay",
-      "udharo": "Udharo"
+      "udharo": "Udharo",
+      "qr": "QR"
     },
     "amountLabel": "Amount ({{symbol}}) — blank = full total",
     "cashReceived": "Cash received ({{symbol}}) — blank = exact amount",

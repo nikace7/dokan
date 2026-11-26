@@ -65,9 +65,26 @@ describe('PaymentPanel', () => {
     );
   });
 
-  it('refuses a wallet payment above the total on the field', () => {
+  it('offers one QR button instead of a button per wallet', () => {
     renderPanel();
-    fireEvent.click(screen.getByRole('button', { name: 'eSewa' }));
+    const methods = screen.getByRole('group', { name: /payment method/i });
+    expect(Array.from(methods.querySelectorAll('button'), (b) => b.textContent)).toEqual([
+      'Cash',
+      'QR',
+      'Udharo',
+    ]);
+  });
+
+  it('shows no change to return while the bill is empty', () => {
+    useCartStore.getState().clear();
+    renderPanel();
+    pay(/cash received/i, '3000');
+    expect(row(/change to return/i)).toBe('रू 0.00');
+  });
+
+  it('refuses a QR payment above the total on the field', () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'QR' }));
     pay(/^amount/i, '1500');
 
     expect(screen.getByLabelText(/^amount/i)).toBeInvalid();
