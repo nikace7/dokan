@@ -244,6 +244,6 @@ class VariantForSaleView(_CatalogAPIView):
                 tenant,
                 _user(request),
                 page,
-                rate_type=get_or_404(tenant, RateType, rate_type_id, "Rate type"),
+                rate_type=_get_or_404(tenant, RateType, rate_type_id, "Rate type"),
             )
         return paginator.get_paginated_response(page)
