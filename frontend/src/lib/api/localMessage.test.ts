@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ApiError } from '@/lib/api/client';
 import { auditActionLabel, permissionName } from '@/lib/codeLabels';
 
-const error = (code: string, message: string) => new ApiError(400, { code, message });
+const error = (code: string, message: string) =>
+  new ApiError(400, { code, message } as ConstructorParameters<typeof ApiError>[1]);
 
 describe('server codes in the shop language', () => {
   afterEach(() => i18n.changeLanguage('en'));

@@ -72,7 +72,6 @@ export function CustomersPage() {
   if (!canView) {
     return <main className="p-6 text-sm text-warning">{t('customers.noViewPermission')}</main>;
   }
-
   const rows = customers.data?.data ?? [];
 
   return (
@@ -141,21 +140,15 @@ export function CustomersPage() {
         ) : null}
         <Pager page={page} totalPages={customers.data?.meta?.total_pages ?? 1} onPage={setPage} />
       </Card>
-
       <ConfirmDialog
         danger
         open={deactivating !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeactivating(null);
-        }}
+        onOpenChange={(open) => !open && setDeactivating(null)}
         title={t('customers.deactivateConfirm', { name: deactivating?.name ?? '' })}
         body={t('customers.deactivateBody')}
         confirmLabel={t('customers.deactivate')}
-        onConfirm={() => {
-          if (deactivating) deactivate.mutate(deactivating.id);
-        }}
+        onConfirm={() => deactivating && deactivate.mutate(deactivating.id)}
       />
-
       {editing && canManage ? (
         <Dialog open onOpenChange={() => setEditing(null)}>
           <DialogContent
