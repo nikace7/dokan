@@ -319,6 +319,21 @@ describe('BillingPage counter payment', () => {
       });
     });
 
+    it('shows the receipt when a retry finds the bill already finished', async () => {
+      fetchMock.mockImplementation((input) => {
+        const path = String(input);
+        if (path.endsWith('/complete')) return refusal('INVOICE_NOT_EDITABLE', 'Only held.');
+        if (path.endsWith('/sales/held-1')) return reply(INVOICE);
+        return route(input);
+      });
+      renderBilling();
+      fireEvent.change(cashField(), { target: { value: '700' } });
+      fireEvent.click(completeButton());
+
+      expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+      expect(screen.queryByText('Only held.')).not.toBeInTheDocument();
+    });
+
     it('locks the items, because the server keeps what was parked', () => {
       renderBilling();
       expect(screen.getByText(/items cannot be changed/i)).toBeInTheDocument();

@@ -274,17 +274,27 @@ export function recordReceiptPrint(id: string): Promise<{ id: string; print_coun
 }
 
 /** Tender a parked bill — turns HELD into COMPLETED. The customer replaces the parked one. */
-export function completeSale(
+export async function completeSale(
   id: string,
   payments: PaymentPayload[],
   idempotencyKey: string,
   customer?: string,
-) {
-  return completeWithUsageWarning(`/v1/sales/${id}/complete`, {
-    method: 'POST',
-    body: { payments, customer },
-    idempotencyKey,
-  });
+): Promise<SaleCompletion> {
+  try {
+    return await completeWithUsageWarning(`/v1/sales/${id}/complete`, {
+      method: 'POST',
+      body: { payments, customer },
+      idempotencyKey,
+    });
+  } catch (err) {
+    // The reply to an earlier try was lost and the bill is already finished:
+    // show its receipt rather than "only held bills can be changed".
+    if (err instanceof ApiError && err.code === 'INVOICE_NOT_EDITABLE') {
+      const invoice = await getSale(id);
+      if (invoice.status === 'COMPLETED') return { invoice, planWarning: null };
+    }
+    throw err;
+  }
 }
 
 /** Branch/rate-type selected in the authenticated workspace shell. */
