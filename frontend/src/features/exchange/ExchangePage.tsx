@@ -27,15 +27,7 @@ import {
   useMoneyDisplay,
 } from '@/lib/money';
 
-const PAYMENT_METHODS: ExchangePaymentMethod[] = [
-  'CASH',
-  'ESEWA',
-  'KHALTI',
-  'FONEPAY',
-  'CARD',
-  'BANK',
-  'CREDIT',
-];
+const PAYMENT_METHODS: ExchangePaymentMethod[] = ['CASH', 'QR', 'CARD', 'BANK', 'CREDIT'];
 
 const lineInputClasses =
   'w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';

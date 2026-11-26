@@ -14,7 +14,7 @@ import { ApiError } from '@/lib/api/client';
 import { useDebounced } from '@/lib/useDebounced';
 import { useWorkspace } from '@/features/settings/useWorkspace';
 
-const METHODS: ReceiptMethod[] = ['CASH', 'ESEWA', 'KHALTI', 'FONEPAY', 'CARD', 'BANK'];
+const METHODS: ReceiptMethod[] = ['CASH', 'QR', 'CARD', 'BANK'];
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;

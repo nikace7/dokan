@@ -24,7 +24,7 @@ export interface ReturnableLine {
 }
 
 export type RefundMethod =
-  'CASH' | 'ESEWA' | 'KHALTI' | 'FONEPAY' | 'CARD' | 'BANK' | 'CREDIT_NOTE';
+  'CASH' | 'ESEWA' | 'KHALTI' | 'FONEPAY' | 'QR' | 'CARD' | 'BANK' | 'CREDIT_NOTE';
 
 export interface ReturnPayload {
   original_invoice: string;
