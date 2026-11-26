@@ -112,7 +112,9 @@ export function CashSessionPanel() {
       {messageText ? <p className="mb-3 text-sm text-success">{messageText}</p> : null}
       {session ? (
         <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-          <dl className="grid gap-1 text-sm sm:grid-cols-3">
+          {/* ponytail: blind count. Expected cash shows only in the close
+              question, after the cashier has typed what is in the drawer. */}
+          <dl className="grid gap-1 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-muted-foreground">{t('payments.cashSession.opened')}</dt>
               <dd>{session.opened_by_name || '—'}</dd>
@@ -120,10 +122,6 @@ export function CashSessionPanel() {
             <div>
               <dt className="text-muted-foreground">{t('payments.cashSession.openingFloat')}</dt>
               <dd>{formatNpr(session.opening_float)}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">{t('payments.cashSession.expectedCash')}</dt>
-              <dd>{session.expected_cash == null ? '—' : formatNpr(session.expected_cash)}</dd>
             </div>
           </dl>
           <form onSubmit={(event) => void close(event)} className="flex flex-wrap items-end gap-2">

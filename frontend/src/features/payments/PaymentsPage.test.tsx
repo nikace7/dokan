@@ -284,6 +284,8 @@ describe('PaymentsPage', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Open session' }));
     const counted = await screen.findByLabelText('Counted cash (NPR)');
+    // Counted blind: the drawer total is not shown before the count.
+    expect(screen.queryByText('Expected cash')).not.toBeInTheDocument();
     const closes = () =>
       fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/session-1/close'));
     // Sold since the page loaded: the question must use today's figure.
