@@ -200,6 +200,19 @@ describe('BillingPage counter payment', () => {
     expect(sentBody('/sales').payments).toEqual([{ method: 'CASH', amount: '700.00' }]);
   });
 
+  it('still shows the change after a reload and a retry', async () => {
+    useCartStore.getState().setUnconfirmedSale({
+      payload: { payments: [{ method: 'CASH', amount: '700.00' }] } as never,
+      key: 'k-1',
+      changePaisa: 30_000,
+    });
+    renderBilling();
+    fireEvent.click(await screen.findByRole('button', { name: /try again/i }));
+
+    expect(await screen.findByText('Invoice INV-1')).toBeInTheDocument();
+    expect(screen.getByText(/change to return/i)).toHaveTextContent('रू 300.00');
+  });
+
   it('starts the next bill with an empty amount after parking one', async () => {
     renderBilling();
     await scan();

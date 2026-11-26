@@ -76,6 +76,7 @@ export function BillingPage() {
         ? completeSale(heldSaleId, payload.payments, key, payload.customer)
         : createSale(payload, key),
     onMutate: (sale) => {
+      setChangePaisa(sale.changePaisa ?? 0);
       setSaleError(null);
       if (!heldSaleId) setUnconfirmedSale(sale);
     },
@@ -260,11 +261,11 @@ export function BillingPage() {
               allowVatBill={hasPlanFeature(user, 'vat_module')}
               chargesVat={user?.vat_registered}
               onComplete={(tender) => {
-                setChangePaisa(tender.changePaisa);
                 setPrintReceipt(tender.print);
                 saleMutation.mutate({
                   payload: buildSalePayload(tender),
                   key: crypto.randomUUID(),
+                  changePaisa: tender.changePaisa,
                 });
               }}
             />
